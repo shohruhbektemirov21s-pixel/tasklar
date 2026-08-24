@@ -29,7 +29,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 /** Manzildan olib tashlangan identifikatorlar. */
-export type EntityKey = "project" | "task" | "user" | "workspace";
+export type EntityKey = "project" | "task" | "user" | "workspace" | "suggestion";
 
 /** `null` — «tozala», `undefined` (kalit yo'q) — «tegma». */
 export type EntityIds = Partial<Record<EntityKey, string | number | null>>;
@@ -173,6 +173,13 @@ export const toTask = (id: Id): NavTarget => ({ to: "/vazifa", state: { task: id
 
 export const toTaskEdit = (id: Id): NavTarget => ({
   to: "/vazifa/tahrir", state: { task: id },
+});
+
+/* ------------------------------------------------------------------ taklif */
+
+/** Bitta taklifning sahifasi - matn, fayllar, ovozlar va boshliq qarori. */
+export const toSuggestion = (id: Id): NavTarget => ({
+  to: "/taklif", state: { suggestion: id },
 });
 
 /* -------------------------------------------------------------------- odam */

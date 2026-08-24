@@ -924,10 +924,17 @@ export interface Suggestion {
   updated_at: string;
 }
 
-/** `GET /api/suggestions/counts/` javobi */
+/** `GET /api/suggestions/counts/` javobi. */
 export interface SuggestionCounts {
   open: number;
   closed: number;
   /** Boshliq uchun: qaror kutayotganlar soni (boshqalarda 0). */
   pending: number;
+
+  /** Filtr panelidagi holat tanlagichi uchun: barchasi va holat kesimlari. */
+  all: number;
+  mine: number;
+  PENDING: number;
+  APPROVED: number;
+  REJECTED: number;
 }
