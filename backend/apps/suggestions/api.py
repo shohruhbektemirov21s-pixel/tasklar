@@ -26,6 +26,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework import viewsets
 
+from apps.core.periods import due_span
 from apps.core.queries import related_count
 from apps.core.uploads import check_uploads
 
@@ -90,7 +91,44 @@ class SuggestionViewSet(viewsets.ModelViewSet):
         if self.request.query_params.get("mine") in ("1", "true"):
             qs = qs.filter(author=me)
 
+        qs = self.searched(qs, self.request.query_params.get("search"))
+        qs = self.on_dates(qs, self.request.query_params.get("date"),
+                           self.request.query_params.get("period"))
+
         return qs.order_by(*self.ordering_for(self.request.query_params.get("sort")))
+
+    def searched(self, qs, needle):
+        """Qidiruv: sarlavha, matn va MUALLIF ismi.
+
+        ANONIM TAKLIF ISM BO'YICHA TOPILMAYDI. Aks holda anonimlik shu
+        yerdan buzilardi: ro'yxatda muallif ko'rsatilmaydi-yu, odamning
+        ismini qidiruvga yozib, uning yozganini topib olish mumkin bo'lardi
+        - ya'ni «hech kimga ko'rsatilmaydi» va'dasi qidiruv orqali chetlab
+        o'tilardi. Sarlavha va matn esa hammaga ochiq, ular bo'yicha
+        qidirish anonimlikka tegmaydi.
+
+        Matn (`body`) Db2 da CLOB, lekin LIKE unga qo'llanadi - guruhlash
+        bilan adashtirmang (modul izohi).
+        """
+        needle = (needle or "").strip()
+        if not needle:
+            return qs
+        return qs.filter(
+            Q(title__icontains=needle)
+            | Q(body__icontains=needle)
+            | Q(is_anonymous=False, author__full_name__icontains=needle))
+
+    def on_dates(self, qs, date_raw, period):
+        """«Sana» va «Davr» kesimi - taklif QACHON yozilgani bo'yicha.
+
+        Oraliqni `apps/core/periods.py` hisoblaydi: «shu hafta» bu yerda
+        ham dushanbadan yakshanbagacha, ya'ni vazifalar ro'yxatidagi bilan
+        BIR XIL hafta. Aniq sana berilsa u davrdan ustun turadi.
+        """
+        span = due_span(date_raw or "", period or "")
+        if span is None:
+            return qs
+        return qs.filter(created_at__gte=span[0], created_at__lt=span[1])
 
     #: Ro'yxat tartibi. STANDARTI - ovoz bo'yicha: boshliq ro'yxatning
     #: boshiga qarasa jamoa eng ko'p kutayotgan o'zgarishni ko'radi (modul
@@ -105,58 +143,6 @@ class SuggestionViewSet(viewsets.ModelViewSet):
 
     def ordering_for(self, key):
         return self.SORTS.get((key or "").strip(), self.SORTS["top"])
-
-    #: Doskaning bitta ustuniga bir marta nechta taklif tushadi.
-    BOARD_PAGE = 10
-
-    #: Doska ustunlari. «Barchasi» - qolgan uchtasining yig'indisi, ya'ni
-    #: ustunlar bir-birini INKOR QILMAYDI: tasdiqlangan taklif «barchasi»
-    #: da ham turadi. Bu Kanban emas - bitta ro'yxatning kesimlari.
-    BOARD_COLUMNS = ("ALL", SuggestionStatus.PENDING,
-                     SuggestionStatus.APPROVED, SuggestionStatus.REJECTED)
-
-    @action(detail=False, methods=["get"])
-    def board(self, request):
-        """Doska ko'rinishi: barchasi, ko'rilmoqda, tasdiqlandi, rad etildi.
-
-        Ro'yxat ko'rinishi (`list`) O'Z JOYIDA qoladi - `?status=` bilan
-        bitta kesim so'raladi. Doska esa to'rttasini bir javobda beradi,
-        aks holda sahifa to'rtta alohida so'rov yuborardi va ular
-        bir-biridan ajralib ketishi mumkin edi (biri eski, biri yangi).
-
-        HAR USTUN O'ZI SAHIFALANADI - `?page_all=2`, `?page_approved=3`.
-        Bitta umumiy raqam yaramaydi: ustunlar uzunligi har xil va
-        «tasdiqlangan» ning uchinchi sahifasi bo'lganda «rad etilgan»
-        niki allaqachon tugagan bo'lardi.
-
-        Tartib va `?mine=1` butun doskaga qo'llanadi - ular
-        `get_queryset` dan keladi.
-        """
-        base = self.get_queryset()
-        ctx = self.get_serializer_context()
-
-        columns = []
-        for key in self.BOARD_COLUMNS:
-            qs = base if key == "ALL" else base.filter(status=key)
-            total = qs.count()
-            pages = max(1, -(-total // self.BOARD_PAGE))
-            asked = request.query_params.get("page_{}".format(key.lower())) or 1
-            try:
-                page = min(max(1, int(asked)), pages)
-            except (TypeError, ValueError):
-                raise ValidationError({"page": "Sahifa raqami butun son bolsin."})
-            start = (page - 1) * self.BOARD_PAGE
-            columns.append({
-                "key": key,
-                # Sarlavhadagi son - ustundagi JAMI taklif, kelgan
-                # kartalar soni emas: u sahifadan sahifaga o'zgarmasin.
-                "count": total,
-                "page": page,
-                "pages": pages,
-                "items": SuggestionSerializer(
-                    qs[start:start + self.BOARD_PAGE], many=True, context=ctx).data,
-            })
-        return Response({"columns": columns})
 
     # --------------------------------------------------------------- yozish
 

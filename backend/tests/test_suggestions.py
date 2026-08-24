@@ -15,6 +15,7 @@ sababi `test_media.py` ning boshida yozilgan.
 import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 from apps.notifications.models import Notification, NotificationKind
 from apps.suggestions.models import (Suggestion, SuggestionFile, SuggestionScope,
@@ -297,6 +298,72 @@ class DecisionTest(SuggestionTestCase):
         self.assertEqual(titles("?sort=old")[0], "Eski taklif")
         # Notanish qiymat standartga qaytadi - 400 emas.
         self.assertEqual(titles("?sort=allaqanday")[0], "Eski taklif")
+
+
+class FilterTest(SuggestionTestCase):
+    """Ro'yxat ustidagi filtrlar: qidiruv va sana kesimi.
+
+    Kesish SERVERDA bo'ladi - ro'yxat sahifalangan va brauzerda filtrlash
+    faqat ochilgan sahifani qirqardi: «topilmadi» degan javob aslida
+    «birinchi o'ttiztada yo'q» degani bo'lib qolardi.
+    """
+
+    def test_qidiruv_sarlavha_va_matndan_topadi(self):
+        one = self.make(title="Kutubxona sotib olaylik",
+                        body="Jamoaga texnik kitoblar kerak.")
+        two = self.make(title="Ish stollarini yangilaylik",
+                        body="Eski stollar past va noqulay.")
+
+        self.assertEqual(self.ids(self.api.get(URL, {"search": "kutubxona"})), [one.id])
+        # Matn ichidan ham topiladi - Db2 da `body` CLOB, LIKE unga qo'llanadi.
+        self.assertEqual(self.ids(self.api.get(URL, {"search": "noqulay"})), [two.id])
+        self.assertEqual(self.ids(self.api.get(URL, {"search": "umuman yo'q"})), [])
+
+    def test_qidiruv_muallif_ismi_boyicha(self):
+        mine = self.make(author=self.dev, title="Dasturchining taklifi")
+        self.make(author=self.manager, title="Menejerning taklifi")
+        self.assertEqual(self.ids(self.api.get(URL, {"search": "Dasturchi Ali"})), [mine.id])
+
+    def test_anonim_taklif_ism_boyicha_topilmaydi(self):
+        """Anonimlik qidiruv orqali ham buzilmaydi.
+
+        Aks holda ro'yxatda muallif ko'rsatilmaydi-yu, ismini qidiruvga
+        yozib uning yozganini topib olish mumkin bo'lardi - boshliq uchun ham.
+        """
+        hidden = self.make(author=self.dev, title="Anonim gap", is_anonymous=True)
+        for client in (self.api, self.boss_api, self.dev_api):
+            self.assertNotIn(hidden.id, self.ids(client.get(URL, {"search": "Dasturchi Ali"})))
+        # Sarlavhasi bo'yicha esa odatdagidek topiladi.
+        self.assertIn(hidden.id, self.ids(self.api.get(URL, {"search": "Anonim gap"})))
+
+    def test_sana_va_davr_kesimi(self):
+        """Kesim taklif QACHON yozilgani bo'yicha - `created_at`."""
+        bugun = self.make(title="Bugungi taklif")
+        eski = self.make(title="O'tgan yilgi taklif")
+        # `auto_now_add` ni chetlab o'tib, yozuvni o'tmishga suramiz.
+        Suggestion.objects.filter(pk=eski.pk).update(
+            created_at=timezone.now() - timezone.timedelta(days=400))
+
+        today = timezone.localdate().isoformat()
+        self.assertEqual(self.ids(self.api.get(URL, {"date": today})), [bugun.id])
+        self.assertEqual(self.ids(self.api.get(URL, {"period": "year"})), [bugun.id])
+        # Kesimsiz ikkovi ham chiqadi.
+        self.assertEqual(len(self.ids(self.api.get(URL))), 2)
+
+    def test_notogri_sana_400_beradi(self):
+        self.make()
+        self.assertEqual(self.api.get(URL, {"date": "kecha"}).status_code, 400)
+        self.assertEqual(self.api.get(URL, {"period": "asr"}).status_code, 400)
+
+    def test_filtrlar_birga_ishlaydi(self):
+        """Qidiruv, holat va «meniki» bir-birini INKOR QILMAYDI."""
+        mine = self.make(author=self.manager, title="Monitor kerak")
+        self.make(author=self.manager, title="Monitor kerak emas")
+        self.boss_api.post("%s%d/decide/" % (URL, mine.id),
+                           {"status": "APPROVED"}, format="json")
+        got = self.ids(self.api.get(URL, {"search": "monitor", "status": "APPROVED",
+                                          "mine": "1"}))
+        self.assertEqual(got, [mine.id])
 
 
 class FileTest(SuggestionTestCase):

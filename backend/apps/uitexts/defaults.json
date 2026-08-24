@@ -3371,10 +3371,6 @@
   "value": "Yuklagan: {ism}",
   "note": "pages/Suggestions.tsx"
  },
- "suggestions.pill_mine": {
-  "value": "Mening takliflarim",
-  "note": "pages/Suggestions.tsx"
- },
  "suggestions.saralash": {
   "value": "Saralash",
   "note": "pages/Suggestions.tsx"
@@ -3395,25 +3391,93 @@
   "value": "Boshliq ko'rib chiqmoqda",
   "note": "pages/Suggestions.tsx"
  },
- "suggestions.ustun_all": {
-  "value": "Barchasi",
+ "suggestions.qidiruv_placeholder": {
+  "value": "Sarlavha, matn yoki muallif ismi",
+  "note": "pages/Suggestions.tsx - filtr panelidagi qidiruv maydoni"
+ },
+ "suggestions.holat": {
+  "value": "Holat",
   "note": "pages/Suggestions.tsx"
  },
- "suggestions.ustun_pending": {
-  "value": "Ko'rilmoqda",
+ "suggestions.holat_all": {
+  "value": "Barcha holatlar",
   "note": "pages/Suggestions.tsx"
  },
- "suggestions.ustun_approved": {
-  "value": "Tasdiqlandi",
+ "suggestions.holat_pending": {
+  "value": "Ko'rib chiqilmoqda",
   "note": "pages/Suggestions.tsx"
  },
- "suggestions.ustun_rejected": {
-  "value": "Rad etildi",
+ "suggestions.holat_approved": {
+  "value": "Tasdiqlangan",
   "note": "pages/Suggestions.tsx"
  },
- "suggestions.ustun_bosh": {
-  "value": "Bu ustun bo'sh.",
+ "suggestions.holat_rejected": {
+  "value": "Rad etilgan",
   "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.turi": {
+  "value": "Turi",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.barcha_turlar": {
+  "value": "Barcha turlar",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.barcha_vaqt": {
+  "value": "Barcha vaqt",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.nechta_taklif": {
+  "value": "{n} ta taklif",
+  "note": "pages/Suggestions.tsx - sarlavha yonidagi sanoq"
+ },
+ "suggestions.topilmadi": {
+  "value": "Taklif topilmadi",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.topilmadi_matn": {
+  "value": "Tanlangan filtrga mos taklif yo'q - shartlarni yumshatib ko'ring.",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.qatorni_ochish": {
+  "value": "«{nom}» taklifini ochish",
+  "note": "pages/Suggestions.tsx - qatorni ochadigan tugmaning yorlig'i"
+ },
+ "suggestions.qatorni_yigish": {
+  "value": "«{nom}» taklifini yig'ish",
+  "note": "pages/Suggestions.tsx - qatorni yopadigan tugmaning yorlig'i"
+ },
+ "suggestions.qarorni_ozgartirish": {
+  "value": "Qarorni o'zgartirish",
+  "note": "pages/Suggestions.tsx - boshliqning «⋯» menyusi"
+ },
+ "suggestions.natija_soni": {
+  "value": "{jami} ta taklifdan {dan}–{gacha} tasi ko'rsatilmoqda",
+  "note": "pages/Suggestions.tsx - ro'yxat ostidagi yakun"
+ },
+ "suggestions.qaror_izoh_qisqa": {
+  "value": "— «{izoh}»",
+  "note": "pages/Suggestions.tsx - qatordagi qarorning bir qatorlik izohi"
+ },
+ "suggestions.taklif": {
+  "value": "Taklif",
+  "note": "pages/SuggestionDetail.tsx"
+ },
+ "suggestions.tanlanmagan": {
+  "value": "Taklif tanlanmagan",
+  "note": "pages/SuggestionDetail.tsx"
+ },
+ "suggestions.tanlanmagan_matn": {
+  "value": "Bu sahifa takliflar ro'yxatidan ochiladi - qaysi taklif kerakligini o'sha yerdan tanlang.",
+  "note": "pages/SuggestionDetail.tsx"
+ },
+ "suggestions.royxatga": {
+  "value": "Takliflar ro'yxatiga",
+  "note": "pages/SuggestionDetail.tsx"
+ },
+ "suggestions.ochib_bolmadi": {
+  "value": "Taklifni ochib bo'lmadi.",
+  "note": "pages/SuggestionDetail.tsx"
  },
  "task_bulk_form.bu_sahifa_loyiha_ichidan_ochiladi": {
   "value": "Bu sahifa loyiha ichidan ochiladi.",

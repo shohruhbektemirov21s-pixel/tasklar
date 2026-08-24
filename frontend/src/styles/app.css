@@ -2261,9 +2261,9 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
    o'zgarmaydi. */
 .row-menu:has(.row-menu-list) { z-index: 80; }
 .pcard:has(.row-menu-list),
-.sg-card:has(.row-menu-list) { z-index: 20; }
-/* `.sg-card` da `position` yo'q edi - `z-index` ishlashi uchun kerak. */
-.sg-card:has(.row-menu-list) { position: relative; }
+.sg .repo-item:has(.row-menu-list) { z-index: 20; }
+/* Qatorda `position` yo'q edi - `z-index` ishlashi uchun kerak. */
+.sg .repo-item:has(.row-menu-list) { position: relative; }
 .row-menu > .btn { padding: 4px 10px; font-size: 16px; line-height: 1; }
 .row-menu-list {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 70;
@@ -2634,11 +2634,6 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
    bir ekran bo'lib qolardi. Tayanch kenglik 120px - guruh telefonda ~270px
    ga siqiladi, ya'ni 140px da ikkitasi ham sig'masdi. */
 @media (max-width: 720px) {
-  /* Telefonda setka ishlamaydi - joy yo'q: sanoqlar va foiz ustma-ust
-     tushadi, ikkovi ham chapdan boshlanadi va sanoqlar o'ralishi mumkin. */
-  .wl-stats { display: flex; flex-wrap: wrap; }
-  .wl-counts { flex-wrap: wrap; white-space: normal; }
-  .wl-percent { width: 100%; }
   .wl .filters .wl-search { flex: 1 1 100%; }
   .wl .filters .wl-filters { flex: 1 1 100%; }
   .wl .filters .wl-filters .f { flex: 1 1 120px; }
@@ -2679,6 +2674,20 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 }
 .wl-percent .progress { flex: 1 1 60px; min-width: 50px; }
 .wl-percent b { color: var(--text); font-weight: 650; }
+
+/* Telefonda setka ishlamaydi - joy yo'q: sanoqlar va foiz ustma-ust
+   tushadi, ikkovi ham chapdan boshlanadi va sanoqlar o'ralishi mumkin.
+
+   BU BLOK ATAYLAB SHU YERDA - yuqoridagi media qoidalari orasida emas.
+   U yerda `display: flex` ishlamasdi: `.wl-stats` ning asosiy ta'rifi
+   (`display: grid`) fayl bo'ylab KEYIN turadi va bir xil kuchdagi
+   qoidalardan oxirgisi g'olib chiqadi. Natijada telefonda setka
+   saqlanib qolib, sanoqlar bilan foiz ekran chetidan chiqib ketardi. */
+@media (max-width: 720px) {
+  .wl-stats { display: flex; flex-wrap: wrap; }
+  .wl-counts { flex-wrap: wrap; white-space: normal; }
+  .wl-percent { width: 100%; }
+}
 
 /* ---- Sahifa raqamlari (`pages/Dashboard.tsx`, `Pager`).
 
@@ -2751,81 +2760,51 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   .tline-title { flex: 1 1 100%; order: 1; white-space: normal; }
 }
 
+
 /* ---- Takliflar (`pages/Suggestions.tsx`).
 
-   Karta ro'yxati: chapda o'rin raqami, o'ngda tahrir tugmalari, ostida
-   uchta ovoz tugmasi. O'rin raqami faqat OCHIQ kesimda chiziladi -
-   yopiq takliflar jamoa ovoziga qo'yilmaydi. */
-/* ---- Filtr nishonlari ----
-   Oddiy tabdan farqi: har birida SON turadi va rang holatni aytadi -
-   ko'z ro'yxatni ochmasdan «uchtasi javob kutyapti» ni ko'radi. Son
-   serverdan keladi (`/suggestions/counts/`). */
-.sg-pill {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 6px 13px; border-radius: 999px; font-size: 13px; font-weight: 550;
-  border: 1px solid var(--border); background: var(--surface);
-  color: var(--muted); cursor: pointer;
-  transition: border-color .16s, color .16s, background .16s;
-}
-.sg-pill:hover { color: var(--text); border-color: var(--veil-strong); }
-.sg-pill .n {
-  min-width: 20px; padding: 0 6px; border-radius: 999px; text-align: center;
-  font-size: 12px; background: var(--surface-3); color: inherit;
-}
-/* Tanlangani rangi bilan ajraladi; rang esa holatning o'zi bilan bog'liq -
-   yashil tasdiqlangan, qizil rad etilgan, sariq javob kutayotgan. */
-.sg-pill.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
-.sg-pill.on .n { background: var(--surface); }
-.sg-pill.warn.on { color: var(--attention); border-color: var(--attention); background: var(--attention-soft); }
-.sg-pill.ok.on { color: var(--success); border-color: var(--success); background: var(--success-soft); }
-.sg-pill.danger.on { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
+   RO'YXAT «VAZIFALAR» SAHIFASINIKI. Filtr paneli ham, qatorlar ham
+   o'sha yerdagi qoidalarni (`.wl ...`) qayta ishlatadi - sahifa
+   `content wl sg` bilan ochiladi. Nusxa ko'chirilmadi: ikkita ro'yxat
+   bir xil ko'rinishi kerak va qoida ikki joyda yozilsa, biri
+   o'zgarganda ikkinchisi ortda qolardi. Bu yerda faqat TAKLIFGA xos
+   narsalar qoladi: o'rin raqami, muallif satri, ovoz tugmalari, boshliq
+   qarori va biriktirilgan fayllar. */
 
-.sg-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-/* Tanlagich mazmuniga qarab tor bo'ladi: `select` ilovada butun kenglikka
-   cho'ziladi (forma maydonlari uchun to'g'ri), lekin bu yerda u ro'yxat
-   ustidagi kichik boshqaruv - cho'zilsa qidiruv maydoniga o'xshab
-   qolardi. */
-.sg-toolbar select {
-  flex: 0 0 auto; width: auto; min-width: 210px;
-  height: 34px; font-size: 13px;
-}
+/* Ochilgan qatorning ichi. `.wl .card-body` dan alohida: u yerda vazifa
+   qatorlari zich turadi, bu yerda esa matn, rasm va tugmalar bor. */
+.sg-open { padding: 2px 16px 16px; }
 
-.sg-list { display: flex; flex-direction: column; gap: 14px; }
+/* «Yangi taklif» formasi zich ro'yxatning qoidasidan tashqarida:
+   `.wl .card-body` sahifa raqamlari uchun qisqartirilgan, forma esa
+   odatdagi kenglikda nafas olishi kerak. */
+.sg-form .card-body { padding: 20px; }
 
-/* Taklif va uning HOLATI yonma-yon: o'ng ustun tor va yopishib turadi,
-   ya'ni uzun taklifda ham qaror ko'z oldida qoladi. Tor ekranda ustunlar
-   ustma-ust tushadi - 300px li qaror qutisi telefonda joy qoldirmasdi. */
-.sg-cols { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; }
-.sg-main { min-width: 0; }
-.sg-side { min-width: 0; }
-@media (max-width: 900px) {
-  .sg-cols { grid-template-columns: 1fr; }
-}
+/* Sarlavha qatorning boshida va bitta chiziqda: nishonlar yonida
+   turadi, uzun bo'lsa o'raladi. */
+.sg .repo-item h3.sg-title { font-size: 14.5px; line-height: 1.35; flex: 0 1 auto; }
 
-.sg-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; padding: 16px 18px;
-}
-.sg-head { display: flex; align-items: flex-start; gap: 12px; }
-.sg-title { font-size: 15.5px; line-height: 1.35; }
-
-/* O'rin raqami - reyting ko'rinib tursin, lekin kartani bosib ketmasin. */
+/* O'rin raqami - reyting ko'rinib tursin, lekin qatorni bosib ketmasin.
+   Faqat OVOZ bo'yicha saralanganda chiziladi (sababi `Suggestions.tsx`
+   da), shuning uchun birinchi o'rin ajratib ko'rsatiladi. */
 .sg-rank {
-  flex: 0 0 auto; min-width: 28px; height: 28px; border-radius: 9px;
+  flex: 0 0 auto; min-width: 24px; height: 24px; border-radius: 8px;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--surface-3); color: var(--muted);
-  font-size: 13px; font-weight: 700;
+  font-size: 12px; font-weight: 700;
 }
-.sg-list .sg-card:first-child .sg-rank {
+.sg .card-list > *:first-child .sg-rank {
   background: var(--accent-soft); color: var(--accent);
 }
 
-.sg-by {
-  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
-  margin-top: 7px; font-size: 12.5px; color: var(--muted);
-}
+/* Muallif satri - qatorning ikkinchi darajali ma'lumoti (`.repo-meta`)
+   ichida, avatar bilan bir chiziqda. */
+.sg-by { display: inline-flex; align-items: center; gap: 6px; }
 .sg-anon { font-style: italic; }
-.dot-sep { opacity: .5; }
+
+/* Amallar menyusi qatorni ochish hodisasidan tashqarida - `Suggestions.tsx`
+   da `stopPropagation` bilan. Bu yerda faqat o'lchami. */
+.sg-actions { flex: 0 0 auto; display: flex; align-items: center; }
 
 .sg-body {
   margin: 12px 0 0; white-space: pre-wrap; line-height: 1.55;
@@ -2855,7 +2834,7 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 .sg-vote.on .sg-vote-n { border-left-color: currentColor; }
 
 /* Biriktirilgan fayl - bitta qator: ikonka, nom, hajm va kim yuklagani.
-   Uzun nom qatorni cho'zmasin, aks holda «yuklagan» yozuvi kartadan
+   Uzun nom qatorni cho'zmasin, aks holda «yuklagan» yozuvi chetdan
    chiqib ketardi. */
 .sg-files { margin-top: 12px; gap: 6px; }
 .sg-file {
@@ -2907,9 +2886,27 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 .sg-decision p { margin: 6px 0; white-space: pre-wrap; }
 /* Qutidagi ikki qator - kim qaror qildi va qachon - ustma-ust turadi. */
 .sg-decision .muted { display: block; font-size: 12.5px; }
-/* O'ng ustunda quti tepadan boshlanadi: matnning yonida turishi kerak,
-   uning ostida emas. */
-.sg-side .sg-decision { margin-top: 0; }
+
+/* Uzun yorliqlar tanlagichga sig'sin: «Ko'rib chiqilmoqda (2)» va «Eng
+   ko'p qo'llab-quvvatlangan» 120px lik tayanch kenglikda «Barcha hola...»
+   bo'lib qirqilardi. Qat'iy kenglik emas, ULUSH - panel tor ekranda ham
+   bitta qatorda qoladi. */
+.sg .filters .wl-filters .sg-status { flex: 1.4 1 160px; }
+.sg .filters .wl-filters .sg-sort { flex: 1.8 1 200px; }
+
+/* «Faqat meniki» - filtr panelidagi boshqa maydonlar bilan bir sathda.
+   Bu YORLIQ emas, belgi: `.filters label` ning katta harflari va keng
+   oralig'i unga tegmasin - ular maydon nomlari uchun. */
+/* Tanlagich `.filters label` dan KUCHLIROQ yozilgan (`label.sg-only-mine`):
+   aks holda maydon nomlarining katta harflari bu belgiga ham tushib,
+   «MENING TAKLIFLARIM» bo'lib qolardi. */
+.filters label.sg-only-mine {
+  display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto;
+  font-size: 13px; font-weight: 400; color: var(--text); cursor: pointer;
+  white-space: nowrap; text-transform: none; letter-spacing: normal;
+  margin-bottom: 0; padding-bottom: 8px;
+}
+.sg-only-mine input { width: auto; }
 
 .sg-boss {
   margin-top: 14px; padding-top: 14px;
@@ -2918,16 +2915,27 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 .sg-boss .field { margin-bottom: 0; }
 
 @media (max-width: 620px) {
-  .sg-card { padding: 14px; }
+  .sg-open { padding: 2px 14px 14px; }
   /* Tor ekranda fayl qatori ikki satrga bo'linsin. */
   .sg-file { flex-wrap: wrap; }
-  /* Tahrir tugmalari sarlavha yoniga sig'maydi: ular pastga, o'z qatoriga
-     tushadi. Aks holda sarlavha ingichka ustunga siqilib, har so'zi alohida
-     satrga tushib ketardi va tugmalar ustiga chiqib qolardi. */
-  .sg-head { flex-wrap: wrap; }
-  .sg-actions { order: 3; flex: 1 0 100%; justify-content: flex-end; }
   /* Tor ekranda uchta tugma qatorga sig'maydi - yorliqni yashirib,
      ikonka va sonni qoldiramiz (yorliq `title` da qoladi). */
   .sg-vote-label { display: none; }
   .sg-votes { gap: 6px; }
+}
+
+/* Qatordagi QARORNING bir qatorlik xulosasi. Nishonning yolg'iz o'zi
+   «tasdiqlandi» deydi-yu, negaligini aytmaydi - boshliqning izohi esa
+   javobning yarmi. Izoh bitta qatorga sig'adi va cho'zilib qatorni
+   sindirmaydi; to'lig'i qator ochilganda ko'rinadi (`.sg-decision`). */
+.sg-verdict {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  margin-top: 5px; font-size: 12px;
+}
+.sg-verdict.ok { color: var(--success); }
+.sg-verdict.no { color: var(--danger); }
+.sg-verdict strong { font-weight: 650; }
+.sg-verdict-note {
+  color: var(--muted); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }

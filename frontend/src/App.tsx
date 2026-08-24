@@ -52,6 +52,7 @@ const Admin = lazy(() => import("@/pages/Admin"));
 const AdminGate = lazy(() => import("@/pages/AdminGate"));
 const WorkspaceChat = lazy(() => import("@/pages/WorkspaceChat"));
 const Suggestions = lazy(() => import("@/pages/Suggestions"));
+const SuggestionDetail = lazy(() => import("@/pages/SuggestionDetail"));
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -170,6 +171,10 @@ export default function App() {
         {/* Takliflar - hamma ko'radi. Yopiq takliflar va boshliq
             qarori serverda filtrlanadi (`SuggestionViewSet`). */}
         <Route path="/takliflar" element={<Suggestions />} />
+        {/* Bitta taklif - raqami manzilda emas, sahifa holatida
+            (`toSuggestion`). Yopiq taklifni begona ochsa server 404
+            beradi, sahifa esa buni matn bilan aytadi. */}
+        <Route path="/taklif" element={<SuggestionDetail />} />
         <Route path="/profil" element={<Profile />} />
       </Route>
 
