@@ -314,9 +314,26 @@ if TESTING:
 # joyida bajarilishi va natijasi darrov ko'rinishi kerak.
 BACKGROUND_TASKS = env_bool("BACKGROUND_TASKS", True) and not TESTING
 
+# Har bir qator BIR MARTA yozilsin.
+#
+# Django o'z `DEFAULT_LOGGING` ini bizning `LOGGING` dan OLDIN qo'llaydi va
+# u yerda `django` loggeriga console handler ulangan. Bizda esa `root` da
+# ham o'sha handler turadi. Natijada `django.channels.server` bergan har bir
+# so'rov qatori ikki yo'ldan chiqardi: avval `django` ning handleri, keyin
+# root ga ko'tarilib yana bir marta. Jurnalning yarmi nusxa edi - 11 900
+# qatordan ~6 000 tasi keraksiz, qidirish esa ikki barobar qiyin.
+#
+# `django` ga bo'sh handler ro'yxati berib, `DEFAULT_LOGGING` niki bekor
+# qilinadi; `propagate` ochiq qolgani uchun yozuv root ga chiqadi va o'sha
+# yerda BIR marta bosiladi.
+#
+# `DEBUG=0` da bu ko'rinmasdi: `DEFAULT_LOGGING` dagi console handler
+# `require_debug_true` filtri bilan keladi. Ya'ni nuqson faqat ishlab
+# chiqish rejimida bo'lgan va shu sababdan uzoq payqalmagan.
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": os.getenv("LOG_LEVEL", "INFO")},
+    "loggers": {"django": {"handlers": [], "propagate": True}},
 }
