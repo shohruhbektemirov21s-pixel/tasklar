@@ -11,9 +11,24 @@
  *
  * QATOR QISQA JAVOB BERADI: nima taklif qilingan, qanday holatda, kim
  * yozgan, boshliq nima degan va jamoa qanday ovoz bergan. Taklifning
- * O'ZI - matn, chizmalar, to'liq izoh va ovoz tugmalari - qator bosilganda
- * ochiladigan SAHIFADA (`pages/SuggestionDetail.tsx`). Ilgari u qatorning
- * ostiga yoyilardi va ro'yxat bir necha ekranga cho'zilib ketardi.
+ * O'ZI - matn, chizmalar, to'liq izoh, ovoz va boshliq paneli - qator
+ * bosilganda O'SHA YERNING O'ZIDA, qatorning ostiga yoyiladi.
+ *
+ * NEGA YOYILADI, SAHIFAGA O'TILMAYDI. Taklif ro'yxati - taqqoslash joyi:
+ * odam ketma-ket bir nechtasini o'qib chiqadi va ovoz beradi. Har biri
+ * uchun sahifaga o'tib, keyin orqaga qaytish har safar filtrni, sahifa
+ * raqamini va aylantirilgan joyni qaytadan topishni anglatardi. Yoyilgan
+ * qator esa ro'yxatdagi o'rnini yo'qotmaydi.
+ *
+ * BIR VAQTDA BITTASI ochiq turadi (`openId`): ikkitasi ochilsa ro'yxat
+ * yana bir necha ekranga cho'zilib ketardi - aynan shundan qochilgan edi.
+ * Taklifning o'z sahifasi (`pages/SuggestionDetail.tsx`) joyida qoladi:
+ * yoyilgan qatorning ostidagi havola o'sha yerga olib boradi, ya'ni
+ * taklifni birovga ko'rsatish yo'li yopilmaydi.
+ *
+ * MA'LUMOT ALLAQACHON QO'LDA. Ro'yxat `SuggestionSerializer` ning to'liq
+ * javobini qaytaradi (`body`, `files`, `can_vote`, `can_decide`), shuning
+ * uchun yoyish uchun qo'shimcha so'rov YUBORILMAYDI - ochilish darhol.
  *
  * KESISH SERVERDA. Qidiruv, holat, tur, sana va tartib - hammasi
  * so'rovga ketadi (`SuggestionViewSet.get_queryset`). Brauzerda filtrlash
@@ -37,13 +52,18 @@ import { useLive } from "@/realtime/RealtimeContext";
 import { confirmDialog } from "@/components/Confirm";
 import { DateField } from "@/components/dates";
 import { PageHead } from "@/components/Layout";
-import { IconCheck, IconClose, IconFile, IconIdea } from "@/components/icons";
-import { EMPTY_FORM, STATUS_TONE, SuggestionForm, formOf } from "@/components/suggestion";
+import {
+  IconCheck, IconChevron, IconClose, IconFile, IconIdea,
+} from "@/components/icons";
+import {
+  Attachments, BossPanel, DecisionBox, EMPTY_FORM, STATUS_TONE, SuggestionForm,
+  VoteBar, formOf,
+} from "@/components/suggestion";
 import {
   Avatar, Card, DUE_PERIODS, Empty, ErrorMsg, Loading, OkMsg, Pager, Progress,
   RowMenu, timeAgo,
 } from "@/components/ui";
-import { toSuggestion, useGo } from "@/nav";
+import { toSuggestion } from "@/nav";
 import { tx } from "@/i18n";
 
 /** Holat kesimi - filtrdagi tartib shu yerdan. */
@@ -123,30 +143,42 @@ function VoteStats({ item }: { item: Suggestion }) {
 
 /* -------------------------------------------------------------- bitta qator */
 
-function SuggestionRow({ item, rank, onEdit, onDelete }: {
+function SuggestionRow({ item, rank, open, onToggle, onPatch, onEdit, onDelete }: {
   item: Suggestion;
   /** Ro'yxatdagi o'rni - faqat ovoz bo'yicha saralanganda. */
   rank: number | null;
+  /** Qator yoyilganmi. Bir vaqtda bittasi ochiq - qarori sahifada. */
+  open: boolean;
+  onToggle: () => void;
+  /** Ovoz yoki qarordan keyin qaytgan taklif - ro'yxatdagi nusxa yangilansin. */
+  onPatch: (saved: Suggestion) => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const go = useGo();
+  /* Qaror chiqqach boshliq paneli yopiladi. Fikr o'zgarsa yo'l ochiq:
+     «Qarorni o'zgartirish» uni qaytadan ochadi - taklif sahifasidagi
+     qoidaning aynan o'zi. Qator yig'ilganda bu holat ham unutiladi,
+     aks holda keyingi ochishda panel sababsiz ochiq turardi. */
+  const [redeciding, setRedeciding] = useState(false);
+  useEffect(() => { if (!open) setRedeciding(false); }, [open]);
+
   const votes = item.for_count + item.against_count + item.neutral_count;
   const decided = item.status !== "PENDING";
 
   return (
-    /* Qatorning istalgan yeriga bosilsa taklif ochiladi - sarlavhani aniq
-       nishonga olish shart emas. Sarlavhaning o'zi esa haqiqiy havola:
-       klaviatura bilan yetib boriladi va o'rta tugma bilan yangi oynada
-       ochiladi. Qoida «Umumiy tarix» va «Vazifalar» dagi qatorlar bilan
-       bir xil. */
-    <div className="repo-item clickable" onClick={() => go(toSuggestion(item.id))}>
+    /* Qatorning istalgan yeriga bosilsa taklif YOYILADI - sarlavhani aniq
+       nishonga olish shart emas. Sarlavhaning o'zi esa haqiqiy tugma:
+       klaviatura bilan yetib boriladi va `aria-expanded` yoyilganini
+       aytadi. */
+    <div className={`repo-item clickable${open ? " sg-row-open" : ""}`} onClick={onToggle}>
       <div className="row wrap">
         {rank !== null && <span className="sg-rank">{rank}</span>}
         <h3 className="sg-title">
-          <Link {...toSuggestion(item.id)} onClick={(e) => e.stopPropagation()}>
+          <button type="button" className="sg-title-btn" aria-expanded={open}
+                  title={tx(open ? "suggestions.yigish" : "suggestions.yoyish")}
+                  onClick={(e) => { e.stopPropagation(); onToggle(); }}>
             {item.title}
-          </Link>
+          </button>
         </h3>
         <span className={`badge ${STATUS_TONE[item.status]}`}>{item.status_display}</span>
         {/* Ochiq taklif - odatdagi hol, uni yozib o'tirish shart emas.
@@ -163,8 +195,7 @@ function SuggestionRow({ item, rank, onEdit, onDelete }: {
 
         {/* Muallifning amallari - qatorning o'ng chekkasida, loyihalar
             ro'yxatidagi kabi. Menyu qatorning ustida turadi, shuning uchun
-            bosilganda taklif ochilib ketmasin. Boshliqning qarori bu yerda
-            yo'q: u taklifning o'z sahifasida, matni bilan birga. */}
+            bosilganda taklif yoyilib ketmasin. */}
         {item.can_edit && (
           <div className="sg-actions" onClick={(e) => e.stopPropagation()}>
             <RowMenu>
@@ -173,6 +204,13 @@ function SuggestionRow({ item, rank, onEdit, onDelete }: {
             </RowMenu>
           </div>
         )}
+
+        {/* Burchak - qator YOYILADIGANINING yagona ko'rinadigan belgisi.
+            `aria-hidden`: holatni sarlavha tugmasidagi `aria-expanded`
+            allaqachon aytadi, ikki marta takrorlanmasin. */}
+        <span className={`sg-chevron${open ? " on" : ""}`} aria-hidden="true">
+          <IconChevron size={15} />
+        </span>
       </div>
 
       {/* Kim yozgani va qachon. Anonim taklifda ism O'RNIGA emas, umuman
@@ -189,14 +227,15 @@ function SuggestionRow({ item, rank, onEdit, onDelete }: {
         )}
       </div>
 
-      {/* QAROR QATORNING O'ZIDA. Nishonning yolg'iz o'zi «tasdiqlandi»
+      {/* QAROR YIG'ILGAN QATORDA. Nishonning yolg'iz o'zi «tasdiqlandi»
           deydi-yu, NEGA ekanini aytmaydi - boshliqning izohi esa javobning
           yarmi, ayniqsa rad etilganda (izohsiz rad etib bo'lmaydi ham:
           `DecisionSerializer`). Shuning uchun bu yerda izohning bir
-          qatorlik boshi turadi, to'lig'i esa taklif sahifasida. Javob
-          kutayotgan taklifda yozilmaydi: uning nishoni allaqachon «Ko'rib
-          chiqilmoqda» deb turibdi. */}
-      {decided && (
+          qatorlik boshi turadi. Qator YOYILGANDA chizilmaydi: ostida
+          o'sha qaror to'lig'icha (`DecisionBox`) turibdi va takrorlash
+          faqat chalkashtirardi. Javob kutayotgan taklifda ham yozilmaydi:
+          uning nishoni allaqachon «Ko'rib chiqilmoqda» deb turibdi. */}
+      {decided && !open && (
         <div className={`sg-verdict ${item.status === "APPROVED" ? "ok" : "no"}`}>
           {item.status === "APPROVED" ? <IconCheck size={12} /> : <IconClose size={12} />}
           <strong>{item.status_display}</strong>
@@ -211,6 +250,42 @@ function SuggestionRow({ item, rank, onEdit, onDelete }: {
       {/* Ovoz berilmagan taklifda chiziq ham, nollar ham chizilmaydi:
           «0/0 · 0%» hech nima aytmaydi, faqat joy egallaydi. */}
       {votes > 0 && <VoteStats item={item} />}
+
+      {/* TAKLIFNING O'ZI. Ichkaridagi bosishlar qatorga YETIB BORMAYDI:
+          aks holda ovoz tugmasi yoki rasm bosilganda qator yig'ilib
+          qolardi. Yopish uchun sarlavha, burchak va qatorning bo'sh
+          yeri bor. */}
+      {open && (
+        <div className="sg-open" onClick={(e) => e.stopPropagation()}>
+          <p className="sg-body">{item.body}</p>
+
+          <Attachments item={item} />
+
+          {item.can_vote && <VoteBar item={item} onChange={onPatch} />}
+
+          <DecisionBox item={item} />
+
+          {item.can_decide && (item.status === "PENDING" || redeciding) && (
+            <BossPanel item={item}
+                       onDone={(saved) => { setRedeciding(false); onPatch(saved); }}
+                       onCancel={redeciding ? () => setRedeciding(false) : undefined} />
+          )}
+          {item.can_decide && decided && !redeciding && (
+            <button type="button" className="btn btn-sm sg-redecide"
+                    onClick={() => setRedeciding(true)}>
+              {tx("suggestions.qarorni_ozgartirish")}
+            </button>
+          )}
+
+          {/* Taklifning O'Z sahifasiga yo'l. Yoyilgan qator hamma narsani
+              ko'rsatadi, lekin uning manzili yo'q - havolani birovga
+              yuborish yoki yangi oynada ochish uchun shu yerda haqiqiy
+              `<a>` turadi. */}
+          <div className="sg-open-foot">
+            <Link {...toSuggestion(item.id)}>{tx("suggestions.toliq_sahifada")}</Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -230,6 +305,15 @@ export default function Suggestions() {
 
   const [f, setF] = useState<Filters>(NO_FILTERS);
   const [page, setPage] = useState(1);
+  /* Yoyilgan qator - BITTA. Ro'yxatning o'zi qisqa javob berish uchun
+     bor; ikkita taklif birdan yoyilsa u yana bir necha ekranga cho'zilib
+     ketardi va taqqoslash o'rniga aylantirish boshlanardi. */
+  const [openId, setOpenId] = useState<number | null>(null);
+  /* Ovoz berilgan yoki qaror chiqqan taklifning YANGI holati.
+     Ro'yxatni qaytadan so'ramaymiz: standart tartib ovoz bo'yicha, ya'ni
+     qayta so'rov qatorni odamning ko'z oldida boshqa joyga ko'chirib
+     yuborardi. Kalit - taklif raqami; ro'yxat yangilanganda tashlanadi. */
+  const [patched, setPatched] = useState<Record<number, Suggestion>>({});
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Suggestion | null>(null);
   const [ok, setOk] = useState("");
@@ -262,7 +346,19 @@ export default function Suggestions() {
      «navbatda nechta taklif bor» degan savolga javob beradi. */
   const counts = useFetch<SuggestionCounts>("/suggestions/counts/");
 
-  const rows = listOf<Suggestion>(list.data);
+  /* Serverdan yangi javob kelgan - qo'ldagi yamoqlar eskirdi. Ular
+     saqlanib qolsa filtr almashtirilganda eski sonlar yangi ro'yxatning
+     ustiga chizilardi. */
+  const listData = list.data;
+  useEffect(() => {
+    // Bo'sh yamoqni qayta bo'shatmaymiz: `setPatched({})` HAR safar yangi
+    // obyekt beradi, ya'ni javob o'zgarmagan bo'lsa ham qo'shimcha render
+    // bo'lardi - `data` ning o'zi ham yangi bo'lsa ikkovi bir-birini
+    // qo'zg'atib cheksiz aylanardi.
+    setPatched((cur) => (Object.keys(cur).length ? {} : cur));
+  }, [listData]);
+
+  const rows = listOf<Suggestion>(listData).map((r) => patched[r.id] ?? r);
   const total = totalOf(list.data);
   const pages = pagesOf(list.data, PAGE_SIZE);
 
@@ -285,6 +381,8 @@ export default function Suggestions() {
     // sahifada turgan odam qidiruv yozib bo'sh ekranga urilardi.
     setPage(1);
     setEditing(null);
+    // Ekrandagi qatorlar butunlay almashadi - ochiq qator ham yopiladi.
+    setOpenId(null);
     // Davr va aniq sana bir-birini almashtiradi: ikkovi birga tanlangan
     // ekranda "qaysi biri ishlayapti?" degan savol tug'ilardi.
     setF((prev) => ({
@@ -298,6 +396,7 @@ export default function Suggestions() {
   function clear() {
     setPage(1);
     setEditing(null);
+    setOpenId(null);
     setF(NO_FILTERS);
   }
 
@@ -316,6 +415,7 @@ export default function Suggestions() {
     });
     if (!yes) return;
     await api.delete("/suggestions/" + item.id + "/");
+    setOpenId((cur) => (cur === item.id ? null : cur));
     setOk(tx("suggestions.ochirildi"));
     reload();
   }
@@ -476,7 +576,10 @@ export default function Suggestions() {
                      saralanganda raqam «birinchi o'rin» degan yolg'on
                      va'da berardi. */
                   rank={f.sort === "top" ? (page - 1) * PAGE_SIZE + i + 1 : null}
-                  onEdit={() => { setEditing(item); setCreating(false); }}
+                  open={openId === item.id}
+                  onToggle={() => setOpenId((cur) => (cur === item.id ? null : item.id))}
+                  onPatch={(saved) => setPatched((cur) => ({ ...cur, [saved.id]: saved }))}
+                  onEdit={() => { setEditing(item); setCreating(false); setOpenId(null); }}
                   onDelete={() => void remove(item)}
                 />
               ))}
@@ -493,7 +596,7 @@ export default function Suggestions() {
                   })}
                 </span>
                 <Pager page={page} pages={pages}
-                       onPick={(n) => { setEditing(null); setPage(n); }} />
+                       onPick={(n) => { setEditing(null); setOpenId(null); setPage(n); }} />
               </div>
             )}
           </div>

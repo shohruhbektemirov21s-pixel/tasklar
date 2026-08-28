@@ -4614,5 +4614,17 @@
  "workspaces.yangi_maydon_yarating_yoki_ochiq": {
   "value": "Yangi maydon yarating yoki ochiq maydonga qoshiling.",
   "note": "pages/Workspaces.tsx"
+ },
+ "suggestions.toliq_sahifada": {
+  "value": "To'liq sahifada ochish",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.yoyish": {
+  "value": "Taklifni yoyish",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.yigish": {
+  "value": "Taklifni yig'ish",
+  "note": "pages/Suggestions.tsx"
  }
 }

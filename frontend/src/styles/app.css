@@ -2771,9 +2771,46 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
    narsalar qoladi: o'rin raqami, muallif satri, ovoz tugmalari, boshliq
    qarori va biriktirilgan fayllar. */
 
-/* Ochilgan qatorning ichi. `.wl .card-body` dan alohida: u yerda vazifa
-   qatorlari zich turadi, bu yerda esa matn, rasm va tugmalar bor. */
-.sg-open { padding: 2px 16px 16px; }
+/* Yoyilgan qatorning ichi. `.wl .card-body` dan alohida: u yerda vazifa
+   qatorlari zich turadi, bu yerda esa matn, rasm va tugmalar bor.
+   Ustidagi chiziq xulosani (sarlavha, ovoz) taklifning o'zidan ajratadi -
+   busiz ikkovi bitta uzun bo'lakka qo'shilib ketardi. */
+.sg-open {
+  padding: 12px 16px 4px;
+  margin-top: 12px;
+  border-top: 1px solid var(--border-muted);
+  cursor: default;
+}
+
+/* Yoyilgan qator ro'yxatdan ajralib tursin: odam qaysi birini ochganini
+   aylantirgandan keyin ham topa olsin. */
+.sg-row-open { background: var(--surface-2); }
+.sg .repo-item.clickable.sg-row-open { border-left: 2px solid var(--accent); }
+
+/* Sarlavha - haqiqiy tugma, lekin ko'rinishi sarlavhaning o'zi. Havola
+   emas: qator hech qayerga olib bormaydi, yoyiladi. Klaviatura bilan
+   yetib boriladi va yoyilganini `aria-expanded` aytadi. */
+.sg-title-btn {
+  padding: 0; border: none; background: none; cursor: pointer;
+  font: inherit; color: var(--text); text-align: left;
+}
+.sg-title-btn:hover { color: var(--accent); }
+
+/* Yoyish belgisi - qatorning eng o'ng chekkasida, amallar menyusidan
+   keyin. Ochilganda 180 daraja aylanadi, shuning uchun yuqoriga qaragan
+   alohida ikonka kerak emas. */
+.sg-chevron {
+  flex: 0 0 auto; display: inline-flex; color: var(--muted);
+  transition: transform .18s, color .18s;
+}
+.sg-chevron.on { transform: rotate(180deg); color: var(--accent); }
+
+/* Qarorni qayta ko'rish - boshliqning ikkinchi darajali amali, shuning
+   uchun qarorning ostida, alohida turadi. */
+.sg-redecide { margin-top: 12px; }
+
+/* Taklifning o'z sahifasiga havola - yoyilgan bo'lakning eng osti. */
+.sg-open-foot { margin-top: 14px; font-size: 13px; }
 
 /* «Yangi taklif» formasi zich ro'yxatning qoidasidan tashqarida:
    `.wl .card-body` sahifa raqamlari uchun qisqartirilgan, forma esa

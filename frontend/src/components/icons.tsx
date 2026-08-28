@@ -278,3 +278,12 @@ export const IconNeutral = ({ size = 16 }: P) => (
     <path d="M8 12h8" />
   </svg>
 );
+
+/* Yoyiladigan qatorning ko'rsatkichi - pastga qaragan burchak. Ochilganda
+   CSS uni 180 daraja aylantiradi (`.sg-chevron`), shuning uchun bu yerda
+   alohida "yuqoriga" varianti yo'q. */
+export const IconChevron = ({ size = 16 }: P) => (
+  <svg {...base(size)}>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
