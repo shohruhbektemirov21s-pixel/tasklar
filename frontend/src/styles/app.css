@@ -2976,3 +2976,17 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   color: var(--muted); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* Takliflar sahifasidagi o'ng panel (Taqvim uslubida) */
+.sg-layout { display: grid; gap: 16px; align-items: start; margin-bottom: 18px; }
+.sg-layout.with-drawer { grid-template-columns: minmax(0, 1fr) 400px; }
+.sg-side-panel { position: sticky; top: calc(var(--header-h) + 16px); }
+.sg-side-panel .card { box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
+.sg-side-panel .card-body { max-height: calc(100vh - var(--header-h) - 140px); overflow-y: auto; }
+@media (max-width: 1100px) {
+  .sg-layout.with-drawer { grid-template-columns: minmax(0, 1fr); }
+  .sg-side-panel { position: static; }
+  .sg-side-panel .card-body { max-height: none; overflow-y: visible; }
+}
+
+

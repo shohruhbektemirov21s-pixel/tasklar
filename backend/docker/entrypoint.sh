@@ -32,6 +32,7 @@ if [ "$1" = "daphne" ]; then
   # Interfeys so'zlari bazadan o'qiladi. Yangi kalitlar qo'shiladi, admin
   # tahrirlagan matnlarga tegilmaydi (`--force` berilmagan).
   python manage.py seed_ui_texts
+  python manage.py seed_demo
 
   # DEBUG=1 bo'lsa runserver ishlatamiz - kod o'zgarishi darrov qo'llanadi.
   if [ "${DEBUG}" = "1" ] || [ "${DEBUG}" = "true" ]; then
