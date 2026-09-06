@@ -40,8 +40,9 @@ export default function JoinProject() {
       const res = await api.post<any>(`/projects/${id}/join/`, {
         message, desired_role: role, code,
       });
-      if (res.joined) go(toProject(id, "kirish"));
+      if (res.joined) go(toProject(id, "brif"));
       else go("/qoshilish");
+
     } catch (err) {
       setError(err instanceof ApiError ? err.message : tx("join_project.sorov_yuborishda_xatolik"));
     } finally {

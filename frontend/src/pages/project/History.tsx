@@ -124,10 +124,11 @@ export default function History({ project }: { project: Project }) {
         </Card>
 
         <Card title={tx("project_history.nima_uchun_bu_kerak")}>
-          <Link className="btn btn-sm btn-block" {...toProject(project.id, "kirish")}>
-            {tx("project_history.loyihaga_kirish_qollanmasi")}
+          <Link className="btn btn-sm btn-block" {...toProject(project.id, "brif")}>
+            {tx("project_detail.arxitekturasi")}
           </Link>
         </Card>
+
       </div>
     </div>
   );

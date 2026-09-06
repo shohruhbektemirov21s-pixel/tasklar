@@ -15,8 +15,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  TZ, fmtDate, fmtDateTime, fromDateTimeInput, toDateTimeInput,
+  TZ, fmtDate, fmtDateTime, formatMemberRole, fromDateTimeInput, toDateTimeInput,
 } from "./ui";
+
 
 describe("mintaqa", () => {
   it("Toshkentga qadalgan", () => {
@@ -78,3 +79,28 @@ describe("fromDateTimeInput — maydondagi qiymat Toshkent vaqti deb o'qiladi", 
     }
   });
 });
+
+describe("formatMemberRole — jamoa a'zosi roli va mutaxassisligi", () => {
+  it("bir xil rol va mutaxassislikni takrorlamaydi", () => {
+    expect(formatMemberRole("Loyiha menejeri", "Loyiha menejeri")).toBe("Loyiha menejeri");
+    expect(formatMemberRole("Tester (QA)", "Tester (QA)")).toBe("Tester (QA)");
+  });
+
+  it("umumiy Dasturchi rolini aniq mutaxassislik bilan almashtiradi", () => {
+    expect(formatMemberRole("Backend dasturchi", "Dasturchi")).toBe("Backend dasturchi");
+    expect(formatMemberRole("UI/UX dizayner", "Dasturchi")).toBe("UI/UX dizayner");
+    expect(formatMemberRole("Fullstack dasturchi", "Dasturchi")).toBe("Fullstack dasturchi");
+  });
+
+  it("alohida loyiha roli bo'lsa ikkalasini ham ko'rsatadi", () => {
+    expect(formatMemberRole("Backend dasturchi", "Loyiha admini")).toBe("Backend dasturchi · Loyiha admini");
+    expect(formatMemberRole("Fullstack dasturchi", "Loyiha admini")).toBe("Fullstack dasturchi · Loyiha admini");
+  });
+
+  it("bittalasi bo'sh bo'lsa mavjudini qaytaradi", () => {
+    expect(formatMemberRole("Frontend dasturchi", null)).toBe("Frontend dasturchi");
+    expect(formatMemberRole(null, "Dasturchi")).toBe("Dasturchi");
+    expect(formatMemberRole("", "")).toBe("");
+  });
+});
+

@@ -2008,11 +2008,11 @@
   "note": "pages/project/Brief.tsx"
  },
  "project_brief.ehtiyot_boling": {
-  "value": "Ehtiyot boling",
+  "value": "Ehtiyot bo'ling",
   "note": "pages/project/Brief.tsx"
  },
  "project_brief.kim_nima_boyicha_javob_beradi": {
-  "value": "Kim nima boyicha javob beradi",
+  "value": "Kim nima bo'yicha javob beradi",
   "note": "pages/project/Brief.tsx"
  },
  "project_brief.loyiha_maqsadi": {
@@ -2020,7 +2020,7 @@
   "note": "pages/project/Brief.tsx"
  },
  "project_brief.masalan_tolovlar_sardor_ui_malika": {
-  "value": "Masalan: tolovlar - Sardor, UI - Malika",
+  "value": "Masalan: to'lovlar - Sardor, UI - Malika",
   "note": "pages/project/Brief.tsx"
  },
  "project_brief.oxirgi_yangilash": {
@@ -2036,11 +2036,11 @@
   "note": "pages/project/Brief.tsx"
  },
  "project_brief.toldirilgan": {
-  "value": "% toldirilgan",
+  "value": "% to'ldirilgan",
   "note": "pages/project/Brief.tsx"
  },
  "project_brief.toldirilmagan": {
-  "value": "Toldirilmagan",
+  "value": "To'ldirilmagan",
   "note": "pages/project/Brief.tsx"
  },
  "project_detail.arxitekturasi": {
@@ -2652,7 +2652,7 @@
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.4_takrorlanmasligi_kerak_bolgan_xatolar": {
-  "value": "4. Takrorlanmasligi kerak bolgan xatolar",
+  "value": "4. Takrorlanmasligi kerak bo'lgan xatolar",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.5_loyiha_bosqichlari": {
@@ -2664,7 +2664,7 @@
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.arxitektura_toldirilmagan": {
-  "value": "Arxitektura toldirilmagan.",
+  "value": "Arxitektura to'ldirilmagan.",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.arxitektura_yozilmagan": {
@@ -2676,7 +2676,7 @@
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.ehtiyot_boling": {
-  "value": "Ehtiyot boling",
+  "value": "Ehtiyot bo'ling",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.eslatma": {
@@ -2684,11 +2684,11 @@
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.hali_bajarilgan_vazifa_yoq": {
-  "value": "Hali bajarilgan vazifa yoq",
+  "value": "Hali bajarilgan vazifa yo'q",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.hali_qaytarilgan_ish_yoq": {
-  "value": "Hali qaytarilgan ish yoq.",
+  "value": "Hali qaytarilgan ish yo'q.",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.hozir_ochiq_turgan_ishlar": {
@@ -2696,11 +2696,11 @@
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.hozircha_ish_jurnali_yoq": {
-  "value": "Hozircha ish jurnali yoq.",
+  "value": "Hozircha ish jurnali yo'q.",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.kim_nima_boyicha_javob_beradi": {
-  "value": "Kim nima boyicha javob beradi",
+  "value": "Kim nima bo'yicha javob beradi",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.kim_nima_qilgan": {
@@ -2708,7 +2708,7 @@
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.kontekst_yigilmoqda": {
-  "value": "Kontekst yigilmoqda...",
+  "value": "Kontekst yig'ilmoqda...",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.loyiha_maqsadi": {
@@ -2716,7 +2716,7 @@
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.ochiq_vazifa_yoq": {
-  "value": "Ochiq vazifa yoq",
+  "value": "Ochiq vazifa yo'q",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.repozitoriy": {
@@ -2732,7 +2732,7 @@
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.songgi_bajarilganlar": {
-  "value": "Songgi bajarilganlar",
+  "value": "So'nggi bajarilganlar",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.texnologiyalar": {
@@ -2740,7 +2740,7 @@
   "note": "pages/project/Onboarding.tsx"
  },
  "project_onboarding.toldirilgan": {
-  "value": "% toldirilgan",
+  "value": "% to'ldirilgan",
   "note": "pages/project/Onboarding.tsx"
  },
  "project_overview.bajarilgan_vazifalarni_korish": {

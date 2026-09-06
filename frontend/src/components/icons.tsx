@@ -287,3 +287,22 @@ export const IconChevron = ({ size = 16 }: P) => (
     <path d="m6 9 6 6 6-6" />
   </svg>
 );
+
+/** Tashqi havola (External link) */
+export const IconExternalLink = ({ size = 16 }: P) => (
+  <svg {...base(size)}>
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+/** Ogohlantirish (Alert / warning) */
+export const IconAlertTriangle = ({ size = 16 }: P) => (
+  <svg {...base(size)}>
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+

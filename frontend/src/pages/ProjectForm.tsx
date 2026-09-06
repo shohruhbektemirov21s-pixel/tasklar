@@ -5,7 +5,8 @@ import FilePicker, { uploadFiles } from "@/components/FilePicker";
 import TeamPicker, { addPickedMembers, createPickedTasks, taskCount }
   from "@/components/TeamPicker";
 import type { Pick as TeamPick } from "@/components/TeamPicker";
-import type { Access, Project } from "@/api/types";
+import type { Access, Brief, Project } from "@/api/types";
+
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { Card, DateField, ErrorMsg, Loading } from "@/components/ui";
@@ -43,6 +44,12 @@ export default function ProjectForm() {
   const [team, setTeam] = useState<TeamPick[]>([]);
   // Tahrirlashda loyihaning ruxsatlari kerak: o'chirish faqat menejer va adminda.
   const [acc, setAcc] = useState<Access | null>(null);
+  const [brief, setBrief] = useState({
+    architecture: "",
+    tech_stack: "",
+    goal: "",
+    pitfalls: "",
+  });
 
   const [f, setF] = useState({
     name: "", description: "",
@@ -56,7 +63,10 @@ export default function ProjectForm() {
     let alive = true;
     void (async () => {
       if (editing) {
-        const p = await api.get<Project>(`/projects/${id}/`);
+        const [p, b] = await Promise.all([
+          api.get<Project>(`/projects/${id}/`),
+          api.get<Brief>(`/projects/${id}/brief/`).catch(() => null),
+        ]);
         if (!alive) return;
         setAcc(p.access);
         setF({
@@ -65,6 +75,14 @@ export default function ProjectForm() {
           start_date: p.start_date || "", due_date: p.due_date || "",
           is_public: p.is_public, is_listed: p.is_listed,
         });
+        if (b) {
+          setBrief({
+            architecture: b.architecture || "",
+            tech_stack: b.tech_stack || "",
+            goal: b.goal || "",
+            pitfalls: b.pitfalls || "",
+          });
+        }
         setLoaded(true);
       }
     })().catch((e) => {
@@ -73,6 +91,7 @@ export default function ProjectForm() {
     });
     return () => { alive = false; };
   }, [id, editing]);
+
 
   function set(k: string, v: unknown) {
     setF((p) => ({ ...p, [k]: v }));
@@ -102,13 +121,24 @@ export default function ProjectForm() {
       ...f,
       start_date: f.start_date || null,
       due_date: f.due_date || null,
+      brief,
     };
     try {
       const saved = editing
         ? await api.patch<Project>(`/projects/${id}/`, body)
         : await api.post<Project>("/projects/", body);
 
+      const hasBrief = Object.values(brief).some((v) => v.trim().length > 0);
+      if (hasBrief || editing) {
+        try {
+          await api.patch(`/projects/${saved.id}/brief/`, brief);
+        } catch {
+          // Arxitektura saqlanmasa ham loyiha yaratildi
+        }
+      }
+
       // Loyiha saqlandi. Fayl yuklanmasa ham loyiha yo'qolmasin: xato aytiladi,
+
       // odam fayllarni "Fayllar" bo'limidan qayta yuklay oladi.
       if (files.length) {
         try {
@@ -266,10 +296,53 @@ export default function ProjectForm() {
               </div>
             </Card>
 
+            <Card title={tx("project_detail.arxitekturasi")}>
+              <div className="field">
+                <label htmlFor={`${fid}-arch`}>{tx("project_brief.arxitektura")}</label>
+                <textarea
+                  id={`${fid}-arch`}
+                  rows={3}
+                  value={brief.architecture}
+                  onChange={(e) => setBrief((b) => ({ ...b, architecture: e.target.value }))}
+                  placeholder="Monorepo, backend/frontend, REST API, mikroservislar..."
+                />
+              </div>
+              <div className="field">
+                <label htmlFor={`${fid}-tech`}>{tx("project_brief.texnologiyalar")}</label>
+                <input
+                  id={`${fid}-tech`}
+                  value={brief.tech_stack}
+                  onChange={(e) => setBrief((b) => ({ ...b, tech_stack: e.target.value }))}
+                  placeholder="Django, React, IBM Db2, Redis, Docker..."
+                />
+              </div>
+              <div className="row">
+                <div className="field" style={{ flex: 1 }}>
+                  <label htmlFor={`${fid}-goal`}>{tx("project_brief.loyiha_maqsadi")}</label>
+                  <input
+                    id={`${fid}-goal`}
+                    value={brief.goal}
+                    onChange={(e) => setBrief((b) => ({ ...b, goal: e.target.value }))}
+                    placeholder="Loyihaning asosiy maqsadi"
+                  />
+                </div>
+                <div className="field" style={{ flex: 1 }}>
+                  <label htmlFor={`${fid}-pitfalls`}>{tx("project_brief.ehtiyot_boling")}</label>
+                  <input
+                    id={`${fid}-pitfalls`}
+                    value={brief.pitfalls}
+                    onChange={(e) => setBrief((b) => ({ ...b, pitfalls: e.target.value }))}
+                    placeholder="Ehtiyot bo'lish kerak bo'lgan jihatlar"
+                  />
+                </div>
+              </div>
+            </Card>
+
             {/* Tahrirlashda fayllar alohida «Fayllar» bolimida boshqariladi -
                 bu yerda faqat yangi loyiha uchun boshlangich hujjatlar. */}
             {!editing && (
               <Card title={tx("project_form.boshlangich_fayllar")}>
+
                 <FilePicker
                   files={files}
                   onChange={setFiles}

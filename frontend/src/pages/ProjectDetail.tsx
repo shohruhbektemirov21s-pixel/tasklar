@@ -19,8 +19,8 @@ const Board = lazy(() => import("./project/Board"));
 const TaskList = lazy(() => import("./project/TaskList"));
 const Members = lazy(() => import("./project/Members"));
 const History = lazy(() => import("./project/History"));
-const Onboarding = lazy(() => import("./project/Onboarding"));
 const Brief = lazy(() => import("./project/Brief"));
+
 const Chat = lazy(() => import("@/components/Chat"));
 const Files = lazy(() => import("./project/Files"));
 const ForecastTab = lazy(() => import("./project/Forecast"));
@@ -38,12 +38,12 @@ const TABS = [
   { slug: "fayllar", label: tx("common.hujjatlar") },
   { slug: "chat", label: tx("common.suhbat"), team: true },
   { slug: "tarix", label: tx("project_detail.tarix") },
-  { slug: "kirish", label: tx("project_detail.loyihaga_kirish") },
   // Slug `brif` bo'lib qoladi - u serverdagi `ProjectBrief` bilan bir
   // xil nom va marshrutda ham shu. O'zbekcha yorlig'i esa loyihaning
   // texnik tavsifi ekanini aniqroq aytadi.
   { slug: "brif", label: tx("project_detail.arxitekturasi") },
 ];
+
 
 export default function ProjectDetail() {
   // Loyiha raqami manzilda emas, sahifa holatida - `src/nav` ga qarang.
@@ -151,9 +151,9 @@ export default function ProjectDetail() {
           {active === "fayllar" && <Files project={project} />}
           {active === "chat" && <Chat projectId={project.id} />}
           {active === "tarix" && <History project={project} />}
-          {active === "kirish" && <Onboarding project={project} />}
-          {active === "brif" && <Brief project={project} onChange={reload} />}
+          {(active === "kirish" || active === "brif") && <Brief project={project} onChange={reload} />}
         </Suspense>
+
       </div>
     </>
   );

@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { api } from "@/api/client";
 import type { Activity, Project, Task, UserBrief } from "@/api/types";
 import Timeline from "@/components/Timeline";
-import { Avatar, Card, Empty, Priority, Stat, StatusBadge, fmtDate } from "@/components/ui";
+import { Avatar, Card, Empty, Priority, Stat, StatusBadge, fmtDate, formatMemberRole } from "@/components/ui";
+
 import { toDeveloper, toProject, toTask } from "@/nav";
 import { tx } from "@/i18n";
 
@@ -75,8 +76,9 @@ export default function Overview({ project }: { project: Project; onChange: () =
             <div className="row wrap" style={{ gap: 8 }}>
               {project.repo_url && <a className="btn btn-sm" href={project.repo_url} target="_blank" rel="noreferrer">{tx("project_overview.repozitoriy")}</a>}
               {project.docs_url && <a className="btn btn-sm" href={project.docs_url} target="_blank" rel="noreferrer">{tx("common.hujjatlar")}</a>}
-              <Link className="btn btn-sm" {...toProject(project.id, "kirish")}>{tx("project_overview.loyihaga_kirish_qollanmasi")}</Link>
+              <Link className="btn btn-sm" {...toProject(project.id, "brif")}>{tx("project_detail.arxitekturasi")}</Link>
             </div>
+
           </Card>
         )}
 
@@ -117,7 +119,8 @@ export default function Overview({ project }: { project: Project; onChange: () =
                 <div style={{ minWidth: 0 }}>
                   <Link {...toDeveloper(project.id, m.user.id)}>{m.user.full_name}</Link>
                   <br />
-                  <small className="muted">{m.role_display} · {m.user.specialty_display}</small>
+                  <small className="muted">{formatMemberRole(m.user.specialty_display, m.role_display)}</small>
+
                 </div>
                 <span className="spacer" />
               </div>

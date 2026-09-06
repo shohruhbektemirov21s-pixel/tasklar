@@ -2,16 +2,25 @@ import { Link } from "react-router-dom";
 import { useFetch } from "@/api/useFetch";
 import type { OnboardingData, Project } from "@/api/types";
 import Timeline from "@/components/Timeline";
-import { Avatar, Card, ErrorMsg, Loading, Priority, Progress, StatusBadge, fmtDate, timeAgo } from "@/components/ui";
+import { Avatar, Card, ErrorMsg, Loading, Priority, Progress, StatusBadge, fmtDate, formatMemberRole, timeAgo } from "@/components/ui";
+import { IconExternalLink, IconFile } from "@/components/icons";
 import { toDeveloper, toProject, toTask } from "@/nav";
 import { tx } from "@/i18n";
 
-const BRIEF_SECTIONS: [keyof NonNullable<OnboardingData["brief"]>, string][] = [
-  ["goal", tx("project_onboarding.loyiha_maqsadi")],
-  ["tech_stack", tx("project_onboarding.texnologiyalar")],
-  ["architecture", tx("project_onboarding.arxitektura")],
-  ["pitfalls", tx("project_onboarding.ehtiyot_boling")],
-  ["contacts", tx("project_onboarding.kim_nima_boyicha_javob_beradi")],
+type BriefSectionDef = {
+  key: keyof NonNullable<OnboardingData["brief"]>;
+  labelKey: string;
+  icon: string;
+  boxClass?: string;
+  isTech?: boolean;
+};
+
+const BRIEF_CONFIG: BriefSectionDef[] = [
+  { key: "goal", labelKey: "project_onboarding.loyiha_maqsadi", icon: "🎯", boxClass: "is-goal" },
+  { key: "tech_stack", labelKey: "project_onboarding.texnologiyalar", icon: "⚡", boxClass: "is-tech", isTech: true },
+  { key: "architecture", labelKey: "project_onboarding.arxitektura", icon: "🏗️", boxClass: "is-arch" },
+  { key: "pitfalls", labelKey: "project_onboarding.ehtiyot_boling", icon: "⚠️", boxClass: "is-pitfall" },
+  { key: "contacts", labelKey: "project_onboarding.kim_nima_boyicha_javob_beradi", icon: "👥", boxClass: "is-contacts" },
 ];
 
 export default function Onboarding({ project }: { project: Project }) {
@@ -26,24 +35,31 @@ export default function Onboarding({ project }: { project: Project }) {
       <div className="split">
         <div>
           <Card title={tx("project_onboarding.1_loyiha_nima_qiladi")}>
-            <p className="pre-wrap">{d.project.description || tx("common.tavsif_kiritilmagan")}</p>
-            <div className="row mb">
+            <p className="pre-wrap" style={{ lineHeight: 1.6, fontSize: 13.5 }}>
+              {d.project.description || tx("common.tavsif_kiritilmagan")}
+            </p>
+            <div className="row mb" style={{ alignItems: "center", gap: 12, marginTop: 12 }}>
               <div style={{ flex: 1, maxWidth: 300 }}><Progress value={d.project.progress} /></div>
-              <span className="muted">{d.project.progress}{tx("project_onboarding.bajarildi")}</span>
+              <span className="badge badge-info">{d.project.progress}{tx("project_onboarding.bajarildi")}</span>
             </div>
-            <div className="row wrap" style={{ gap: 8 }}>
+            <div className="row wrap" style={{ gap: 8, marginTop: 10 }}>
               {d.project.repo_url && (
-                <a className="btn btn-sm" href={d.project.repo_url} target="_blank" rel="noreferrer">
-                  {tx("project_onboarding.repozitoriy")}
+                <a className="btn btn-sm row" style={{ gap: 6 }} href={d.project.repo_url} target="_blank" rel="noreferrer">
+                  <IconExternalLink size={14} />
+                  <span>{tx("project_onboarding.repozitoriy")}</span>
                 </a>
               )}
               {d.project.docs_url && (
-                <a className="btn btn-sm" href={d.project.docs_url} target="_blank" rel="noreferrer">
-                  {tx("common.hujjatlar")}
+                <a className="btn btn-sm row" style={{ gap: 6 }} href={d.project.docs_url} target="_blank" rel="noreferrer">
+                  <IconFile size={14} />
+                  <span>{tx("common.hujjatlar")}</span>
                 </a>
               )}
               {d.project.manager && (
-                <span className="chip">{tx("common.menejer")} {d.project.manager.full_name}</span>
+                <span className="chip row" style={{ gap: 6 }}>
+                  <Avatar user={d.project.manager} size="sm" />
+                  <span>{tx("common.menejer")}: <strong>{d.project.manager.full_name}</strong></span>
+                </span>
               )}
             </div>
           </Card>
@@ -53,14 +69,27 @@ export default function Onboarding({ project }: { project: Project }) {
                 action={project.access.can_manage &&
                   <Link className="btn btn-sm" {...toProject(project.id, "brif")}>{tx("common.tahrirlash")}</Link>}>
             {d.brief ? (
-              <div className="stack">
-                {BRIEF_SECTIONS.map(([key, label]) => {
-                  const value = d.brief?.[key];
+              <div className="onboarding-brief-stack">
+                {BRIEF_CONFIG.map((section) => {
+                  const value = d.brief?.[section.key];
                   if (!value || typeof value !== "string" || !value.trim()) return null;
                   return (
-                    <div key={String(key)}>
-                      <strong style={{ fontSize: 13 }}>{label}</strong>
-                      <div className="tl-detail">{value}</div>
+                    <div key={String(section.key)} className={`onboarding-section-box ${section.boxClass || ""}`}>
+                      <div className="onboarding-section-title">
+                        <span className="onboarding-section-icon">{section.icon}</span>
+                        <span>{tx(section.labelKey)}</span>
+                      </div>
+                      {section.isTech && value.includes(",") ? (
+                        <div className="onboarding-tech-chips">
+                          {value.split(",").map((tech, idx) => {
+                            const clean = tech.trim();
+                            if (!clean) return null;
+                            return <span key={idx} className="onboarding-tech-chip">{clean}</span>;
+                          })}
+                        </div>
+                      ) : (
+                        <div className="onboarding-section-body">{value}</div>
+                      )}
                     </div>
                   );
                 })}
@@ -119,24 +148,23 @@ export default function Onboarding({ project }: { project: Project }) {
         </div>
 
         <div>
-          <Card title={tx("project_onboarding.kim_nima_qilgan")} padded={false}>
+          <Card title={tx("project_onboarding.kim_nima_qilgan")} padded={false}
+                badge={<span className="badge">{d.contributions.length}</span>}>
             <div className="card-list">
               {d.contributions.map((c) => (
-                <Link key={c.member.id} className="card-body tight"
-                      {...toDeveloper(project.id, c.member.user.id)}
-                      style={{ color: "inherit", textDecoration: "none", display: "block" }}>
-                  <div className="row">
+                <Link key={c.member.id} className="onboarding-member-row"
+                      {...toDeveloper(project.id, c.member.user.id)}>
+                  <div className="onboarding-member-head">
                     <Avatar user={c.member.user} size="sm" />
-                    <div style={{ minWidth: 0 }}>
-                      <strong style={{ fontSize: 13 }}>{c.member.user.full_name}</strong>
-                      <br />
-                      <small className="muted">
-                        {c.member.user.specialty_display} · {c.member.role_display}
+                    <div className="onboarding-member-info">
+                      <div className="onboarding-member-name">{c.member.user.full_name}</div>
+                      <div className="onboarding-member-role">
+                        {formatMemberRole(c.member.user.specialty_display, c.member.role_display)}
                         {!c.member.is_active && tx("project_onboarding.sobiq")}
-                      </small>
+                      </div>
                     </div>
                   </div>
-                  <div className="row wrap" style={{ marginTop: 6, gap: 6 }}>
+                  <div className="onboarding-stats-row">
                     <span className="badge badge-ok">{c.done} {tx("common.bajarilgan_2")}</span>
                     <span className="badge badge-info">{c.open} {tx("common.ochiq")}</span>
                     <span className="badge">{c.hours} {tx("common.soat")}</span>
@@ -148,10 +176,16 @@ export default function Onboarding({ project }: { project: Project }) {
                   )}
                 </Link>
               ))}
+              {!d.contributions.length && (
+                <div className="empty" style={{ padding: 24 }}>
+                  <p className="muted">{tx("project_onboarding.hozircha_ish_jurnali_yoq")}</p>
+                </div>
+              )}
             </div>
           </Card>
 
-          <Card title={tx("project_onboarding.hozir_ochiq_turgan_ishlar")} padded={false}>
+          <Card title={tx("project_onboarding.hozir_ochiq_turgan_ishlar")} padded={false}
+                badge={<span className="badge">{d.open_now.length}</span>}>
             <div className="table-wrap"><table className="table">
               <tbody>
                 {d.open_now.map((t) => (
@@ -168,7 +202,8 @@ export default function Onboarding({ project }: { project: Project }) {
             </table></div>
           </Card>
 
-          <Card title={tx("project_onboarding.songgi_bajarilganlar")} padded={false}>
+          <Card title={tx("project_onboarding.songgi_bajarilganlar")} padded={false}
+                badge={<span className="badge">{d.recent_done.length}</span>}>
             <div className="table-wrap"><table className="table">
               <tbody>
                 {d.recent_done.map((t) => (
@@ -189,3 +224,4 @@ export default function Onboarding({ project }: { project: Project }) {
     </>
   );
 }
+

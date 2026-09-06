@@ -144,6 +144,26 @@ export function SpecialtyChip({
   );
 }
 
+/**
+ * Jamoa a'zosi roli va yo'nalishini takrorlarsiz, toza formatda qaytaradi.
+ * Masalan:
+ * - "Loyiha menejeri" va "Loyiha menejeri" -> "Loyiha menejeri"
+ * - "Tester (QA)" va "Tester (QA)" -> "Tester (QA)"
+ * - "Backend dasturchi" va "Dasturchi" -> "Backend dasturchi"
+ * - "Backend dasturchi" va "Loyiha admini" -> "Backend dasturchi · Loyiha admini"
+ */
+export function formatMemberRole(specialty?: string | null, role?: string | null): string {
+  const s = specialty?.trim() || "";
+  const r = role?.trim() || "";
+  if (!s && !r) return "";
+  if (!s) return r;
+  if (!r) return s;
+  if (s.toLowerCase() === r.toLowerCase()) return r;
+  if (r.toLowerCase() === "dasturchi") return s;
+  return `${s} · ${r}`;
+}
+
+
 /* ---------------------------------------------------------------- Holatlar */
 /**
  * Yuklanish ko'rsatkichi.

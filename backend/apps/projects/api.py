@@ -328,13 +328,25 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project = serializer.save(created_by=user, manager_id=manager_id,
                                   workspace=workspace)
 
-        ProjectBrief.objects.get_or_create(project=project, defaults={"updated_by": user})
+        brief_data = self.request.data.get("brief")
+        brief_defaults = {"updated_by": user}
+        if isinstance(brief_data, dict):
+            for k in ("architecture", "tech_stack", "goal", "pitfalls", "contacts"):
+                if k in brief_data:
+                    brief_defaults[k] = brief_data[k]
+        brief_obj, created = ProjectBrief.objects.get_or_create(project=project, defaults=brief_defaults)
+        if not created and isinstance(brief_data, dict):
+            for k, v in brief_defaults.items():
+                setattr(brief_obj, k, v)
+            brief_obj.save()
+
         ProjectMember.objects.get_or_create(
             project=project, user_id=manager_id,
             defaults={"role": ProjectRole.MANAGER, "added_by": user})
         ProjectMember.objects.get_or_create(
             project=project, user=user,
             defaults={"role": ProjectRole.MANAGER, "added_by": user})
+
         WorkspaceMember.objects.get_or_create(
             workspace=project.workspace, user=user,
             defaults={"role": WorkspaceRole.MEMBER})
@@ -363,8 +375,21 @@ class ProjectViewSet(viewsets.ModelViewSet):
             ProjectMember.objects.update_or_create(
                 project=project, user_id=manager_id,
                 defaults={"role": ProjectRole.MANAGER, "is_active": True})
+
+
+
+        brief_data = self.request.data.get("brief")
+        if isinstance(brief_data, dict):
+            brief_obj, _ = ProjectBrief.objects.get_or_create(project=project)
+            for k in ("architecture", "tech_stack", "goal", "pitfalls", "contacts"):
+                if k in brief_data:
+                    setattr(brief_obj, k, brief_data[k])
+            brief_obj.updated_by = self.request.user
+            brief_obj.save()
+
         log(actor=self.request.user, verb="project.updated", project=project, target=project,
             summary="Loyiha sozlamalari yangilandi")
+
 
     def destroy(self, request, *args, **kwargs):
         """Tugallanmagan ish bo'lsa o'chirishni TO'SADI - avval tasdiq kerak.
