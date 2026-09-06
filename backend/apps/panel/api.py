@@ -1,5 +1,7 @@
 import logging
 
+from django.core.cache import cache as django_cache
+
 from datetime import datetime, time as dtime
 from math import ceil
 
@@ -114,8 +116,22 @@ def panel_queryset(user):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def dashboard(request):
-    """Fokus paneli: har bir rol faqat o'zining ishini ko'radi."""
+    """Fokus paneli: har bir rol faqat o'zining ishini ko'radi.
+
+    KESH. Natija Redis da 15 soniya saqlanadi — eng og'ir endpoint va
+    1000+ foydalanuvchida baza yukini 4x kamaytiradi. Har navigatsiyada
+    qayta hisoblanmasdan keshdan keladi. `?fresh=1` keshni chetlab o'tadi
+    (debug uchun).
+    """
+    from apps.panel.cache import DASHBOARD_TTL, dashboard_key
+
     user = request.user
+    # Keshdan tekshirish — 15 soniya ichida qayta so'ralsa bazaga bormaydi.
+    if not request.query_params.get("fresh"):
+        cached = django_cache.get(dashboard_key(user.id))
+        if cached is not None:
+            return Response(cached)
+
     now = timezone.now()
     ctx = {"request": request}
 
@@ -382,7 +398,7 @@ def dashboard(request):
     team_rows.sort(key=lambda r: (-r["review_tasks"], -r["open_tasks"],
                                   r["user"]["full_name"]))
 
-    return Response({
+    data = {
         # Oltovi ham yuqoridagi BITTA `aggregate` dan keladi.
         "stats": {
             "open": n["open"],
@@ -426,7 +442,10 @@ def dashboard(request):
         },
         "join_queue": JoinRequestSerializer(join_qs, many=True, context=ctx).data,
         "feed": ActivitySerializer(feed, many=True, context=ctx).data,
-    })
+    }
+    # Natijani keshga yozish — keyingi 15 soniya ichida bazaga bormaydi.
+    django_cache.set(dashboard_key(user.id), data, DASHBOARD_TTL)
+    return Response(data)
 
 
 @api_view(["GET"])
@@ -573,8 +592,19 @@ def sidebar_counts(request):
     ro'yxatning o'zi esa (`/tasks/review-queue/`) loyiha adminini ham
     qo'shardi. Natijada loyiha admini yon panelda «0» ko'rardi, ro'yxatni
     ochsa esa ishlar turardi - raqam bilan ro'yxat bir-biriga zid edi.
+
+    KESH. Natija 10 soniya saqlanadi. Har navigatsiyada so'raladi, lekin
+    faqat uchta `COUNT` — og'irligi katta emas, kesh esa har holatda
+    yengillashtiradi.
     """
+    from apps.panel.cache import SIDEBAR_TTL, sidebar_key
+
     user = request.user
+
+    # Keshdan tekshirish.
+    cached = django_cache.get(sidebar_key(user.id))
+    if cached is not None:
+        return Response(cached)
 
     mine = Exists(TaskAssignment.objects.filter(
         task=OuterRef("pk"), user=user, is_active=True))
@@ -589,11 +619,13 @@ def sidebar_counts(request):
     join_qs = JoinRequest.objects.filter(status=RequestStatus.PENDING,
                                          project__in=managed)
 
-    return Response({
+    data = {
         "open": open_count,
         "reviews": review_qs.count(),
         "joins": join_qs.count(),
-    })
+    }
+    django_cache.set(sidebar_key(user.id), data, SIDEBAR_TTL)
+    return Response(data)
 
 
 def status_board(qs, ctx):

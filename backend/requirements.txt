@@ -21,3 +21,9 @@ Pillow==11.3.0
 channels==4.2.0
 channels-redis==4.2.1
 daphne==4.1.2
+
+# Produksiyada Daphne o'rniga: ko'p ishchi (worker) jarayoni bilan
+# ishlaydi, ya'ni 1000+ ulanishda bitta jarayon bottleneck bo'lmaydi.
+# `[standard]` - uvloop va httptools qo'shiladi (Linux da ~2x tezroq).
+# DEBUG rejimda `runserver` qoladi, shuning uchun dev muhitga ta'siri yo'q.
+uvicorn[standard]==0.34.0

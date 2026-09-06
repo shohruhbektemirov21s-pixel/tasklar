@@ -3331,6 +3331,10 @@
   "value": "Takliflar",
   "note": "pages/Suggestions.tsx"
  },
+ "suggestions.sahifa_tavsifi": {
+  "value": "Sizga kelgan takliflarni ko'rib chiqing va ularga javob bering.",
+  "note": "pages/Suggestions.tsx"
+ },
  "suggestions.taklif_matni": {
   "value": "Taklif matni",
   "note": "pages/Suggestions.tsx"
@@ -3392,7 +3396,7 @@
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.qidiruv_placeholder": {
-  "value": "Sarlavha, matn yoki muallif ismi",
+  "value": "Sarlavha, ism yoki muallif...",
   "note": "pages/Suggestions.tsx - filtr panelidagi qidiruv maydoni"
  },
  "suggestions.holat": {

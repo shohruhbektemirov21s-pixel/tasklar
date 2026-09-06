@@ -121,6 +121,14 @@ def move_status(task, new_status, access, actor, blocked_reason=""):
         meta={"from": old_label, "to": task.get_status_display()})
     live_task(task, "status", actor,
               status_display=task.get_status_display(), previous=old_label)
+
+    from apps.panel.cache import invalidate_panel_many
+    uids = [u.id for u in task.assignee_list]
+    if task.project.manager_id:
+        uids.append(task.project.manager_id)
+    if actor and actor.id:
+        uids.append(actor.id)
+    invalidate_panel_many(uids)
     return True
 
 
@@ -157,6 +165,14 @@ def apply_review(task, review, actor):
                 meta={"task": task.pk, "verdict": review.verdict})
     live_task(task, "review", actor,
               verdict=review.verdict, status_display=task.get_status_display())
+
+    from apps.panel.cache import invalidate_panel_many
+    uids = [u.id for u in task.assignee_list]
+    if task.project.manager_id:
+        uids.append(task.project.manager_id)
+    if actor and actor.id:
+        uids.append(actor.id)
+    invalidate_panel_many(uids)
     return review
 
 

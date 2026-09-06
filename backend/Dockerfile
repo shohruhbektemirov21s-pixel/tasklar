@@ -21,5 +21,8 @@ RUN chmod +x /app/docker/entrypoint.sh
 
 EXPOSE 8000
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
-# WebSocket kerak - shuning uchun WSGI (gunicorn) emas, ASGI server ishlatiladi.
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+# Produksiyada ko'p jarayon: Daphne bitta jarayonda ishlaydi va 1000+
+# ulanishda bottleneck bo'ladi. Uvicorn esa `--workers` bilan bir nechta
+# jarayon ochadi, har biri o'z WebSocket va HTTP so'rovlarini ko'taradi.
+# Worker soni muhit o'zgaruvchisi bilan sozlanadi (standart 4).
+CMD ["uvicorn", "config.asgi:application", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--lifespan", "off"]

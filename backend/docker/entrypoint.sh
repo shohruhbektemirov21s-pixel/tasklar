@@ -19,11 +19,11 @@ finally:
 done
 echo "==> Db2 tayyor."
 
-# Bazani tayyorlash faqat WEB konteynerda (CMD - `daphne`). Bir xil obraz
-# boshqa jarayonlar uchun ham ishlatiladi (masalan Telegram boti) va ular
-# bir vaqtda `migrate` qilsa bir-birini kutib qolardi. Bot tayyor bazaga
-# ulanadi, xolos.
-if [ "$1" = "daphne" ]; then
+# Bazani tayyorlash faqat WEB konteynerda. Bir xil obraz boshqa jarayonlar
+# uchun ham ishlatiladi (masalan Telegram boti) va ular bir vaqtda `migrate`
+# qilsa bir-birini kutib qolardi. Bot tayyor bazaga ulanadi, xolos.
+# CMD `daphne` (eski) yoki `uvicorn` (yangi) bo'lsa — web server.
+if [ "$1" = "daphne" ] || [ "$1" = "uvicorn" ]; then
   python manage.py migrate --noinput
   python manage.py collectstatic --noinput
   python manage.py bootstrap_admin
