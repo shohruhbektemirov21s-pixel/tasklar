@@ -255,6 +255,15 @@ export const IconIdea = ({ size = 16 }: P) => (
   </svg>
 );
 
+/** So'rov - savol belgisi. Yon paneldagi «So'rovlar» bo'limi uchun. */
+export const IconInquiry = ({ size = 16 }: P) => (
+  <svg {...base(size)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
 /** Qo'shilaman - yuqoriga qaragan barmoq. */
 export const IconThumbUp = ({ size = 16 }: P) => (
   <svg {...base(size)}>

@@ -74,8 +74,10 @@ INSTALLED_APPS = [
     # daphne ro'yxatning boshida turishi shart - shunda runserver ham
     # ASGI rejimida ishlaydi va WebSocket ulanishlarini qabul qiladi.
     "daphne",
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
+
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
@@ -109,6 +111,8 @@ INSTALLED_APPS = [
     "apps.uitexts",
     # Takliflar: jamoa taklif beradi va ovoz beradi, boshliq qaror qiladi.
     "apps.suggestions",
+    # So'rovlar: xodimlar so'rovlari va boshliq qarori (faqat ruxsat berilganlarga).
+    "apps.inquiries",
     # Panel va hisobotlar - bir necha domen ustidan o'qiydigan ko'rinishlar
     # (bosh panel, «Mening ishim», jamoa yuklamasi, ochiq qidiruv).
     # Modeli yo'q va shu sababdan eng oxirida: u hammani biladi, uni esa
@@ -171,6 +175,7 @@ DATABASES = {
         "PORT": os.getenv("DB2_PORT", "50000"),
         "PCONNECT": True,        # ulanishni qayta ishlatish
         "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,
         # Db2 da baza nomi 8 belgidan oshmaydi va adapter unga o'zi `t_`
         # qo'shadi - `t_TEAMFLOW` esa yaroqsiz nom (SQL1001N). Shuning uchun
         # sinov bazasi nomini o'zimiz beramiz.
@@ -263,20 +268,25 @@ SIMPLE_JWT = {
 # ---------------------------------------------------------------- CORS
 CORS_ALLOWED_ORIGINS = env_list(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://localhost:8080",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5183,http://127.0.0.1:5183,http://localhost:3000,http://localhost:8080",
 )
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = env_list(
     "CSRF_TRUSTED_ORIGINS",
-    "http://localhost:5173,http://localhost:8000,http://localhost:8080",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5183,http://127.0.0.1:5183,http://localhost:8000,http://localhost:8010,http://localhost:8080",
 )
+
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 
 # ---------------------------------------------------------------- Real-time
-# Bildirishnoma va chat WebSocket orqali yetkaziladi. Kanal qatlami Redis da:
+# Bildirishnoma va chat WebSocket orqali yetkaziladi. Kanal qatlami Redis da (DB 0):
 # bir nechta backend jarayoni bo'lsa ham xabar hammaga yetib boradi.
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+# Kesh va tezlik cheklovlari alohida (DB 1) da turadi - yuklama paytida
+# kesh tozalanishi yoki LRU almashtiruvi jonli WebSocketlarga xalaqit bermaydi.
+REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://redis:6379/1")
+
 # Pub/Sub qatlami tanlandi: navbatga asoslangan `core.RedisChannelLayer` bo'sh
 # turgan ulanishda "Timeout reading from redis" bilan yiqilib, tirik WebSocketni
 # uzib yuboradi. Bizga navbat kerak emas - faqat guruhga tarqatish kerak.
@@ -293,7 +303,7 @@ CHANNEL_LAYERS = {
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": REDIS_URL,
+        "LOCATION": REDIS_CACHE_URL,
     }
 }
 
@@ -337,3 +347,108 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": os.getenv("LOG_LEVEL", "INFO")},
     "loggers": {"django": {"handlers": [], "propagate": True}},
 }
+
+# ---------------------------------------------------------------- Jazzmin Admin Sozlamalari
+JAZZMIN_SETTINGS = {
+    "site_title": "TeamFlow Admin",
+    "site_header": "⚡ TeamFlow",
+    "site_brand": "TeamFlow",
+    "site_logo": None,
+    "welcome_sign": "TeamFlow Boshqaruv Markaziga xush kelibsiz!",
+    "copyright": "TeamFlow",
+    "search_model": "accounts.User",
+    "topmenu_links": [
+        {"name": "Boshqaruv", "url": "admin:index"},
+        {"name": "Asosiy Sayt", "url": "http://localhost:5183", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "order_with_respect_to": [
+        "accounts",
+        "projects",
+        "tasks",
+        "workspaces",
+        "suggestions",
+        "inquiries",
+        "chat",
+        "activity",
+        "uitexts",
+    ],
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.Group": "fas fa-users",
+        "accounts": "fas fa-user-shield",
+        "accounts.User": "fas fa-user",
+        "accounts.Department": "fas fa-building",
+
+        "projects": "fas fa-project-diagram",
+        "projects.Project": "fas fa-layer-group",
+        "projects.ProjectMember": "fas fa-user-plus",
+        "projects.JoinRequest": "fas fa-envelope-open-text",
+        "projects.ProjectBrief": "fas fa-file-alt",
+        "tasks": "fas fa-tasks",
+        "tasks.Task": "fas fa-clipboard-check",
+        "tasks.Comment": "fas fa-comments",
+        "tasks.Attachment": "fas fa-paperclip",
+        "tasks.Label": "fas fa-tags",
+        "tasks.Review": "fas fa-user-check",
+        "tasks.WorkLog": "fas fa-stopwatch",
+        "workspaces": "fas fa-cubes",
+        "workspaces.Workspace": "fas fa-cube",
+        "workspaces.WorkspaceMember": "fas fa-id-card",
+        "suggestions": "fas fa-lightbulb",
+        "suggestions.Suggestion": "fas fa-lightbulb",
+        "inquiries": "fas fa-question-circle",
+        "inquiries.Inquiry": "fas fa-question-circle",
+        "inquiries.InquiryFile": "fas fa-paperclip",
+        "activity": "fas fa-history",
+        "activity.ActivityLog": "fas fa-stream",
+        "chat": "fas fa-comment-alt",
+        "chat.ChatRoom": "fas fa-comments",
+        "chat.ChatMessage": "fas fa-comment-dots",
+        "uitexts": "fas fa-language",
+        "uitexts.UIText": "fas fa-font",
+        "notifications": "fas fa-bell",
+        "notifications.Notification": "fas fa-bell",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": True,
+    "custom_css": "admin/css/custom_admin.css",
+    "use_google_fonts_cdn": True,
+    "show_ui_builder": False,
+    "changeform_format": "horizontal_tabs",
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-dark",
+    "accent": "accent-primary",
+    "navbar": "navbar-dark navbar-navy",
+    "no_navbar_border": True,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-navy",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
+    "theme": "flatly",
+    "dark_mode_theme": "darkly",
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
+    },
+}
+

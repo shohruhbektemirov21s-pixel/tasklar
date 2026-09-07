@@ -25,7 +25,8 @@ Vazifa boshqaruv tizimi. Repo: `shohruhbektemirov21s-pixel/taskmangeri`. Ildiz: 
 | backend | `teamflow_backend` | **8010** → 8000 |
 | frontend | `teamflow_frontend` | **5183** → 5173 |
 
-Brauzerda ochiladigan manzillar: frontend `http://localhost:5183`, API `http://localhost:8010/api/`, Django admin `http://localhost:8010/django-admin/`.
+Brauzerda ochiladigan manzillar: frontend `http://localhost:5183`, Django admin `http://localhost:5183/admin/` (yoki `http://localhost:8010/admin/`), API `http://localhost:8010/api/`.
+
 
 Hostda `python` yoki `npm` ni to'g'ridan-to'g'ri ishlatma — konteyner ichida ishlat:
 

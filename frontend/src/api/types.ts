@@ -49,6 +49,9 @@ export interface User extends UserBrief {
    * (`SuggestionViewSet.decide`).
    */
   is_boss: boolean;
+  /** So'rovlar bo'limiga kirish ruxsati (boshliq/admin doim ruxsatli, boshqalar admin belgilagan bo'lsa) */
+  has_inquiries_access: boolean;
+  can_access_inquiries?: boolean;
   /**
    * Amalda biror loyihani boshqaradimi (menejeri yoki loyiha admini).
    *
@@ -938,3 +941,60 @@ export interface SuggestionCounts {
   APPROVED: number;
   REJECTED: number;
 }
+
+/* ------------------------------------------------------------------ So'rovlar */
+
+export type InquiryScopeValue = "OPEN" | "CLOSED";
+export type InquiryStatusValue = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface InquiryFile {
+  id: number;
+  url: string;
+  original_name: string;
+  size: number;
+  size_display: string;
+  content_type: string;
+  extension: string;
+  is_image: boolean;
+  uploaded_by: UserBrief | null;
+  created_at: string;
+}
+
+export interface Inquiry {
+  id: number;
+  title: string;
+  body: string;
+  scope: InquiryScopeValue;
+  scope_display: string;
+  is_anonymous: boolean;
+  status: InquiryStatusValue;
+  status_display: string;
+  author: UserBrief | null;
+  decided_by: UserBrief | null;
+  decided_at: string | null;
+  decision_note: string;
+  for_count: number;
+  against_count: number;
+  neutral_count: number;
+  score: number;
+  my_vote: VoteChoiceValue | null;
+  files: InquiryFile[];
+  is_mine: boolean;
+  can_edit: boolean;
+  can_decide: boolean;
+  can_vote: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InquiryCounts {
+  open: number;
+  closed: number;
+  pending: number;
+  all: number;
+  mine: number;
+  PENDING: number;
+  APPROVED: number;
+  REJECTED: number;
+}
+

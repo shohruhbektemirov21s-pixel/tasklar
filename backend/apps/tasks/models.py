@@ -187,15 +187,10 @@ class Task(SoftDeleteModel):
         indexes = [
             models.Index(fields=["project", "status"]),
             models.Index(fields=["status", "-priority"]),
-            # MUDDAT bo'yicha kesimlar - panel («muddati o'tgan»,
-            # «kutilmoqda»), taqvim va vazifalar ro'yxatidagi `?overdue=1`.
-            # Ular `status` bo'yicha emas, aynan shu ustun bo'yicha
-            # qidiradi va indekssiz butun jadvalni o'qishga majbur edi.
             models.Index(fields=["due_date"]),
-            # Panelning davr sanoqlari «qachon yakunlangani» ga qaraydi
-            # (`completed_at__gte=start`), holatga emas - sabab
-            # `Task.save()` izohida.
             models.Index(fields=["completed_at"]),
+            models.Index(fields=["project", "deleted_at", "status"]),
+            models.Index(fields=["deleted_at", "due_date"]),
         ]
 
     def __str__(self):
@@ -340,6 +335,9 @@ class TaskAssignment(models.Model):
         verbose_name_plural = "Biriktirishlar"
         unique_together = [("task", "user")]
         ordering = ["assigned_at"]
+        indexes = [
+            models.Index(fields=["user", "is_active"]),
+        ]
 
     def __str__(self):
         return "{} -> {}".format(self.task.code, self.user)

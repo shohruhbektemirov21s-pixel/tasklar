@@ -24,22 +24,28 @@ class NotificationViewSet(mixins.ListModelMixin,
 
     @action(detail=False, methods=["get"], url_path="unread-count")
     def unread_count(self, request):
-        n = Notification.objects.filter(recipient=request.user, is_read=False).count()
-        return Response({"unread": n})
+        from .services import get_unread_count
+        return Response({"unread": get_unread_count(request.user)})
 
     @action(detail=True, methods=["post"], url_path="read")
     def read(self, request, pk=None):
+        from .services import invalidate_unread_count
         obj = self.get_object()
         obj.mark_read()
+        invalidate_unread_count(request.user.pk)
         return Response(self.get_serializer(obj).data)
 
     @action(detail=False, methods=["post"], url_path="read-all")
     def read_all(self, request):
+        from .services import invalidate_unread_count
         n = Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        invalidate_unread_count(request.user.pk)
         return Response({"updated": n})
 
     @action(detail=False, methods=["post"], url_path="clear")
     def clear(self, request):
         """O'qilganlarini tozalash."""
+        from .services import invalidate_unread_count
         n, _ = Notification.objects.filter(recipient=request.user, is_read=True).delete()
+        invalidate_unread_count(request.user.pk)
         return Response({"deleted": n})

@@ -65,20 +65,15 @@ class ChatConsumer(LiveAuthMixin, AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def allowed(self, user, scope, scope_id):
-        from django.contrib.auth import get_user_model
-
-        from apps.projects.models import Project
-        from apps.workspaces.models import Workspace
-
         from .services import can_read
 
         if scope == "direct":
-            partner = get_user_model().objects.filter(pk=scope_id, is_active=True).first()
-            return bool(partner) and can_read(user, partner=partner)
+            return can_read(user, partner=scope_id)
 
         if scope == "project":
-            project = Project.objects.filter(pk=scope_id).first()
-            return bool(project) and can_read(user, project=project)
+            return can_read(user, project=scope_id)
 
-        workspace = Workspace.objects.filter(pk=scope_id).first()
-        return bool(workspace) and can_read(user, workspace=workspace)
+        if scope == "workspace":
+            return can_read(user, workspace=scope_id)
+
+        return False

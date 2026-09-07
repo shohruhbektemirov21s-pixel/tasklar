@@ -22,7 +22,7 @@ import type {
   DashboardData, DashboardPeriod, DashboardPeriodRow, DashboardScope, Task,
 } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
-import { useLive } from "@/realtime/RealtimeContext";
+import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { PageHead } from "@/components/Layout";
 import {
   AvatarStack, Card, Empty, ErrorMsg, Loading, Pager, Priority, StatusBadge, fmtDate,
@@ -471,10 +471,10 @@ export default function Dashboard() {
   // «Yuklanmoqda» da qolardi.
   const { data: d, error, loading, reload } = useFetch<DashboardData>("/dashboard/");
 
-  // Jonli: vazifa yoki loyiha o'zgarsa raqamlar o'zini yangilaydi.
-  useLive((e) => {
+  // Jonli: vazifa yoki loyiha o'zgarsa raqamlar o'zini yangilaydi (debounce bilan himoyalangan).
+  useDebouncedLive((e) => {
     if (e.event === "task.update" || e.event === "project.update") reload();
-  });
+  }, 1500);
 
   // Nom yuklanayotganda ham turadi: aks holda paneldagi joyi bo'sh qolib,
   // ma'lumot kelgach sakrab paydo bo'lardi.

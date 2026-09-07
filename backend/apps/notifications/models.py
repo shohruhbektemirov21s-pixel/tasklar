@@ -33,6 +33,9 @@ class NotificationKind(models.TextChoices):
     # berilgani bu yerga TUSHMAYDI - u kutish emas, jamoaning fikri.
     SUGGESTION_NEW = "suggestion.new", "Yangi taklif"
     SUGGESTION_DECIDED = "suggestion.decided", "Taklif bo'yicha qaror"
+    # So'rovlar
+    INQUIRY_NEW = "inquiry.new", "Yangi so'rov"
+    INQUIRY_DECIDED = "inquiry.decided", "So'rov bo'yicha qaror"
 
 
 class Notification(models.Model):

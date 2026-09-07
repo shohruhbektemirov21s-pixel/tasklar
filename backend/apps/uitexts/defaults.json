@@ -1547,6 +1547,10 @@
   "value": "Takliflar",
   "note": "components/Layout.tsx"
  },
+ "layout.sorovlar": {
+  "value": "So'rovlar",
+  "note": "components/Layout.tsx"
+ },
  "layout.taqvim": {
   "value": "Taqvim",
   "note": "components/Layout.tsx"

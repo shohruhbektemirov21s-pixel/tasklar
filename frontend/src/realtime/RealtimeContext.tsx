@@ -150,11 +150,45 @@ export function useLive(handler: (data: SocketMessage) => void) {
   useEffect(() => subscribe((data) => ref.current(data)), [subscribe]);
 }
 
-/** Shu loyihaga tegishli o'zgarish bo'lsa `reload` chaqiriladi. */
-export function useProjectLive(projectId: number | undefined, reload: () => void) {
+/** Hodisalar ketma-ket kelganda (masalan bir vaqtda bir nechta vazifa o'zgarsa)
+ * serverga har bir signal uchun alohida so'rov ketmasligi uchun reload'ni
+ * kechiktirib (debounce) chaqiruvchi xavfsiz hook.
+ */
+export function useDebouncedLive(handler: (data: SocketMessage) => void, delayMs = 1200) {
+  const timer = useRef<number | undefined>(undefined);
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
+
+  useLive((d) => {
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      handlerRef.current(d);
+    }, delayMs);
+  });
+
+  useEffect(() => () => {
+    if (timer.current) window.clearTimeout(timer.current);
+  }, []);
+}
+
+/** Shu loyihaga tegishli o'zgarish bo'lsa `reload` chaqiriladi (debounce bilan himoyalangan). */
+export function useProjectLive(projectId: number | undefined, reload: () => void, debounceMs = 1200) {
+  const timer = useRef<number | undefined>(undefined);
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+
   useLive((d) => {
     if (!projectId) return;
     const mine = Number(d.project) === Number(projectId);
-    if (mine && (d.event === "task.update" || d.event === "project.update")) reload();
+    if (mine && (d.event === "task.update" || d.event === "project.update")) {
+      if (timer.current) window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => {
+        reloadRef.current();
+      }, debounceMs);
+    }
   });
+
+  useEffect(() => () => {
+    if (timer.current) window.clearTimeout(timer.current);
+  }, []);
 }

@@ -21,7 +21,29 @@ class GlobalRole(models.TextChoices):
     # har bir adminga tarqalib ketardi.
     BOSS = "BOSS", "Boshliq"
     MANAGER = "MANAGER", "Loyiha menejeri"
+    OPERATOR = "OPERATOR", "Operator"
     DEVELOPER = "DEVELOPER", "Dasturchi"
+
+
+
+class Department(models.Model):
+    name = models.CharField("Boshqarma / Bo'lim nomi", max_length=150, unique=True,
+                            help_text="Masalan: Axborot texnologiyalari boshqarmasi")
+    code = models.CharField("Boshqarma kodi / Qisqartmasi", max_length=50, blank=True,
+                            help_text="Masalan: IT, HR, PMO, FIN")
+    description = models.TextField("Tavsif / Vazifalari", blank=True)
+    created_at = models.DateTimeField("Yaratilgan vaqti", auto_now_add=True)
+    updated_at = models.DateTimeField("Yangilangan vaqti", auto_now=True)
+
+    class Meta:
+        verbose_name = "Boshqarma"
+        verbose_name_plural = "Boshqarmalar"
+        ordering = ["name"]
+
+    def __str__(self):
+        if self.code:
+            return f"{self.name} ({self.code})"
+        return self.name
 
 
 class UserManager(BaseUserManager):
@@ -51,10 +73,22 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField("Email", unique=True)
+    email = models.EmailField("Login (Email)", unique=True,
+                              help_text="Tizimga kirish uchun login sifatida ishlatiladi")
     full_name = models.CharField("F.I.Sh.", max_length=150)
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="members",
+        verbose_name="Boshqarma nomi",
+        help_text="Foydalanuvchi faoliyat yuritadigan boshqarma"
+    )
+
     job_title = models.CharField("Lavozim", max_length=100, blank=True,
-                                 help_text="Masalan: Backend dasturchi")
+                                 help_text="Masalan: Bosh mutaxassis, Bo'lim boshlig'i, Dasturchi")
+
     global_role = models.CharField("Tizim roli", max_length=20,
                                    choices=GlobalRole.choices, default=GlobalRole.DEVELOPER)
     specialty = models.CharField("Mutaxassislik", max_length=20, choices=Specialty.choices,
@@ -71,6 +105,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     is_active = models.BooleanField("Faol", default=True)
     is_staff = models.BooleanField("Xodim (django-admin)", default=False)
+    can_access_inquiries = models.BooleanField(
+        "So'rovlar bo'limiga kirish",
+        default=False,
+        help_text="Ushbu foydalanuvchiga So'rovlar bo'limiga kirish ruxsatini berish",
+    )
     date_joined = models.DateTimeField("Ro'yxatdan o'tgan", default=timezone.now)
     last_seen = models.DateTimeField("Oxirgi faollik", null=True, blank=True)
 
@@ -93,9 +132,32 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_short_name(self):
         return (self.full_name or self.email).split(" ")[0]
 
+    def save(self, *args, **kwargs):
+        # Faqat ADMIN roli yoki superuser admin panelga kira oladi
+        if self.global_role == GlobalRole.ADMIN or self.is_superuser:
+            self.is_staff = True
+        else:
+            self.is_staff = False
+            self.is_superuser = False
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None:
+            kwargs["update_fields"] = set(update_fields) | {"is_staff", "is_superuser"}
+        super().save(*args, **kwargs)
+
+
+
     @property
     def is_platform_admin(self):
         return self.global_role == GlobalRole.ADMIN or self.is_superuser
+
+    @property
+    def is_manager(self):
+        return self.global_role == GlobalRole.MANAGER
+
+    @property
+    def is_operator(self):
+        return self.global_role == GlobalRole.OPERATOR
+
 
     @property
     def is_boss(self):
@@ -106,6 +168,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         «Boshliq» rolini bera oladi, lekin o'zi taklifni tasdiqlay olmaydi.
         """
         return self.global_role == GlobalRole.BOSS
+
+    @property
+    def has_inquiries_access(self):
+        """So'rovlar sahifasiga kirish huquqi.
+
+        Boshliq (BOSS) va Platform Adminiga doim ochiq,
+        boshqa foydalanuvchilarga admin panel orqali berilgan ruxsat bo'yicha.
+        """
+        return bool(self.is_boss or self.is_platform_admin or self.can_access_inquiries)
 
     @property
     def can_create_project(self):

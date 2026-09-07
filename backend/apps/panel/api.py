@@ -791,6 +791,12 @@ def my_work(request):
 @permission_classes([IsAuthenticated])
 def meta(request):
     """Frontend uchun barcha ro'yxatlar (status, prioritet, rol) - bir joydan."""
+    from django.core.cache import cache
+
+    cached = cache.get("meta:choices")
+    if cached is not None:
+        return Response(cached)
+
     from apps.accounts.models import GlobalRole
     from apps.activity.models import category_choices
     from apps.accounts.specialties import Seniority, specialty_catalog
@@ -802,7 +808,7 @@ def meta(request):
     def pack(choices):
         return [{"value": v, "label": l} for v, l in choices]
 
-    return Response({
+    data = {
         "task_status": pack(TaskStatus.choices),
         "board_columns": [{"value": s, "label": TaskStatus(s).label} for s in BOARD_COLUMNS],
         "task_priority": pack(TaskPriority.choices),
@@ -817,4 +823,6 @@ def meta(request):
         # Tarix filtri - ro'yxat `VERB_META` dan chiqadi, frontendda
         # qattiq yozilmaydi (aks holda yangi turkum filtrga tushmay qolardi).
         "activity_category": category_choices(),
-    })
+    }
+    cache.set("meta:choices", data, 600)
+    return Response(data)

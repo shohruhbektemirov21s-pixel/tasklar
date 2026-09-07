@@ -42,6 +42,6 @@ class NotificationConsumer(LiveAuthMixin, AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def unread_count(self, user):
-        from .models import Notification
+        from .services import get_unread_count
 
-        return Notification.objects.filter(recipient=user, is_read=False).count()
+        return get_unread_count(user)

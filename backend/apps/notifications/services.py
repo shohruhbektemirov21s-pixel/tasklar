@@ -53,6 +53,31 @@ def send_to_users(users, payload):
     return sent
 
 
+def get_unread_count(user):
+    """Foydalanuvchining o'qilmagan bildirishnomalari soni (Redis kesh bilan)."""
+    from django.core.cache import cache
+    from .models import Notification
+
+    uid = getattr(user, "pk", user)
+    if not uid:
+        return 0
+    key = "notif:unread:{}".format(uid)
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+
+    count = Notification.objects.filter(recipient_id=uid, is_read=False).count()
+    cache.set(key, count, 60)
+    return count
+
+
+def invalidate_unread_count(user_id):
+    """Keshni tozalash - yangi bildirishnoma kelganda yoki o'qilganda."""
+    from django.core.cache import cache
+    if user_id:
+        cache.delete("notif:unread:{}".format(user_id))
+
+
 def serialize(notification):
     from .serializers import NotificationSerializer
 
@@ -116,6 +141,7 @@ def notify(recipient, kind, title, body="", url="", actor=None, meta=None, colla
         logger.exception("Bildirishnoma yozib bo'lmadi: %s", kind)
         return None
 
+    invalidate_unread_count(obj.recipient_id)
     send_to_user(obj.recipient_id, {"event": "notification", "notification": serialize(obj)})
     _to_telegram(obj)
     return obj

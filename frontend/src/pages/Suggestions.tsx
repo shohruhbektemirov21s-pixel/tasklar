@@ -8,7 +8,7 @@
  * - Barcha tugmalar Backend API (Django DRF) bilan to'g'ridan-to meva beradi.
  */
 import { useCallback, useEffect, useId, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { api, listOf, pagesOf, totalOf } from "@/api/client";
 import type {
@@ -19,7 +19,7 @@ import { useLive } from "@/realtime/RealtimeContext";
 import { confirmDialog } from "@/components/Confirm";
 import { PageHead } from "@/components/Layout";
 import {
-  IconBack, IconChevron, IconIdea, IconSearch, IconThumbUp,
+  IconChevron, IconIdea, IconNeutral, IconSearch, IconThumbDown, IconThumbUp,
 } from "@/components/icons";
 import {
   EMPTY_FORM, SuggestionForm, formOf,
@@ -75,7 +75,9 @@ function SuggestionRow({ item, rank, open, onToggle, onEdit, onDelete, onQuickVo
 }) {
   const total = item.for_count + item.against_count + item.neutral_count;
   const percent = total ? Math.round((item.for_count * 100) / total) : 0;
-  const isVoted = item.my_vote === "FOR";
+  const isFor = item.my_vote === "FOR";
+  const isAgainst = item.my_vote === "AGAINST";
+  const isNeutral = item.my_vote === "NEUTRAL";
 
   const renderRankBadge = (r: number | null) => {
     if (r === null) return null;
@@ -185,27 +187,57 @@ function SuggestionRow({ item, rank, open, onToggle, onEdit, onDelete, onQuickVo
             </div>
           )}
 
-          <button
-            type="button"
-            className={`sg-vote-pill ${isVoted ? "on" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onQuickVote("FOR");
-            }}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 14px",
-              borderRadius: 20,
-              background: isVoted ? "#2563eb" : "#eff6ff",
-              color: isVoted ? "#ffffff" : "#2563eb",
-              border: isVoted ? "1px solid #2563eb" : "1px solid #bfdbfe",
-              fontSize: 13, fontWeight: 600, cursor: "pointer",
-              transition: "all 0.15s ease"
-            }}
-            title={tx("suggestions.qoshilaman")}
-          >
-            <IconThumbUp size={14} />
-            <span>{item.for_count}</span>
-          </button>
+          {item.scope === "OPEN" && (
+            <div className="sg-vote-pills">
+              <button
+                type="button"
+                className={`sg-vote-pill is-for${isFor ? " on" : ""}`}
+                disabled={!item.can_vote}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickVote("FOR");
+                }}
+                title={tx("suggestions.qoshilaman")}
+                aria-label={tx("suggestions.qoshilaman")}
+                aria-pressed={isFor}
+              >
+                <IconThumbUp size={13} />
+                <span>{item.for_count}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`sg-vote-pill is-against${isAgainst ? " on" : ""}`}
+                disabled={!item.can_vote}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickVote("AGAINST");
+                }}
+                title={tx("suggestions.qoshilmayman")}
+                aria-label={tx("suggestions.qoshilmayman")}
+                aria-pressed={isAgainst}
+              >
+                <IconThumbDown size={13} />
+                <span>{item.against_count}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`sg-vote-pill is-neutral${isNeutral ? " on" : ""}`}
+                disabled={!item.can_vote}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickVote("NEUTRAL");
+                }}
+                title={tx("suggestions.betarafman")}
+                aria-label={tx("suggestions.betarafman")}
+                aria-pressed={isNeutral}
+              >
+                <IconNeutral size={13} />
+                <span>{item.neutral_count}</span>
+              </button>
+            </div>
+          )}
 
           <div className="sg-actions" onClick={(e) => e.stopPropagation()}>
             <RowMenu>
@@ -232,7 +264,6 @@ function SuggestionRow({ item, rank, open, onToggle, onEdit, onDelete, onQuickVo
 /* -------------------------------------------------------------- sahifa */
 export default function Suggestions() {
   const fid = useId();
-  const navigate = useNavigate();
 
   const [f, setF] = useState<Filters>(NO_FILTERS);
   const [page, setPage] = useState(1);
@@ -345,32 +376,13 @@ export default function Suggestions() {
       <PageHead title={<strong>{tx("suggestions.sarlavha_sahifa")}</strong>} />
 
       <div className="content wl sg">
-        <div className="sg-page-header">
-          <div className="sg-page-header-left">
-            <button
-              type="button"
-              className="sg-back-btn"
-              onClick={() => navigate(-1)}
-              aria-label={tx("layout.orqaga_qaytish")}
-              title={tx("layout.orqaga_qaytish")}
-            >
-              <IconBack size={18} />
+        {!creating && !editing && (
+          <div className="sg-page-header">
+            <button className="btn btn-primary btn-sm" onClick={() => setCreating(true)}>
+              <IconIdea size={14} /> {tx("suggestions.yangi_taklif")}
             </button>
-            <div className="sg-page-title-wrap">
-              <h1 className="sg-page-title">{tx("suggestions.sarlavha_sahifa")}</h1>
-              <p className="sg-page-subtitle">
-                {tx("suggestions.sahifa_tavsifi")}
-              </p>
-            </div>
           </div>
-          <div className="sg-page-header-right">
-            {!creating && !editing && (
-              <button className="btn btn-primary btn-sm" onClick={() => setCreating(true)}>
-                <IconIdea size={14} /> {tx("suggestions.yangi_taklif")}
-              </button>
-            )}
-          </div>
-        </div>
+        )}
 
         {ok && <OkMsg text={ok} />}
         {warn && <ErrorMsg error={warn} />}

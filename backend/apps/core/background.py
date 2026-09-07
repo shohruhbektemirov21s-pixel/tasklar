@@ -31,8 +31,8 @@ from django.db import connection
 
 logger = logging.getLogger(__name__)
 
-# To'rtta oqim: bu yerdan faqat tarmoq kutiladi, hisob-kitob emas.
-MAX_WORKERS = 4
+# 1000+ foydalanuvchida xabarnomalar va fon vazifalari tiqilib qolmasligi uchun 16 oqim
+MAX_WORKERS = getattr(settings, "BACKGROUND_WORKERS", 16)
 
 _pool = None
 

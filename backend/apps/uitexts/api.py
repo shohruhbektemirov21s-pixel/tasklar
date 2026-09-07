@@ -9,6 +9,7 @@ tanani umuman yuklamaydi. ETag - yozuvlar soni va eng oxirgi o'zgarish
 vaqtidan yig'iladi; birortasi tahrirlansa `updated_at` yangilanadi va teg
 o'zgaradi.
 """
+from django.core.cache import cache
 from django.db.models import Max
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -19,10 +20,16 @@ from .models import UiText
 
 def current_version():
     """Matnlar holatining qisqa belgisi — soni va oxirgi o'zgarish vaqti."""
+    cached = cache.get("uitexts:version")
+    if cached is not None:
+        return cached
+
     agg = UiText.objects.aggregate(n=Max("id"), last=Max("updated_at"))
     count = UiText.objects.count()
     stamp = agg["last"].isoformat() if agg["last"] else "-"
-    return f"{count}.{stamp}"
+    version = f"{count}.{stamp}"
+    cache.set("uitexts:version", version, 300)
+    return version
 
 
 @api_view(["GET"])
@@ -37,7 +44,11 @@ def ui_texts(request):
         response["ETag"] = etag
         return response
 
-    items = dict(UiText.objects.values_list("key", "value"))
+    items = cache.get("uitexts:data")
+    if items is None:
+        items = dict(UiText.objects.values_list("key", "value"))
+        cache.set("uitexts:data", items, 300)
+
     response = Response({"version": version, "items": items})
     response["ETag"] = etag
     # Matn o'zgarganda darrov ko'rinishi kerak, shuning uchun saqlamaymiz -

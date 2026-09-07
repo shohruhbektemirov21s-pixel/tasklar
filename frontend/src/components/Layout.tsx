@@ -7,7 +7,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import ErrorBoundary from "./ErrorBoundary";
 import { Logo } from "./Logo";
-import { IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconLayers, IconLogout, IconMenu, IconPlus, IconReview, IconSearch, IconSettings, IconTasks } from "./icons";
+import { IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconPlus, IconReview, IconSearch, IconSettings, IconTasks } from "./icons";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar, SpecialtyTag } from "./ui";
@@ -370,6 +370,8 @@ export default function Layout() {
             {/* Takliflar - hammaga. Yopiq taklifni faqat muallif va
                 boshliq ko'radi, buni server hal qiladi. */}
             {item("/takliflar", <IconIdea />, tx("layout.takliflar"))}
+            {/* So'rovlar - faqat ruxsat berilganlar, boshliq va adminga */}
+            {user?.has_inquiries_access && item("/sorovlar", <IconInquiry />, tx("layout.sorovlar"))}
             {item("/tarix", <IconHistory />, tx("layout.umumiy_tarix"))}
             {/* Admin panel - faqat platforma adminida ko'rinadi. Marshrut
                 ham himoyalangan (`AdminOnly`), serverdagi amallar ham

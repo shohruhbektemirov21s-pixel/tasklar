@@ -43,7 +43,8 @@ def tick_deadline_reminders():
         # `add` - kalit yo'q bo'lsagina qo'yadi, ya'ni kunning birinchi so'rovi.
         if not cache.add(key, 1, 60 * 60 * 26):
             return
-        send_due_reminders()
+        from apps.core.background import run_later
+        run_later(send_due_reminders)
     except Exception:
         logger.exception("Muddat eslatmalarini yuborib bo'lmadi")
 

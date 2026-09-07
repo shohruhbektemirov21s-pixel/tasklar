@@ -395,6 +395,9 @@ class ProjectMember(models.Model):
         verbose_name_plural = "Loyiha azolari"
         unique_together = [("project", "user")]
         ordering = ["role", "joined_at"]
+        indexes = [
+            models.Index(fields=["user", "is_active"]),
+        ]
 
     def __str__(self):
         return "{} - {}".format(self.user, self.get_role_display())

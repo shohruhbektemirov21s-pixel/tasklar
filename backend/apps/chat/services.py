@@ -16,6 +16,24 @@ def members_of(*, project=None, workspace=None):
     return []
 
 
+def get_can_read_cache_key(user_id, *, project_id=None, workspace_id=None, partner_id=None):
+    if partner_id is not None:
+        return "chat:can_read:u{}:dir:{}".format(user_id, partner_id)
+    if project_id is not None:
+        return "chat:can_read:u{}:prj:{}".format(user_id, project_id)
+    if workspace_id is not None:
+        return "chat:can_read:u{}:ws:{}".format(user_id, workspace_id)
+    return None
+
+
+def invalidate_can_read(user_id, *, project_id=None, workspace_id=None, partner_id=None):
+    from django.core.cache import cache
+    key = get_can_read_cache_key(user_id, project_id=project_id,
+                                 workspace_id=workspace_id, partner_id=partner_id)
+    if key:
+        cache.delete(key)
+
+
 def can_read(user, *, project=None, workspace=None, partner=None):
     """Shu suhbatni o'qiy oladimi.
 
@@ -23,34 +41,53 @@ def can_read(user, *, project=None, workspace=None, partner=None):
     loyihada hamma amalni bajaradiganlarda (`runs_everything`: tizim
     admini va boshliq).
 
-    Boshliq ilgari bu yerdan o'tmasdi: loyihani ochar, sozlamasini
-    o'zgartirar, ishni tekshira olar edi-yu, o'sha loyihaning suhbati unga
-    403 berardi - interfeys esa yorliqni chizib turardi. Global menejer
-    ataylab TASHQARIDA qoladi: u begona loyihada kuzatuvchi
-    (`sees_all_projects` izohi), jamoaning yozishmasi esa kuzatiladigan
-    ma'lumot emas.
-
-    Shaxsiy yozishma bu qoidadan tashqarida - u loyihaga bog'liq emas.
+    1000+ bir vaqtda foydalanuvchilar yuklamasida Db2 ga minglab tekshiruv
+    so'rovlari tushmasligi uchun natija Redis keshida (60 soniya) saqlanadi.
     """
+    from django.core.cache import cache
+
     from apps.projects.permissions import manages_all_projects, runs_everything
 
     if not user or not user.is_authenticated:
         return False
-    if partner is not None:
-        # Shaxsiy yozishma: har bir ro'yxatdan o'tgan xodim bilan yozishish mumkin,
-        # lekin o'ziga o'zi emas.
-        return partner.is_active and partner.pk != user.pk
-    if runs_everything(user):
-        return True
-    if project is not None:
-        # Loyihani boshqaradigan odam uning yozishmasida ham bo'ladi.
-        # ISH MAYDONI yozishmasi (pastda) tegilmaydi: u maydon a'zolariniki
-        # va loyiha boshqaruvi u yerga yetib bormaydi.
-        return (manages_all_projects(user)
-                or project.memberships.filter(user=user, is_active=True).exists())
-    if workspace is not None:
-        return workspace.memberships.filter(user=user).exists()
-    return False
+
+    user_id = getattr(user, "pk", None)
+    partner_id = getattr(partner, "pk", partner) if partner is not None else None
+    project_id = getattr(project, "pk", project) if project is not None else None
+    workspace_id = getattr(workspace, "pk", workspace) if workspace is not None else None
+
+    cache_key = get_can_read_cache_key(user_id, project_id=project_id,
+                                       workspace_id=workspace_id, partner_id=partner_id)
+    if cache_key:
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+    allowed = False
+    if partner_id is not None:
+        partner_obj = partner if hasattr(partner, "is_active") else None
+        if partner_obj is None:
+            from django.contrib.auth import get_user_model
+            partner_obj = get_user_model().objects.filter(pk=partner_id, is_active=True).first()
+        allowed = bool(partner_obj and partner_obj.is_active and partner_obj.pk != user.pk)
+    elif runs_everything(user):
+        allowed = True
+    elif project_id is not None:
+        if manages_all_projects(user):
+            allowed = True
+        else:
+            from apps.projects.models import ProjectMember
+            allowed = ProjectMember.objects.filter(
+                project_id=project_id, user_id=user_id, is_active=True).exists()
+    elif workspace_id is not None:
+        from apps.workspaces.models import WorkspaceMember
+        allowed = WorkspaceMember.objects.filter(
+            workspace_id=workspace_id, user_id=user_id).exists()
+
+    if cache_key:
+        cache.set(cache_key, allowed, 60)
+
+    return allowed
 
 
 def _send(message, payload):

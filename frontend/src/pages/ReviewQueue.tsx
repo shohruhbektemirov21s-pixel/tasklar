@@ -8,7 +8,7 @@ import { PageHead } from "@/components/Layout";
 import {
   AvatarStack, Card, Empty, ErrorMsg, Loading, Priority, StatusBadge, fmtDate,
 } from "@/components/ui";
-import { useLive } from "@/realtime/RealtimeContext";
+import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { toTask } from "@/nav";
 import { tx } from "@/i18n";
 
@@ -29,8 +29,8 @@ export default function ReviewQueue() {
     useFetch<Task[]>("/tasks/review-queue/");
   const error = actionError || loadError;
 
-  // Ish topshirilsa navbat darrov to'ldiriladi.
-  useLive((d) => { if (d.event === "task.update") reload(); });
+  // Ish topshirilsa navbat darrov to'ldiriladi (debounce bilan himoyalangan).
+  useDebouncedLive((d) => { if (d.event === "task.update") reload(); }, 1200);
 
   const verdicts = meta?.review_verdict || [];
   const rejectValue = String(

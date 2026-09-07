@@ -9,8 +9,13 @@ def health(request):
     return JsonResponse({"status": "ok", "service": "teamflow-api"})
 
 
+from django.shortcuts import redirect
+
 urlpatterns = [
-    path("django-admin/", admin.site.urls),
+    path("admin/", admin.site.urls),
+    path("django-admin/", lambda req: redirect("/admin/", permanent=False)),
+
+
     path("api/health/", health),
     path("api/auth/", include("apps.accounts.urls")),
     path("api/", include("apps.accounts.api_urls")),
@@ -23,6 +28,7 @@ urlpatterns = [
     path("api/", include("apps.telegram.urls")),
     path("api/", include("apps.uitexts.urls")),
     path("api/", include("apps.suggestions.urls")),
+    path("api/", include("apps.inquiries.urls")),
     path("api/", include("apps.panel.urls")),
     path("api/", include("apps.core.urls")),
 ]

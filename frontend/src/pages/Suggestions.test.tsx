@@ -109,4 +109,11 @@ describe("Takliflar — qator o'z joyida yoyiladi", () => {
     expect(screen.getByRole("link", { name: "suggestions.toliq_sahifada" })
       .getAttribute("href")).toBe("/taklif");
   });
+
+  it("har bir qatorda uchta ovoz tugmasi (qo'shilaman, qo'shilmayman, betarafman) ko'rinadi", () => {
+    open();
+    expect(screen.getAllByRole("button", { name: "suggestions.qoshilaman" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "suggestions.qoshilmayman" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "suggestions.betarafman" })).toHaveLength(2);
+  });
 });

@@ -2801,12 +2801,135 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   box-shadow: inset 3px 0 0 #3b82f6;
 }
 
-.sg-vote-pill:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.05);
+.sg-vote-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
-.sg-vote-pill:active {
+
+.sg-vote-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.sg-vote-pill:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.sg-vote-pill:active:not(:disabled) {
   transform: scale(0.95);
+}
+.sg-vote-pill:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* FOR - Qo'shilaman / Yoqdi */
+.sg-vote-pill.is-for {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+.sg-vote-pill.is-for.on {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+.sg-vote-pill.is-for:hover:not(:disabled):not(.on) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* AGAINST - Qo'shilmayman / Yoqmadi */
+.sg-vote-pill.is-against {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+.sg-vote-pill.is-against.on {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+.sg-vote-pill.is-against:hover:not(:disabled):not(.on) {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+/* NEUTRAL - Betarafman / Betaraf */
+.sg-vote-pill.is-neutral {
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #e2e8f0;
+}
+.sg-vote-pill.is-neutral.on {
+  background: #475569;
+  color: #ffffff;
+  border-color: #475569;
+}
+.sg-vote-pill.is-neutral:hover:not(:disabled):not(.on) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+/* Dark mode */
+:root[data-theme="dark"] .sg-vote-pill.is-for,
+.dark-mode .sg-vote-pill.is-for {
+  background: rgba(37, 99, 235, 0.16);
+  color: #60a5fa;
+  border-color: rgba(37, 99, 235, 0.35);
+}
+:root[data-theme="dark"] .sg-vote-pill.is-for.on,
+.dark-mode .sg-vote-pill.is-for.on {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+:root[data-theme="dark"] .sg-vote-pill.is-for:hover:not(:disabled):not(.on),
+.dark-mode .sg-vote-pill.is-for:hover:not(:disabled):not(.on) {
+  background: rgba(37, 99, 235, 0.28);
+}
+
+:root[data-theme="dark"] .sg-vote-pill.is-against,
+.dark-mode .sg-vote-pill.is-against {
+  background: rgba(220, 38, 38, 0.16);
+  color: #f87171;
+  border-color: rgba(220, 38, 38, 0.35);
+}
+:root[data-theme="dark"] .sg-vote-pill.is-against.on,
+.dark-mode .sg-vote-pill.is-against.on {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+:root[data-theme="dark"] .sg-vote-pill.is-against:hover:not(:disabled):not(.on),
+.dark-mode .sg-vote-pill.is-against:hover:not(:disabled):not(.on) {
+  background: rgba(220, 38, 38, 0.28);
+}
+
+:root[data-theme="dark"] .sg-vote-pill.is-neutral,
+.dark-mode .sg-vote-pill.is-neutral {
+  background: rgba(148, 163, 184, 0.14);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.28);
+}
+:root[data-theme="dark"] .sg-vote-pill.is-neutral.on,
+.dark-mode .sg-vote-pill.is-neutral.on {
+  background: #64748b;
+  color: #ffffff;
+  border-color: #94a3b8;
+}
+:root[data-theme="dark"] .sg-vote-pill.is-neutral:hover:not(:disabled):not(.on),
+.dark-mode .sg-vote-pill.is-neutral:hover:not(:disabled):not(.on) {
+  background: rgba(148, 163, 184, 0.24);
 }
 
 .sg-open {
@@ -3025,54 +3148,8 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 .sg-page-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.sg-page-header-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.sg-back-btn {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.sg-back-btn:hover {
-  background: var(--surface-2);
-  color: var(--text);
-  border-color: var(--border-hover, var(--border));
-}
-
-.sg-page-title-wrap {
-  display: flex;
-  flex-direction: column;
-}
-
-.sg-page-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0;
-  line-height: 1.25;
-}
-
-.sg-page-subtitle {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin: 4px 0 0;
+  justify-content: flex-end;
+  margin-bottom: 16px;
 }
 
 /* Filters Card */

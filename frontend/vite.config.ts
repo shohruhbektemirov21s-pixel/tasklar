@@ -17,6 +17,19 @@ export default defineConfig({
         target: process.env.VITE_PROXY_TARGET || "http://backend:8000",
         changeOrigin: true,
       },
+      // Django Admin va statik fayllar uchun proksi
+      "/admin": {
+        target: process.env.VITE_PROXY_TARGET || "http://backend:8000",
+        changeOrigin: true,
+      },
+      "/django-admin": {
+        target: process.env.VITE_PROXY_TARGET || "http://backend:8000",
+        changeOrigin: true,
+      },
+      "/static": {
+        target: process.env.VITE_PROXY_TARGET || "http://backend:8000",
+        changeOrigin: true,
+      },
       // WebSocket: bildirishnoma va chat
       "/ws": {
         target: (process.env.VITE_PROXY_TARGET || "http://backend:8000").replace(/^http/, "ws"),
@@ -28,6 +41,7 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+
   },
   preview: { host: "0.0.0.0", port: 5173 },
 

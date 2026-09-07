@@ -36,3 +36,12 @@ class UiText(models.Model):
         # Guruh doim kalitdan kelib chiqadi — qo'lda kiritilgani chalkashmasin.
         self.group = self.key.split(".", 1)[0] if "." in self.key else ""
         super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete("uitexts:data")
+        cache.delete("uitexts:version")
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete("uitexts:data")
+        cache.delete("uitexts:version")
