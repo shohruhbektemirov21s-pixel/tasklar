@@ -5,7 +5,7 @@ export type TaskStatusValue =
   | "CHANGES_REQUESTED" | "BLOCKED" | "DONE" | "CANCELLED";
 
 export type ProjectRoleValue = "MANAGER" | "ADMIN" | "DEVELOPER" | "QA" | "VIEWER";
-export type GlobalRoleValue = "ADMIN" | "BOSS" | "MANAGER" | "DEVELOPER";
+export type GlobalRoleValue = "ADMIN" | "BOSS" | "MANAGER" | "DEVELOPER" | "OPERATOR" | "SOHAVIY";
 export type VerdictValue = "APPROVED" | "CHANGES_REQUESTED" | "REJECTED";
 
 export interface UserBrief {
@@ -13,7 +13,12 @@ export interface UserBrief {
   full_name: string;
   email: string;
   is_platform_admin: boolean;
+  is_manager?: boolean;
+  is_sohaviy_boshqarma?: boolean;
+  can_access_orders?: boolean;
   job_title: string;
+  department_name?: string;
+  department?: string;
   initials: string;
   avatar_color: string;
   avatar: string | null;
@@ -49,6 +54,9 @@ export interface User extends UserBrief {
    * (`SuggestionViewSet.decide`).
    */
   is_boss: boolean;
+  /** Sohaviy boshqarma profili (Buyurtmalar bo'limi huquqi) */
+  is_sohaviy_boshqarma?: boolean;
+  can_access_orders?: boolean;
   /** So'rovlar bo'limiga kirish ruxsati (boshliq/admin doim ruxsatli, boshqalar admin belgilagan bo'lsa) */
   has_inquiries_access: boolean;
   can_access_inquiries?: boolean;
@@ -343,11 +351,12 @@ export interface Paginated<T> {
   results: T[];
 }
 
-/** Yon paneldagi uchta raqam (`/counts/`) - panelning yengil versiyasi. */
+/** Yon paneldagi raqamlar (`/counts/`) - panelning yengil versiyasi. */
 export interface SidebarCounts {
   open: number;
   reviews: number;
   joins: number;
+  orders?: number;
 }
 
 /** Menejer jamoasidagi bitta odam: qaysi loyihalarda va qancha ish bilan. */
@@ -841,7 +850,7 @@ export interface Conversation {
   outgoing: boolean;
 }
 
-/** `GET /api/counts/` javobi - yon paneldagi uchta raqam. */
+/** `GET /api/counts/` javobi - yon paneldagi raqamlar. */
 export interface SidebarCounts {
   /** menga biriktirilgan ochiq vazifalar (TODO + jarayonda) */
   open: number;
@@ -849,6 +858,104 @@ export interface SidebarCounts {
   reviews: number;
   /** javob kutayotgan qo'shilish so'rovlari */
   joins: number;
+  /** axborot tizimiga o'zgartirish kiritish buyurtmalari soni */
+  orders?: number;
+}
+
+/** `GET /api/orders/stats/` javobi */
+export interface OrderStats {
+  total: number;
+  new: number;
+  in_progress: number;
+  completed: number;
+  urgent: number;
+  high?: number;
+}
+
+/** Loyiha haqida qisqacha ma'lumot (TZ ga biriktirilganda) */
+export interface ChangeRequestProjectDetail {
+  id: number;
+  name: string;
+  key: string;
+  color: string;
+  status: "PLANNING" | "ACTIVE" | "PAUSED" | "DONE" | "ARCHIVED";
+  status_display: string;
+  manager_id: number | null;
+  manager_name: string;
+  manager_email: string;
+  start_date: string | null;
+  due_date: string | null;
+  progress: number;
+  description: string;
+  repo_url: string;
+  docs_url: string;
+}
+
+/** Axborot tizimiga o'zgartirish kiritish so'rovi (TZ) versiyasi */
+export interface ChangeRequestVersionItem {
+  id: number;
+  version: number;
+  tz_file?: string | null;
+  tz_file_url?: string | null;
+  tz_file_name?: string;
+  tz_file_size?: number;
+  tz_file_size_display?: string;
+  change_note: string;
+  status: "NEW" | "ACCEPTED" | "IN_PROGRESS" | "TESTING" | "COMPLETED" | "REJECTED";
+  status_display: string;
+  uploaded_by?: number | null;
+  uploaded_by_name?: string;
+  created_at: string;
+  decided_by?: number | null;
+  decided_by_name?: string;
+  decided_at?: string | null;
+  decision_note?: string;
+}
+
+/** Axborot tizimiga o'zgartirish kiritish so'rovi (TZ) */
+export interface ChangeRequestItem {
+  id: number;
+  request_no: string;
+  version?: number;
+  is_locked?: boolean;
+  versions?: ChangeRequestVersionItem[];
+  system_name: string;
+  module: string;
+  project?: number | null;
+  project_detail?: ChangeRequestProjectDetail | null;
+  request_date: string;
+  department: string;
+  responsible_person: string;
+  priority: "URGENT" | "HIGH" | "MEDIUM" | "LOW";
+  priority_display: string;
+  due_date: string | null;
+  tz_file?: string | null;
+  tz_file_url?: string | null;
+  tz_file_name?: string;
+  tz_file_size?: number;
+  tz_file_size_display?: string;
+  current_state: string;
+  requested_change: string;
+  reason: string;
+  affected_modules: string;
+  dependent_systems: string;
+  change_nature: "USER_FACING" | "BACKEND" | "BOTH";
+  change_nature_display: string;
+  additional_materials: string;
+  test_result: string;
+  status: "NEW" | "ACCEPTED" | "IN_PROGRESS" | "TESTING" | "COMPLETED" | "REJECTED";
+  status_display: string;
+  client_signer: string;
+  executor_signer: string;
+  estimated_resources: string;
+  pm_estimated_duration?: string;
+  pm_deadline?: string | null;
+  assigned_pm?: number | null;
+  assigned_pm_name?: string;
+  pm_notes?: string;
+  created_by_name?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
 /** `GET /api/users/:id/work/` javobi */

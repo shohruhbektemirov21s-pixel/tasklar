@@ -36,6 +36,10 @@ class NotificationKind(models.TextChoices):
     # So'rovlar
     INQUIRY_NEW = "inquiry.new", "Yangi so'rov"
     INQUIRY_DECIDED = "inquiry.decided", "So'rov bo'yicha qaror"
+    # Buyurtmalar (O'zgartirish talabnomalari)
+    ORDER_NEW = "order.new", "Yangi buyurtma"
+    ORDER_STATUS = "order.status", "Buyurtma holati o'zgardi"
+    ORDER_REMINDER = "order.reminder", "Buyurtma bildirishnomasi"
 
 
 class Notification(models.Model):

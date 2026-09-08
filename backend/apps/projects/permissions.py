@@ -88,7 +88,8 @@ def sees_all_projects(user):
     if not user or not user.is_authenticated:
         return False
     return bool(runs_everything(user)
-                or getattr(user, "global_role", None) == GlobalRole.MANAGER)
+                or getattr(user, "global_role", None) == GlobalRole.MANAGER
+                or getattr(user, "is_sohaviy_boshqarma", False))
 
 
 def manages_all_projects(user):

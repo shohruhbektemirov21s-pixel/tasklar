@@ -113,6 +113,8 @@ INSTALLED_APPS = [
     "apps.suggestions",
     # So'rovlar: xodimlar so'rovlari va boshliq qarori (faqat ruxsat berilganlarga).
     "apps.inquiries",
+    # Axborot tizimiga o'zgartirish kiritish buyurtmalari (Буюртма.docx)
+    "apps.orders",
     # Panel va hisobotlar - bir necha domen ustidan o'qiydigan ko'rinishlar
     # (bosh panel, «Mening ishim», jamoa yuklamasi, ochiq qidiruv).
     # Modeli yo'q va shu sababdan eng oxirida: u hammani biladi, uni esa
@@ -123,6 +125,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Qora ro'yxat va tezlikni cheklash (Spam / DDoS / Flooding hujumlarini to'xtatish).
+    # Bazaga va sessiyaga yetmasdan, eng oldingi eshikda bloklaydi (0.1ms).
+    "apps.core.middleware.RateLimitBlockMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -247,6 +252,13 @@ REST_FRAMEWORK = {
         "search": "120/min",     # odam qidirish
     },
 }
+
+# ---------------------------------------------------------------- Rate Limiting & Anti-Abuse
+# Tajovuzkor va haddan tashqari ko'p so'rov yuboruvchilarni avtomatik bloklash.
+RATE_LIMIT_ENABLED = env_bool("RATE_LIMIT_ENABLED", True)
+RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "120"))
+RATE_LIMIT_BAN_THRESHOLD = int(os.getenv("RATE_LIMIT_BAN_THRESHOLD", "300"))
+RATE_LIMIT_BAN_SECONDS = int(os.getenv("RATE_LIMIT_BAN_SECONDS", "600"))
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=12),

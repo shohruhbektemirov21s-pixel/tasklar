@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { User } from "@/api/types";
 
 let mockUser: Partial<User> | null = null;
-let mockLoading = false;
+const mockLoading = false;
 
 vi.mock("@/auth/AuthContext", () => ({
   useAuth: () => ({

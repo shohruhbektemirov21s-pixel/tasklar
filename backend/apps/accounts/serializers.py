@@ -20,13 +20,15 @@ class UserBriefSerializer(serializers.ModelSerializer):
     specialty_icon = serializers.CharField(read_only=True)
     specialty_color = serializers.CharField(read_only=True)
     seniority_display = serializers.CharField(source="get_seniority_display", read_only=True)
+    department_name = serializers.CharField(source="department.name", read_only=True, default="")
     # Nisbiy manzil: proksi Host ni almashtirsa ham brauzer rasmni ocha oladi.
     avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ["id", "full_name", "email", "job_title", "initials", "avatar_color", "avatar",
-                  "is_platform_admin",
+                  "is_platform_admin", "is_sohaviy_boshqarma", "can_access_orders",
+                  "department_name",
                   "specialty", "specialty_display", "specialty_icon", "specialty_color",
                   "seniority", "seniority_display"]
 
@@ -41,6 +43,8 @@ class UserSerializer(serializers.ModelSerializer):
     avatar_color = serializers.CharField(read_only=True)
     is_platform_admin = serializers.BooleanField(read_only=True)
     is_boss = serializers.BooleanField(read_only=True)
+    is_sohaviy_boshqarma = serializers.BooleanField(read_only=True)
+    can_access_orders = serializers.BooleanField(read_only=True)
     has_inquiries_access = serializers.BooleanField(read_only=True)
     can_access_inquiries = serializers.BooleanField(read_only=True)
     can_create_project = serializers.BooleanField(read_only=True)
@@ -59,18 +63,21 @@ class UserSerializer(serializers.ModelSerializer):
     # Tajriba chegarasi royxatdan otishdagi bilan bir xil: 0-30 yil.
     years_experience = serializers.IntegerField(required=False, min_value=0, max_value=30)
     # Rasm /api/auth/me/avatar/ orqali yuklanadi, bu yerda faqat o'qiladi.
+    department_name = serializers.CharField(source="department.name", read_only=True, default="")
     avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             "id", "email", "full_name", "job_title", "global_role", "global_role_display",
+            "department_name",
             "specialty", "specialty_display", "specialty_icon", "specialty_color",
             "seniority", "seniority_display", "years_experience",
             "suggested_task_types", "suggested_skills", "quality_checklist",
             "default_project_role",
             "bio", "skills", "skill_list", "telegram", "avatar",
             "initials", "avatar_color", "is_platform_admin", "is_boss",
+            "is_sohaviy_boshqarma", "can_access_orders",
             "has_inquiries_access", "can_access_inquiries", "can_create_project",
             "is_active", "date_joined",
         ]
@@ -251,6 +258,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Loyiha menejeri mutaxassisligi tanlansa tizim roli ham menejer boladi
         if specialty == Specialty.PM:
             validated_data["global_role"] = GlobalRole.MANAGER
+        elif specialty == Specialty.SOHAVIY:
+            validated_data["global_role"] = GlobalRole.SOHAVIY
+            if not (validated_data.get("job_title") or "").strip():
+                validated_data["job_title"] = "Sohaviy boshqarma mas'ul xodimi"
 
         password = validated_data.pop("password")
         user = User(**validated_data)

@@ -23,6 +23,7 @@ class GlobalRole(models.TextChoices):
     MANAGER = "MANAGER", "Loyiha menejeri"
     OPERATOR = "OPERATOR", "Operator"
     DEVELOPER = "DEVELOPER", "Dasturchi"
+    SOHAVIY = "SOHAVIY", "Sohaviy boshqarmalar"
 
 
 
@@ -179,6 +180,27 @@ class User(AbstractBaseUser, PermissionsMixin):
         return bool(self.is_boss or self.is_platform_admin or self.can_access_inquiries)
 
     @property
+    def is_sohaviy_boshqarma(self):
+        """Sohaviy boshqarma profili ekanligini aniqlash."""
+        return (
+            self.global_role == GlobalRole.SOHAVIY
+            or self.specialty == Specialty.SOHAVIY
+        )
+
+    @property
+    def can_access_orders(self):
+        """Buyurtmalar (Change Requests / TZ) bo'limiga kirish huquqi.
+
+        Sohaviy boshqarmalar, PM (loyiha menejerlari), boshliq va platforma adminiga ochiq.
+        """
+        return bool(
+            self.is_platform_admin
+            or self.is_boss
+            or self.is_manager
+            or self.is_sohaviy_boshqarma
+        )
+
+    @property
     def can_create_project(self):
         """Loyiha ochish huquqi - menejer, tizim admini va boshliq.
 
@@ -245,3 +267,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         if not required:
             return True
         return required == self.specialty
+
+
+class SpecialtyAnalytics(User):
+    """Admin panelida mutaxassisliklar tahlili uchun proxy model."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "Mutaxassisliklar tahlili"
+        verbose_name_plural = "Mutaxassisliklar tahlili"

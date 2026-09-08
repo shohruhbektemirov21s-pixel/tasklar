@@ -22,6 +22,7 @@ class Specialty(models.TextChoices):
     ANALYST = "ANALYST", "Biznes tahlilchi"
     SECURITY = "SECURITY", "Xavfsizlik mutaxassisi"
     PM = "PM", "Loyiha menejeri"
+    SOHAVIY = "SOHAVIY", "Sohaviy boshqarmalar"
 
 
 class Seniority(models.TextChoices):
@@ -178,6 +179,19 @@ SPECIALTY_PROFILE = {
             "Vazifa aniq tavsiflangan",
             "Ijrochi va muddat belgilangan",
             "Bogliqliklar korsatilgan",
+        ],
+    },
+    Specialty.SOHAVIY: {
+        "icon": "[S]",
+        "color": "#0284c7",
+        "skills": ["Buyurtmalar", "Talablar tahlili", "Boshqarma nazorati", "Texnik talabnoma"],
+        "task_types": ["FEATURE", "BUG", "DOCS"],
+        "default_project_role": "VIEWER",
+        "focus": "Sohaviy boshqarmalar bo'yicha tizimga o'zgartirish kiritish buyurtmalari",
+        "checklist": [
+            "Buyurtma asosi va maqsadi keltirilgan",
+            "Joriy holat va talab qilinayotgan o'zgartirish batafsil yozilgan",
+            "Mas'ul shaxs va talab etiladigan muddat ko'rsatilgan",
         ],
     },
 }

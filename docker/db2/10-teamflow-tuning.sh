@@ -32,6 +32,17 @@ run "UPDATE DB CFG FOR $DB USING LOGFILSIZ 8192 IMMEDIATE"
 run "UPDATE DB CFG FOR $DB USING LOGPRIMARY 16"
 run "UPDATE DB CFG FOR $DB USING LOGSECOND 48 IMMEDIATE"
 
+# ---------------------------------------------------------------- QULF VA PARALLEL ULAYNISHLAR
+# Bir vaqtda ko'p foydalanuvchi ishlaganda baza qotib qolmasligi va
+# deadlock bo'lmasligi uchun:
+# 1) LOCKTIMEOUT 15: tranzaksiya qulf kutib cheksiz (-1) osilib qolmaydi
+# 2) MAXAPPLS 150: bir vaqtning o'zida 150 tagacha parallel faol ilovani qabul qiladi
+# 3) CUR_COMMIT ON: o'qish amallari yozish amallarini kutib to'xtab qolmaydi
+run "UPDATE DB CFG FOR $DB USING LOCKTIMEOUT 15"
+run "UPDATE DB CFG FOR $DB USING MAXAPPLS 150"
+run "UPDATE DB CFG FOR $DB USING CUR_COMMIT ON"
+
+
 # ---------------------------------------------------------------- XOTIRA
 # Db2 konteynerda ham XOST xotirasiga qarab o'ziga chegara qo'yadi:
 # `INSTANCE_MEMORY = AUTOMATIC(1652007)` ya'ni ~6.3 GB. Xostda 7.6 GB

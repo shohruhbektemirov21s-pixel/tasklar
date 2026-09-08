@@ -619,10 +619,27 @@ def sidebar_counts(request):
     join_qs = JoinRequest.objects.filter(status=RequestStatus.PENDING,
                                          project__in=managed)
 
+    orders_count = 0
+    if (
+        getattr(user, "is_platform_admin", False)
+        or getattr(user, "can_access_orders", False)
+        or getattr(user, "is_sohaviy_boshqarma", False)
+    ):
+        from apps.orders.models import ChangeRequest, ChangeRequestStatus
+        orders_count = ChangeRequest.objects.filter(
+            status__in=[
+                ChangeRequestStatus.NEW,
+                ChangeRequestStatus.ACCEPTED,
+                ChangeRequestStatus.IN_PROGRESS,
+                ChangeRequestStatus.TESTING,
+            ]
+        ).count()
+
     data = {
         "open": open_count,
         "reviews": review_qs.count(),
         "joins": join_qs.count(),
+        "orders": orders_count,
     }
     django_cache.set(sidebar_key(user.id), data, SIDEBAR_TTL)
     return Response(data)

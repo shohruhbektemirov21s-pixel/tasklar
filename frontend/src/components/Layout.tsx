@@ -7,7 +7,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import ErrorBoundary from "./ErrorBoundary";
 import { Logo } from "./Logo";
-import { IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconPlus, IconReview, IconSearch, IconSettings, IconTasks } from "./icons";
+import { IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks } from "./icons";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar, SpecialtyTag } from "./ui";
@@ -102,7 +102,7 @@ export default function Layout() {
   const { subscribe } = useRealtime();
   const go = useGo();
   const loc = useLocation();
-  const [counts, setCounts] = useState({ open: 0, reviews: 0, joins: 0 });
+  const [counts, setCounts] = useState({ open: 0, reviews: 0, joins: 0, orders: 0 });
   const [q, setQ] = useState("");
   // Sahifa nomi shu tugunga chiziladi - `PageHead` uni portal orqali
   // to'ldiradi. `useRef` emas, HOLAT: tugun paydo bo'lganda sahifa
@@ -120,11 +120,9 @@ export default function Layout() {
     let alive = true;
     void (async () => {
       try {
-        // Yengil endpoint: faqat uchta `COUNT`. Ilgari bu yerda `/dashboard/`
-        // chaqirilardi - u o'nlab vazifa, loyiha va tasmani seriyalizatsiya
-        // qiladi, ustiga muddat eslatmalarini tekshiradi. Uchta raqam uchun.
+        // Yengil endpoint: faqat hisoblar (`COUNT`).
         const d = await api.get<SidebarCounts>("/counts/");
-        if (alive) setCounts(d);
+        if (alive) setCounts({ open: d.open, reviews: d.reviews, joins: d.joins, orders: d.orders || 0 });
       } catch { /* jim */ }
     })();
     return () => { alive = false; };
@@ -136,9 +134,13 @@ export default function Layout() {
   // baribir ulangan: vazifa yoki qo'shilish so'rovi o'zgarsa shu yerdan
   // xabar keladi.
   useEffect(() => subscribe((data) => {
+    const isOrderNotif =
+      data.event === "notification" && Boolean(data.notification?.kind?.startsWith("order."));
     const joinRequest =
       data.event === "notification" && data.notification?.kind === "join.request";
-    if (joinRequest || data.event === "task.update") setTick((n) => n + 1);
+    if (joinRequest || isOrderNotif || data.event === "task.update" || data.event === "order.update") {
+      setTick((n) => n + 1);
+    }
   }), [subscribe]);
 
   // Yozish to'xtagach odam qidiriladi - har harfda so'rov yubormaymiz.
@@ -350,7 +352,7 @@ export default function Layout() {
                 (`pages/Projects.tsx`) - yorliq ham shunga qarab yoziladi.
                 Ijrochida «Loyihalar» degan yozuv turib, ichidan vazifalar
                 chiqishi chalkash edi. */}
-            {manages
+            {manages || user?.is_sohaviy_boshqarma
               ? item("/loyihalar", <IconBoard />, tx("common.loyihalar"))
               : item("/loyihalar", <IconLayers />, tx("common.vazifalar"))}
             {/* Jamoaning ishi - kim nima qilayapti. Faqat loyiha
@@ -372,6 +374,9 @@ export default function Layout() {
             {item("/takliflar", <IconIdea />, tx("layout.takliflar"))}
             {/* So'rovlar - faqat ruxsat berilganlar, boshliq va adminga */}
             {user?.has_inquiries_access && item("/sorovlar", <IconInquiry />, tx("layout.sorovlar"))}
+            {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Buyurtmalar / TZ) - sohaviy boshqarma, PM, boshliq va adminga */}
+            {(user?.can_access_orders || user?.is_sohaviy_boshqarma || user?.is_platform_admin || user?.is_manager || user?.is_boss) &&
+              item("/buyurtmalar", <IconOrder />, "Buyurtmalar", counts.orders, true)}
             {item("/tarix", <IconHistory />, tx("layout.umumiy_tarix"))}
             {/* Admin panel - faqat platforma adminida ko'rinadi. Marshrut
                 ham himoyalangan (`AdminOnly`), serverdagi amallar ham

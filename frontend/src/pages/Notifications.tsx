@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api/client";
 import type { AppNotification } from "@/api/types";
+import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import {
-  IconBell, IconChat, IconCheck, IconClock, IconReview, IconTasks, IconUserPlus,
+  IconBell, IconChat, IconCheck, IconClock, IconOrder, IconReview, IconTasks, IconUserPlus,
 } from "@/components/icons";
 import { Card, Empty, safePath, timeAgo } from "@/components/ui";
 import { useRealtime } from "@/realtime/RealtimeContext";
@@ -17,19 +18,13 @@ import { tx } from "@/i18n";
  * va jonli yangilanadi, ya'ni har tab bosilganda serverga qayta borish
  * ortiqcha bo'lardi.
  */
-type Tab = "all" | "unread" | "tasks" | "comments";
-
-const TABS: [Tab, string][] = [
-  ["all", tx("notifications.barchasi")],
-  ["unread", tx("notifications.oqilmaganlar")],
-  ["tasks", tx("common.vazifalar")],
-  ["comments", tx("notifications.izohlar")],
-];
+type Tab = "all" | "unread" | "tasks" | "comments" | "orders";
 
 /** Turga qarab belgi - dizaynda har qatorning chapida rangli kvadratcha turadi. */
 function KindIcon({ kind }: { kind: string }) {
   const glyph =
-    kind === "task.comment" ? <IconChat size={16} />
+    kind.startsWith("order.") ? <IconOrder size={16} />
+    : kind === "task.comment" ? <IconChat size={16} />
     : kind === "task.review" ? <IconReview size={16} />
     : kind === "task.decided" ? <IconCheck size={16} />
     : kind === "chat.message" || kind === "chat.direct" ? <IconChat size={16} />
@@ -42,8 +37,22 @@ function KindIcon({ kind }: { kind: string }) {
 
 export default function Notifications() {
   const { notifications, unread, connected, markRead, markAllRead, reload } = useRealtime();
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("all");
   const nav = useNavigate();
+
+  const tabs: [Tab, string][] = useMemo(() => {
+    const list: [Tab, string][] = [
+      ["all", tx("notifications.barchasi")],
+      ["unread", tx("notifications.oqilmaganlar")],
+      ["tasks", tx("common.vazifalar")],
+      ["comments", tx("notifications.izohlar")],
+    ];
+    if (user?.can_access_orders || user?.is_sohaviy_boshqarma || user?.is_platform_admin) {
+      list.push(["orders", "Buyurtmalar"]);
+    }
+    return list;
+  }, [user]);
 
   const items = useMemo(() => notifications.filter((n) => {
     if (tab === "unread") return !n.is_read;
@@ -51,6 +60,7 @@ export default function Notifications() {
     // kesimda turadi, aks holda ikkovi bir-birini ko'mib tashlaydi.
     if (tab === "tasks") return n.kind.startsWith("task.") && n.kind !== "task.comment";
     if (tab === "comments") return n.kind === "task.comment";
+    if (tab === "orders") return n.kind.startsWith("order.");
     return true;
   }), [notifications, tab]);
 
@@ -83,7 +93,7 @@ export default function Notifications() {
             </button>
           </>
         }
-        tabs={TABS.map(([v, l]) => (
+        tabs={tabs.map(([v, l]) => (
           <button key={v} type="button" className={`tab ${tab === v ? "active" : ""}`}
                   onClick={() => setTab(v)}>
             {l}

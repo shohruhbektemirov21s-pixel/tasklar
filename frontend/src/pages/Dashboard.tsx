@@ -19,7 +19,7 @@ import { Link } from "react-router-dom";
 import { listOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import type {
-  DashboardData, DashboardPeriod, DashboardPeriodRow, DashboardScope, Task,
+  DashboardData, DashboardPeriod, DashboardPeriodRow, DashboardScope, Task, OrderStats,
 } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
@@ -27,6 +27,7 @@ import { PageHead } from "@/components/Layout";
 import {
   AvatarStack, Card, Empty, ErrorMsg, Loading, Pager, Priority, StatusBadge, fmtDate,
 } from "@/components/ui";
+import { IconOrder } from "@/components/icons";
 import TaskDrawer from "@/components/TaskDrawer";
 import { toTask } from "@/nav";
 import { tx } from "@/i18n";
@@ -465,11 +466,16 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
 }
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [picked, setPicked] = useState<Picked | null>(null);
+  const [hideOrderBanner, setHideOrderBanner] = useState(false);
 
   // Xato yutilmaydi: sabab ekranga chiqadi, aks holda sahifa abadiy
   // «Yuklanmoqda» da qolardi.
   const { data: d, error, loading, reload } = useFetch<DashboardData>("/dashboard/");
+
+  const isSohaviy = Boolean(user?.is_sohaviy_boshqarma || user?.can_access_orders);
+  const { data: orderStats } = useFetch<OrderStats>(isSohaviy ? "/orders/stats/" : null);
 
   // Jonli: vazifa yoki loyiha o'zgarsa raqamlar o'zini yangilaydi (debounce bilan himoyalangan).
   useDebouncedLive((e) => {
@@ -504,6 +510,82 @@ export default function Dashboard() {
       <PageHead title={name} />
 
       <div className="content">
+        {/* Sohaviy boshqarmalar xodimlari uchun maxsus buyurtmalar bildirishnomasi */}
+        {isSohaviy && !hideOrderBanner && (
+          <div
+            className="card"
+            style={{
+              padding: "16px 20px",
+              marginBottom: 16,
+              background: "linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(59, 130, 246, 0.03) 100%)",
+              border: "1px solid rgba(59, 130, 246, 0.25)",
+              borderRadius: 10,
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+            }}
+          >
+            <div className="row middle between" style={{ gap: 16, flexWrap: "wrap" }}>
+              <div className="row middle" style={{ gap: 14, minWidth: 280, flex: 1 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: "var(--brand, #2563eb)",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 22,
+                    flexShrink: 0,
+                  }}
+                >
+                  🏛️
+                </div>
+                <div>
+                  <div className="row middle" style={{ gap: 8, marginBottom: 3 }}>
+                    <strong style={{ fontSize: 15 }}>
+                      Sohaviy boshqarma bildirishnomasi
+                    </strong>
+                    <span className="badge badge-brand">
+                      {user?.department_name || user?.specialty_display || "Sohaviy boshqarmalar"}
+                    </span>
+                    {orderStats && orderStats.new > 0 && (
+                      <span className="badge badge-warn">
+                        {orderStats.new} ta yangi
+                      </span>
+                    )}
+                  </div>
+                  <div className="muted" style={{ fontSize: 13, lineHeight: 1.4 }}>
+                    Axborot tizimiga o'zgartirish kiritish bo'yicha talabnomalar (Buyurtmalar):
+                    {orderStats ? (
+                      <span>
+                        {" "}jami <strong>{orderStats.total} ta</strong> so'rov
+                        (shundan <strong>{orderStats.new} ta</strong> yangi, <strong>{orderStats.in_progress} ta</strong> jarayonda/testda).
+                      </span>
+                    ) : (
+                      " talabnomalar holatini ko'rishingiz yoki yangi buyurtma topshirishingiz mumkin."
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="row middle" style={{ gap: 10 }}>
+                <Link to="/buyurtmalar" className="btn btn-primary btn-sm">
+                  <IconOrder size={15} /> Buyurtmalarni ko'rish
+                </Link>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setHideOrderBanner(true)}
+                  title="Yopish"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Raqamlar KIMNIKI ekani - `d.scope` rolga qarab kengayadi va
             buni aytmasak, «bu mening ishimmi yoki jamoanikimi» degan
             savol javobsiz qolardi. */}

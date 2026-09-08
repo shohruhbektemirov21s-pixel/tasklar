@@ -30,7 +30,7 @@ import { tx } from "@/i18n";
  */
 export default function Projects() {
   const { user } = useAuth();
-  const manages = Boolean(user?.can_create_project || user?.manages_projects);
+  const manages = Boolean(user?.can_create_project || user?.manages_projects || user?.is_sohaviy_boshqarma);
   return manages ? <ManagerProjects /> : <MyProjectTasks />;
 }
 

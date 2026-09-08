@@ -17,6 +17,7 @@ python-dotenv==1.1.1
 # (`Dockerfile` dagi CMD). `config/wsgi.py` joyida qoladi, lekin ishlatilmaydi.
 whitenoise==6.9.0
 Pillow==11.3.0
+python-docx==1.2.0
 
 # real-time (WebSocket)
 channels==4.2.0

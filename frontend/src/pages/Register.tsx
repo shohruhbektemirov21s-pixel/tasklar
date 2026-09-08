@@ -106,6 +106,12 @@ export default function Register() {
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
+              {form.specialty === "SOHAVIY" && (
+                <div style={{ marginTop: 6, fontSize: 12, color: "#0284c7", background: "rgba(2,132,199,0.08)", padding: "6px 10px", borderRadius: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>🏛️</span>
+                  <span>Sohaviy boshqarmalar profili — axborot tizimiga o'zgartirish kiritish buyurtmalarini shakllantirish imkoniyati taqdim etiladi.</span>
+                </div>
+              )}
               {errors.specialty && <div className="err">{errors.specialty}</div>}
             </div>
 

@@ -1,0 +1,12 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="{% url 'admin:accounts_user_analytics' %}" class="btn btn-info" style="background-color: #0284c7; border-color: #0284c7; color: #fff; font-weight: 600; margin-right: 8px; border-radius: 6px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
+      <i class="fas fa-chart-pie"></i>
+      <span>📊 Mutaxassisliklar tahlili</span>
+    </a>
+  </li>
+  {{ block.super }}
+{% endblock %}

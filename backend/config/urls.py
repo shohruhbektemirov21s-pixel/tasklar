@@ -29,6 +29,7 @@ urlpatterns = [
     path("api/", include("apps.uitexts.urls")),
     path("api/", include("apps.suggestions.urls")),
     path("api/", include("apps.inquiries.urls")),
+    path("api/", include("apps.orders.urls")),
     path("api/", include("apps.panel.urls")),
     path("api/", include("apps.core.urls")),
 ]

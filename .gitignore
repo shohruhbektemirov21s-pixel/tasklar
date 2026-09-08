@@ -25,3 +25,7 @@ core.*
 # `.env` ning qo'lda olingan zaxiralari - ichida parollar bor.
 .env.bak*
 *.env.bak*
+
+# Vaqtinchalik va log fayllar
+*.log
+~$*.docx

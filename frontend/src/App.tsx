@@ -54,6 +54,7 @@ const WorkspaceChat = lazy(() => import("@/pages/WorkspaceChat"));
 const Suggestions = lazy(() => import("@/pages/Suggestions"));
 const SuggestionDetail = lazy(() => import("@/pages/SuggestionDetail"));
 const Inquiries = lazy(() => import("@/pages/Inquiries"));
+const ChangeRequests = lazy(() => import("@/pages/ChangeRequests"));
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -174,6 +175,8 @@ export default function App() {
         <Route path="/takliflar" element={<Suggestions />} />
         {/* So'rovlar - faqat ruxsatli foydalanuvchilar, boshliq va adminga */}
         <Route path="/sorovlar" element={<Inquiries />} />
+        {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Буюртма.docx) */}
+        <Route path="/buyurtmalar" element={<ChangeRequests />} />
         {/* Bitta taklif - raqami manzilda emas, sahifa holatida
             (`toSuggestion`). Yopiq taklifni begona ochsa server 404
             beradi, sahifa esa buni matn bilan aytadi. */}

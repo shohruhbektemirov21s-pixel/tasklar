@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 
-from .models import Department, GlobalRole, User
+from .models import Department, GlobalRole, User, SpecialtyAnalytics
+from .specialties import Specialty, Seniority, profile_for
 
 
 @admin.register(Department)
@@ -28,6 +29,7 @@ class UserAdmin(BaseUserAdmin):
         "full_name",
         "department_badge",
         "role_badge",
+        "specialty_badge",
         "job_title",
         "inquiries_badge",
         "active_badge",
@@ -99,6 +101,7 @@ class UserAdmin(BaseUserAdmin):
             GlobalRole.MANAGER: ("#2563eb", "💼 Menejer"),
             GlobalRole.OPERATOR: ("#d97706", "🎧 Operator"),
             GlobalRole.DEVELOPER: ("#059669", "💻 Dasturchi"),
+            GlobalRole.SOHAVIY: ("#0284c7", "🏛️ Sohaviy boshqarma"),
         }
         color, label = colors.get(obj.global_role, ("#6b7280", obj.get_global_role_display()))
         return format_html(
@@ -107,6 +110,17 @@ class UserAdmin(BaseUserAdmin):
             'box-shadow: 0 1px 3px rgba(0,0,0,0.12);">{}</span>',
             color,
             label,
+        )
+
+    @admin.display(description="Mutaxassislik")
+    def specialty_badge(self, obj):
+        p = obj.specialty_profile
+        color = p.get("color", "#64748b")
+        icon = p.get("icon", "*")
+        return format_html(
+            '<span style="border-left: 3px solid {}; background: rgba(100,116,139,0.08); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">'
+            '<span style="color: {}; font-weight: bold; margin-right: 4px;">{}</span>{}</span>',
+            color, color, icon, obj.get_specialty_display()
         )
 
     @admin.display(description="Holat")
@@ -149,13 +163,130 @@ class UserAdmin(BaseUserAdmin):
             return False
         return True
 
-    def get_readonly_fields(self, request, obj=None):
-        readonly = list(super().get_readonly_fields(request, obj))
-        if request and hasattr(request, "user") and not request.user.is_superuser:
-            readonly.extend(["is_superuser", "user_permissions"])
-            if request.user.global_role != GlobalRole.ADMIN:
-                readonly.extend(["groups", "is_staff"])
-        return readonly
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "analytics/",
+                self.admin_site.admin_view(self.specialties_analytics_view),
+                name="accounts_user_analytics",
+            ),
+        ]
+        return custom_urls + urls
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["show_analytics_button"] = True
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def specialties_analytics_view(self, request):
+        from datetime import timedelta
+        from django.db.models import Avg, Count, Q
+        from django.template.response import TemplateResponse
+        from django.utils import timezone
+
+        now = timezone.now()
+        last_7_days = now - timedelta(days=7)
+        last_30_days = now - timedelta(days=30)
+
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        sohaviy_users = User.objects.filter(
+            Q(global_role=GlobalRole.SOHAVIY) | Q(specialty=Specialty.SOHAVIY)
+        ).count()
+        new_7_days = User.objects.filter(date_joined__gte=last_7_days).count()
+        new_30_days = User.objects.filter(date_joined__gte=last_30_days).count()
+
+        # Mutaxassisliklar bo'yicha guruhlash
+        specialty_stats = []
+        counts_by_spec = dict(
+            User.objects.values("specialty").annotate(cnt=Count("id")).values_list("specialty", "cnt")
+        )
+        active_by_spec = dict(
+            User.objects.filter(is_active=True).values("specialty").annotate(cnt=Count("id")).values_list("specialty", "cnt")
+        )
+        avg_exp_by_spec = dict(
+            User.objects.values("specialty").annotate(avg=Avg("years_experience")).values_list("specialty", "avg")
+        )
+
+        seniority_matrix = {}
+        for s_val, _ in Specialty.choices:
+            seniority_matrix[s_val] = {sen_val: 0 for sen_val, _ in Seniority.choices}
+
+        sen_counts = User.objects.values("specialty", "seniority").annotate(cnt=Count("id"))
+        for item in sen_counts:
+            sp = item["specialty"]
+            sn = item["seniority"]
+            if sp in seniority_matrix and sn in seniority_matrix[sp]:
+                seniority_matrix[sp][sn] = item["cnt"]
+
+        seniority_totals = {sen_val: 0 for sen_val, _ in Seniority.choices}
+        for s_dict in seniority_matrix.values():
+            for sen_val, count in s_dict.items():
+                seniority_totals[sen_val] += count
+
+        for val, label in Specialty.choices:
+            cnt = counts_by_spec.get(val, 0)
+            act_cnt = active_by_spec.get(val, 0)
+            pct = round((cnt / total_users * 100), 1) if total_users > 0 else 0
+            avg_exp = round(avg_exp_by_spec.get(val) or 0, 1)
+            prof = profile_for(val)
+            specialty_stats.append({
+                "code": val,
+                "label": label,
+                "icon": prof.get("icon", "*"),
+                "color": prof.get("color", "#64748b"),
+                "count": cnt,
+                "active_count": act_cnt,
+                "percentage": pct,
+                "avg_experience": avg_exp,
+                "seniority": seniority_matrix.get(val, {}),
+            })
+
+        specialty_stats.sort(key=lambda x: x["count"], reverse=True)
+
+        recent_registrations = User.objects.select_related("department").order_by("-date_joined")[:10]
+
+        dept_stats = []
+        departments = list(Department.objects.only("id", "name", "code"))
+        for dept in departments:
+            members_qs = dept.members.all()
+            cnt = members_qs.count()
+            if cnt > 0:
+                dept_specialties = list(
+                    members_qs.values("specialty").annotate(cnt=Count("id")).order_by("-cnt")
+                )
+                dept_stats.append({
+                    "department": dept,
+                    "total": cnt,
+                    "specialties": dept_specialties,
+                })
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Ro'yxatdan o'tgan foydalanuvchilar mutaxassisliklari tahlili",
+            "total_users": total_users,
+            "active_users": active_users,
+            "sohaviy_users": sohaviy_users,
+            "new_7_days": new_7_days,
+            "new_30_days": new_30_days,
+            "specialty_stats": specialty_stats,
+            "seniority_choices": Seniority.choices,
+            "seniority_totals": seniority_totals,
+            "recent_registrations": recent_registrations,
+            "dept_stats": dept_stats,
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(request, "admin/accounts/user/analytics.html", context)
+
+
+@admin.register(SpecialtyAnalytics)
+class SpecialtyAnalyticsAdmin(admin.ModelAdmin):
+    def changelist_view(self, request, extra_context=None):
+        from django.shortcuts import redirect
+        from django.urls import reverse
+        return redirect(reverse("admin:accounts_user_analytics"))
 
 
 

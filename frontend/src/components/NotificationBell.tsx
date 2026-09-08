@@ -16,6 +16,9 @@ const TONE: Record<string, string> = {
   "task.comment": "badge",
   "chat.message": "badge",
   "chat.direct": "badge",
+  "order.new": "badge-warn",
+  "order.status": "badge-brand",
+  "order.reminder": "badge-danger",
 };
 
 export default function NotificationBell() {
@@ -110,6 +113,9 @@ export default function NotificationBell() {
           <div className="popover-foot">
             <Link to="/bildirishnomalar" onClick={() => setOpen(false)}>{tx("notification_bell.hammasini_korish")}</Link>
             <span className="spacer" />
+            {(user?.can_access_orders || user?.is_sohaviy_boshqarma || user?.is_platform_admin) && (
+              <Link to="/buyurtmalar" onClick={() => setOpen(false)} style={{ marginRight: 8 }}>Buyurtmalar</Link>
+            )}
             {manages && (
               <Link to="/tekshiruv" onClick={() => setOpen(false)}>{tx("common.tekshiruv_navbati")}</Link>
             )}
