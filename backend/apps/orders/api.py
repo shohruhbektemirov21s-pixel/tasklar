@@ -10,7 +10,13 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from .export import generate_order_docx
-from .models import ChangeRequest, ChangeRequestPriority, ChangeRequestStatus, ChangeRequestVersion
+from .models import (
+    ChangeRequest,
+    ChangeRequestPriority,
+    ChangeRequestStatus,
+    ChangeRequestType,
+    ChangeRequestVersion,
+)
 from .serializers import ChangeRequestSerializer, PMDecisionSerializer
 from .services import notify_order_created, notify_order_new_version, notify_order_status, notify_pm_decision
 
@@ -39,14 +45,14 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
     queryset = (
         ChangeRequest.objects.all()
-        .select_related("created_by", "project", "project__manager", "assigned_pm")
+        .select_related("created_by", "project", "project__manager", "assigned_pm", "assigned_developer", "linked_task")
         .prefetch_related("versions__uploaded_by", "versions__decided_by")
     )
     serializer_class = ChangeRequestSerializer
     permission_classes = [permissions.IsAuthenticated, CanAccessOrders]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["status", "priority", "department", "module", "project", "assigned_pm"]
+    filterset_fields = ["status", "priority", "department", "module", "project", "assigned_pm", "assigned_developer", "order_type"]
     search_fields = [
         "request_no",
         "system_name",
@@ -56,10 +62,12 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         "requested_change",
         "project__name",
         "project__key",
+        "assigned_developer__full_name",
     ]
     ordering_fields = [
         "request_date",
         "priority",
+        "order_type",
         "status",
         "created_at",
         "due_date",
@@ -72,6 +80,13 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         mine = self.request.query_params.get("mine")
         for_pm = self.request.query_params.get("for_pm")
+        type_param = (
+            self.request.query_params.get("order_type")
+            or self.request.query_params.get("project_type")
+            or self.request.query_params.get("type")
+        )
+        if type_param:
+            qs = qs.filter(order_type=type_param)
 
         from django.db.models import Q
         if for_pm and user.is_authenticated:
@@ -102,6 +117,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         instance = serializer.instance
         locked_statuses = [
             ChangeRequestStatus.ACCEPTED,
+            ChangeRequestStatus.ASSIGNED_TO_DEV,
             ChangeRequestStatus.IN_PROGRESS,
             ChangeRequestStatus.TESTING,
             ChangeRequestStatus.COMPLETED,
@@ -149,6 +165,10 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             order.pm_deadline = data["pm_deadline"]
         if "pm_notes" in data:
             order.pm_notes = data["pm_notes"]
+        if "assigned_developer" in data:
+            order.assigned_developer = data["assigned_developer"]
+        if "linked_task" in data:
+            order.linked_task = data["linked_task"]
 
         if data.get("executor_signer"):
             order.executor_signer = data["executor_signer"]
@@ -262,9 +282,14 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         qs = self.get_queryset()
         total = qs.count()
         new_count = qs.filter(status=ChangeRequestStatus.NEW).count()
+        accepted_count = qs.filter(status=ChangeRequestStatus.ACCEPTED).count()
+        assigned_to_dev_count = qs.filter(status=ChangeRequestStatus.ASSIGNED_TO_DEV).count()
+        in_progress_strict_count = qs.filter(status=ChangeRequestStatus.IN_PROGRESS).count()
+        testing_count = qs.filter(status=ChangeRequestStatus.TESTING).count()
         in_progress = qs.filter(
             status__in=[
                 ChangeRequestStatus.ACCEPTED,
+                ChangeRequestStatus.ASSIGNED_TO_DEV,
                 ChangeRequestStatus.IN_PROGRESS,
                 ChangeRequestStatus.TESTING,
             ]
@@ -272,12 +297,24 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         completed = qs.filter(status=ChangeRequestStatus.COMPLETED).count()
         urgent = qs.filter(priority=ChangeRequestPriority.URGENT).count()
         high = qs.filter(priority=ChangeRequestPriority.HIGH).count()
+        by_type = {
+            "new": qs.filter(order_type=ChangeRequestType.NEW).count(),
+            "continuation": qs.filter(order_type=ChangeRequestType.CONTINUATION).count(),
+            "needs_classification": qs.filter(order_type=ChangeRequestType.NEEDS_CLASSIFICATION).count(),
+            "modernization": qs.filter(order_type=ChangeRequestType.MODERNIZATION).count(),
+            "maintenance": qs.filter(order_type=ChangeRequestType.MAINTENANCE).count(),
+        }
 
         return Response({
             "total": total,
             "new": new_count,
+            "accepted": accepted_count,
+            "assigned_to_dev": assigned_to_dev_count,
             "in_progress": in_progress,
+            "in_progress_strict": in_progress_strict_count,
+            "testing": testing_count,
             "completed": completed,
             "urgent": urgent,
             "high": high,
+            "by_type": by_type,
         })

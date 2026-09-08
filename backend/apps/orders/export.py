@@ -70,22 +70,23 @@ def generate_order_docx(order) -> io.BytesIO:
     # 2. Metama'lumotlar jadvali (3 qator, 4 ustun)
     t_meta = doc.add_table(rows=3, cols=4)
     t_meta.alignment = WD_TABLE_ALIGNMENT.CENTER
+    order_type_text = getattr(order, "get_order_type_display", lambda: "Yangi loyiha")()
     meta_rows = [
         [
             ("Tizim nomi:", order.system_name),
-            ("Modul:", order.module or "-"),
+            ("Loyiha turi:", order_type_text),
             ("Talabnoma №:", order.request_no),
             ("Sana:", str(order.request_date)),
         ],
         [
             ("Tegishli loyiha:", project_str),
-            ("Loyiha PM:", pm_name or (order.assigned_pm.full_name if order.assigned_pm else "-")),
+            ("Modul:", order.module or "-"),
             ("Bo'linma:", order.department),
             ("Mas'ul shaxs:", order.responsible_person),
         ],
         [
             ("Ustuvorligi / Muhimlilik:", order.get_priority_display()),
-            ("Kerakli muddat:", str(order.due_date or "-")),
+            ("Loyiha PM:", pm_name or (order.assigned_pm.full_name if order.assigned_pm else "-")),
             ("Qanchada tugashi (PM):", order.pm_estimated_duration or "-"),
             ("PM muddati:", str(order.pm_deadline or "-")),
         ],
@@ -207,6 +208,10 @@ def generate_order_docx(order) -> io.BytesIO:
     time_val = order.pm_estimated_duration or order.estimated_resources or "Ko'rib chiqilmoqda"
     deadline_val = f"Yakuniy muddat: {order.pm_deadline}" if order.pm_deadline else "Muddat hali belgilanmagan"
     exec_full = f"{executor_val}\nQanchada tugashi: {time_val}\n{deadline_val}"
+    if order.assigned_developer:
+        exec_full += f"\nMas'ul dasturchi: {order.assigned_developer.full_name}"
+    if order.linked_task:
+        exec_full += f"\nBog'langan vazifa: {order.linked_task.code} {order.linked_task.title}"
     if order.pm_notes:
         exec_full += f"\nPM izohi: {order.pm_notes}"
 

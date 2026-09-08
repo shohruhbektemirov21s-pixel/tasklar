@@ -112,11 +112,15 @@ function ManagerProjects() {
         actions={<>
           {!!data && <span className="badge">{total} {tx("common.ta")}</span>}
           {
-          user?.can_create_project && (
+          user?.can_create_project ? (
             <Link className="btn btn-primary" {...toNewProject()}>
               <IconPlus size={15} /> {tx("common.yangi_loyiha")}
             </Link>
-          )}
+          ) : (user?.is_sohaviy_boshqarma || user?.can_access_orders) ? (
+            <Link className="btn btn-primary" to="/buyurtmalar">
+              <IconPlus size={15} /> Loyiha talabnomasi (Buyurtma) berish
+            </Link>
+          ) : null}
         </>}
       />
       <div className="content">

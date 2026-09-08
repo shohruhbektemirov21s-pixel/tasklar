@@ -5,7 +5,12 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.accounts.models import GlobalRole, Specialty, User
-from apps.orders.models import ChangeRequest, ChangeRequestPriority, ChangeRequestStatus
+from apps.orders.models import (
+    ChangeRequest,
+    ChangeRequestPriority,
+    ChangeRequestStatus,
+    ChangeRequestType,
+)
 from apps.projects.models import Project
 from apps.workspaces.models import Workspace
 from tests.base import ApiTestCase, make_user
@@ -304,4 +309,157 @@ class OrdersSeniorDevTests(ApiTestCase):
         v2 = data["versions"][0]
         self.assertEqual(v2["version"], 2)
         self.assertEqual(v2["change_note"], "Hisobotlarga qo'shimcha jadval ustunlari qo'shildi")
+
+    def test_order_types_creation_and_filtering(self):
+        """Boshqarmalar loyiha berganda turlari (Yangi, Davom ettiriladigan, Turlash kerak bo'lgan) to'g'ri ishlashi."""
+        client = APIClient()
+        client.force_authenticate(user=self.sohaviy_user)
+
+        # 1. Yangi loyiha turi
+        res_new = client.post(
+            "/api/orders/",
+            {
+                "system_name": "Yangi Soliq Portali",
+                "module": "Kalkulyator",
+                "order_type": ChangeRequestType.NEW,
+                "department": "Axborot xavfsizligi boshqarmasi",
+                "responsible_person": "Alisher V.",
+                "current_state": "Yangi tizim yaratilishi lozim",
+                "requested_change": "Avtomatlashtirilgan deklaratsiya hisoblash tizimi",
+                "reason": "Vazirlar Mahkamasi qarori",
+                "priority": ChangeRequestPriority.HIGH,
+            },
+            format="json",
+        )
+        self.assertEqual(res_new.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res_new.json()["order_type"], ChangeRequestType.NEW)
+        self.assertEqual(res_new.json()["order_type_display"], "Yangi loyiha")
+
+        # 2. Davom ettiriladigan loyiha turi
+        res_cont = client.post(
+            "/api/orders/",
+            {
+                "system_name": "TeamFlow",
+                "project": self.project.id,
+                "module": "CRM Funksional",
+                "order_type": ChangeRequestType.CONTINUATION,
+                "department": "Moliya boshqarmasi",
+                "responsible_person": "Bekzod R.",
+                "current_state": "Eski modulda 1-bosqich yakunlangan",
+                "requested_change": "2-bosqich: billing integratsiyasi",
+                "reason": "Loyiha davomiyligi",
+                "priority": ChangeRequestPriority.MEDIUM,
+            },
+            format="json",
+        )
+        self.assertEqual(res_cont.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res_cont.json()["order_type"], ChangeRequestType.CONTINUATION)
+        self.assertEqual(res_cont.json()["order_type_display"], "Davom ettiriladigan")
+
+        # 3. Turlash kerak bo'lgan loyiha turi
+        res_class = client.post(
+            "/api/orders/",
+            {
+                "system_name": "Noma'lum Tizim",
+                "order_type": ChangeRequestType.NEEDS_CLASSIFICATION,
+                "department": "Yuridik boshqarma",
+                "responsible_person": "Sardor K.",
+                "current_state": "Hujjat aylanmasi mavhum",
+                "requested_change": "Tahlil qilib, to'g'ri loyiha turiga biriktirish lozim",
+                "reason": "Dastlabki taklif",
+                "priority": ChangeRequestPriority.LOW,
+            },
+            format="json",
+        )
+        self.assertEqual(res_class.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res_class.json()["order_type"], ChangeRequestType.NEEDS_CLASSIFICATION)
+        self.assertEqual(res_class.json()["order_type_display"], "Turlash kerak bo'lgan")
+
+        # 4. Filtr bo'yicha so'rovlar
+        filter_res = client.get(f"/api/orders/?order_type={ChangeRequestType.CONTINUATION}")
+        self.assertEqual(filter_res.status_code, status.HTTP_200_OK)
+        results = filter_res.json()["results"] if "results" in filter_res.json() else filter_res.json()
+        self.assertTrue(all(item["order_type"] == ChangeRequestType.CONTINUATION for item in results))
+
+        # 5. Stats endpointida by_type statistikasi
+        stats_res = client.get("/api/orders/stats/")
+        self.assertEqual(stats_res.status_code, status.HTTP_200_OK)
+        stats_data = stats_res.json()
+        self.assertIn("by_type", stats_data)
+        self.assertGreaterEqual(stats_data["by_type"]["new"], 1)
+        self.assertGreaterEqual(stats_data["by_type"]["continuation"], 1)
+        self.assertGreaterEqual(stats_data["by_type"]["needs_classification"], 1)
+
+    def test_pm_assign_to_developer_and_set_decision(self):
+        """PM buyurtmani dasturchiga biriktirishi (ASSIGNED_TO_DEV), muddat va dasturchi kiritilishi."""
+        order = ChangeRequest.objects.create(
+            system_name="CRM Test",
+            department="Moliya",
+            responsible_person="Sobirov",
+            created_by=self.sohaviy_user,
+            status=ChangeRequestStatus.NEW,
+            requested_change="Yangi API integratsiyasi",
+            reason="Biznes talab",
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=self.pm_user)
+
+        decision_payload = {
+            "status": ChangeRequestStatus.ASSIGNED_TO_DEV,
+            "assigned_developer": self.dev_user.id,
+            "pm_estimated_duration": "5 ish kuni",
+            "pm_deadline": "2026-09-30",
+            "pm_notes": "Topshiriq Jasur Dasturchiga topshirildi, tezkor amalga oshirilsin.",
+        }
+
+        res = client.post(f"/api/orders/{order.id}/set-pm-decision/", decision_payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.content)
+        data = res.json()
+
+        self.assertEqual(data["status"], ChangeRequestStatus.ASSIGNED_TO_DEV)
+        self.assertEqual(data["status_display"], "Dasturchiga topshirildi")
+        self.assertEqual(data["assigned_developer"], self.dev_user.id)
+        self.assertEqual(data["assigned_developer_name"], "Jasur Dasturchi")
+        self.assertEqual(data["stage_index"], 3)
+        self.assertEqual(data["pm_estimated_duration"], "5 ish kuni")
+        self.assertEqual(data["pm_deadline"], "2026-09-30")
+        self.assertTrue(data["is_locked"])
+
+        # Bazadagi holat
+        order.refresh_from_db()
+        self.assertEqual(order.status, ChangeRequestStatus.ASSIGNED_TO_DEV)
+        self.assertEqual(order.assigned_developer, self.dev_user)
+        self.assertEqual(order.assigned_pm, self.pm_user)
+
+        # Dasturchiga bildirishnoma (Notification) borganligini tekshirish
+        from apps.notifications.models import Notification
+        notif = Notification.objects.filter(recipient=self.dev_user).first()
+        self.assertIsNotNone(notif)
+        self.assertIn(order.request_no, notif.title)
+
+    def test_orders_stats_includes_assigned_to_dev(self):
+        """Stats endpointida assigned_to_dev, accepted, in_progress_strict hisoblagichlari mavjudligi."""
+        ChangeRequest.objects.create(
+            system_name="CRM Test Dev",
+            department="Moliya",
+            responsible_person="Sobirov",
+            created_by=self.sohaviy_user,
+            status=ChangeRequestStatus.ASSIGNED_TO_DEV,
+            assigned_developer=self.dev_user,
+            requested_change="Dev ishga kiritildi",
+            reason="Test",
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=self.pm_user)
+
+        res = client.get("/api/orders/stats/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        data = res.json()
+
+        self.assertIn("assigned_to_dev", data)
+        self.assertGreaterEqual(data["assigned_to_dev"], 1)
+        self.assertIn("in_progress_strict", data)
+
 

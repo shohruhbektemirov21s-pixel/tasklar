@@ -148,6 +148,8 @@ export interface Project {
   description: string;
   status: string;
   status_display: string;
+  project_type?: OrderTypeValue;
+  project_type_display?: string;
   color: string;
   manager: UserBrief | null;
   created_by: UserBrief | null;
@@ -862,14 +864,33 @@ export interface SidebarCounts {
   orders?: number;
 }
 
+/** Loyiha / Buyurtma talabnomasi turi */
+export type OrderTypeValue =
+  | "NEW"
+  | "CONTINUATION"
+  | "NEEDS_CLASSIFICATION"
+  | "MODERNIZATION"
+  | "MAINTENANCE";
+
 /** `GET /api/orders/stats/` javobi */
 export interface OrderStats {
   total: number;
   new: number;
+  accepted?: number;
+  assigned_to_dev?: number;
   in_progress: number;
+  in_progress_strict?: number;
+  testing?: number;
   completed: number;
   urgent: number;
   high?: number;
+  by_type?: {
+    new?: number;
+    continuation?: number;
+    needs_classification?: number;
+    modernization?: number;
+    maintenance?: number;
+  };
 }
 
 /** Loyiha haqida qisqacha ma'lumot (TZ ga biriktirilganda) */
@@ -901,7 +922,7 @@ export interface ChangeRequestVersionItem {
   tz_file_size?: number;
   tz_file_size_display?: string;
   change_note: string;
-  status: "NEW" | "ACCEPTED" | "IN_PROGRESS" | "TESTING" | "COMPLETED" | "REJECTED";
+  status: "NEW" | "ACCEPTED" | "ASSIGNED_TO_DEV" | "IN_PROGRESS" | "TESTING" | "COMPLETED" | "REJECTED";
   status_display: string;
   uploaded_by?: number | null;
   uploaded_by_name?: string;
@@ -918,9 +939,13 @@ export interface ChangeRequestItem {
   request_no: string;
   version?: number;
   is_locked?: boolean;
+  stage_index?: number;
   versions?: ChangeRequestVersionItem[];
   system_name: string;
   module: string;
+  order_type?: OrderTypeValue;
+  order_type_display?: string;
+  project_type?: OrderTypeValue;
   project?: number | null;
   project_detail?: ChangeRequestProjectDetail | null;
   request_date: string;
@@ -943,7 +968,7 @@ export interface ChangeRequestItem {
   change_nature_display: string;
   additional_materials: string;
   test_result: string;
-  status: "NEW" | "ACCEPTED" | "IN_PROGRESS" | "TESTING" | "COMPLETED" | "REJECTED";
+  status: "NEW" | "ACCEPTED" | "ASSIGNED_TO_DEV" | "IN_PROGRESS" | "TESTING" | "COMPLETED" | "REJECTED";
   status_display: string;
   client_signer: string;
   executor_signer: string;
@@ -952,6 +977,26 @@ export interface ChangeRequestItem {
   pm_deadline?: string | null;
   assigned_pm?: number | null;
   assigned_pm_name?: string;
+  assigned_developer?: number | null;
+  assigned_developer_name?: string;
+  assigned_developer_detail?: {
+    id: number;
+    full_name: string;
+    email: string;
+    specialty: string;
+    specialty_display: string;
+    avatar_color: string;
+    initials: string;
+  } | null;
+  linked_task?: number | null;
+  linked_task_detail?: {
+    id: number;
+    number: number;
+    code: string;
+    title: string;
+    status: string;
+    status_display: string;
+  } | null;
   pm_notes?: string;
   created_by_name?: string;
   created_at: string;

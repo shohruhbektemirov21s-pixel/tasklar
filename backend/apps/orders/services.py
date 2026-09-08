@@ -77,31 +77,48 @@ def notify_order_status(order, actor, old_status, new_status):
 
 
 def notify_pm_decision(order, pm_user):
-    """PM buyurtma bo'yicha muddat va holatni belgilaganda buyurtmachiga bildirishnoma yuborish."""
-    if not order.created_by or order.created_by_id == pm_user.id:
-        return None
-
+    """PM buyurtma bo'yicha muddat va holatni belgilaganda buyurtmachiga va dasturchiga bildirishnoma yuborish."""
     parts = [f"Holati: {order.get_status_display()}"]
+    if order.assigned_developer:
+        parts.append(f"Mas'ul dasturchi: {order.assigned_developer.full_name}")
     if order.pm_estimated_duration:
         parts.append(f"Qanchada tugashi: {order.pm_estimated_duration}")
     if order.pm_deadline:
         parts.append(f"Belgilangan muddat: {order.pm_deadline}")
 
     body_text = "; ".join(parts)
-    return notify(
-        order.created_by,
-        NotificationKind.ORDER_STATUS,
-        title=f"PM qarori va muddat belgilandi: {order.request_no}",
-        body=f"{pm_user.full_name}: {body_text}",
-        url=URL,
-        actor=pm_user,
-        meta={
-            "order_id": order.pk,
-            "status": order.status,
-            "pm_estimated_duration": order.pm_estimated_duration,
-            "pm_deadline": str(order.pm_deadline) if order.pm_deadline else None,
-        },
-    )
+
+    if order.created_by and order.created_by_id != pm_user.id:
+        notify(
+            order.created_by,
+            NotificationKind.ORDER_STATUS,
+            title=f"Buyurtma holati: {order.request_no}",
+            body=f"{pm_user.full_name}: {body_text}",
+            url=URL,
+            actor=pm_user,
+            meta={
+                "order_id": order.pk,
+                "status": order.status,
+                "pm_estimated_duration": order.pm_estimated_duration,
+                "pm_deadline": str(order.pm_deadline) if order.pm_deadline else None,
+            },
+        )
+
+    if order.assigned_developer and order.assigned_developer_id != pm_user.id:
+        notify(
+            order.assigned_developer,
+            NotificationKind.ORDER_STATUS,
+            title=f"Sizga yangi buyurtma/topshiriq topshirildi: {order.request_no}",
+            body=f"Loyiha: {order.project.name if order.project else order.system_name}. {body_text}",
+            url=URL,
+            actor=pm_user,
+            meta={
+                "order_id": order.pk,
+                "status": order.status,
+                "pm_estimated_duration": order.pm_estimated_duration,
+                "pm_deadline": str(order.pm_deadline) if order.pm_deadline else None,
+            },
+        )
 
 
 def notify_order_new_version(order, version_obj, actor):

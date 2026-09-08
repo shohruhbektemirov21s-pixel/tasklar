@@ -38,6 +38,14 @@ class ProjectStatus(models.TextChoices):
     ARCHIVED = "ARCHIVED", "Arxivlangan"
 
 
+class ProjectType(models.TextChoices):
+    NEW = "NEW", "Yangi loyiha"
+    CONTINUATION = "CONTINUATION", "Davom ettiriladigan"
+    NEEDS_CLASSIFICATION = "NEEDS_CLASSIFICATION", "Turlash kerak bo'lgan"
+    MODERNIZATION = "MODERNIZATION", "Modernizatsiya va takomillashtirish"
+    MAINTENANCE = "MAINTENANCE", "Texnik qo'llab-quvvatlash"
+
+
 class RequestStatus(models.TextChoices):
     PENDING = "PENDING", "Kutilmoqda"
     APPROVED = "APPROVED", "Qabul qilindi"
@@ -67,6 +75,8 @@ class Project(models.Model):
     description = models.TextField("Tavsif", blank=True)
     status = models.CharField("Holat", max_length=20, choices=ProjectStatus.choices,
                               default=ProjectStatus.ACTIVE)
+    project_type = models.CharField("Loyiha turi", max_length=30, choices=ProjectType.choices,
+                                    default=ProjectType.NEW, db_index=True)
     color = models.CharField("Rang", max_length=9, blank=True, default="",
                              help_text="Tizim ozi tanlaydi - ish maydonidagi loyihalar ajralib tursin")
 

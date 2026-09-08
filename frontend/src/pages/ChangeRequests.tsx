@@ -10,7 +10,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, listOf, pagesOf, totalOf } from "@/api/client";
-import type { ChangeRequestItem, OrderStats, Project } from "@/api/types";
+import type { ChangeRequestItem, OrderStats, Project, UserBrief } from "@/api/types";
 import { useFetch } from "@/api/useFetch";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
@@ -21,6 +21,7 @@ import {
   IconPlus,
   IconProject,
 } from "@/components/icons";
+import { toEditOrder, toNewOrder, useGo } from "@/nav";
 import {
   Card,
   Empty,
@@ -33,46 +34,368 @@ import {
 
 const PER_PAGE = 10;
 
-const EMPTY_FORM: Partial<ChangeRequestItem> = {
-  system_name: "TeamFlow",
-  module: "",
-  project: null,
-  department: "",
-  responsible_person: "",
-  priority: "HIGH",
-  due_date: "",
-  current_state: "",
-  requested_change: "",
-  reason: "",
-  affected_modules: "",
-  dependent_systems: "",
-  change_nature: "BOTH",
-  additional_materials: "",
-  test_result: "",
-  status: "NEW",
-  client_signer: "",
-  executor_signer: "",
-  estimated_resources: "",
-  pm_estimated_duration: "",
-  pm_deadline: "",
-  pm_notes: "",
+export const ORDER_TYPE_CONFIG: Record<
+  string,
+  { label: string; icon: string; bg: string; color: string; border: string; desc: string }
+> = {
+  NEW: {
+    label: "Yangi loyiha",
+    icon: "🚀",
+    bg: "rgba(16, 185, 129, 0.12)",
+    color: "#059669",
+    border: "rgba(16, 185, 129, 0.3)",
+    desc: "Noldan boshlanadigan yangi dasturiy ta'minot yoki axborot tizimi",
+  },
+  CONTINUATION: {
+    label: "Davom ettiriladigan",
+    icon: "🔄",
+    bg: "rgba(37, 99, 235, 0.12)",
+    color: "#2563eb",
+    border: "rgba(37, 99, 235, 0.3)",
+    desc: "Mavjud tizimni davom ettirish / navbatdagi bosqich",
+  },
+  NEEDS_CLASSIFICATION: {
+    label: "Turlash kerak bo'lgan",
+    icon: "🏷️",
+    bg: "rgba(217, 119, 6, 0.12)",
+    color: "#d97706",
+    border: "rgba(217, 119, 6, 0.3)",
+    desc: "Boshqarma taklifi / PM tomonidan tahlil va turlash talab etiladi",
+  },
+  MODERNIZATION: {
+    label: "Modernizatsiya",
+    icon: "⚡",
+    bg: "rgba(139, 92, 246, 0.12)",
+    color: "#7c3aed",
+    border: "rgba(139, 92, 246, 0.3)",
+    desc: "Amaldagi funksionallikni kengaytirish va yangilash",
+  },
+  MAINTENANCE: {
+    label: "Texnik xizmat",
+    icon: "🛠️",
+    bg: "rgba(100, 116, 139, 0.12)",
+    color: "#475569",
+    border: "rgba(100, 116, 139, 0.3)",
+    desc: "Xatoliklarni tuzatish va tizimni qo'llab-quvvatlash",
+  },
 };
+
+export function OrderTypeBadge({ type }: { type?: string }) {
+  const cfg = ORDER_TYPE_CONFIG[type || "NEW"] || ORDER_TYPE_CONFIG.NEW;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "3px 8px",
+        borderRadius: 6,
+        fontSize: 11.5,
+        fontWeight: 600,
+        background: cfg.bg,
+        color: cfg.color,
+        border: `1px solid ${cfg.border}`,
+        whiteSpace: "nowrap",
+      }}
+      title={cfg.desc}
+    >
+      <span>{cfg.icon}</span>
+      <span>{cfg.label}</span>
+    </span>
+  );
+}
+
+export const ORDER_STATUS_CONFIG: Record<
+  ChangeRequestItem["status"],
+  {
+    label: string;
+    icon: string;
+    bg: string;
+    color: string;
+    border: string;
+    badgeClass: string;
+    desc: string;
+    step: number;
+  }
+> = {
+  NEW: {
+    label: "Yangi (Yuborilgan)",
+    icon: "📝",
+    bg: "rgba(234, 179, 8, 0.12)",
+    color: "#b45309",
+    border: "rgba(234, 179, 8, 0.35)",
+    badgeClass: "badge-warning",
+    desc: "Talabnoma boshqarma tomonidan yuborilgan, PM ko'rib chiqishi kutilmoqda",
+    step: 1,
+  },
+  ACCEPTED: {
+    label: "Qabul qilindi",
+    icon: "📋",
+    bg: "rgba(59, 130, 246, 0.12)",
+    color: "#1d4ed8",
+    border: "rgba(59, 130, 246, 0.35)",
+    badgeClass: "badge-brand",
+    desc: "Loyiha menejeri (PM) talabnomani qabul qildi va o'rganmoqda",
+    step: 2,
+  },
+  ASSIGNED_TO_DEV: {
+    label: "Dasturchiga topshirildi",
+    icon: "💻",
+    bg: "rgba(99, 102, 241, 0.14)",
+    color: "#4338ca",
+    border: "rgba(99, 102, 241, 0.38)",
+    badgeClass: "badge-brand",
+    desc: "Vazifa dasturchiga topshirildi va amaliy ijroga biriktirildi",
+    step: 3,
+  },
+  IN_PROGRESS: {
+    label: "Jarayonda",
+    icon: "⚙️",
+    bg: "rgba(14, 165, 233, 0.12)",
+    color: "#0369a1",
+    border: "rgba(14, 165, 233, 0.35)",
+    badgeClass: "badge-brand",
+    desc: "Dasturchi va jamoa amaliy ish olib bormoqda / kod yozilmoqda",
+    step: 4,
+  },
+  TESTING: {
+    label: "Test qilinmoqda",
+    icon: "🧪",
+    bg: "rgba(217, 119, 6, 0.12)",
+    color: "#c2410c",
+    border: "rgba(217, 119, 6, 0.35)",
+    badgeClass: "badge-warning",
+    desc: "O'zgartirish testdan o'tkazilmoqda va buyurtmachi sinoviga tayyorlanmoqda",
+    step: 5,
+  },
+  COMPLETED: {
+    label: "Bajarildi",
+    icon: "✅",
+    bg: "rgba(16, 185, 129, 0.12)",
+    color: "#047857",
+    border: "rgba(16, 185, 129, 0.35)",
+    badgeClass: "badge-ok",
+    desc: "Ish muvaffaqiyatli yakunlandi va tizimga joriy etildi",
+    step: 6,
+  },
+  REJECTED: {
+    label: "Rad etildi",
+    icon: "❌",
+    bg: "rgba(239, 68, 68, 0.12)",
+    color: "#b91c1c",
+    border: "rgba(239, 68, 68, 0.35)",
+    badgeClass: "badge-danger",
+    desc: "Talabnoma asosli sabablarga ko'ra rad etildi",
+    step: -1,
+  },
+};
+
+export function OrderStatusBadge({
+  status,
+  label,
+}: {
+  status: ChangeRequestItem["status"];
+  label?: string;
+}) {
+  const cfg = ORDER_STATUS_CONFIG[status] || ORDER_STATUS_CONFIG.NEW;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "3px 9px",
+        borderRadius: 6,
+        fontSize: 12,
+        fontWeight: 600,
+        background: cfg.bg,
+        color: cfg.color,
+        border: `1px solid ${cfg.border}`,
+        whiteSpace: "nowrap",
+      }}
+      title={cfg.desc}
+    >
+      <span>{cfg.icon}</span>
+      <span>{label || cfg.label}</span>
+    </span>
+  );
+}
+
+export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
+  if (item.status === "REJECTED") {
+    return (
+      <div
+        style={{
+          background: "#fef2f2",
+          border: "1px solid #fecaca",
+          borderRadius: 8,
+          padding: "14px 16px",
+          marginBottom: 16,
+        }}
+      >
+        <div className="row middle" style={{ gap: 8, color: "#991b1b", fontWeight: 700, fontSize: 13.5 }}>
+          <span style={{ fontSize: 18 }}>❌</span>
+          <span>Ushbu talabnoma rad etilgan</span>
+        </div>
+        {item.pm_notes && (
+          <div style={{ marginTop: 6, fontSize: 12.5, color: "#7f1d1d", whiteSpace: "pre-wrap" }}>
+            <strong>Sabab / Izoh:</strong> {item.pm_notes}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const currentStep = item.stage_index && item.stage_index > 0
+    ? item.stage_index
+    : (ORDER_STATUS_CONFIG[item.status]?.step || 1);
+
+  const steps = [
+    {
+      num: 1,
+      title: "Yuborildi",
+      icon: "📝",
+      sub: item.department || "Boshqarma",
+    },
+    {
+      num: 2,
+      title: "PM ko'rib chiqdi",
+      icon: "📋",
+      sub: item.assigned_pm_name ? `PM: ${item.assigned_pm_name}` : "Loyiha menejeri",
+    },
+    {
+      num: 3,
+      title: "Dasturchiga topshirildi",
+      icon: "💻",
+      sub: item.assigned_developer_name ? `👨‍💻 ${item.assigned_developer_name}` : "Ijrochi tayinlanmoqda",
+    },
+    {
+      num: 4,
+      title: "Jarayonda",
+      icon: "⚙️",
+      sub: item.pm_estimated_duration ? `⏱ ${item.pm_estimated_duration}` : "Amaliy ishlab chiqish",
+    },
+    {
+      num: 5,
+      title: "Testda",
+      icon: "🧪",
+      sub: "Sinov va tekshirish",
+    },
+    {
+      num: 6,
+      title: "Bajarildi",
+      icon: "✅",
+      sub: "Foydalanishga topshirildi",
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        background: "var(--surface, #f8fafc)",
+        border: "1px solid var(--border-color, #e2e8f0)",
+        borderRadius: 8,
+        padding: "14px 16px",
+        marginBottom: 16,
+      }}
+    >
+      <div className="row between middle" style={{ marginBottom: 12 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text)" }}>
+          📌 Ishning joriy holati va bosqichlari:{" "}
+          <span style={{ color: ORDER_STATUS_CONFIG[item.status]?.color }}>
+            {item.status_display || ORDER_STATUS_CONFIG[item.status]?.label}
+          </span>
+        </div>
+        <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--brand, #2563eb)" }}>
+          Bosqich {Math.min(currentStep, 6)} / 6
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(6, 1fr)",
+          gap: 6,
+        }}
+      >
+        {steps.map((st) => {
+          const isPassed = currentStep > st.num;
+          const isCurrent = currentStep === st.num;
+
+          const stepBg = isCurrent
+            ? "#eff6ff"
+            : isPassed
+            ? "#f0fdf4"
+            : "#f8fafc";
+          const stepBorder = isCurrent
+            ? "#3b82f6"
+            : isPassed
+            ? "#86efac"
+            : "var(--border-color, #e2e8f0)";
+          const stepColor = isCurrent
+            ? "#1d4ed8"
+            : isPassed
+            ? "#15803d"
+            : "var(--muted, #64748b)";
+
+          return (
+            <div
+              key={st.num}
+              style={{
+                background: stepBg,
+                border: `1.5px solid ${stepBorder}`,
+                borderRadius: 6,
+                padding: "8px 6px",
+                textAlign: "center",
+                transition: "all 0.2s ease",
+              }}
+            >
+              <div style={{ fontSize: 16, marginBottom: 2 }}>
+                {isPassed ? "✓" : st.icon}
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: isCurrent || isPassed ? 700 : 500,
+                  color: stepColor,
+                  lineHeight: 1.2,
+                }}
+              >
+                {st.title}
+              </div>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "var(--muted, #64748b)",
+                  marginTop: 3,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+                title={st.sub}
+              >
+                {st.sub}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function ChangeRequests() {
   const { user } = useAuth();
+  const go = useGo();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [priorityFilter, setPriorityFilter] = useState<string>("");
   const [projectFilter, setProjectFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("");
 
-  // Modal oynalari
+  // Modal oynasi (faqat batafsil ko'rish va PM qarori uchun)
   const [viewingItem, setViewingItem] = useState<ChangeRequestItem | null>(null);
-  const [editingItem, setEditingItem] = useState<Partial<ChangeRequestItem> | null>(null);
-  const [isNew, setIsNew] = useState(false);
-  const [tzFile, setTzFile] = useState<File | null>(null);
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   // PM qarorini belgilash holatlari (view modal ichida)
   const [pmDecisionForm, setPmDecisionForm] = useState<{
@@ -80,11 +403,13 @@ export default function ChangeRequests() {
     pm_estimated_duration: string;
     pm_deadline: string;
     pm_notes: string;
+    assigned_developer: number | null;
   }>({
     status: "ACCEPTED",
     pm_estimated_duration: "",
     pm_deadline: "",
     pm_notes: "",
+    assigned_developer: null,
   });
   const [pmSaveLoading, setPmSaveLoading] = useState(false);
   const [pmSaveError, setPmSaveError] = useState<string | null>(null);
@@ -99,14 +424,21 @@ export default function ChangeRequests() {
       status: statusFilter || undefined,
       priority: priorityFilter || undefined,
       project: projectFilter || undefined,
+      order_type: typeFilter || undefined,
     }
   );
 
   const { data: statsData } = useFetch<OrderStats>("/orders/stats/");
   const { data: projectsData } = useFetch<{ count: number; results: Project[] } | Project[]>("/projects/", { scope: "visible" });
+  const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>("/users/", { is_active: true });
 
   const items: ChangeRequestItem[] = useMemo(() => (data ? listOf<ChangeRequestItem>(data) : []), [data]);
   const projects: Project[] = useMemo(() => (projectsData ? listOf<Project>(projectsData) : []), [projectsData]);
+  const usersList: UserBrief[] = useMemo(() => (usersData ? listOf<UserBrief>(usersData) : []), [usersData]);
+  const developersList = useMemo(
+    () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY"),
+    [usersList]
+  );
 
   const total = totalOf(data);
   const pages = pagesOf(data, PER_PAGE);
@@ -127,12 +459,6 @@ export default function ChangeRequests() {
     user?.is_manager ||
     user?.is_boss
   );
-
-  // Tanlangan loyihani qidirish
-  const selectedProjectInForm = useMemo(() => {
-    if (!editingItem?.project) return null;
-    return projects.find((p) => p.id === Number(editingItem.project)) || null;
-  }, [editingItem?.project, projects]);
 
   // Word (.docx) yuklab olish
   const handleDownloadDocx = (id: number, requestNo: string) => {
@@ -157,28 +483,6 @@ export default function ChangeRequests() {
       .catch((e) => alert("Word faylini yuklab olishda xatolik: " + e.message));
   };
 
-  // Yangi buyurtma yaratish
-  const handleOpenNew = () => {
-    setIsNew(true);
-    setTzFile(null);
-    setEditingItem({
-      ...EMPTY_FORM,
-      request_date: new Date().toISOString().split("T")[0],
-      department: user?.department_name || "",
-      responsible_person: user?.full_name || "",
-    });
-    setSaveError(null);
-  };
-
-  // Tahrirlash
-  const handleOpenEdit = (item: ChangeRequestItem) => {
-    setIsNew(false);
-    setTzFile(null);
-    setEditingItem({ ...item });
-    setSaveError(null);
-    setViewingItem(null);
-  };
-
   // Batafsil ko'rishni ochish
   const handleOpenView = (item: ChangeRequestItem) => {
     setViewingItem(item);
@@ -187,46 +491,10 @@ export default function ChangeRequests() {
       pm_estimated_duration: item.pm_estimated_duration || "",
       pm_deadline: item.pm_deadline || "",
       pm_notes: item.pm_notes || "",
+      assigned_developer: item.assigned_developer || null,
     });
     setPmSaveError(null);
     setPmSaveSuccess(null);
-  };
-
-  // Saqlash (Yangi yoki tahrirlash)
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingItem) return;
-    setSaveLoading(true);
-    setSaveError(null);
-
-    try {
-      const formData = new FormData();
-      Object.entries(editingItem).forEach(([key, val]) => {
-        if (key === "tz_file" || key === "tz_file_url" || key === "project_detail" || val === null || val === undefined) {
-          return;
-        }
-        formData.append(key, String(val));
-      });
-
-      if (tzFile) {
-        formData.append("tz_file", tzFile);
-      }
-
-      if (isNew) {
-        await api.post("/orders/", formData);
-      } else if (editingItem.id) {
-        await api.patch(`/orders/${editingItem.id}/`, formData);
-      }
-
-      setEditingItem(null);
-      setTzFile(null);
-      reload();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Buyurtmani saqlashda xatolik yuz berdi.";
-      setSaveError(msg);
-    } finally {
-      setSaveLoading(false);
-    }
   };
 
   // PM qarorini saqlash
@@ -281,7 +549,7 @@ export default function ChangeRequests() {
         actions={
           <div className="row middle" style={{ gap: 10 }}>
             {total > 0 && <span className="badge badge-brand">{total} ta buyurtma</span>}
-            <button className="btn btn-primary btn-sm" onClick={handleOpenNew}>
+            <button className="btn btn-primary btn-sm" onClick={() => go(toNewOrder())}>
               <IconPlus size={15} /> Yangi TZ / Buyurtma yaratish
             </button>
           </div>
@@ -291,34 +559,106 @@ export default function ChangeRequests() {
       <div className="content">
         {/* Yuqori ko'rsatkichlar kartalari */}
         <div className="row" style={{ gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-          <div className="card" style={{ flex: 1, minWidth: 160, padding: "14px 18px" }}>
+          <div
+            className="card"
+            style={{
+              flex: 1,
+              minWidth: 140,
+              padding: "14px 16px",
+              cursor: "pointer",
+              border: !statusFilter ? "2px solid var(--brand)" : undefined,
+            }}
+            onClick={() => { setStatusFilter(""); setPage(1); }}
+            title="Barcha buyurtmalarni ko'rish"
+          >
             <span className="muted" style={{ fontSize: 12 }}>Jami so'rovlar</span>
             <div style={{ fontSize: 24, fontWeight: 700, color: "var(--brand)" }}>
               {statsData?.total ?? total}
             </div>
           </div>
-          <div className="card" style={{ flex: 1, minWidth: 160, padding: "14px 18px" }}>
-            <span className="muted" style={{ fontSize: 12 }}>Yangi (Kutilmoqda)</span>
+          <div
+            className="card"
+            style={{
+              flex: 1,
+              minWidth: 140,
+              padding: "14px 16px",
+              cursor: "pointer",
+              border: statusFilter === "NEW" ? "2px solid #d97706" : undefined,
+            }}
+            onClick={() => { setStatusFilter("NEW"); setPage(1); }}
+            title="Yangi yuborilgan buyurtmalar"
+          >
+            <span className="muted" style={{ fontSize: 12 }}>📝 Yangi (Kutilmoqda)</span>
             <div style={{ fontSize: 24, fontWeight: 700, color: "#d97706" }}>
               {statsData?.new ?? 0}
             </div>
           </div>
-          <div className="card" style={{ flex: 1, minWidth: 160, padding: "14px 18px" }}>
-            <span className="muted" style={{ fontSize: 12 }}>Jarayonda / Testda</span>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#2563eb" }}>
-              {statsData?.in_progress ?? 0}
+          <div
+            className="card"
+            style={{
+              flex: 1,
+              minWidth: 140,
+              padding: "14px 16px",
+              cursor: "pointer",
+              border: statusFilter === "ASSIGNED_TO_DEV" ? "2px solid #4f46e5" : undefined,
+            }}
+            onClick={() => { setStatusFilter("ASSIGNED_TO_DEV"); setPage(1); }}
+            title="Dasturchiga topshirilgan ishlar"
+          >
+            <span className="muted" style={{ fontSize: 12 }}>💻 Dasturchiga topshirildi</span>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#4f46e5" }}>
+              {statsData?.assigned_to_dev ?? 0}
             </div>
           </div>
-          <div className="card" style={{ flex: 1, minWidth: 160, padding: "14px 18px" }}>
-            <span className="muted" style={{ fontSize: 12 }}>Bajarilgan</span>
+          <div
+            className="card"
+            style={{
+              flex: 1,
+              minWidth: 140,
+              padding: "14px 16px",
+              cursor: "pointer",
+              border: statusFilter === "IN_PROGRESS" ? "2px solid #0284c7" : undefined,
+            }}
+            onClick={() => { setStatusFilter("IN_PROGRESS"); setPage(1); }}
+            title="Jarayonda bo'lgan ishlar"
+          >
+            <span className="muted" style={{ fontSize: 12 }}>⚙️ Jarayonda</span>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#0284c7" }}>
+              {(statsData?.in_progress_strict ?? 0) || (statsData?.in_progress ?? 0)}
+            </div>
+          </div>
+          <div
+            className="card"
+            style={{
+              flex: 1,
+              minWidth: 140,
+              padding: "14px 16px",
+              cursor: "pointer",
+              border: statusFilter === "TESTING" ? "2px solid #c2410c" : undefined,
+            }}
+            onClick={() => { setStatusFilter("TESTING"); setPage(1); }}
+            title="Test qilinayotgan ishlar"
+          >
+            <span className="muted" style={{ fontSize: 12 }}>🧪 Testda</span>
+            <div style={{ fontSize: 24, fontWeight: 700, color: "#c2410c" }}>
+              {statsData?.testing ?? 0}
+            </div>
+          </div>
+          <div
+            className="card"
+            style={{
+              flex: 1,
+              minWidth: 140,
+              padding: "14px 16px",
+              cursor: "pointer",
+              border: statusFilter === "COMPLETED" ? "2px solid #16a34a" : undefined,
+            }}
+            onClick={() => { setStatusFilter("COMPLETED"); setPage(1); }}
+            title="Bajarilgan ishlar"
+          >
+            <span className="muted" style={{ fontSize: 12 }}>✅ Bajarilgan</span>
             <div style={{ fontSize: 24, fontWeight: 700, color: "#16a34a" }}>
               {statsData?.completed ?? 0}
-            </div>
-          </div>
-          <div className="card" style={{ flex: 1, minWidth: 160, padding: "14px 18px" }}>
-            <span className="muted" style={{ fontSize: 12 }}>Shoshilinch (Urgent)</span>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "#dc2626" }}>
-              {statsData?.urgent ?? 0}
             </div>
           </div>
         </div>
@@ -329,7 +669,7 @@ export default function ChangeRequests() {
             <div className="row middle" style={{ gap: 10, flex: 1, minWidth: 260 }}>
               <input
                 type="text"
-                placeholder="Raqam, tizim, loyiha, modul, bo'linma yoki tavsif bo'yicha qidiruv..."
+                placeholder="Raqam, tizim, loyiha, modul, bo'linma, dasturchi yoki tavsif bo'yicha qidiruv..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -339,6 +679,22 @@ export default function ChangeRequests() {
               />
             </div>
             <div className="row middle" style={{ gap: 10, flexWrap: "wrap" }}>
+              {/* Loyiha turi filtri */}
+              <select
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Barcha loyiha turlari</option>
+                <option value="NEW">🚀 Yangi loyiha</option>
+                <option value="CONTINUATION">🔄 Davom ettiriladigan</option>
+                <option value="NEEDS_CLASSIFICATION">🏷️ Turlash kerak bo'lgan</option>
+                <option value="MODERNIZATION">⚡ Modernizatsiya</option>
+                <option value="MAINTENANCE">🛠️ Texnik xizmat</option>
+              </select>
+
               {/* Loyiha filtri */}
               <select
                 value={projectFilter}
@@ -364,12 +720,13 @@ export default function ChangeRequests() {
                 }}
               >
                 <option value="">Barcha holatlar</option>
-                <option value="NEW">Yangi</option>
-                <option value="ACCEPTED">Qabul qilindi</option>
-                <option value="IN_PROGRESS">Jarayonda</option>
-                <option value="TESTING">Test qilinmoqda</option>
-                <option value="COMPLETED">Bajarildi</option>
-                <option value="REJECTED">Rad etildi</option>
+                <option value="NEW">📝 Yangi (Yuborilgan)</option>
+                <option value="ACCEPTED">📋 Qabul qilindi</option>
+                <option value="ASSIGNED_TO_DEV">💻 Dasturchiga topshirildi</option>
+                <option value="IN_PROGRESS">⚙️ Jarayonda</option>
+                <option value="TESTING">🧪 Test qilinmoqda</option>
+                <option value="COMPLETED">✅ Bajarildi</option>
+                <option value="REJECTED">❌ Rad etildi</option>
               </select>
 
               {/* Ustuvorlik / Muhimlilik filtri */}
@@ -387,7 +744,7 @@ export default function ChangeRequests() {
                 <option value="LOW">Past</option>
               </select>
 
-              {(search || statusFilter || priorityFilter || projectFilter) && (
+              {(search || statusFilter || priorityFilter || projectFilter || typeFilter) && (
                 <button
                   className="btn btn-ghost btn-sm"
                   onClick={() => {
@@ -395,6 +752,7 @@ export default function ChangeRequests() {
                     setStatusFilter("");
                     setPriorityFilter("");
                     setProjectFilter("");
+                    setTypeFilter("");
                     setPage(1);
                   }}
                 >
@@ -419,11 +777,13 @@ export default function ChangeRequests() {
                     <th style={{ width: 40, textAlign: "center" }}>#</th>
                     <th>Talabnoma №</th>
                     <th>Loyiha va Tizim</th>
+                    <th style={{ width: 140 }}>Loyiha turi</th>
                     <th>Talab qilinayotgan o'zgartirish</th>
                     <th>Bo'linma / Mas'ul</th>
+                    <th>Mas'ul dasturchi</th>
                     <th>Muhimlilik</th>
                     <th>Qanchada tugashi / PM muddati</th>
-                    <th>Holati</th>
+                    <th>Holati va Bosqich</th>
                     <th>TZ Fayli</th>
                     <th className="right">Amallar</th>
                   </tr>
@@ -475,6 +835,9 @@ export default function ChangeRequests() {
                             </div>
                           )}
                         </td>
+                        <td>
+                          <OrderTypeBadge type={item.order_type} />
+                        </td>
                         <td style={{ maxWidth: 260 }}>
                           <div
                             style={{
@@ -492,6 +855,24 @@ export default function ChangeRequests() {
                           <span className="muted" style={{ fontSize: 11 }}>
                             {item.responsible_person}
                           </span>
+                        </td>
+                        <td>
+                          {item.assigned_developer_name ? (
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 12.5, color: "#4338ca" }}>
+                                👨‍💻 {item.assigned_developer_name}
+                              </div>
+                              {item.assigned_developer_detail?.email && (
+                                <div className="muted" style={{ fontSize: 11 }}>
+                                  {item.assigned_developer_detail.email}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="muted" style={{ fontSize: 11.5, fontStyle: "italic" }}>
+                              Tayinlanmagan
+                            </span>
+                          )}
                         </td>
                         <td>
                           <span
@@ -529,21 +910,41 @@ export default function ChangeRequests() {
                           )}
                         </td>
                         <td>
-                          <span
-                            className={`badge ${
-                              item.status === "COMPLETED"
-                                ? "badge-ok"
-                                : item.status === "IN_PROGRESS" || item.status === "TESTING"
-                                ? "badge-brand"
-                                : item.status === "NEW"
-                                ? "badge-warning"
-                                : item.status === "REJECTED"
-                                ? "badge-danger"
-                                : ""
-                            }`}
-                          >
-                            {item.status_display || item.status}
-                          </span>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 140 }}>
+                            <OrderStatusBadge status={item.status} label={item.status_display} />
+                            {item.status !== "REJECTED" && (
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <div
+                                  style={{
+                                    flex: 1,
+                                    height: 5,
+                                    borderRadius: 3,
+                                    backgroundColor: "#e2e8f0",
+                                    overflow: "hidden",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      height: "100%",
+                                      width: `${Math.min(100, Math.round(((item.stage_index || 1) / 6) * 100))}%`,
+                                      backgroundColor:
+                                        item.status === "COMPLETED"
+                                          ? "#10b981"
+                                          : item.status === "TESTING"
+                                          ? "#f59e0b"
+                                          : item.status === "ASSIGNED_TO_DEV"
+                                          ? "#6366f1"
+                                          : "#3b82f6",
+                                      transition: "width 0.3s ease",
+                                    }}
+                                  />
+                                </div>
+                                <span style={{ fontSize: 10.5, color: "var(--muted)", fontWeight: 600 }}>
+                                  {item.stage_index || 1}/6
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td>
                           {item.tz_file_url ? (
@@ -581,7 +982,7 @@ export default function ChangeRequests() {
                             <button
                               className="btn btn-sm btn-ghost"
                               title="Tahrirlash"
-                              onClick={() => handleOpenEdit(item)}
+                              onClick={() => go(toEditOrder(item.id))}
                             >
                               Tahrir
                             </button>
@@ -619,7 +1020,7 @@ export default function ChangeRequests() {
               text="Axborot tizimiga yangi o'zgartirish yoki funksiya kiritish bo'yicha talabnoma va TZ fayli yarating."
             />
             <div style={{ textAlign: "center", marginTop: 16 }}>
-              <button className="btn btn-primary" onClick={handleOpenNew}>
+              <button className="btn btn-primary" onClick={() => go(toNewOrder())}>
                 <IconPlus size={15} /> Birinchi TZ / Buyurtmani yaratish
               </button>
             </div>
@@ -672,7 +1073,11 @@ export default function ChangeRequests() {
                 )}
                 <button
                   className="btn btn-sm btn-ghost"
-                  onClick={() => handleOpenEdit(viewingItem)}
+                  onClick={() => {
+                    const oid = viewingItem.id;
+                    setViewingItem(null);
+                    go(toEditOrder(oid));
+                  }}
                 >
                   Tahrirlash
                 </button>
@@ -683,6 +1088,9 @@ export default function ChangeRequests() {
             </div>
 
             <div className="modal-body" style={{ padding: 20 }}>
+              {/* Ish jarayoni va bosqichlar zanjiri (Visual Stepper) */}
+              <OrderProgressStepper item={viewingItem} />
+
               {/* Rasmiy Blank Sarlavhasi */}
               <div
                 style={{
@@ -843,6 +1251,12 @@ export default function ChangeRequests() {
                 <div>
                   <span className="muted">Modul:</span>
                   <div><strong>{viewingItem.module || "-"}</strong></div>
+                </div>
+                <div>
+                  <span className="muted">Loyiha turi:</span>
+                  <div style={{ marginTop: 2 }}>
+                    <OrderTypeBadge type={viewingItem.order_type} />
+                  </div>
                 </div>
                 <div>
                   <span className="muted">Talabnoma raqami:</span>
@@ -1064,6 +1478,14 @@ export default function ChangeRequests() {
                     </div>
                   </div>
                   <div>
+                    <span className="muted" style={{ fontSize: 12 }}>Mas'ul Dasturchi (Ijrochi):</span>
+                    <div>
+                      <strong>
+                        {viewingItem.assigned_developer_name ? `👨‍💻 ${viewingItem.assigned_developer_name}` : "Hali biriktirilmagan"}
+                      </strong>
+                    </div>
+                  </div>
+                  <div>
                     <span className="muted" style={{ fontSize: 12 }}>Qanchada tugashi (PM bahosi):</span>
                     <div>
                       <strong>
@@ -1126,7 +1548,7 @@ export default function ChangeRequests() {
                   {pmSaveError && <ErrorMsg error={pmSaveError} />}
 
                   <form onSubmit={handleSavePMDecision}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 12 }}>
                       <div className="field">
                         <label style={{ fontWeight: 600, fontSize: 12 }}>Buyurtma holati *</label>
                         <select
@@ -1139,17 +1561,37 @@ export default function ChangeRequests() {
                           }
                           required
                         >
-                          <option value="NEW">Yangi (Yuborilgan)</option>
-                          <option value="ACCEPTED">Qabul qilindi (Tasdiqlandi)</option>
-                          <option value="IN_PROGRESS">Jarayonda (Ishlanmoqda)</option>
-                          <option value="TESTING">Test qilinmoqda</option>
-                          <option value="COMPLETED">Bajarildi (Yakunlandi)</option>
-                          <option value="REJECTED">Rad etildi</option>
+                          <option value="NEW">📝 Yangi (Yuborilgan)</option>
+                          <option value="ACCEPTED">📋 Qabul qilindi (Tasdiqlandi)</option>
+                          <option value="ASSIGNED_TO_DEV">💻 Dasturchiga topshirildi</option>
+                          <option value="IN_PROGRESS">⚙️ Jarayonda (Ishlanmoqda)</option>
+                          <option value="TESTING">🧪 Test qilinmoqda</option>
+                          <option value="COMPLETED">✅ Bajarildi (Yakunlandi)</option>
+                          <option value="REJECTED">❌ Rad etildi</option>
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label style={{ fontWeight: 600, fontSize: 12 }}>Mas'ul dasturchi (Ijrochi)</label>
+                        <select
+                          value={pmDecisionForm.assigned_developer || ""}
+                          onChange={(e) =>
+                            setPmDecisionForm({
+                              ...pmDecisionForm,
+                              assigned_developer: e.target.value ? Number(e.target.value) : null,
+                            })
+                          }
+                        >
+                          <option value="">-- Dasturchini tanlang --</option>
+                          {developersList.map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.full_name} ({d.email})
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="field">
                         <label style={{ fontWeight: 600, fontSize: 12 }}>
-                          Qanchada tugashi (PM bahosi) *
+                          Qanchada tugashi (PM bahosi)
                         </label>
                         <input
                           type="text"
@@ -1222,371 +1664,6 @@ export default function ChangeRequests() {
                 Yopish
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 2. YANGI YARATISH VA TAHRIRLASH FORMASI */}
-      {editingItem && (
-        <div className="modal-overlay" onClick={() => setEditingItem(null)}>
-          <div
-            className="modal-card"
-            style={{ maxWidth: 840, width: "95%", maxHeight: "90vh", overflowY: "auto" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <form onSubmit={handleSave}>
-              <div className="modal-header row between middle">
-                <strong>
-                  {isNew
-                    ? "Yangi o'zgartirish so'rovi (TZ va Buyurtma blankasi)"
-                    : `Buyurtmani tahrirlash — ${editingItem.request_no}`}
-                </strong>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-ghost"
-                  onClick={() => setEditingItem(null)}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="modal-body" style={{ padding: 20 }}>
-                {saveError && <ErrorMsg error={saveError} />}
-
-                {/* Asosiy ma'lumotlar */}
-                <h4 style={{ margin: "0 0 10px", color: "var(--brand)" }}>
-                  Asosiy ma'lumotlar va Loyiha tanlovi
-                </h4>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-                  <div className="field">
-                    <label>Tizim nomi *</label>
-                    <input
-                      type="text"
-                      required
-                      value={editingItem.system_name || ""}
-                      onChange={(e) => setEditingItem({ ...editingItem, system_name: e.target.value })}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Tegishli loyiha (Project)</label>
-                    <select
-                      value={editingItem.project ? String(editingItem.project) : ""}
-                      onChange={(e) =>
-                        setEditingItem({
-                          ...editingItem,
-                          project: e.target.value ? Number(e.target.value) : null,
-                        })
-                      }
-                    >
-                      <option value="">-- Loyihani tanlang (ixtiyoriy) --</option>
-                      {projects.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} ({p.key})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label>Modul / Yo'nalish *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="masalan, Vazifalar, Xavfsizlik, Auth"
-                      value={editingItem.module || ""}
-                      onChange={(e) => setEditingItem({ ...editingItem, module: e.target.value })}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Buyurtma qilayotgan bo'linma *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="masalan, Axborot xavfsizligi boshqarmasi"
-                      value={editingItem.department || ""}
-                      onChange={(e) => setEditingItem({ ...editingItem, department: e.target.value })}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Mas'ul shaxs (F.I.Sh.) *</label>
-                    <input
-                      type="text"
-                      required
-                      value={editingItem.responsible_person || ""}
-                      onChange={(e) => setEditingItem({ ...editingItem, responsible_person: e.target.value })}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Muhimlilik turi (Ustuvorlik) *</label>
-                    <select
-                      value={editingItem.priority || "HIGH"}
-                      onChange={(e) => setEditingItem({ ...editingItem, priority: e.target.value as ChangeRequestItem["priority"] })}
-                    >
-                      <option value="URGENT">Shoshilinch / O'ta muhim</option>
-                      <option value="HIGH">Yuqori</option>
-                      <option value="MEDIUM">O'rta</option>
-                      <option value="LOW">Past</option>
-                    </select>
-                  </div>
-                  <div className="field" style={{ gridColumn: "span 2" }}>
-                    <label>Kerakli muddat (Buyurtmachi so'ragan sana)</label>
-                    <input
-                      type="date"
-                      value={editingItem.due_date || ""}
-                      onChange={(e) => setEditingItem({ ...editingItem, due_date: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                {/* Tanlangan loyiha ko'rinishi (Preview) */}
-                {selectedProjectInForm && (
-                  <div
-                    style={{
-                      background: "var(--surface, #f8fafc)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: 6,
-                      padding: 12,
-                      marginBottom: 16,
-                      fontSize: 12.5,
-                    }}
-                  >
-                    <div className="row middle" style={{ gap: 8, marginBottom: 4 }}>
-                      <span className="badge badge-brand">{selectedProjectInForm.key}</span>
-                      <strong>{selectedProjectInForm.name}</strong>
-                      <span className="muted">
-                        • Menejer: {selectedProjectInForm.manager?.full_name || "Menejer yo'q"}
-                      </span>
-                    </div>
-                    {selectedProjectInForm.description && (
-                      <div className="muted" style={{ marginTop: 2 }}>
-                        {selectedProjectInForm.description}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* TZ FAYLI YUKLASH BO'LIMI */}
-                <h4 style={{ margin: "16px 0 10px", color: "var(--brand)" }}>
-                  Texnik topshiriq (TZ) fayli
-                </h4>
-                <div
-                  style={{
-                    border: "2px dashed var(--border-color)",
-                    borderRadius: 6,
-                    padding: 16,
-                    background: "var(--surface, #f8fafc)",
-                    marginBottom: 16,
-                  }}
-                >
-                  <div style={{ marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
-                    Rasmiy TZ hujjati yoki talablar faylini yuklang (PDF, Word, Excel, ZIP, rasm):
-                  </div>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setTzFile(e.target.files[0]);
-                      }
-                    }}
-                  />
-                  {tzFile ? (
-                    <div
-                      style={{
-                        marginTop: 10,
-                        padding: "6px 10px",
-                        background: "#dcfce7",
-                        borderRadius: 4,
-                        color: "#166534",
-                        fontSize: 12.5,
-                      }}
-                      className="row between middle"
-                    >
-                      <span>
-                        📎 Tanlangan fayl: <strong>{tzFile.name}</strong> ({(tzFile.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-ghost"
-                        onClick={() => setTzFile(null)}
-                      >
-                        Bekor qilish
-                      </button>
-                    </div>
-                  ) : editingItem.tz_file_name ? (
-                    <div style={{ marginTop: 8, fontSize: 12.5 }} className="muted">
-                      Mavjud fayl: <strong>{editingItem.tz_file_name}</strong> ({editingItem.tz_file_size_display || ""})
-                    </div>
-                  ) : null}
-                </div>
-
-                {/* 1. Tizimga qo'shimcha va o'zgartirish kiritish */}
-                <h4 style={{ margin: "16px 0 10px", color: "var(--brand)" }}>
-                  1. Tizimga qo'shimcha va o'zgartirish kiritish
-                </h4>
-                <div className="field" style={{ marginBottom: 12 }}>
-                  <label>
-                    1.1 Joriy holat (nima ishlamayapti / nimani o'zgartirish kerak) *
-                  </label>
-                  <textarea
-                    rows={3}
-                    required
-                    placeholder="Mavjud xatoliklar yoki yetishmayotgan qulayliklarni batafsil yozing..."
-                    value={editingItem.current_state || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, current_state: e.target.value })}
-                  />
-                </div>
-                <div className="field" style={{ marginBottom: 12 }}>
-                  <label>
-                    1.2 Talab qilinayotgan o'zgartirish (aniq va batafsil tavsif) *
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    placeholder="Tizimga aynan nima qo'shilishi yoki o'zgartirilishi kerakligini aniq bayon qiling..."
-                    value={editingItem.requested_change || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, requested_change: e.target.value })}
-                  />
-                </div>
-                <div className="field" style={{ marginBottom: 14 }}>
-                  <label>
-                    1.3 Sabab / maqsad (qonun talabi, biznes ehtiyoji, xato va h.k.) *
-                  </label>
-                  <textarea
-                    rows={2}
-                    required
-                    placeholder="Ushbu o'zgartirish nima sababdan kerak bo'layotgani..."
-                    value={editingItem.reason || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, reason: e.target.value })}
-                  />
-                </div>
-
-                {/* 2. Ta'sir doirasi */}
-                <h4 style={{ margin: "16px 0 10px", color: "var(--brand)" }}>
-                  2. Ta'sir doirasi
-                </h4>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-                  <div className="field">
-                    <label>2.1 Qaysi modul / funksionallikka ta'sir qiladi</label>
-                    <input
-                      type="text"
-                      placeholder="masalan, Tasks API, ReviewQueue, Dashboard"
-                      value={editingItem.affected_modules || ""}
-                      onChange={(e) => setEditingItem({ ...editingItem, affected_modules: e.target.value })}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>2.2 Bog'liq tizimlar / integratsiyalar</label>
-                    <input
-                      type="text"
-                      placeholder="masalan, IBM Db2, Redis, Telegram Bot"
-                      value={editingItem.dependent_systems || ""}
-                      onChange={(e) => setEditingItem({ ...editingItem, dependent_systems: e.target.value })}
-                    />
-                  </div>
-                  <div className="field" style={{ gridColumn: "span 2" }}>
-                    <label>2.3 O'zgarish xarakteri</label>
-                    <select
-                      value={editingItem.change_nature || "BOTH"}
-                      onChange={(e) => setEditingItem({ ...editingItem, change_nature: e.target.value as ChangeRequestItem["change_nature"] })}
-                    >
-                      <option value="USER_FACING">Foydalanuvchiga ko'rinadigan (Frontend/UI)</option>
-                      <option value="BACKEND">Ichki o'zgarish (Backend / Baza / API)</option>
-                      <option value="BOTH">Ikkalasi ham (To'liq tizim bo'ylab)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 3. Qo'shimcha materiallar */}
-                <h4 style={{ margin: "16px 0 10px", color: "var(--brand)" }}>
-                  3. Qo'shimcha materiallar (Ilovalar)
-                </h4>
-                <div className="field" style={{ marginBottom: 14 }}>
-                  <label>Skrinshotlar, xato xabarlari ro'yxati</label>
-                  <textarea
-                    rows={2}
-                    placeholder="masalan: Skrinshot 2026-09-08 102119.png, xatolik loglari..."
-                    value={editingItem.additional_materials || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, additional_materials: e.target.value })}
-                  />
-                </div>
-
-                {/* PM va Holat bo'limi (PM va adminlar uchun) */}
-                {isPMOrAdmin && (
-                  <>
-                    <h4 style={{ margin: "16px 0 10px", color: "var(--brand)" }}>
-                      4-5. PM Qarori, Muddat va Holat
-                    </h4>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-                      <div className="field">
-                        <label>Buyurtma holati</label>
-                        <select
-                          value={editingItem.status || "NEW"}
-                          onChange={(e) => setEditingItem({ ...editingItem, status: e.target.value as ChangeRequestItem["status"] })}
-                        >
-                          <option value="NEW">Yangi (Yuborilgan)</option>
-                          <option value="ACCEPTED">Qabul qilindi</option>
-                          <option value="IN_PROGRESS">Jarayonda</option>
-                          <option value="TESTING">Test qilinmoqda</option>
-                          <option value="COMPLETED">Bajarildi</option>
-                          <option value="REJECTED">Rad etildi</option>
-                        </select>
-                      </div>
-                      <div className="field">
-                        <label>Qanchada tugashi (PM bahosi)</label>
-                        <input
-                          type="text"
-                          placeholder="masalan, 10 ish kuni, 2 hafta"
-                          value={editingItem.pm_estimated_duration || ""}
-                          onChange={(e) => setEditingItem({ ...editingItem, pm_estimated_duration: e.target.value })}
-                        />
-                      </div>
-                      <div className="field">
-                        <label>PM belgilagan yakuniy muddat</label>
-                        <input
-                          type="date"
-                          value={editingItem.pm_deadline || ""}
-                          onChange={(e) => setEditingItem({ ...editingItem, pm_deadline: e.target.value })}
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Test qilish natijasi (Buyurtmachi)</label>
-                        <input
-                          type="text"
-                          placeholder="masalan: Sinovdan muvaffaqiyatli o'tdi"
-                          value={editingItem.test_result || ""}
-                          onChange={(e) => setEditingItem({ ...editingItem, test_result: e.target.value })}
-                        />
-                      </div>
-                      <div className="field" style={{ gridColumn: "span 2" }}>
-                        <label>PM ko'rsatmalari / izohi</label>
-                        <textarea
-                          rows={2}
-                          value={editingItem.pm_notes || ""}
-                          onChange={(e) => setEditingItem({ ...editingItem, pm_notes: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => setEditingItem(null)}
-                >
-                  Bekor qilish
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={saveLoading}
-                >
-                  {saveLoading ? "Saqlanmoqda..." : "Buyurtma (TZ)ni saqlash"}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

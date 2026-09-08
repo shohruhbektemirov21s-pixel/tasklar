@@ -19,7 +19,13 @@ import { Link } from "react-router-dom";
 import { listOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import type {
-  DashboardData, DashboardPeriod, DashboardPeriodRow, DashboardScope, Task, OrderStats,
+  ChangeRequestItem,
+  DashboardData,
+  DashboardPeriod,
+  DashboardPeriodRow,
+  DashboardScope,
+  OrderStats,
+  Task,
 } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
@@ -27,10 +33,11 @@ import { PageHead } from "@/components/Layout";
 import {
   AvatarStack, Card, Empty, ErrorMsg, Loading, Pager, Priority, StatusBadge, fmtDate,
 } from "@/components/ui";
-import { IconOrder } from "@/components/icons";
+import { IconPlus } from "@/components/icons";
 import TaskDrawer from "@/components/TaskDrawer";
 import { toTask } from "@/nav";
 import { tx } from "@/i18n";
+import { OrderStatusBadge } from "./ChangeRequests";
 
 // Davr sarlavhalari. Kalitlar serverdagi `PERIODS` bilan bir xil, tartibni
 // esa server beradi - bu yerda faqat o'zbekcha nomi turadi.
@@ -465,17 +472,263 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
   );
 }
 
+/** Sohaviy boshqarmalar buyurtmalari va ijro holatini ko'rsatuvchi widget */
+function DepartmentOrdersWidget({ isDepartmentUser }: { isDepartmentUser: boolean }) {
+  const { data: stats } = useFetch<OrderStats>("/orders/stats/");
+  const { data: ordersData, loading } = useFetch<{ count: number; results: ChangeRequestItem[] } | ChangeRequestItem[]>("/orders/", { page: 1 });
+  const orders = ordersData ? listOf<ChangeRequestItem>(ordersData).slice(0, 5) : [];
+
+  return (
+    <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card-header row between middle" style={{ padding: "14px 18px", borderBottom: "1px solid var(--border-color)" }}>
+        <div className="row middle" style={{ gap: 10 }}>
+          <span style={{ fontSize: 22 }}>🏛️</span>
+          <div>
+            <strong style={{ fontSize: 15, color: "var(--brand)" }}>
+              {isDepartmentUser
+                ? "Sohaviy boshqarma buyurtmalari va ishlar ijrosi holati"
+                : "Boshqarmalar talabnomalari va dasturchilar ijro monitoringi"}
+            </strong>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Dasturchiga topshirilgan, jarayondagi va sinovdagi ishlar zanjiri
+            </div>
+          </div>
+        </div>
+        <div className="row middle" style={{ gap: 8 }}>
+          <Link to="/buyurtma/yangi" className="btn btn-primary btn-sm">
+            <IconPlus size={14} /> Yangi TZ yuborish
+          </Link>
+          <Link to="/buyurtmalar" className="btn btn-outline btn-sm">
+            Barcha buyurtmalar ({stats?.total ?? 0}) →
+          </Link>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+          gap: 10,
+          padding: "14px 18px",
+          background: "var(--surface, #f8fafc)",
+          borderBottom: "1px solid var(--border-color)",
+        }}
+      >
+        <Link
+          to="/buyurtmalar"
+          className="card"
+          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit" }}
+        >
+          <div className="muted" style={{ fontSize: 11.5 }}>Jami talabnomalar</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "var(--brand)" }}>
+            {stats?.total ?? 0}
+          </div>
+        </Link>
+        <Link
+          to="/buyurtmalar?status=NEW"
+          className="card"
+          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit" }}
+        >
+          <div className="muted" style={{ fontSize: 11.5 }}>📝 Kutilmoqda</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#d97706" }}>
+            {stats?.new ?? 0}
+          </div>
+        </Link>
+        <Link
+          to="/buyurtmalar?status=ASSIGNED_TO_DEV"
+          className="card"
+          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit", borderLeft: "3px solid #6366f1" }}
+        >
+          <div className="muted" style={{ fontSize: 11.5 }}>💻 Dasturchiga topshirildi</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#4f46e5" }}>
+            {stats?.assigned_to_dev ?? 0}
+          </div>
+        </Link>
+        <Link
+          to="/buyurtmalar?status=IN_PROGRESS"
+          className="card"
+          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit" }}
+        >
+          <div className="muted" style={{ fontSize: 11.5 }}>⚙️ Jarayonda</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#0284c7" }}>
+            {(stats?.in_progress_strict ?? 0) || (stats?.in_progress ?? 0)}
+          </div>
+        </Link>
+        <Link
+          to="/buyurtmalar?status=TESTING"
+          className="card"
+          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit" }}
+        >
+          <div className="muted" style={{ fontSize: 11.5 }}>🧪 Testda</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#c2410c" }}>
+            {stats?.testing ?? 0}
+          </div>
+        </Link>
+        <Link
+          to="/buyurtmalar?status=COMPLETED"
+          className="card"
+          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit" }}
+        >
+          <div className="muted" style={{ fontSize: 11.5 }}>✅ Bajarildi</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
+            {stats?.completed ?? 0}
+          </div>
+        </Link>
+      </div>
+
+      {/* So'nggi buyurtmalar ro'yxati */}
+      <div style={{ padding: "0 18px 14px" }}>
+        <div className="row between middle" style={{ margin: "14px 0 8px" }}>
+          <strong style={{ fontSize: 13, color: "var(--color-fg-muted)" }}>
+            So'nggi talabnomalar va ijro bosqichlari
+          </strong>
+          <Link to="/buyurtmalar" style={{ fontSize: 12, color: "var(--brand)" }}>
+            Barcha buyurtmalar ro'yxati →
+          </Link>
+        </div>
+
+        {loading ? (
+          <Loading />
+        ) : orders.length ? (
+          <div className="table-wrap">
+            <table className="table" style={{ fontSize: 12.5 }}>
+              <thead>
+                <tr>
+                  <th style={{ width: 110 }}>Talabnoma №</th>
+                  <th>Tizim / Modul</th>
+                  <th>Talab qilingan o'zgartirish</th>
+                  <th>Bo'linma / Mas'ul</th>
+                  <th>Mas'ul dasturchi</th>
+                  <th>Holati va Bosqich</th>
+                  <th style={{ width: 120 }}>PM muddati</th>
+                  <th className="right" style={{ width: 80 }}>Amallar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr key={o.id}>
+                    <td>
+                      <Link to="/buyurtmalar" className="badge badge-brand" style={{ fontSize: 11, textDecoration: "none" }}>
+                        {o.request_no}
+                      </Link>
+                    </td>
+                    <td>
+                      <strong>{o.system_name}</strong>
+                      {o.module && <div className="muted" style={{ fontSize: 11 }}>{o.module}</div>}
+                    </td>
+                    <td style={{ maxWidth: 220 }}>
+                      <div
+                        style={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={o.requested_change}
+                      >
+                        {o.requested_change}
+                      </div>
+                    </td>
+                    <td>
+                      <div>{o.department}</div>
+                      <div className="muted" style={{ fontSize: 11 }}>{o.responsible_person}</div>
+                    </td>
+                    <td>
+                      {o.assigned_developer_name ? (
+                        <div style={{ fontWeight: 600, color: "#4338ca", fontSize: 12 }}>
+                          👨‍💻 {o.assigned_developer_name}
+                        </div>
+                      ) : (
+                        <span className="muted" style={{ fontStyle: "italic", fontSize: 11.5 }}>
+                          Tayinlanmagan
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 130 }}>
+                        <OrderStatusBadge status={o.status} label={o.status_display} />
+                        {o.status !== "REJECTED" && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div
+                              style={{
+                                flex: 1,
+                                height: 4,
+                                borderRadius: 2,
+                                backgroundColor: "#e2e8f0",
+                                overflow: "hidden",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  height: "100%",
+                                  width: `${Math.min(100, Math.round(((o.stage_index || 1) / 6) * 100))}%`,
+                                  backgroundColor:
+                                    o.status === "COMPLETED"
+                                      ? "#10b981"
+                                      : o.status === "TESTING"
+                                      ? "#f59e0b"
+                                      : o.status === "ASSIGNED_TO_DEV"
+                                      ? "#6366f1"
+                                      : "#3b82f6",
+                                }}
+                              />
+                            </div>
+                            <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600 }}>
+                              {o.stage_index || 1}/6
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      {o.pm_deadline ? (
+                        <div>📅 {fmtDate(o.pm_deadline)}</div>
+                      ) : o.pm_estimated_duration ? (
+                        <div style={{ color: "var(--brand)", fontWeight: 500 }}>
+                          ⏱ {o.pm_estimated_duration}
+                        </div>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                    <td className="right">
+                      <Link to="/buyurtmalar" className="btn btn-xs btn-outline">
+                        Ko'rish
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ padding: "16px 0", textAlign: "center" }} className="muted">
+            Hozircha buyurtmalar mavjud emas.{" "}
+            <Link to="/buyurtma/yangi" style={{ fontWeight: 600, color: "var(--brand)" }}>
+              Birinchi TZ ni yuborish →
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [picked, setPicked] = useState<Picked | null>(null);
-  const [hideOrderBanner, setHideOrderBanner] = useState(false);
+
+  const hasOrderAccess = Boolean(
+    user?.is_sohaviy_boshqarma ||
+    user?.can_access_orders ||
+    user?.is_platform_admin ||
+    user?.is_manager ||
+    user?.is_boss
+  );
 
   // Xato yutilmaydi: sabab ekranga chiqadi, aks holda sahifa abadiy
   // «Yuklanmoqda» da qolardi.
   const { data: d, error, loading, reload } = useFetch<DashboardData>("/dashboard/");
-
-  const isSohaviy = Boolean(user?.is_sohaviy_boshqarma || user?.can_access_orders);
-  const { data: orderStats } = useFetch<OrderStats>(isSohaviy ? "/orders/stats/" : null);
 
   // Jonli: vazifa yoki loyiha o'zgarsa raqamlar o'zini yangilaydi (debounce bilan himoyalangan).
   useDebouncedLive((e) => {
@@ -510,80 +763,9 @@ export default function Dashboard() {
       <PageHead title={name} />
 
       <div className="content">
-        {/* Sohaviy boshqarmalar xodimlari uchun maxsus buyurtmalar bildirishnomasi */}
-        {isSohaviy && !hideOrderBanner && (
-          <div
-            className="card"
-            style={{
-              padding: "16px 20px",
-              marginBottom: 16,
-              background: "linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(59, 130, 246, 0.03) 100%)",
-              border: "1px solid rgba(59, 130, 246, 0.25)",
-              borderRadius: 10,
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
-            }}
-          >
-            <div className="row middle between" style={{ gap: 16, flexWrap: "wrap" }}>
-              <div className="row middle" style={{ gap: 14, minWidth: 280, flex: 1 }}>
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 10,
-                    background: "var(--brand, #2563eb)",
-                    color: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 22,
-                    flexShrink: 0,
-                  }}
-                >
-                  🏛️
-                </div>
-                <div>
-                  <div className="row middle" style={{ gap: 8, marginBottom: 3 }}>
-                    <strong style={{ fontSize: 15 }}>
-                      Sohaviy boshqarma bildirishnomasi
-                    </strong>
-                    <span className="badge badge-brand">
-                      {user?.department_name || user?.specialty_display || "Sohaviy boshqarmalar"}
-                    </span>
-                    {orderStats && orderStats.new > 0 && (
-                      <span className="badge badge-warn">
-                        {orderStats.new} ta yangi
-                      </span>
-                    )}
-                  </div>
-                  <div className="muted" style={{ fontSize: 13, lineHeight: 1.4 }}>
-                    Axborot tizimiga o'zgartirish kiritish bo'yicha talabnomalar (Buyurtmalar):
-                    {orderStats ? (
-                      <span>
-                        {" "}jami <strong>{orderStats.total} ta</strong> so'rov
-                        (shundan <strong>{orderStats.new} ta</strong> yangi, <strong>{orderStats.in_progress} ta</strong> jarayonda/testda).
-                      </span>
-                    ) : (
-                      " talabnomalar holatini ko'rishingiz yoki yangi buyurtma topshirishingiz mumkin."
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="row middle" style={{ gap: 10 }}>
-                <Link to="/buyurtmalar" className="btn btn-primary btn-sm">
-                  <IconOrder size={15} /> Buyurtmalarni ko'rish
-                </Link>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setHideOrderBanner(true)}
-                  title="Yopish"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Sohaviy boshqarmalar buyurtmalari va ijro holati monitoringi */}
+        {hasOrderAccess && (
+          <DepartmentOrdersWidget isDepartmentUser={Boolean(user?.is_sohaviy_boshqarma)} />
         )}
 
         {/* Raqamlar KIMNIKI ekani - `d.scope` rolga qarab kengayadi va

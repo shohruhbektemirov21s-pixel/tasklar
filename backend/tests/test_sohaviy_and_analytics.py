@@ -231,10 +231,10 @@ class BuyurtmalarAccessControlSuite(ApiTestCase):
         res_list = self.client_operator.get(self.orders_url)
         self.assertEqual(res_list.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_manager_is_forbidden_from_orders(self):
-        """Loyiha menejeri Sohaviy boshqarma bo'lmasa buyurtmalarga kira olmasligi shart (403 Forbidden)."""
+    def test_manager_can_access_orders(self):
+        """Loyiha menejeri (PM) buyurtmalar bo'limiga kira olishi shart (PM qarori va muddat belgilash uchun)."""
         res_list = self.client_manager.get(self.orders_url)
-        self.assertEqual(res_list.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(res_list.status_code, status.HTTP_200_OK)
 
     def test_anonymous_user_unauthorized_from_orders(self):
         """Tizimga kirmagan (anonim) foydalanuvchi buyurtmalarga kira olmasligi shart."""

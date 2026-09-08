@@ -162,7 +162,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     # `search_fields` yo'q: qidiruv `get_queryset` da qo'lda bajariladi, chunki
     # unga loyiha HUJJATLARINING nomi ham kiradi - buni DRF `SearchFilter` i
     # `.distinct()` bilan qilardi, Db2 esa CLOB ustunda uni qo'llamaydi.
-    ordering_fields = ["created_at", "updated_at", "name", "due_date", "progress_pct"]
+    ordering_fields = ["created_at", "updated_at", "name", "project_type", "due_date", "progress_pct"]
     # BAJARILISH FOIZI BO'YICHA, kattasi tepada.
     #
     # Ro'yxat menejerga "qaysi loyiha qay ahvolda" degan savolga javob
@@ -256,6 +256,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         ws = self.request.query_params.get("workspace")
         if ws:
             qs = qs.filter(workspace__slug=ws) if not ws.isdigit() else qs.filter(workspace_id=ws)
+
+        ptype = self.request.query_params.get("project_type") or self.request.query_params.get("type")
+        if ptype:
+            qs = qs.filter(project_type=ptype)
 
         # Qidiruv: nom, kalit, tavsif va LOYIHA HUJJATLARINING nomi. Odam
         # ko'pincha loyihani nomidan emas, undagi hujjatdan eslaydi -

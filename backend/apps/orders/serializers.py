@@ -3,7 +3,14 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from apps.projects.models import Project
-from .models import ChangeRequest, ChangeRequestPriority, ChangeRequestStatus, ChangeRequestVersion
+from apps.tasks.models import Task
+from .models import (
+    ChangeRequest,
+    ChangeRequestPriority,
+    ChangeRequestStatus,
+    ChangeRequestType,
+    ChangeRequestVersion,
+)
 
 User = get_user_model()
 
@@ -65,6 +72,9 @@ class ChangeRequestVersionSerializer(serializers.ModelSerializer):
 
 
 class ChangeRequestSerializer(serializers.ModelSerializer):
+    order_type = serializers.ChoiceField(choices=ChangeRequestType.choices, default=ChangeRequestType.NEW, required=False)
+    order_type_display = serializers.CharField(source="get_order_type_display", read_only=True)
+    project_type = serializers.CharField(source="order_type", read_only=True)
     priority_display = serializers.CharField(source="get_priority_display", read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     change_nature_display = serializers.CharField(source="get_change_nature_display", read_only=True)
@@ -92,6 +102,24 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     )
     assigned_pm_name = serializers.CharField(source="assigned_pm.full_name", read_only=True, default="")
 
+    assigned_developer = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False, allow_null=True
+    )
+    assigned_developer_name = serializers.CharField(source="assigned_developer.full_name", read_only=True, default="")
+    assigned_developer_detail = serializers.SerializerMethodField(read_only=True)
+
+    linked_task = serializers.PrimaryKeyRelatedField(
+        queryset=Task.objects.all(), required=False, allow_null=True
+    )
+    linked_task_detail = serializers.SerializerMethodField(read_only=True)
+    stage_index = serializers.SerializerMethodField(read_only=True)
+
+    def to_internal_value(self, data):
+        data = data.copy() if hasattr(data, "copy") else dict(data)
+        if "project_type" in data and "order_type" not in data:
+            data["order_type"] = data["project_type"]
+        return super().to_internal_value(data)
+
     class Meta:
         model = ChangeRequest
         fields = [
@@ -99,9 +127,13 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "request_no",
             "version",
             "is_locked",
+            "stage_index",
             "versions",
             "system_name",
             "module",
+            "order_type",
+            "order_type_display",
+            "project_type",
             "project",
             "project_detail",
             "request_date",
@@ -133,6 +165,11 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "pm_deadline",
             "assigned_pm",
             "assigned_pm_name",
+            "assigned_developer",
+            "assigned_developer_name",
+            "assigned_developer_detail",
+            "linked_task",
+            "linked_task_detail",
             "pm_notes",
             "created_by",
             "created_by_name",
@@ -161,10 +198,50 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     def get_is_locked(self, obj):
         return obj.status in [
             ChangeRequestStatus.ACCEPTED,
+            ChangeRequestStatus.ASSIGNED_TO_DEV,
             ChangeRequestStatus.IN_PROGRESS,
             ChangeRequestStatus.TESTING,
             ChangeRequestStatus.COMPLETED,
         ]
+
+    def get_assigned_developer_detail(self, obj):
+        if not obj.assigned_developer:
+            return None
+        dev = obj.assigned_developer
+        return {
+            "id": dev.id,
+            "full_name": dev.full_name,
+            "email": dev.email,
+            "specialty": dev.specialty,
+            "specialty_display": dev.get_specialty_display() if hasattr(dev, "get_specialty_display") else "",
+            "avatar_color": getattr(dev, "avatar_color", "#3b82f6"),
+            "initials": getattr(dev, "initials", "?"),
+        }
+
+    def get_linked_task_detail(self, obj):
+        if not obj.linked_task:
+            return None
+        t = obj.linked_task
+        return {
+            "id": t.id,
+            "number": t.number,
+            "code": t.code,
+            "title": t.title,
+            "status": t.status,
+            "status_display": t.get_status_display(),
+        }
+
+    def get_stage_index(self, obj):
+        stages = {
+            ChangeRequestStatus.NEW: 1,
+            ChangeRequestStatus.ACCEPTED: 2,
+            ChangeRequestStatus.ASSIGNED_TO_DEV: 3,
+            ChangeRequestStatus.IN_PROGRESS: 4,
+            ChangeRequestStatus.TESTING: 5,
+            ChangeRequestStatus.COMPLETED: 6,
+            ChangeRequestStatus.REJECTED: -1,
+        }
+        return stages.get(obj.status, 1)
 
     def get_versions(self, obj):
         vers = list(obj.versions.all())
@@ -227,3 +304,9 @@ class PMDecisionSerializer(serializers.Serializer):
     pm_deadline = SafeDateField(required=False, allow_null=True)
     pm_notes = serializers.CharField(required=False, allow_blank=True)
     executor_signer = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    assigned_developer = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False, allow_null=True
+    )
+    linked_task = serializers.PrimaryKeyRelatedField(
+        queryset=Task.objects.all(), required=False, allow_null=True
+    )

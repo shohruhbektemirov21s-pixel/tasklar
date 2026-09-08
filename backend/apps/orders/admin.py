@@ -1,6 +1,12 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import ChangeRequest, ChangeRequestPriority, ChangeRequestStatus, ChangeRequestVersion
+from .models import (
+    ChangeRequest,
+    ChangeRequestPriority,
+    ChangeRequestStatus,
+    ChangeRequestType,
+    ChangeRequestVersion,
+)
 
 
 class ChangeRequestVersionInline(admin.TabularInline):
@@ -16,22 +22,24 @@ class ChangeRequestAdmin(admin.ModelAdmin):
     list_display = (
         "request_no",
         "system_name",
+        "order_type_badge",
         "project_link",
         "module",
         "department_badge",
         "responsible_person",
         "priority_badge",
+        "assigned_developer_display",
         "duration_badge",
         "status_badge",
         "tz_file_link",
         "request_date",
         "created_by",
     )
-    list_filter = ("status", "priority", "project", "department", "request_date", "created_at")
+    list_filter = ("status", "order_type", "priority", "project", "department", "assigned_developer", "request_date", "created_at")
     search_fields = (
         "request_no", "system_name", "module", "department",
         "responsible_person", "requested_change", "reason",
-        "project__name", "project__key",
+        "project__name", "project__key", "assigned_developer__full_name",
     )
     ordering = ("-created_at",)
     readonly_fields = ("request_no", "tz_file_name", "tz_file_size", "created_at", "updated_at")
@@ -39,7 +47,7 @@ class ChangeRequestAdmin(admin.ModelAdmin):
     fieldsets = (
         ("Metama'lumotlar", {
             "fields": (
-                "request_no", "system_name", "project", "module", "request_date",
+                "request_no", "system_name", "order_type", "project", "module", "request_date",
                 "department", "responsible_person", "priority", "due_date"
             )
         }),
@@ -59,9 +67,10 @@ class ChangeRequestAdmin(admin.ModelAdmin):
         ("4. Test qilish", {
             "fields": ("test_result",)
         }),
-        ("5. PM (Loyiha menejeri) qarori va muddatlar", {
+        ("5. PM qarori va ijro (Dasturchi va muddatlar)", {
             "fields": (
-                "status", "assigned_pm", "pm_estimated_duration", "pm_deadline",
+                "status", "assigned_pm", "assigned_developer", "linked_task",
+                "pm_estimated_duration", "pm_deadline",
                 "pm_notes", "client_signer", "executor_signer",
                 "estimated_resources", "created_by", "created_at", "updated_at"
             )
@@ -77,6 +86,21 @@ class ChangeRequestAdmin(admin.ModelAdmin):
             obj.project.color or "#2563eb",
             obj.project.key,
             obj.project.name,
+        )
+
+    @admin.display(description="Loyiha turi")
+    def order_type_badge(self, obj):
+        colors = {
+            ChangeRequestType.NEW: ("#10b981", "🚀 Yangi loyiha"),
+            ChangeRequestType.CONTINUATION: ("#2563eb", "🔄 Davom ettiriladigan"),
+            ChangeRequestType.NEEDS_CLASSIFICATION: ("#d97706", "🏷️ Turlash kerak"),
+            ChangeRequestType.MODERNIZATION: ("#8b5cf6", "⚡ Modernizatsiya"),
+            ChangeRequestType.MAINTENANCE: ("#64748b", "🛠️ Qo'llab-quvvatlash"),
+        }
+        color, text = colors.get(obj.order_type, ("#64748b", obj.get_order_type_display()))
+        return format_html(
+            '<span style="background-color: {}; color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">{}</span>',
+            color, text
         )
 
     @admin.display(description="Bo'linma / Boshqarma")
@@ -101,6 +125,15 @@ class ChangeRequestAdmin(admin.ModelAdmin):
             color, text
         )
 
+    @admin.display(description="Mas'ul dasturchi")
+    def assigned_developer_display(self, obj):
+        if obj.assigned_developer:
+            return format_html(
+                '<span style="background-color: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;">👨‍💻 {}</span>',
+                obj.assigned_developer.full_name
+            )
+        return format_html('<span style="color: #94a3b8; font-style: italic;">Biriktirilmagan</span>')
+
     @admin.display(description="Qanchada tugashi / PM muddati")
     def duration_badge(self, obj):
         if obj.pm_estimated_duration or obj.pm_deadline:
@@ -114,6 +147,7 @@ class ChangeRequestAdmin(admin.ModelAdmin):
         colors = {
             ChangeRequestStatus.NEW: ("#0284c7", "🆕 Yangi"),
             ChangeRequestStatus.ACCEPTED: ("#8b5cf6", "📥 Qabul qilindi"),
+            ChangeRequestStatus.ASSIGNED_TO_DEV: ("#6366f1", "💻 Dasturchiga topshirildi"),
             ChangeRequestStatus.IN_PROGRESS: ("#f59e0b", "⚙️ Jarayonda"),
             ChangeRequestStatus.TESTING: ("#ec4899", "🧪 Testda"),
             ChangeRequestStatus.COMPLETED: ("#10b981", "✅ Bajarildi"),

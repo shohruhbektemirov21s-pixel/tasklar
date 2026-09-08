@@ -20,10 +20,19 @@ class ChangeRequestPriority(models.TextChoices):
 class ChangeRequestStatus(models.TextChoices):
     NEW = "NEW", "Yangi (Yuborilgan)"
     ACCEPTED = "ACCEPTED", "Qabul qilindi"
+    ASSIGNED_TO_DEV = "ASSIGNED_TO_DEV", "Dasturchiga topshirildi"
     IN_PROGRESS = "IN_PROGRESS", "Jarayonda"
     TESTING = "TESTING", "Test qilinmoqda"
     COMPLETED = "COMPLETED", "Bajarildi"
     REJECTED = "REJECTED", "Rad etildi"
+
+
+class ChangeRequestType(models.TextChoices):
+    NEW = "NEW", "Yangi loyiha"
+    CONTINUATION = "CONTINUATION", "Davom ettiriladigan"
+    NEEDS_CLASSIFICATION = "NEEDS_CLASSIFICATION", "Turlash kerak bo'lgan"
+    MODERNIZATION = "MODERNIZATION", "Modernizatsiya va takomillashtirish"
+    MAINTENANCE = "MAINTENANCE", "Texnik qo'llab-quvvatlash"
 
 
 class ChangeNature(models.TextChoices):
@@ -43,6 +52,14 @@ class ChangeRequest(models.Model):
     request_no = models.CharField("Talabnoma raqami", max_length=50, unique=True, db_index=True)
     system_name = models.CharField("Tizim nomi", max_length=150, default="TeamFlow")
     module = models.CharField("Modul", max_length=150, blank=True)
+    order_type = models.CharField(
+        "Loyiha / Talabnoma turi",
+        max_length=30,
+        choices=ChangeRequestType.choices,
+        default=ChangeRequestType.NEW,
+        db_index=True,
+        help_text="Loyiha turi: Yangi loyiha, Davom ettiriladigan yoki Turlash kerak bo'lgan",
+    )
     request_date = models.DateField("Sana", default=timezone.localdate)
     department = models.CharField("Buyurtma qilayotgan bo'linma", max_length=200)
     responsible_person = models.CharField("Mas'ul shaxs", max_length=200)
@@ -122,6 +139,24 @@ class ChangeRequest(models.Model):
         blank=True,
         related_name="assigned_orders",
         verbose_name="Mas'ul PM",
+    )
+    assigned_developer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_dev_orders",
+        verbose_name="Mas'ul dasturchi / Ijrochi",
+        help_text="Ushbu buyurtma/topshiriq biriktirilgan dasturchi",
+    )
+    linked_task = models.ForeignKey(
+        "tasks.Task",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="change_requests",
+        verbose_name="Tegishli vazifa (Task)",
+        help_text="Loyihadagi bog'langan dasturiy vazifa",
     )
     pm_notes = models.TextField(
         "PM xulosasi va ko'rsatmalari",

@@ -29,7 +29,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 /** Manzildan olib tashlangan identifikatorlar. */
-export type EntityKey = "project" | "task" | "user" | "workspace" | "suggestion";
+export type EntityKey = "project" | "task" | "user" | "workspace" | "suggestion" | "order";
 
 /** `null` — «tozala», `undefined` (kalit yo'q) — «tegma». */
 export type EntityIds = Partial<Record<EntityKey, string | number | null>>;
@@ -206,6 +206,18 @@ export const toWorkspaceChat = (slug: string): NavTarget => ({
 
 export const toNewWorkspace = (): NavTarget => ({
   to: "/ish-maydoni/yangi", state: { workspace: null },
+});
+
+export const toOrders = (): NavTarget => ({
+  to: "/buyurtmalar", state: {},
+});
+
+export const toNewOrder = (): NavTarget => ({
+  to: "/buyurtma/yangi", state: { order: null },
+});
+
+export const toEditOrder = (id: number | string): NavTarget => ({
+  to: "/buyurtma/tahrir", state: { order: id },
 });
 
 /* ------------------------------------------------------- filtrli sahifalar */

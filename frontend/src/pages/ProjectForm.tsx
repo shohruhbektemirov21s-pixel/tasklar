@@ -53,7 +53,7 @@ export default function ProjectForm() {
 
   const [f, setF] = useState({
     name: "", description: "",
-    status: "ACTIVE", start_date: "", due_date: "",
+    status: "ACTIVE", project_type: "NEW", start_date: "", due_date: "",
     // Ish maydoni ichida ochiq - standart holat, jamoa bir-birining ishini
     // ko'rib tursin. Tashqariga chiqarish esa ATAYLAB belgilanadi.
     is_public: true, is_listed: false,
@@ -72,6 +72,7 @@ export default function ProjectForm() {
         setF({
           name: p.name, description: p.description,
           status: p.status,
+          project_type: p.project_type || "NEW",
           start_date: p.start_date || "", due_date: p.due_date || "",
           is_public: p.is_public, is_listed: p.is_listed,
         });
@@ -95,6 +96,73 @@ export default function ProjectForm() {
 
   function set(k: string, v: unknown) {
     setF((p) => ({ ...p, [k]: v }));
+  }
+
+  const DRAFT_KEY = "teamflow_draft_new_project";
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // Qoralamani yuklash (agar foydalanuvchi oldin kiritib chiqib ketgan bo'lsa)
+  useEffect(() => {
+    if (editing) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (
+          parsed?.f &&
+          (parsed.f.name?.trim() ||
+            parsed.f.description?.trim() ||
+            (parsed.brief && Object.values(parsed.brief).some((v: unknown) => typeof v === "string" && v.trim())))
+        ) {
+          setF((prev) => ({ ...prev, ...parsed.f }));
+          if (parsed.brief) {
+            setBrief((prev) => ({ ...prev, ...parsed.brief }));
+          }
+          setDraftRestored(true);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [editing]);
+
+  // Qoralamani avtomatik saqlash
+  useEffect(() => {
+    if (editing) return;
+    const hasData =
+      f.name.trim() ||
+      f.description.trim() ||
+      Object.values(brief).some((v) => typeof v === "string" && v.trim());
+    if (!hasData) return;
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ f, brief }));
+      } catch {
+        // ignore
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [editing, f, brief]);
+
+  function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+    setF({
+      name: "",
+      description: "",
+      status: "ACTIVE",
+      project_type: "NEW",
+      start_date: "",
+      due_date: "",
+      is_public: true,
+      is_listed: false,
+    });
+    setBrief({
+      architecture: "",
+      tech_stack: "",
+      goal: "",
+      pitfalls: "",
+    });
+    setDraftRestored(false);
   }
 
   async function submit(e: React.FormEvent) {
@@ -127,6 +195,10 @@ export default function ProjectForm() {
       const saved = editing
         ? await api.patch<Project>(`/projects/${id}/`, body)
         : await api.post<Project>("/projects/", body);
+
+      if (!editing) {
+        localStorage.removeItem(DRAFT_KEY);
+      }
 
       const hasBrief = Object.values(brief).some((v) => v.trim().length > 0);
       if (hasBrief || editing) {
@@ -233,6 +305,33 @@ export default function ProjectForm() {
       />
       <div className="content">
         <ErrorMsg error={error} />
+        {draftRestored && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "rgba(59, 130, 246, 0.08)",
+            border: "1px solid rgba(59, 130, 246, 0.3)",
+            borderRadius: 8,
+            padding: "10px 14px",
+            marginBottom: 14,
+            fontSize: 13,
+            color: "var(--color-fg-default)"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span>📝</span>
+              <span><strong>Qoralama tiklandi:</strong> Oldin kiritilgan loyiha ma'lumotlari avtomatik yuklandi.</span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={clearDraft}
+              style={{ color: "var(--color-danger, #ef4444)" }}
+            >
+              Qoralamani tozalash
+            </button>
+          </div>
+        )}
         <form id={formId} onSubmit={submit}>
           <div className="split">
             {/* Chap ustun: asosiy maydonlar va boshlang'ich fayllar */}
@@ -243,6 +342,20 @@ export default function ProjectForm() {
                 <input id={`${fid}-0`} value={f.name} required onChange={(e) => set("name", e.target.value)}
                        placeholder={tx("project_form.masalan_mobil_ilova_v2")} />
                 {errors.name && <div className="err">{errors.name}</div>}
+              </div>
+              <div className="field">
+                <label htmlFor={`${fid}-type`}>Loyiha turi</label>
+                <select
+                  id={`${fid}-type`}
+                  value={f.project_type}
+                  onChange={(e) => set("project_type", e.target.value)}
+                >
+                  <option value="NEW">🚀 Yangi loyiha</option>
+                  <option value="CONTINUATION">🔄 Davom ettiriladigan</option>
+                  <option value="NEEDS_CLASSIFICATION">🏷️ Turlash kerak bo'lgan</option>
+                  <option value="MODERNIZATION">⚡ Modernizatsiya va takomillashtirish</option>
+                  <option value="MAINTENANCE">🛠️ Texnik qo'llab-quvvatlash</option>
+                </select>
               </div>
               <div className="field">
                 <label htmlFor={`${fid}-1`}>{tx("project_form.tavsif")}</label>

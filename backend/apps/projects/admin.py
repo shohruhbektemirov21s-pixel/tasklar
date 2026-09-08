@@ -13,8 +13,8 @@ class MemberInline(admin.TabularInline):
 class ProjectAdmin(admin.ModelAdmin):
     """Saytdan o'chirilgan loyihalar shu yerda ko'rinadi va qaytariladi."""
 
-    list_display = ("name", "key", "workspace", "manager", "status", "deleted_at", "updated_at")
-    list_filter = ("status", "workspace", "deleted_at")
+    list_display = ("name", "key", "project_type", "workspace", "manager", "status", "deleted_at", "updated_at")
+    list_filter = ("status", "project_type", "workspace", "deleted_at")
     search_fields = ("name", "key", "description")
     readonly_fields = ("deleted_at", "deleted_by")
     inlines = [MemberInline]

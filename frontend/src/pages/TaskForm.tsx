@@ -94,6 +94,57 @@ export default function TaskForm() {
 
   const set = (k: string, v: unknown) => setF((p) => ({ ...p, [k]: v }));
 
+  const draftKey = !editing && projectId ? `teamflow_draft_task_${projectId}` : null;
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // Qoralamani yuklash (agar foydalanuvchi oldin kiritib chiqib ketgan bo'lsa)
+  useEffect(() => {
+    if (editing || !draftKey) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && (parsed.f?.title || parsed.f?.description || parsed.f?.acceptance_criteria)) {
+          setF((prev) => ({ ...prev, ...parsed.f }));
+          if (Array.isArray(parsed.assignees) && parsed.assignees.length) {
+            setAssignees(parsed.assignees);
+          }
+          setDraftRestored(true);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [editing, draftKey]);
+
+  // Qoralamani avtomatik saqlash
+  useEffect(() => {
+    if (editing || !draftKey) return;
+    if (!f.title.trim() && !f.description.trim() && !f.acceptance_criteria.trim()) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ f, assignees }));
+      } catch {
+        // ignore
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [editing, draftKey, f, assignees]);
+
+  function clearDraft() {
+    if (draftKey) localStorage.removeItem(draftKey);
+    setF({
+      title: "", description: "", acceptance_criteria: "",
+      task_type: "FEATURE", priority: 2, status: "TODO",
+      required_specialty: "", start_date: "", due_date: "",
+      reviewer_id: "",
+    });
+    setAssignees([]);
+    setDraftRestored(false);
+  }
+
   function toggle(uid: number) {
     setAssignees((p) => (p.includes(uid) ? p.filter((x) => x !== uid) : [...p, uid]));
   }
@@ -116,6 +167,10 @@ export default function TaskForm() {
       const saved = editing
         ? await api.patch<Task>(`/tasks/${taskId}/`, body)
         : await api.post<Task>("/tasks/", body);
+
+      if (!editing && draftKey) {
+        localStorage.removeItem(draftKey);
+      }
 
       // Vazifa saqlandi. Fayl yuklanmasa ham vazifa yo'qolmasin - odam
       // vazifa sahifasida fayllarni qayta biriktira oladi.
@@ -181,6 +236,33 @@ export default function TaskForm() {
       />
       <div className="content">
         <ErrorMsg error={error} />
+        {draftRestored && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "rgba(59, 130, 246, 0.08)",
+            border: "1px solid rgba(59, 130, 246, 0.3)",
+            borderRadius: 8,
+            padding: "10px 14px",
+            marginBottom: 14,
+            fontSize: 13,
+            color: "var(--color-fg-default)"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span>📝</span>
+              <span><strong>Qoralama tiklandi:</strong> Oldin kiritilgan ma'lumotlar avtomatik yuklandi.</span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={clearDraft}
+              style={{ color: "var(--color-danger, #ef4444)" }}
+            >
+              Qoralamani tozalash
+            </button>
+          </div>
+        )}
         <form onSubmit={submit}>
           <div className="split">
             <div>
