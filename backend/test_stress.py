@@ -29,7 +29,7 @@ def run_benchmark():
         print(f"Hozirgi mavjud vazifalar: {initial_count} ta (Maksimal raqam: {max_num})")
 
         TOTAL_INSERT = 10000
-        BATCH_SIZE = 1000
+        BATCH_SIZE = 100
         print(f"\n[1] {TOTAL_INSERT} ta yangi vazifa kiritish boshlandi (Batch hajmi: {BATCH_SIZE})...")
 
         start_insert = time.time()
@@ -54,7 +54,8 @@ def run_benchmark():
                 inserted_total += len(batch)
                 elapsed = time.time() - start_insert
                 speed = inserted_total / elapsed if elapsed > 0 else 0
-                print(f"  -> {inserted_total}/{TOTAL_INSERT} ta yozuv kiritildi ({elapsed:.2f}s | {speed:.1f} yozuv/s)")
+                if inserted_total % 1000 == 0:
+                    print(f"  -> {inserted_total}/{TOTAL_INSERT} ta yozuv kiritildi ({elapsed:.2f}s | {speed:.1f} yozuv/s)")
                 batch = []
 
         if batch:
