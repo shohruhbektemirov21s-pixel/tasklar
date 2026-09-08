@@ -28,4 +28,8 @@ core.*
 
 # Vaqtinchalik va log fayllar
 *.log
-~$*.docx
+~$*
+*.docx
+*.doc
+*.dotx
+
