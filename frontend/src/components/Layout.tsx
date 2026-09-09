@@ -7,7 +7,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import ErrorBoundary from "./ErrorBoundary";
 import { Logo } from "./Logo";
-import { IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks } from "./icons";
+import { IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar, SpecialtyTag } from "./ui";
@@ -96,13 +96,16 @@ function BackButton() {
 export default function Layout() {
   const { user, logout } = useAuth();
   // Loyiha boshqaradimi - yon panel shunga qarab boshqacha yoziladi.
-  // ROLdan emas, AMALDAGI holatdan: global roli «Dasturchi» bo'lgan odam
-  // ham biror loyihaga menejer qilib qo'yilgan bo'lishi mumkin.
-  const manages = Boolean(user?.can_create_project || user?.manages_projects);
+  const manages = Boolean(
+    user?.is_boss ||
+    user?.is_platform_admin ||
+    user?.can_create_project ||
+    user?.manages_projects
+  );
   const { subscribe } = useRealtime();
   const go = useGo();
   const loc = useLocation();
-  const [counts, setCounts] = useState({ open: 0, reviews: 0, joins: 0, orders: 0 });
+  const [counts, setCounts] = useState({ open: 0, reviews: 0, joins: 0, orders: 0, suggestions: 0 });
   const [q, setQ] = useState("");
   // Sahifa nomi shu tugunga chiziladi - `PageHead` uni portal orqali
   // to'ldiradi. `useRef` emas, HOLAT: tugun paydo bo'lganda sahifa
@@ -122,23 +125,39 @@ export default function Layout() {
       try {
         // Yengil endpoint: faqat hisoblar (`COUNT`).
         const d = await api.get<SidebarCounts>("/counts/");
-        if (alive) setCounts({ open: d.open, reviews: d.reviews, joins: d.joins, orders: d.orders || 0 });
+        if (alive) {
+          setCounts({
+            open: d.open,
+            reviews: d.reviews,
+            joins: d.joins,
+            orders: d.orders || 0,
+            suggestions: d.suggestions || 0,
+          });
+        }
       } catch { /* jim */ }
     })();
     return () => { alive = false; };
   }, [tick]);
 
-  // Sanoq navigatsiyada emas, HODISADA yangilanadi. Ilgari u har sahifa
-  // almashganda qayta so'ralardi - ya'ni menyu bo'ylab yurgan odam o'nlab
-  // ortiqcha so'rov yuborardi, holbuki raqamlar o'zgarmagan. WebSocket
-  // baribir ulangan: vazifa yoki qo'shilish so'rovi o'zgarsa shu yerdan
-  // xabar keladi.
+  // Sanoq navigatsiyada emas, HODISADA yangilanadi.
   useEffect(() => subscribe((data) => {
     const isOrderNotif =
       data.event === "notification" && Boolean(data.notification?.kind?.startsWith("order."));
+    const isSuggestionNotif =
+      data.event === "notification" && Boolean(data.notification?.kind?.startsWith("suggestion."));
     const joinRequest =
       data.event === "notification" && data.notification?.kind === "join.request";
-    if (joinRequest || isOrderNotif || data.event === "task.update" || data.event === "order.update") {
+    if (
+      joinRequest ||
+      isOrderNotif ||
+      isSuggestionNotif ||
+      data.event === "task.update" ||
+      data.event === "order.update" ||
+      data.event === "order.create" ||
+      data.event === "order.delete" ||
+      data.event === "suggestion.new" ||
+      data.event === "suggestion.decided"
+    ) {
       setTick((n) => n + 1);
     }
   }), [subscribe]);
@@ -355,12 +374,16 @@ export default function Layout() {
             {manages || user?.is_sohaviy_boshqarma
               ? item("/loyihalar", <IconBoard />, tx("common.loyihalar"))
               : item("/loyihalar", <IconLayers />, tx("common.vazifalar"))}
-            {/* Jamoaning ishi - kim nima qilayapti. Faqat loyiha
-                boshqaradigan odamga: ijrochiga o'z ishi yetadi. Marshrut ham
-                himoyalangan (`ManagesOnly`), server ham
-                (`managed_projects_q`). */}
+            {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Buyurtmalar / TZ) - sohaviy boshqarmada eng asosiy bo'lim */}
+            {user?.is_sohaviy_boshqarma &&
+              item("/buyurtmalar", <IconOrder />, "Buyurtmalar", counts.orders, true)}
+            {/* Jamoaning ishi - kim nima qilayapti. */}
             {manages && item("/vazifalar", <IconLayers />, tx("common.vazifalar"))}
-            {item("/mening-ishim", <IconTasks />, tx("layout.mening_ishim"), counts.open)}
+            {/* Tashkilot jamoasi / xodimlar - faqat Boshliq akkauntida ko'rinadi */}
+            {user?.is_boss &&
+              item("/jamoa", <IconUsers />, tx("common.jamoa") || "Jamoa")}
+            {!user?.is_sohaviy_boshqarma &&
+              item("/mening-ishim", <IconTasks />, tx("layout.mening_ishim"), counts.open)}
             {/* Tekshiruv navbati - ishni QABUL QILADIGAN odamga (menejer va
                 admin). Marshrut ham himoyalangan (`ManagesOnly`), server
                 ham (`review-queue` boshqariladigan loyihalar bo'yicha). */}
@@ -369,13 +392,13 @@ export default function Layout() {
             {itemTo(toMessages(), <IconChat />, tx("layout.xabarlar"))}
             {item("/bildirishnomalar", <IconBell />, tx("common.bildirishnomalar"))}
             {item("/taqvim", <IconCalendar />, tx("layout.taqvim"))}
-            {/* Takliflar - hammaga. Yopiq taklifni faqat muallif va
-                boshliq ko'radi, buni server hal qiladi. */}
-            {item("/takliflar", <IconIdea />, tx("layout.takliflar"))}
+            {/* Takliflar - kutilayotgan takliflar soni boshliq uchun ko'rinadi */}
+            {item("/takliflar", <IconIdea />, tx("layout.takliflar"), counts.suggestions, true)}
             {/* So'rovlar - faqat ruxsat berilganlar, boshliq va adminga */}
             {user?.has_inquiries_access && item("/sorovlar", <IconInquiry />, tx("layout.sorovlar"))}
-            {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Buyurtmalar / TZ) - sohaviy boshqarma, PM, boshliq va adminga */}
-            {(user?.can_access_orders || user?.is_sohaviy_boshqarma || user?.is_platform_admin || user?.is_manager || user?.is_boss) &&
+            {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Buyurtmalar / TZ) - PM, boshliq va adminga */}
+            {!user?.is_sohaviy_boshqarma &&
+              (user?.can_access_orders || user?.is_platform_admin || user?.is_manager || user?.is_boss) &&
               item("/buyurtmalar", <IconOrder />, "Buyurtmalar", counts.orders, true)}
             {item("/tarix", <IconHistory />, tx("layout.umumiy_tarix"))}
             {/* Admin panel - faqat platforma adminida ko'rinadi. Marshrut

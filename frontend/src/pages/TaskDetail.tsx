@@ -7,7 +7,7 @@ import { PageHead } from "@/components/Layout";
 import TaskSubmission from "@/components/TaskSubmission";
 import Timeline from "@/components/Timeline";
 import { useRealtime } from "@/realtime/RealtimeContext";
-import { Avatar, AvatarStack, Card, DateField, DateTimeField, ErrorMsg, fmtDate, fmtDateTime, fromDateTimeInput, Loading, Priority, StatusBadge, timeAgo, toDateTimeInput, todayInTz } from "@/components/ui";
+import { Avatar, AvatarStack, Card, DateField, DateTimeField, Empty, ErrorMsg, fmtDate, fmtDateTime, fromDateTimeInput, Loading, Priority, StatusBadge, timeAgo, toDateTimeInput, todayInTz } from "@/components/ui";
 import { confirmDialog } from "@/components/Confirm";
 import { toProject, toTask, toTaskEdit, useEntityId, useGo } from "@/nav";
 import { createSubtask, getAvailableSubtasks, linkSubtask, unlinkSubtask } from "@/api/tasks";
@@ -28,6 +28,10 @@ export default function TaskDetail() {
 
   const [task, setTask] = useState<Task | null>(null);
   const [history, setHistory] = useState<Activity[]>([]);
+  const [histSearch, setHistSearch] = useState("");
+  const [histCategory, setHistCategory] = useState("");
+  const [histDays, setHistDays] = useState("");
+  const [histPage, setHistPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -584,9 +588,112 @@ export default function TaskDetail() {
               </Card>
             )}
 
-            <Card title={tx("task_detail.vazifa_tarixi")}>
-              <Timeline items={history} showProject={false} />
-            </Card>
+            {(() => {
+              const filteredHistory = history.filter((a) => {
+                if (histCategory && a.category !== histCategory) return false;
+                if (histSearch.trim()) {
+                  const q = histSearch.trim().toLowerCase();
+                  const matchSum = (a.summary || "").toLowerCase().includes(q);
+                  const matchDet = (a.detail || "").toLowerCase().includes(q);
+                  const matchActor = (a.actor?.full_name || "").toLowerCase().includes(q);
+                  if (!matchSum && !matchDet && !matchActor) return false;
+                }
+                if (histDays) {
+                  const days = Number(histDays);
+                  const itemTime = new Date(a.created_at).getTime();
+                  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+                  if (itemTime < cutoff) return false;
+                }
+                return true;
+              });
+
+              const HIST_PAGE_SIZE = 15;
+              const histPages = Math.ceil(filteredHistory.length / HIST_PAGE_SIZE);
+              const pagedHistory = filteredHistory.slice((histPage - 1) * HIST_PAGE_SIZE, histPage * HIST_PAGE_SIZE);
+
+              return (
+                <Card
+                  title={tx("task_detail.vazifa_tarixi")}
+                  badge={<span className="badge">{filteredHistory.length} {tx("feed.yozuv")}</span>}
+                >
+                  <div className="filters" style={{ marginBottom: 16 }}>
+                    <div className="f grow">
+                      <label htmlFor={`${fid}-h-search`}>{tx("feed.yozuvlar_ichidan_qidirish")}</label>
+                      <input
+                        id={`${fid}-h-search`}
+                        value={histSearch}
+                        placeholder={tx("feed.matn_boyicha")}
+                        onChange={(e) => {
+                          setHistPage(1);
+                          setHistSearch(e.target.value);
+                        }}
+                      />
+                    </div>
+                    <div className="f">
+                      <label htmlFor={`${fid}-h-cat`}>{tx("feed.turkum")}</label>
+                      <select
+                        id={`${fid}-h-cat`}
+                        value={histCategory}
+                        onChange={(e) => {
+                          setHistPage(1);
+                          setHistCategory(e.target.value);
+                        }}
+                      >
+                        <option value="">{tx("common.hammasi")}</option>
+                        {(meta?.activity_category || []).map((c) => (
+                          <option key={String(c.value)} value={String(c.value)}>{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="f">
+                      <label htmlFor={`${fid}-h-days`}>{tx("common.davr")}</label>
+                      <select
+                        id={`${fid}-h-days`}
+                        value={histDays}
+                        onChange={(e) => {
+                          setHistPage(1);
+                          setHistDays(e.target.value);
+                        }}
+                      >
+                        <option value="">{tx("feed.butun_tarix")}</option>
+                        <option value="7">{tx("feed.songgi_7_kun")}</option>
+                        <option value="30">{tx("feed.songgi_30_kun")}</option>
+                        <option value="90">{tx("feed.songgi_90_kun")}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {!filteredHistory.length ? (
+                    <Empty
+                      title={tx("feed.yozuv_topilmadi")}
+                      text={tx("feed.filtrni_boshatib_koring")}
+                    />
+                  ) : (
+                    <Timeline items={pagedHistory} showProject={false} showTask={false} />
+                  )}
+
+                  {histPages > 1 && (
+                    <div className="row" style={{ justifyContent: "center", marginTop: 14 }}>
+                      <button
+                        className="btn btn-sm"
+                        disabled={histPage === 1}
+                        onClick={() => setHistPage((p) => p - 1)}
+                      >
+                        {tx("feed.oldingi")}
+                      </button>
+                      <span className="muted">{histPage} / {histPages}</span>
+                      <button
+                        className="btn btn-sm"
+                        disabled={histPage >= histPages}
+                        onClick={() => setHistPage((p) => p + 1)}
+                      >
+                        {tx("feed.keyingi")}
+                      </button>
+                    </div>
+                  )}
+                </Card>
+              );
+            })()}
           </div>
 
           {/* ------------------------------------------------ ONG USTUN */}

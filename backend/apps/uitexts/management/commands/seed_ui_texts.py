@@ -70,6 +70,10 @@ class Command(BaseCommand):
             if stale:
                 removed = UiText.objects.filter(key__in=stale).delete()[0]
 
+        from django.core.cache import cache
+        cache.delete("uitexts:version")
+        cache.delete("uitexts:data")
+
         self.stdout.write(
             f"Interfeys matnlari: {created} qo'shildi, {updated} yangilandi, "
             f"{skipped} tegilmadi, {removed} o'chirildi."

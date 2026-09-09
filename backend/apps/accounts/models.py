@@ -23,7 +23,7 @@ class GlobalRole(models.TextChoices):
     MANAGER = "MANAGER", "Loyiha menejeri"
     OPERATOR = "OPERATOR", "Operator"
     DEVELOPER = "DEVELOPER", "Dasturchi"
-    SOHAVIY = "SOHAVIY", "Sohaviy boshqarmalar"
+    SOHAVIY = "SOHAVIY", "Boshqarma"
 
 
 
@@ -199,6 +199,17 @@ class User(AbstractBaseUser, PermissionsMixin):
             or self.is_manager
             or self.is_sohaviy_boshqarma
         )
+
+    @property
+    def department_name(self):
+        """Foydalanuvchi faoliyat yuritadigan bo'linma/boshqarma nomi."""
+        if self.department_id and self.department:
+            return self.department.name
+        if self.job_title:
+            return self.job_title
+        if self.is_sohaviy_boshqarma:
+            return "Sohaviy boshqarmalar"
+        return ""
 
     @property
     def can_create_project(self):

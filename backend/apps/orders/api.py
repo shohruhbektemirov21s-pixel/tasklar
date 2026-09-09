@@ -1,5 +1,6 @@
 import logging
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, permissions, viewsets
@@ -121,13 +122,38 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             qs = qs.filter(order_type=type_param)
 
         from django.db.models import Q
-        if for_pm and user.is_authenticated:
-            qs = qs.filter(Q(assigned_pm=user) | Q(project__manager=user))
-        elif mine and user.is_authenticated:
-            mine_q = Q(created_by=user) | Q(assigned_pm=user) | Q(project__manager=user)
+        is_admin_or_boss = bool(
+            user.is_authenticated
+            and (user.is_platform_admin or getattr(user, "is_boss", False))
+        )
+        is_sohaviy = bool(
+            user.is_authenticated
+            and (
+                getattr(user, "is_sohaviy_boshqarma", False)
+                or getattr(user, "specialty", "") == "SOHAVIY"
+                or getattr(user, "global_role", "") == "SOHAVIY"
+            )
+        )
+
+        if is_sohaviy and not is_admin_or_boss:
+            # Sohaviy boshqarma vakili faqat o'zining yoki o'z boshqarmasining buyurtmalarini ko'radi
+            sohaviy_q = Q(created_by=user)
             if getattr(user, "department_id", None) and user.department:
-                mine_q |= Q(department__iexact=user.department.name) | Q(created_by__department=user.department)
-            qs = qs.filter(mine_q)
+                sohaviy_q |= (
+                    Q(department__iexact=user.department.name)
+                    | Q(created_by__department=user.department)
+                )
+            elif getattr(user, "department_name", None) and user.department_name != "Sohaviy boshqarmalar":
+                sohaviy_q |= Q(department__iexact=user.department_name)
+            qs = qs.filter(sohaviy_q)
+        else:
+            if for_pm and user.is_authenticated:
+                qs = qs.filter(Q(assigned_pm=user) | Q(project__manager=user))
+            elif mine and user.is_authenticated:
+                mine_q = Q(created_by=user) | Q(assigned_pm=user) | Q(project__manager=user)
+                if getattr(user, "department_id", None) and user.department:
+                    mine_q |= Q(department__iexact=user.department.name) | Q(created_by__department=user.department)
+                qs = qs.filter(mine_q)
 
         deadline_param = self.request.query_params.get("deadline")
         if deadline_param:
@@ -149,6 +175,45 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 )
             elif deadline_param.upper() == "URGENT":
                 qs = qs.filter(priority__in=[ChangeRequestPriority.URGENT, ChangeRequestPriority.HIGH])
+
+        period_param = self.request.query_params.get("period")
+        metric_param = self.request.query_params.get("metric")
+        if period_param in ("year", "month", "week"):
+            from apps.core.periods import _period_start
+            start = _period_start(period_param)
+            if metric_param == "submitted":
+                qs = qs.filter(created_at__gte=start)
+            elif metric_param == "approved":
+                qs = qs.filter(
+                    created_at__gte=start,
+                    status__in=[
+                        ChangeRequestStatus.ACCEPTED,
+                        ChangeRequestStatus.ASSIGNED_TO_DEV,
+                        ChangeRequestStatus.IN_PROGRESS,
+                        ChangeRequestStatus.TESTING,
+                        ChangeRequestStatus.READY_FOR_REVIEW,
+                        ChangeRequestStatus.COMPLETED,
+                    ],
+                )
+            elif metric_param == "completed":
+                qs = qs.filter(
+                    Q(completed_at__gte=start)
+                    | Q(client_approved_at__gte=start)
+                    | Q(created_at__gte=start, status=ChangeRequestStatus.COMPLETED)
+                )
+            elif metric_param == "rejected":
+                qs = qs.filter(created_at__gte=start, status=ChangeRequestStatus.REJECTED)
+            else:
+                qs = qs.filter(created_at__gte=start)
+        elif metric_param:
+            if metric_param == "rejected":
+                qs = qs.filter(status=ChangeRequestStatus.REJECTED)
+            elif metric_param in ("pending", "waiting", "new"):
+                qs = qs.filter(status=ChangeRequestStatus.NEW)
+            elif metric_param == "ready_for_review":
+                qs = qs.filter(status=ChangeRequestStatus.READY_FOR_REVIEW)
+            elif metric_param == "completed":
+                qs = qs.filter(status=ChangeRequestStatus.COMPLETED)
 
         return qs
 
@@ -177,6 +242,12 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 )
         try:
             notify_order_created(order)
+            from apps.notifications.services import send_to_users
+            from .services import get_order_notification_recipients
+            all_users = get_order_notification_recipients(order=order)
+            if order.created_by:
+                all_users.append(order.created_by)
+            send_to_users(all_users, {"event": "order.create", "order_id": order.pk})
         except Exception:
             logger.exception("Buyurtma yaratilganda bildirishnoma yuborishda xatolik: %s", order.pk)
 
@@ -214,6 +285,16 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             except Exception:
                 logger.exception("Buyurtma holati o'zgarganda bildirishnoma yuborishda xatolik: %s", order.pk)
 
+        try:
+            from apps.notifications.services import send_to_users
+            from .services import get_order_notification_recipients
+            all_users = get_order_notification_recipients(order=order)
+            if order.created_by:
+                all_users.append(order.created_by)
+            send_to_users(all_users, {"event": "order.update", "order_id": order.pk})
+        except Exception:
+            pass
+
     def perform_destroy(self, instance):
         user = self.request.user
         is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
@@ -231,7 +312,15 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 {"detail": "Faqat buyurtmani yaratgan boshqarma vakili yoki tizim administratori o'chira oladi."}
             )
 
+        order_pk = instance.pk
         super().perform_destroy(instance)
+        try:
+            from apps.notifications.services import send_to_users
+            from .services import get_order_notification_recipients
+            all_users = get_order_notification_recipients()
+            send_to_users(all_users, {"event": "order.delete", "order_id": order_pk})
+        except Exception:
+            pass
 
     @action(detail=True, methods=["post"], url_path="claim-order")
     def claim_order(self, request, pk=None):
@@ -265,6 +354,19 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             order.executor_signer = f"{user.full_name} ({role_label})"
             if order.status == ChangeRequestStatus.NEW:
                 order.status = ChangeRequestStatus.ACCEPTED
+
+            if "pm_estimated_duration" in request.data:
+                order.pm_estimated_duration = request.data.get("pm_estimated_duration") or ""
+            if "pm_deadline" in request.data and request.data.get("pm_deadline"):
+                order.pm_deadline = request.data.get("pm_deadline")
+            if "pm_notes" in request.data:
+                order.pm_notes = request.data.get("pm_notes") or ""
+            if "assigned_developer" in request.data:
+                dev_id = request.data.get("assigned_developer")
+                order.assigned_developer_id = dev_id if dev_id else None
+                if dev_id and order.status == ChangeRequestStatus.ACCEPTED:
+                    order.status = ChangeRequestStatus.ASSIGNED_TO_DEV
+
             order.save()
 
             cur_ver = order.versions.filter(version=order.version).first()
@@ -769,6 +871,38 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             "maintenance": qs.filter(order_type=ChangeRequestType.MAINTENANCE).count(),
         }
 
+        from apps.core.periods import PERIODS, _period_start
+        period_starts = {key: _period_start(key) for key in PERIODS}
+        approved_statuses = [
+            ChangeRequestStatus.ACCEPTED,
+            ChangeRequestStatus.ASSIGNED_TO_DEV,
+            ChangeRequestStatus.IN_PROGRESS,
+            ChangeRequestStatus.TESTING,
+            ChangeRequestStatus.READY_FOR_REVIEW,
+            ChangeRequestStatus.COMPLETED,
+        ]
+
+        periods = []
+        for key in PERIODS:
+            start = period_starts[key]
+            p_submitted = qs.filter(created_at__gte=start).count()
+            p_approved = qs.filter(created_at__gte=start, status__in=approved_statuses).count()
+            p_completed = qs.filter(
+                Q(completed_at__gte=start)
+                | Q(client_approved_at__gte=start)
+                | Q(created_at__gte=start, status=ChangeRequestStatus.COMPLETED)
+            ).count()
+            p_rejected = qs.filter(created_at__gte=start, status=ChangeRequestStatus.REJECTED).count()
+
+            periods.append({
+                "key": key,
+                "since": period_starts[key].isoformat(),
+                "submitted": p_submitted,
+                "approved": p_approved,
+                "completed": p_completed,
+                "rejected": p_rejected,
+            })
+
         return Response({
             "total": total,
             "new": new_count,
@@ -783,4 +917,10 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             "urgent": urgent,
             "high": high,
             "by_type": by_type,
+            "periods": periods,
+            "deadlines": {
+                "rejected": rejected,
+                "pending": new_count,
+                "ready_for_review": ready_for_review,
+            },
         })

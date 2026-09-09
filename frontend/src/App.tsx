@@ -55,6 +55,7 @@ const Suggestions = lazy(() => import("@/pages/Suggestions"));
 const SuggestionDetail = lazy(() => import("@/pages/SuggestionDetail"));
 const Inquiries = lazy(() => import("@/pages/Inquiries"));
 const ChangeRequests = lazy(() => import("@/pages/ChangeRequests"));
+const OrderDetail = lazy(() => import("@/pages/OrderDetail"));
 const OrderForm = lazy(() => import("@/pages/OrderForm"));
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -94,6 +95,16 @@ function ManagesOnly({ children }: { children: React.ReactNode }) {
   if (loading) return <Loading />;
   if (!user?.can_create_project && !user?.manages_projects) {
     return <Navigate to="/loyihalar" replace />;
+  }
+  return <>{children}</>;
+}
+
+/** Tashkilot jamoasi - faqat Boshliqqa */
+function BossOnly({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <Loading />;
+  if (!user?.is_boss && !user?.is_platform_admin) {
+    return <Navigate to="/panel" replace />;
   }
   return <>{children}</>;
 }
@@ -164,7 +175,7 @@ export default function App() {
         <Route path="/tekshiruv" element={<ManagesOnly><ReviewQueue /></ManagesOnly>} />
         <Route path="/tarix" element={<Feed />} />
         <Route path="/taqvim" element={<CalendarPage />} />
-        <Route path="/jamoa" element={<People />} />
+        <Route path="/jamoa" element={<BossOnly><People /></BossOnly>} />
         <Route path="/ish-maydonlari" element={<Workspaces />} />
         <Route path="/ish-maydoni/yangi" element={<ManagerOnly><WorkspaceForm /></ManagerOnly>} />
         <Route path="/ish-maydoni/chat" element={<WorkspaceChat />} />
@@ -178,6 +189,8 @@ export default function App() {
         <Route path="/sorovlar" element={<Inquiries />} />
         {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Буюртма.docx) */}
         <Route path="/buyurtmalar" element={<ChangeRequests />} />
+        <Route path="/buyurtma" element={<OrderDetail />} />
+        <Route path="/buyurtma/:id" element={<Resolve kind="order" />} />
         <Route path="/buyurtma/yangi" element={<OrderForm />} />
         <Route path="/buyurtma/tahrir" element={<OrderForm />} />
         <Route path="/buyurtmalar/yangi" element={<OrderForm />} />

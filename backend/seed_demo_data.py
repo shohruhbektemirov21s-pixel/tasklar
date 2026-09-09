@@ -100,20 +100,26 @@ def run_seed():
         WorkspaceMember.objects.get_or_create(workspace=ws, user=u, defaults={"role": r})
 
     # 3. Loyiha (Project) yaratish
-    project, created = Project.objects.get_or_create(
-        workspace=ws,
-        name="TeamFlow Platforma 2.0",
-        defaults={
-            "key": "TF",
-            "description": "Jamoa vazifalarini va takliflarini boshqarish uchun zamonaviy platforma.",
-            "status": ProjectStatus.ACTIVE,
-            "manager": pm,
-            "created_by": boss,
-            "is_public": True,
-            "start_date": timezone.localdate() - timedelta(days=15),
-            "due_date": timezone.localdate() + timedelta(days=45),
-        }
-    )
+    project = Project.objects.filter(workspace=ws, key="TF").first()
+    if not project:
+        project = Project.objects.create(
+            workspace=ws,
+            name="TeamFlow Platforma 2.0",
+            key="TF",
+            description="Jamoa vazifalarini va takliflarini boshqarish uchun zamonaviy platforma.",
+            status=ProjectStatus.ACTIVE,
+            manager=pm,
+            created_by=boss,
+            is_public=True,
+            start_date=timezone.localdate() - timedelta(days=15),
+            due_date=timezone.localdate() + timedelta(days=45),
+        )
+    else:
+        project.name = "TeamFlow Platforma 2.0"
+        project.description = "Jamoa vazifalarini va takliflarini boshqarish uchun zamonaviy platforma."
+        project.manager = pm
+        project.created_by = boss
+        project.save()
     project.needed_specialties = [Specialty.BACKEND, Specialty.FRONTEND, Specialty.PM]
     project.save()
     print(f"Loyiha: {project.name} ({project.key})")

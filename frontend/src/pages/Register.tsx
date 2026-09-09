@@ -16,34 +16,77 @@ interface SpecialtyItem {
   focus: string;
 }
 
+const DEFAULT_SPECIALTIES: SpecialtyItem[] = [
+  { value: "BACKEND", label: "Backend dasturchi", icon: "{ }", color: "#3fb950", skills: [], focus: "" },
+  { value: "FRONTEND", label: "Frontend dasturchi", icon: "</>", color: "#2f81f7", skills: [], focus: "" },
+  { value: "FULLSTACK", label: "Fullstack dasturchi", icon: "</>", color: "#a371f7", skills: [], focus: "" },
+  { value: "MOBILE", label: "Mobil dasturchi", icon: "📱", color: "#db61a2", skills: [], focus: "" },
+  { value: "DEVOPS", label: "DevOps muhandisi", icon: "⚙️", color: "#f0883e", skills: [], focus: "" },
+  { value: "QA", label: "Tester (QA)", icon: "✓", color: "#56d364", skills: [], focus: "" },
+  { value: "DESIGNER", label: "UI/UX dizayner", icon: "🎨", color: "#bc8cff", skills: [], focus: "" },
+  { value: "DATA", label: "Data / ML muhandisi", icon: "📊", color: "#79c0ff", skills: [], focus: "" },
+  { value: "ANALYST", label: "Biznes tahlilchi", icon: "📈", color: "#d29922", skills: [], focus: "" },
+  { value: "SECURITY", label: "Xavfsizlik mutaxassisi", icon: "🔒", color: "#f85149", skills: [], focus: "" },
+  { value: "PM", label: "Loyiha menejeri", icon: "📋", color: "#8b949e", skills: [], focus: "" },
+  { value: "SOHAVIY", label: "Boshqarma", icon: "🏛️", color: "#0284c7", skills: [], focus: "" },
+];
+
 export default function Register() {
   const fid = useId();
   const { register } = useAuth();
   const nav = useNavigate();
 
-  const [specialties, setSpecialties] = useState<SpecialtyItem[]>([]);
+  const [specialties, setSpecialties] = useState<SpecialtyItem[]>(DEFAULT_SPECIALTIES);
   const [form, setForm] = useState({
-    full_name: "", email: "", specialty: "", password: "", password_confirm: "",
+    full_name: "", email: "", specialty: "", department_name: "", password: "", password_confirm: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    let alive = true;
     void (async () => {
       try {
         const data = await api.get<{ specialties: SpecialtyItem[] }>("/auth/specialties/");
-        setSpecialties(data.specialties);
+        if (alive && data?.specialties?.length) {
+          setSpecialties(data.specialties);
+        }
       } catch {
-        setError(tx("register.mutaxassisliklar_royxatini_yuklab_bolmadi"));
+        // Sahifa ochilganda qizil xatolik ko'rsatilmaydi
       }
     })();
+    return () => { alive = false; };
   }, []);
 
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string, v: string) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    if (errors[k]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[k];
+        return next;
+      });
+    }
+    if (k === "specialty" && error) {
+      setError(null);
+    }
+  };
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.specialty) {
+      const msg = tx("register.mutaxassislikni_tanlang") || "Mutaxassislikni tanlang";
+      setError(msg);
+      setErrors({ specialty: msg });
+      return;
+    }
+    if (form.specialty === "SOHAVIY" && !form.department_name.trim()) {
+      const msg = tx("register.boshqarma_nomini_kiriting") || "Iltimos, boshqarma nomini kiriting";
+      setError(msg);
+      setErrors({ department_name: msg });
+      return;
+    }
     setBusy(true);
     setError(null);
     setErrors({});
@@ -99,21 +142,28 @@ export default function Register() {
 
             <div className="field">
               <label htmlFor={`${fid}-2`}>{tx("common.mutaxassislik")}</label>
-              <select id={`${fid}-2`} value={form.specialty} required
+              <select id={`${fid}-2`} value={form.specialty}
                       onChange={(e) => set("specialty", e.target.value)}>
                 <option value="">{tx("register.tanlang")}</option>
                 {specialties.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
-              {form.specialty === "SOHAVIY" && (
-                <div style={{ marginTop: 6, fontSize: 12, color: "#0284c7", background: "rgba(2,132,199,0.08)", padding: "6px 10px", borderRadius: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>🏛️</span>
-                  <span>Sohaviy boshqarmalar profili — axborot tizimiga o'zgartirish kiritish buyurtmalarini shakllantirish imkoniyati taqdim etiladi.</span>
-                </div>
-              )}
               {errors.specialty && <div className="err">{errors.specialty}</div>}
             </div>
+
+            {form.specialty === "SOHAVIY" && (
+              <div className="field">
+                <label htmlFor={`${fid}-dept`}>{tx("register.boshqarma_nomi")}</label>
+                <input
+                  id={`${fid}-dept`}
+                  value={form.department_name}
+                  onChange={(e) => set("department_name", e.target.value)}
+                  placeholder={tx("register.boshqarma_placeholder")}
+                />
+                {errors.department_name && <div className="err">{errors.department_name}</div>}
+              </div>
+            )}
 
             <div className="field">
               <label htmlFor={`${fid}-3`}>{tx("common.parol")}</label>

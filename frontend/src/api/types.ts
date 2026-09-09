@@ -364,6 +364,7 @@ export interface SidebarCounts {
   reviews: number;
   joins: number;
   orders?: number;
+  suggestions?: number;
 }
 
 /** Menejer jamoasidagi bitta odam: qaysi loyihalarda va qancha ish bilan. */
@@ -867,6 +868,8 @@ export interface SidebarCounts {
   joins: number;
   /** axborot tizimiga o'zgartirish kiritish buyurtmalari soni */
   orders?: number;
+  /** boshliq tasdiqlashi kerak bo'lgan kutilayotgan takliflar soni */
+  suggestions?: number;
 }
 
 /** Loyiha / Buyurtma talabnomasi turi */
@@ -876,6 +879,15 @@ export type OrderTypeValue =
   | "NEEDS_CLASSIFICATION"
   | "MODERNIZATION"
   | "MAINTENANCE";
+
+export interface OrderPeriodRow {
+  key: DashboardPeriod;
+  since: string;
+  submitted: number;
+  approved: number;
+  completed: number;
+  rejected: number;
+}
 
 /** `GET /api/orders/stats/` javobi */
 export interface OrderStats {
@@ -897,6 +909,12 @@ export interface OrderStats {
     needs_classification?: number;
     modernization?: number;
     maintenance?: number;
+  };
+  periods?: OrderPeriodRow[];
+  deadlines?: {
+    rejected: number;
+    pending: number;
+    ready_for_review: number;
   };
 }
 

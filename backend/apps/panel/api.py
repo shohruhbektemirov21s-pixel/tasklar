@@ -626,7 +626,25 @@ def sidebar_counts(request):
         or getattr(user, "is_sohaviy_boshqarma", False)
     ):
         from apps.orders.models import ChangeRequest, ChangeRequestStatus
-        orders_count = ChangeRequest.objects.filter(
+        orders_base_qs = ChangeRequest.objects.all()
+        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        is_sohaviy = bool(
+            getattr(user, "is_sohaviy_boshqarma", False)
+            or getattr(user, "specialty", "") == "SOHAVIY"
+            or getattr(user, "global_role", "") == "SOHAVIY"
+        )
+        if is_sohaviy and not is_admin_or_boss:
+            sohaviy_q = Q(created_by=user)
+            if getattr(user, "department_id", None) and user.department:
+                sohaviy_q |= (
+                    Q(department__iexact=user.department.name)
+                    | Q(created_by__department=user.department)
+                )
+            elif getattr(user, "department_name", None) and user.department_name != "Sohaviy boshqarmalar":
+                sohaviy_q |= Q(department__iexact=user.department_name)
+            orders_base_qs = orders_base_qs.filter(sohaviy_q)
+
+        orders_count = orders_base_qs.filter(
             status__in=[
                 ChangeRequestStatus.NEW,
                 ChangeRequestStatus.ACCEPTED,
@@ -635,11 +653,17 @@ def sidebar_counts(request):
             ]
         ).count()
 
+    suggestions_count = 0
+    if getattr(user, "is_boss", False):
+        from apps.suggestions.models import Suggestion, SuggestionStatus
+        suggestions_count = Suggestion.objects.filter(status=SuggestionStatus.PENDING).count()
+
     data = {
         "open": open_count,
         "reviews": review_qs.count(),
         "joins": join_qs.count(),
         "orders": orders_count,
+        "suggestions": suggestions_count,
     }
     django_cache.set(sidebar_key(user.id), data, SIDEBAR_TTL)
     return Response(data)

@@ -4,7 +4,7 @@ import type { ChangeRequestItem, OrderTypeValue, Project } from "@/api/types";
 import { useFetch } from "@/api/useFetch";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
-import { Card, ErrorMsg, Loading } from "@/components/ui";
+import { Card, ErrorMsg, Loading, fmtDateTime } from "@/components/ui";
 import { toOrders, useEntityId, useGo, useIsPath } from "@/nav";
 
 const ORDER_DRAFT_KEY = "teamflow_draft_new_order";
@@ -38,11 +38,30 @@ export default function OrderForm() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Real-time joriy vaqt (aniq sana va soat)
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const { data: projectsData } = useFetch<{ count: number; results: Project[] } | Project[]>(
     "/projects/",
     { scope: "visible" }
   );
   const projects: Project[] = useMemo(() => (projectsData ? listOf<Project>(projectsData) : []), [projectsData]);
+
+  const userDepartment = useMemo(() => {
+    if (!user) return "";
+    if (user.department_name && user.department_name.trim()) return user.department_name.trim();
+    if (user.department && typeof user.department === "string" && user.department.trim()) return user.department.trim();
+    if (user.job_title && user.job_title.trim()) return user.job_title.trim();
+    if (user.is_sohaviy_boshqarma || user.global_role === "SOHAVIY" || user.specialty === "SOHAVIY") {
+      return "Sohaviy boshqarmalar";
+    }
+    if (user.specialty_display && user.specialty_display.trim()) return user.specialty_display.trim();
+    return "";
+  }, [user]);
 
   const [f, setF] = useState<{
     system_name: string;
@@ -59,12 +78,23 @@ export default function OrderForm() {
     system_name: "TeamFlow",
     order_type: "NEW",
     module: "",
-    department: user?.department_name || "",
+    department: userDepartment,
     responsible_person: user?.full_name || "",
     priority: "HIGH",
     due_date: "",
     project: null,
   });
+
+  // Yangi buyurtmada akkaunt ma'lumotlari yuklangach bo'linma va mas'ul shaxsni avtomatik to'ldirish
+  useEffect(() => {
+    if (!editing && user) {
+      setF((prev) => ({
+        ...prev,
+        department: prev.department ? prev.department : userDepartment,
+        responsible_person: prev.responsible_person ? prev.responsible_person : (user.full_name || ""),
+      }));
+    }
+  }, [editing, user, userDepartment]);
 
   // Tahrirlash rejimida mavjud buyurtmani yuklash
   useEffect(() => {
@@ -282,7 +312,14 @@ export default function OrderForm() {
                   <select
                     id={`${fid}-type`}
                     value={f.order_type}
-                    onChange={(e) => set("order_type", e.target.value as OrderTypeValue)}
+                    onChange={(e) => {
+                      const val = e.target.value as OrderTypeValue;
+                      setF((prev) => ({
+                        ...prev,
+                        order_type: val,
+                        project: val === "NEW" ? null : prev.project,
+                      }));
+                    }}
                   >
                     <option value="NEW">🚀 Yangi loyiha</option>
                     <option value="CONTINUATION">🔄 Davom ettiriladigan</option>
@@ -292,27 +329,38 @@ export default function OrderForm() {
                   </select>
                 </div>
 
-                <div className="field">
-                  <label htmlFor={`${fid}-proj`}>Tegishli loyiha</label>
-                  <select
-                    id={`${fid}-proj`}
-                    value={f.project || ""}
-                    onChange={(e) => set("project", e.target.value ? Number(e.target.value) : null)}
-                  >
-                    <option value="">-- Loyihani tanlang (ixtiyoriy) --</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.key})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {f.order_type !== "NEW" && (
+                  <div className="field">
+                    <label htmlFor={`${fid}-proj`}>Tegishli loyiha</label>
+                    <select
+                      id={`${fid}-proj`}
+                      value={f.project || ""}
+                      onChange={(e) => {
+                        const pid = e.target.value ? Number(e.target.value) : null;
+                        const proj = projects.find((p) => p.id === pid);
+                        setF((prev) => ({
+                          ...prev,
+                          project: pid,
+                          system_name: proj ? proj.name : prev.system_name,
+                        }));
+                      }}
+                    >
+                      <option value="">-- Loyihani tanlang (ixtiyoriy) --</option>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.key})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="field">
-                  <label htmlFor={`${fid}-mod`}>Modul / Yo'nalish</label>
+                  <label htmlFor={`${fid}-mod`}>Loyiha haqida izoh</label>
                   <input
                     id={`${fid}-mod`}
                     value={f.module}
+                    placeholder="Loyiha haqida qisqacha izoh yoki qo'shimcha ma'lumot..."
                     onChange={(e) => set("module", e.target.value)}
                   />
                   {errors.module && <div className="err">{errors.module}</div>}
@@ -350,6 +398,43 @@ export default function OrderForm() {
                     value={f.due_date}
                     onChange={(e) => set("due_date", e.target.value)}
                   />
+                </div>
+
+                {/* Pastki o'ng burchakdagi sana va vaqt (oq va qora uslubda) */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    marginTop: 18,
+                    paddingTop: 12,
+                    borderTop: "1px solid #f1f5f9",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      background: "#ffffff",
+                      border: "1px solid #0f172a",
+                      borderRadius: 6,
+                      padding: "5px 12px",
+                      fontSize: 12,
+                      color: "#0f172a",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                    }}
+                  >
+                    <span style={{ fontSize: 13 }}>🕒</span>
+                    <span style={{ color: "#475569", fontWeight: 500 }}>
+                      {editing ? "Yaratilgan vaqti:" : "Sana va vaqt:"}
+                    </span>
+                    <strong style={{ fontWeight: 700, color: "#000000" }}>
+                      {editing && existingItem?.created_at
+                        ? fmtDateTime(existingItem.created_at)
+                        : fmtDateTime(now.toISOString())}
+                    </strong>
+                  </div>
                 </div>
               </Card>
             </div>

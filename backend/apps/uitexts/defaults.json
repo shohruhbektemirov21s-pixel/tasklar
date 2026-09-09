@@ -1,4 +1,80 @@
 {
+ "dashboard.berilgan_buyurtmalar": {
+  "value": "Berilgan buyurtmalar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.tasdiqlangan_buyurtmalar": {
+  "value": "Tasdiqlangan",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.rad_etilgan_buyurtmalar": {
+  "value": "Rad etilgan",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.korib_chiqilmoqda": {
+  "value": "Ko'rib chiqilmoqda",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.shu_davrda_yuborilgan_buyurtmalar": {
+  "value": "Shu davrda yuborilgan buyurtmalar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.shu_davrda_tasdiqlangan_buyurtmalar": {
+  "value": "Shu davrda qabul qilingan va ijroga olinganlar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.shu_davrda_bajarilgan_buyurtmalar": {
+  "value": "Shu davrda yakunlangan buyurtmalar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.boshqarma_talabnomalari_boyicha": {
+  "value": "Boshqarmangiz talabnomalari bo'yicha",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.jami": {
+  "value": "Jami",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.barcha_holatlar": {
+  "value": "Barcha holatlar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.talabnoma_no": {
+  "value": "Talabnoma №",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.axborot_tizimi": {
+  "value": "Axborot tizimi",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.kutilyapti": {
+  "value": "Kutilyapti",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.buyurtmalar": {
+  "value": "Buyurtmalar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.qidiruv_placeholder": {
+  "value": "Talabnoma raqami yoki mazmuni bo'yicha qidirish...",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.tasdiqlangan": {
+  "value": "Tasdiqlangan",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.jarayonda": {
+  "value": "Jarayonda",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.bajarilgan": {
+  "value": "Bajarilgan",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.rad_etilgan": {
+  "value": "Rad etilgan",
+  "note": "pages/Dashboard.tsx"
+ },
  "add_member_box.azo_qoshish": {
   "value": "A'zo qo'shish",
   "note": "components/AddMemberBox.tsx"
@@ -711,8 +787,52 @@
   "value": "Davom etish",
   "note": "components/Confirm.tsx"
  },
+ "dashboard.bajarilgan_buyurtmalar": {
+  "value": "Bajarilgan",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.bajarilgan_buyurtmalar_izoh": {
+  "value": "Muvaffaqiyatli yakunlangan va qabul qilingan",
+  "note": "pages/Dashboard.tsx"
+ },
  "dashboard.bajarilganlar": {
   "value": "Bajarilganlar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.bajarilmagan_buyurtmalar": {
+  "value": "Ko'rib chiqilmoqda",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.bajarilmagan_buyurtmalar_izoh": {
+  "value": "PM ko'rib chiqishi va ijro kutilmoqda",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.barcha_buyurtmalar": {
+  "value": "Barcha buyurtmalar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.batafsil": {
+  "value": "Batafsil",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.birinchi_tz_yuborish": {
+  "value": "Yangi talabnoma (TZ) yuborish",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.boshqarma_buyurtmalari": {
+  "value": "Boshqarma talabnomalari",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.boshqarma_buyurtmalari_izoh": {
+  "value": "Axborot tizimlariga o'zgartirish kiritish va yangi funksional bo'yicha yuborilgan talabnomalar (TZ)",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.boshqarma_tasdigida": {
+  "value": "Boshqarma tasdig'ida",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.boshqarma_tasdigida_izoh": {
+  "value": "PM ishni yakunlab topshirgan, tasdiqlashingiz kutilmoqda",
   "note": "pages/Dashboard.tsx"
  },
  "dashboard.boshqaruvingizdagi_loyihalar_boyicha": {
@@ -735,6 +855,10 @@
   "value": "Butun tizim bo'yicha",
   "note": "pages/Dashboard.tsx"
  },
+ "dashboard.buyurtma_raqami": {
+  "value": "Talabnoma №",
+  "note": "pages/Dashboard.tsx"
+ },
  "dashboard.davr_hammasi": {
   "value": "{davr} — hammasi",
   "note": "pages/Dashboard.tsx"
@@ -751,6 +875,18 @@
   "value": "Ertaga",
   "note": "pages/Dashboard.tsx"
  },
+ "dashboard.filtr_bajarilgan": {
+  "value": "Bajarilgan",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.filtr_barchasi": {
+  "value": "Barchasi",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.filtr_jarayonda": {
+  "value": "Jarayonda",
+  "note": "pages/Dashboard.tsx"
+ },
  "dashboard.hafta_boshidan": {
   "value": "Hafta boshidan",
   "note": "pages/Dashboard.tsx"
@@ -759,8 +895,28 @@
   "value": "Hali yopilmagan va muddati o'tib ketgan ishlaringiz",
   "note": "pages/Dashboard.tsx"
  },
+ "dashboard.holati": {
+  "value": "Holati",
+  "note": "pages/Dashboard.tsx"
+ },
  "dashboard.ish_yoq": {
   "value": "Ish yo'q",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.jami_buyurtmalar": {
+  "value": "Jami talabnomalar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.jami_buyurtmalar_izoh": {
+  "value": "Yuborilgan barcha texnik topshiriqlar soni",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.jarayonda_buyurtmalar": {
+  "value": "Jarayonda",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.jarayonda_buyurtmalar_izoh": {
+  "value": "Dasturlash va sinov bosqichidagi talabnomalar",
   "note": "pages/Dashboard.tsx"
  },
  "dashboard.kecha": {
@@ -771,12 +927,24 @@
   "value": "Kod yoki sarlavha",
   "note": "pages/Dashboard.tsx"
  },
+ "dashboard.korish": {
+  "value": "Ko'rish",
+  "note": "pages/Dashboard.tsx"
+ },
  "dashboard.kutilmoqda": {
   "value": "Kutilmoqda",
   "note": "pages/Dashboard.tsx"
  },
  "dashboard.loyiha_nomini_yozing": {
   "value": "Loyiha nomini yozing",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.masul_pm": {
+  "value": "Mas'ul PM",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.muddati": {
+  "value": "Muddati",
   "note": "pages/Dashboard.tsx"
  },
  "dashboard.muddati_buzib_bajarilgan": {
@@ -827,16 +995,48 @@
   "value": "Sizga biriktirilgan ishlar bo'yicha",
   "note": "pages/Dashboard.tsx"
  },
+ "dashboard.songgi_buyurtmalar": {
+  "value": "So'nggi talabnomalar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.songgi_buyurtmalar_izoh": {
+  "value": "Boshqarma tomonidan yuborilgan oxirgi talabnomalar ro'yxati va ularning hozirgi holati",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.talab_mazmuni": {
+  "value": "Talab mazmuni",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.talabnoma_topilmadi": {
+  "value": "Hozircha birorta ham talabnoma (TZ) yuborilmagan",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.talabnoma_topilmadi_izoh": {
+  "value": "Axborot tizimlariga o'zgartirish kiritish yoki yangi dasturiy ta'minot yaratish uchun yangi talabnoma yuborishingiz mumkin.",
+  "note": "pages/Dashboard.tsx"
+ },
  "dashboard.tanlangan_filtrga_mos_vazifa_topilmadi": {
   "value": "Tanlangan filtrga mos vazifa topilmadi - filtrni tozalab ko'ring.",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.tizim_nomi": {
+  "value": "Axborot tizimi",
   "note": "pages/Dashboard.tsx"
  },
  "dashboard.topilmadi": {
   "value": "Topilmadi",
   "note": "pages/Dashboard.tsx"
  },
+ "dashboard.turi": {
+  "value": "Turi",
+  "note": "pages/Dashboard.tsx"
+ },
  "dashboard.yakunlangan_lekin_muddatidan_keyin_yopilgan": {
   "value": "Yakunlangan, lekin muddatidan keyin yopilgan ishlaringiz",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.yangi_tz_yuborish": {
+  "value": "Yangi TZ yuborish",
   "note": "pages/Dashboard.tsx"
  },
  "dashboard.yil_boshidan": {
@@ -1543,12 +1743,12 @@
   "value": "Sahifa boshiga",
   "note": "components/Layout.tsx"
  },
- "layout.takliflar": {
-  "value": "Takliflar",
-  "note": "components/Layout.tsx"
- },
  "layout.sorovlar": {
   "value": "So'rovlar",
+  "note": "components/Layout.tsx"
+ },
+ "layout.takliflar": {
+  "value": "Takliflar",
   "note": "components/Layout.tsx"
  },
  "layout.taqvim": {
@@ -1627,8 +1827,16 @@
   "value": "Xabarlar",
   "note": "pages/Messages.tsx"
  },
+ "my_work.barcha_muddatlar": {
+  "value": "Barcha muddatlar",
+  "note": "pages/MyWork.tsx"
+ },
  "my_work.bu_ustun_bosh": {
   "value": "Bu ustun bo'sh.",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.kochirib_bolmadi": {
+  "value": "Vazifani ko'chirib bo'lmadi.",
   "note": "pages/MyWork.tsx"
  },
  "my_work.loyihaga_qoshiling_menejer_mutaxassisligingi": {
@@ -1637,30 +1845,6 @@
  },
  "my_work.mening_ishim": {
   "value": "Mening ishim",
-  "note": "pages/MyWork.tsx"
- },
- "my_work.sizga_hali_vazifa_biriktirilmagan": {
-  "value": "Sizga hali vazifa biriktirilmagan",
-  "note": "pages/MyWork.tsx"
- },
- "my_work.ustun_barchasi": {
-  "value": "Barchasi",
-  "note": "pages/MyWork.tsx"
- },
- "my_work.ustun_shu_haftalik": {
-  "value": "Shu haftalik ishlar",
-  "note": "pages/MyWork.tsx"
- },
- "my_work.ustun_bugun": {
-  "value": "Bugun qilayotgan ishlar",
-  "note": "pages/MyWork.tsx"
- },
- "my_work.ustun_bajarilganlar": {
-  "value": "Bajarilganlar",
-  "note": "pages/MyWork.tsx"
- },
- "my_work.barcha_muddatlar": {
-  "value": "Barcha muddatlar",
   "note": "pages/MyWork.tsx"
  },
  "my_work.muddat_1_haftalik": {
@@ -1675,8 +1859,24 @@
   "value": "1 yillik",
   "note": "pages/MyWork.tsx"
  },
- "my_work.kochirib_bolmadi": {
-  "value": "Vazifani ko'chirib bo'lmadi.",
+ "my_work.sizga_hali_vazifa_biriktirilmagan": {
+  "value": "Sizga hali vazifa biriktirilmagan",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.ustun_bajarilganlar": {
+  "value": "Bajarilganlar",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.ustun_barchasi": {
+  "value": "Barchasi",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.ustun_bugun": {
+  "value": "Bugun qilayotgan ishlar",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.ustun_shu_haftalik": {
+  "value": "Shu haftalik ishlar",
   "note": "pages/MyWork.tsx"
  },
  "notification_bell.bildirishnomalar_ulanish_yoq": {
@@ -1734,6 +1934,270 @@
  "notifications.yangi": {
   "value": "Yangi",
   "note": "pages/Notifications.tsx"
+ },
+ "orders.approve_version_btn": {
+  "value": "Yangi versiyani tasdiqlash",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.approve_version_confirm": {
+  "value": "Haqiqatan ham v{version} versiyani tasdiqlamoqchimisiz? Eski versiyadagi TZ atmen qilinadi.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.approve_version_title": {
+  "value": "Yangi TZ versiyasini tasdiqlash",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.bajarildi": {
+  "value": "Bajarildi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.barcha_holatlar": {
+  "value": "Barcha holatlar",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.barcha_loyihalar": {
+  "value": "Barcha loyihalar",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.barcha_muddatlar": {
+  "value": "Barcha muddatlar",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.bekor_qilingan": {
+  "value": "Bekor qilingan",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.boshqa_pm_blokirovka": {
+  "value": "Ushbu buyurtmani boshqa loyiha menejeri o'z zimmasiga olgan. Boshqa PM bu ishni o'zgartira olmaydi.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.buyurtmachi_boshqarma": {
+  "value": "Buyurtmachi / Boshqarma",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.change_note_label": {
+  "value": "Ushbu versiyada nimalar o'zgargani / sababi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.change_note_placeholder": {
+  "value": "Masalan: Texnik talablarga yangi hisobotlar moduli qo'shildi...",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_deadline_label": {
+  "value": "Topshirish sanasi (Yakuniy muddat)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_dev_label": {
+  "value": "Mas'ul ijrochi / dasturchi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_dev_placeholder": {
+  "value": "Hozircha biriktirilmasin (keyinroq tanlash)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_duration_label": {
+  "value": "Bajarish davomiyligi / vaqti",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_duration_placeholder": {
+  "value": "Masalan: 3 ish kuni, 1 hafta, 15 soat...",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_modal_desc": {
+  "value": "Ushbu buyurtmani o'z zimmangizga olish uchun bajarish muddati va vaqtini kiriting.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_modal_title": {
+  "value": "Buyurtmani qabul qilish va muddat belgilash",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_notes_label": {
+  "value": "PM ko'rsatmalari / izohi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_notes_placeholder": {
+  "value": "Ishni bajarish bo'yicha ko'rsatma yoki eslatmalar...",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_submit_btn": {
+  "value": "Qabul qilish va muddatni tasdiqlash",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.claim_submitting": {
+  "value": "Qabul qilinmoqda...",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.davom_ettiriladigan": {
+  "value": "Davom ettiriladigan",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.ishni_qabul_qilish": {
+  "value": "Ishni qabul qilish (O'zimga olish)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.ishni_qabul_qilish_taklif": {
+  "value": "Ushbu buyurtma hali birorta loyiha menejeri tomonidan qabul qilinmagan.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.jami_sorovlar": {
+  "value": "Jami so'rovlar",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.jami_ta_buyurtma": {
+  "value": "Jami {n} ta buyurtma",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.jarayonda": {
+  "value": "Jarayonda",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.masul_dasturchi": {
+  "value": "Mas'ul dasturchi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.modernizatsiya": {
+  "value": "Modernizatsiya",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.new_version": {
+  "value": "Yangi versiya",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.pending_version_alert": {
+  "value": "Diqqat: Yangi TZ versiyasi (v{version}) tasdiqlash uchun yuborilgan!",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.pending_version_desc": {
+  "value": "Boshqarma ushbu buyurtma bo'yicha yangi versiya yubordi. Tasdiqlasangiz, eski versiyadagi TZ atmen qilinadi va yangi TZ ga o'tkaziladi.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.pm_olinmagan": {
+  "value": "PM olinmagan",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.pm_qabul_qilgan_tahrirlab_bolmaydi": {
+  "value": "Ushbu buyurtma loyiha menejeri tomonidan qabul qilingan. Boshqarma uni tahrirlay olmaydi yoki o'chira olmaydi.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.rad_etildi_sabab": {
+  "value": "Loyiha menejeri tomonidan rad etildi. Sababi:",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.rad_etish_sababi_majburiy": {
+  "value": "Buyurtmani rad etish sababi va izohini kiritish majburiy!",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.reject_version_btn": {
+  "value": "Versiyani rad etish",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.reject_version_reason_label": {
+  "value": "Rad etish sababi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.reject_version_reason_placeholder": {
+  "value": "Nima sababdan ushbu versiya rad etilayotganini yozing...",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.reject_version_title": {
+  "value": "Yangi TZ versiyasini rad etish",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.requested_change_label": {
+  "value": "Talab qilinayotgan o'zgartirishlar tavsifi (yangi matn)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.sarlavha": {
+  "value": "Buyurtmalar (TZ)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.search_placeholder": {
+  "value": "Loyiha, mijoz yoki xizmat bo'yicha qidirish...",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.sizga_biriktirilgan": {
+  "value": "Siz qabul qilgansiz",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.status_active": {
+  "value": "Tasdiqlangan (Faol TZ)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.status_cancelled": {
+  "value": "Bekor qilingan (Atmen)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.status_pending_review": {
+  "value": "Kutilmoqda (PM tasdig'ida)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.texnik_xizmat": {
+  "value": "Texnik xizmat",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.tugallangan": {
+  "value": "Tugallangan",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.turlash_kerak": {
+  "value": "Turlash talab etiladi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.tz_file_label": {
+  "value": "Yangi TZ hujjati (PDF, Word, Excel)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.upload_new_version": {
+  "value": "Yangi versiya yuborish (TZ)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.upload_version_note": {
+  "value": "Yangi versiya loyiha menejeri (PM) tomonidan tasdiqlangandan so'ng eski versiyadagi TZ bekor qilinadi (atmen bo'ladi) va loyiha yangi TZ ga o'tkaziladi.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.upload_version_title": {
+  "value": "Yangi TZ versiyasini yuborish",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.version": {
+  "value": "Versiya",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.version_approved_success": {
+  "value": "Yangi versiya tasdiqlandi. Eski TZ atmen qilindi va yangi TZ ga o'tkazildi.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.version_rejected_success": {
+  "value": "Versiya rad etildi. Eski TZ o'z kuchida qoldi.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.version_uploaded_success": {
+  "value": "Yangi versiya muvaffaqiyatli yuborildi. PM tasdiqlashi kutilmoqda.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.versions_history": {
+  "value": "TZ versiyalari tarixi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.yangi": {
+  "value": "Yangi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.yangi_buyurtma": {
+  "value": "Yangi buyurtma",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.yangi_loyiha": {
+  "value": "Yangi loyiha",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.yaratilgan_sana_vaqti": {
+  "value": "Yaratilgan sana va vaqti",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.yaratilgan_vaqti": {
+  "value": "Yaratilgan vaqti",
+  "note": "pages/ChangeRequests.tsx"
  },
  "password_card.almashtirilmoqda": {
   "value": "Almashtirilmoqda...",
@@ -3043,6 +3507,18 @@
   "value": "← Bosh sahifa",
   "note": "pages/Register.tsx"
  },
+ "register.boshqarma_nomi": {
+  "value": "Boshqarma nomi",
+  "note": "pages/Register.tsx"
+ },
+ "register.boshqarma_nomini_kiriting": {
+  "value": "Iltimos, boshqarma nomini kiriting",
+  "note": "pages/Register.tsx"
+ },
+ "register.boshqarma_placeholder": {
+  "value": "Masalan: Axborot texnologiyalari boshqarmasi",
+  "note": "pages/Register.tsx"
+ },
  "register.email": {
   "value": "Email",
   "note": "pages/Register.tsx"
@@ -3065,6 +3541,10 @@
  },
  "register.mutaxassisliklar_royxatini_yuklab_bolmadi": {
   "value": "Mutaxassisliklar royxatini yuklab bolmadi",
+  "note": "pages/Register.tsx"
+ },
+ "register.mutaxassislikni_tanlang": {
+  "value": "Mutaxassislikni tanlang",
   "note": "pages/Register.tsx"
  },
  "register.parolni_tasdiqlang": {
@@ -3203,6 +3683,14 @@
   "value": "Barcha takliflar",
   "note": "pages/Suggestions.tsx"
  },
+ "suggestions.barcha_turlar": {
+  "value": "Barcha turlar",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.barcha_vaqt": {
+  "value": "Barcha vaqt",
+  "note": "pages/Suggestions.tsx"
+ },
  "suggestions.betarafman": {
   "value": "Betarafman",
   "note": "pages/Suggestions.tsx"
@@ -3217,6 +3705,10 @@
  },
  "suggestions.boshliq_izohi": {
   "value": "Boshliq izohi",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.boshliq_korib_chiqmoqda": {
+  "value": "Boshliq ko'rib chiqmoqda",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.fayl_hint": {
@@ -3241,6 +3733,26 @@
  },
  "suggestions.fayllar_yuklanmadi": {
   "value": "Taklif saqlandi, lekin fayllarni yuklab bo'lmadi.",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.holat": {
+  "value": "Holat",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.holat_all": {
+  "value": "Barcha holatlar",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.holat_approved": {
+  "value": "Tasdiqlangan",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.holat_pending": {
+  "value": "Ko'rib chiqilmoqda",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.holat_rejected": {
+  "value": "Rad etilgan",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.izoh_placeholder": {
@@ -3271,6 +3783,18 @@
   "value": "«Yangi taklif» tugmasi bilan boshlang.",
   "note": "pages/Suggestions.tsx"
  },
+ "suggestions.natija_soni": {
+  "value": "{jami} ta taklifdan {dan}–{gacha} tasi ko'rsatilmoqda",
+  "note": "pages/Suggestions.tsx - ro'yxat ostidagi yakun"
+ },
+ "suggestions.nechta_taklif": {
+  "value": "{n} ta taklif",
+  "note": "pages/Suggestions.tsx - sarlavha yonidagi sanoq"
+ },
+ "suggestions.ochib_bolmadi": {
+  "value": "Taklifni ochib bo'lmadi.",
+  "note": "pages/SuggestionDetail.tsx"
+ },
  "suggestions.ochiq": {
   "value": "Ochiq",
   "note": "pages/Suggestions.tsx"
@@ -3287,9 +3811,29 @@
   "value": "Taklif va unga berilgan ovozlar butunlay o'chadi. Buni qaytarib bo'lmaydi.",
   "note": "pages/Suggestions.tsx"
  },
+ "suggestions.qaror_izoh_qisqa": {
+  "value": "— «{izoh}»",
+  "note": "pages/Suggestions.tsx - qatordagi qarorning bir qatorlik izohi"
+ },
  "suggestions.qaror_qildi": {
   "value": "{ism} qaror qildi",
   "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.qarorni_ozgartirish": {
+  "value": "Qarorni o'zgartirish",
+  "note": "pages/Suggestions.tsx - boshliqning «⋯» menyusi"
+ },
+ "suggestions.qatorni_ochish": {
+  "value": "«{nom}» taklifini ochish",
+  "note": "pages/Suggestions.tsx - qatorni ochadigan tugmaning yorlig'i"
+ },
+ "suggestions.qatorni_yigish": {
+  "value": "«{nom}» taklifini yig'ish",
+  "note": "pages/Suggestions.tsx - qatorni yopadigan tugmaning yorlig'i"
+ },
+ "suggestions.qidiruv_placeholder": {
+  "value": "Sarlavha, ism yoki muallif...",
+  "note": "pages/Suggestions.tsx - filtr panelidagi qidiruv maydoni"
  },
  "suggestions.qoshilaman": {
   "value": "Qo'shilaman",
@@ -3319,8 +3863,32 @@
   "value": "Rasmni kattalashtirish",
   "note": "pages/Suggestions.tsx — biriktirilgan rasm ustidagi izoh"
  },
+ "suggestions.royxatga": {
+  "value": "Takliflar ro'yxatiga",
+  "note": "pages/SuggestionDetail.tsx"
+ },
+ "suggestions.sahifa_tavsifi": {
+  "value": "Sizga kelgan takliflarni ko'rib chiqing va ularga javob bering.",
+  "note": "pages/Suggestions.tsx"
+ },
  "suggestions.saqlandi": {
   "value": "Taklif saqlandi.",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.saralash": {
+  "value": "Saralash",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.saralash_new": {
+  "value": "Eng yangi",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.saralash_old": {
+  "value": "Eng eski",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.saralash_top": {
+  "value": "Eng ko'p qo'llab-quvvatlangan",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.sarlavha": {
@@ -3335,9 +3903,9 @@
   "value": "Takliflar",
   "note": "pages/Suggestions.tsx"
  },
- "suggestions.sahifa_tavsifi": {
-  "value": "Sizga kelgan takliflarni ko'rib chiqing va ularga javob bering.",
-  "note": "pages/Suggestions.tsx"
+ "suggestions.taklif": {
+  "value": "Taklif",
+  "note": "pages/SuggestionDetail.tsx"
  },
  "suggestions.taklif_matni": {
   "value": "Taklif matni",
@@ -3346,6 +3914,14 @@
  "suggestions.taklifni_tahrirlash": {
   "value": "Taklifni tahrirlash",
   "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.tanlanmagan": {
+  "value": "Taklif tanlanmagan",
+  "note": "pages/SuggestionDetail.tsx"
+ },
+ "suggestions.tanlanmagan_matn": {
+  "value": "Bu sahifa takliflar ro'yxatidan ochiladi - qaysi taklif kerakligini o'sha yerdan tanlang.",
+  "note": "pages/SuggestionDetail.tsx"
  },
  "suggestions.tasdiqlangan_bosh": {
   "value": "Tasdiqlangan taklif yo'q",
@@ -3363,81 +3939,9 @@
   "value": "Tasdiqlash",
   "note": "pages/Suggestions.tsx"
  },
- "suggestions.yangi_taklif": {
-  "value": "Yangi taklif",
+ "suggestions.toliq_sahifada": {
+  "value": "To'liq sahifada ochish",
   "note": "pages/Suggestions.tsx"
- },
- "suggestions.yopiq": {
-  "value": "Yopiq",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.yuborish": {
-  "value": "Taklifni yuborish",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.yuklagan": {
-  "value": "Yuklagan: {ism}",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.saralash": {
-  "value": "Saralash",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.saralash_top": {
-  "value": "Eng ko'p qo'llab-quvvatlangan",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.saralash_new": {
-  "value": "Eng yangi",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.saralash_old": {
-  "value": "Eng eski",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.boshliq_korib_chiqmoqda": {
-  "value": "Boshliq ko'rib chiqmoqda",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.qidiruv_placeholder": {
-  "value": "Sarlavha, ism yoki muallif...",
-  "note": "pages/Suggestions.tsx - filtr panelidagi qidiruv maydoni"
- },
- "suggestions.holat": {
-  "value": "Holat",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.holat_all": {
-  "value": "Barcha holatlar",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.holat_pending": {
-  "value": "Ko'rib chiqilmoqda",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.holat_approved": {
-  "value": "Tasdiqlangan",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.holat_rejected": {
-  "value": "Rad etilgan",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.turi": {
-  "value": "Turi",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.barcha_turlar": {
-  "value": "Barcha turlar",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.barcha_vaqt": {
-  "value": "Barcha vaqt",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.nechta_taklif": {
-  "value": "{n} ta taklif",
-  "note": "pages/Suggestions.tsx - sarlavha yonidagi sanoq"
  },
  "suggestions.topilmadi": {
   "value": "Taklif topilmadi",
@@ -3447,45 +3951,33 @@
   "value": "Tanlangan filtrga mos taklif yo'q - shartlarni yumshatib ko'ring.",
   "note": "pages/Suggestions.tsx"
  },
- "suggestions.qatorni_ochish": {
-  "value": "«{nom}» taklifini ochish",
-  "note": "pages/Suggestions.tsx - qatorni ochadigan tugmaning yorlig'i"
+ "suggestions.turi": {
+  "value": "Turi",
+  "note": "pages/Suggestions.tsx"
  },
- "suggestions.qatorni_yigish": {
-  "value": "«{nom}» taklifini yig'ish",
-  "note": "pages/Suggestions.tsx - qatorni yopadigan tugmaning yorlig'i"
+ "suggestions.yangi_taklif": {
+  "value": "Yangi taklif",
+  "note": "pages/Suggestions.tsx"
  },
- "suggestions.qarorni_ozgartirish": {
-  "value": "Qarorni o'zgartirish",
-  "note": "pages/Suggestions.tsx - boshliqning «⋯» menyusi"
+ "suggestions.yigish": {
+  "value": "Taklifni yig'ish",
+  "note": "pages/Suggestions.tsx"
  },
- "suggestions.natija_soni": {
-  "value": "{jami} ta taklifdan {dan}–{gacha} tasi ko'rsatilmoqda",
-  "note": "pages/Suggestions.tsx - ro'yxat ostidagi yakun"
+ "suggestions.yopiq": {
+  "value": "Yopiq",
+  "note": "pages/Suggestions.tsx"
  },
- "suggestions.qaror_izoh_qisqa": {
-  "value": "— «{izoh}»",
-  "note": "pages/Suggestions.tsx - qatordagi qarorning bir qatorlik izohi"
+ "suggestions.yoyish": {
+  "value": "Taklifni yoyish",
+  "note": "pages/Suggestions.tsx"
  },
- "suggestions.taklif": {
-  "value": "Taklif",
-  "note": "pages/SuggestionDetail.tsx"
+ "suggestions.yuborish": {
+  "value": "Taklifni yuborish",
+  "note": "pages/Suggestions.tsx"
  },
- "suggestions.tanlanmagan": {
-  "value": "Taklif tanlanmagan",
-  "note": "pages/SuggestionDetail.tsx"
- },
- "suggestions.tanlanmagan_matn": {
-  "value": "Bu sahifa takliflar ro'yxatidan ochiladi - qaysi taklif kerakligini o'sha yerdan tanlang.",
-  "note": "pages/SuggestionDetail.tsx"
- },
- "suggestions.royxatga": {
-  "value": "Takliflar ro'yxatiga",
-  "note": "pages/SuggestionDetail.tsx"
- },
- "suggestions.ochib_bolmadi": {
-  "value": "Taklifni ochib bo'lmadi.",
-  "note": "pages/SuggestionDetail.tsx"
+ "suggestions.yuklagan": {
+  "value": "Yuklagan: {ism}",
+  "note": "pages/Suggestions.tsx"
  },
  "task_bulk_form.bu_sahifa_loyiha_ichidan_ochiladi": {
   "value": "Bu sahifa loyiha ichidan ochiladi.",
@@ -3571,12 +4063,32 @@
   "value": "Vazifalarni yaratib bolmadi",
   "note": "pages/TaskBulkForm.tsx"
  },
+ "task_detail.ajratish": {
+  "value": "Ajratish",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.ajratish_tasdiq": {
+  "value": "Ushbu ostki vazifa ota vazifadan ajratilsinmi?",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.asosiy_ota_vazifa": {
+  "value": "Asosiy vazifa",
+  "note": "pages/TaskDetail.tsx"
+ },
  "task_detail.aylana": {
   "value": "-aylana",
   "note": "pages/TaskDetail.tsx"
  },
+ "task_detail.bajarildi_nisbati": {
+  "value": "{done}/{total} bajarildi ({pct}%)",
+  "note": "pages/TaskDetail.tsx"
+ },
  "task_detail.bekor": {
   "value": "Bekor",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.biriktirish": {
+  "value": "Biriktirish",
   "note": "pages/TaskDetail.tsx"
  },
  "task_detail.boshlanish": {
@@ -3589,6 +4101,10 @@
  },
  "task_detail.diqqat": {
   "value": "Diqqat",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.faqat_pm_va_admin": {
+  "value": "Ostki vazifa yaratish faqat loyiha menejeri (PM) va loyiha adminiga ruxsat etilgan.",
   "note": "pages/TaskDetail.tsx"
  },
  "task_detail.fayl": {
@@ -3679,6 +4195,10 @@
   "value": "Masalan: taʼtilga chiqdi",
   "note": "pages/TaskDetail.tsx"
  },
+ "task_detail.mavjud_vazifani_biriktirish": {
+  "value": "Mavjud vazifani biriktirish",
+  "note": "pages/TaskDetail.tsx"
+ },
  "task_detail.menejer": {
   "value": "Menejer",
   "note": "pages/TaskDetail.tsx"
@@ -3707,6 +4227,22 @@
   "value": "Nimani tuzatish kerak - aniq yozing",
   "note": "pages/TaskDetail.tsx"
  },
+ "task_detail.ostki_vazifa_qoshish": {
+  "value": "Ostki vazifa qo'shish",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.ostki_vazifa_yaratish": {
+  "value": "Yangi ostki vazifa yaratish",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.ostki_vazifalar": {
+  "value": "Ostki vazifalar (Subtasklar)",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.ostki_vazifalar_yoq": {
+  "value": "Hozircha ostki vazifalar yo'q.",
+  "note": "pages/TaskDetail.tsx"
+ },
  "task_detail.otkazish": {
   "value": "Oʻtkazish",
   "note": "pages/TaskDetail.tsx"
@@ -3723,6 +4259,10 @@
   "value": "Qaysi yechim tanlandi va nima uchun?",
   "note": "pages/TaskDetail.tsx"
  },
+ "task_detail.qaytarib_olish": {
+  "value": "Qaytarib olish",
+  "note": "pages/TaskDetail.tsx"
+ },
  "task_detail.quyidagi_ijrochilar_mutaxassisligi_vazifa_ta": {
   "value": "Quyidagi ijrochilar mutaxassisligi vazifa talabiga mos emas:",
   "note": "pages/TaskDetail.tsx"
@@ -3735,6 +4275,10 @@
   "value": "Skrinshot, hujjat, log, arxiv — har biri 25 MB gacha",
   "note": "pages/TaskDetail.tsx"
  },
+ "task_detail.subtask_nomi": {
+  "value": "Ostki vazifa nomi",
+  "note": "pages/TaskDetail.tsx"
+ },
  "task_detail.tekshiruv": {
   "value": "Tekshiruv",
   "note": "pages/TaskDetail.tsx"
@@ -3745,6 +4289,10 @@
  },
  "task_detail.tekshiruvchi": {
   "value": "Tekshiruvchi",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.tekshiruvdan_qaytarib_olish": {
+  "value": "Tekshiruvdan qaytarib olish",
   "note": "pages/TaskDetail.tsx"
  },
  "task_detail.tekshiruvlar_tarixi": {
@@ -3787,6 +4335,10 @@
   "value": "Vazifani ochib bolmadi",
   "note": "pages/TaskDetail.tsx"
  },
+ "task_detail.vazifani_tanlang": {
+  "value": "Biriktirish uchun vazifani tanlang",
+  "note": "pages/TaskDetail.tsx"
+ },
  "task_detail.yakunlangan": {
   "value": "Yakunlangan",
   "note": "pages/TaskDetail.tsx"
@@ -3801,66 +4353,6 @@
  },
  "task_detail.yozuv_yoq": {
   "value": "Yozuv yoq.",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.ostki_vazifalar": {
-  "value": "Ostki vazifalar (Subtasklar)",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.ostki_vazifa_qoshish": {
-  "value": "Ostki vazifa qo'shish",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.ostki_vazifa_yaratish": {
-  "value": "Yangi ostki vazifa yaratish",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.mavjud_vazifani_biriktirish": {
-  "value": "Mavjud vazifani biriktirish",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.ostki_vazifalar_yoq": {
-  "value": "Hozircha ostki vazifalar yo'q.",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.bajarildi_nisbati": {
-  "value": "{done}/{total} bajarildi ({pct}%)",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.asosiy_ota_vazifa": {
-  "value": "Asosiy vazifa",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.ajratish": {
-  "value": "Ajratish",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.ajratish_tasdiq": {
-  "value": "Ushbu ostki vazifa ota vazifadan ajratilsinmi?",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.subtask_nomi": {
-  "value": "Ostki vazifa nomi",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.biriktirish": {
-  "value": "Biriktirish",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.vazifani_tanlang": {
-  "value": "Biriktirish uchun vazifani tanlang",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.faqat_pm_va_admin": {
-  "value": "Ostki vazifa yaratish faqat loyiha menejeri (PM) va loyiha adminiga ruxsat etilgan.",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.tekshiruvdan_qaytarib_olish": {
-  "value": "Tekshiruvdan qaytarib olish",
-  "note": "pages/TaskDetail.tsx"
- },
- "task_detail.qaytarib_olish": {
-  "value": "Qaytarib olish",
   "note": "pages/TaskDetail.tsx"
  },
  "task_drawer.muddat_qoyilmagan": {
@@ -4674,425 +5166,5 @@
  "workspaces.yangi_maydon_yarating_yoki_ochiq": {
   "value": "Yangi maydon yarating yoki ochiq maydonga qoshiling.",
   "note": "pages/Workspaces.tsx"
- },
- "suggestions.toliq_sahifada": {
-  "value": "To'liq sahifada ochish",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.yoyish": {
-  "value": "Taklifni yoyish",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.yigish": {
-  "value": "Taklifni yig'ish",
-  "note": "pages/Suggestions.tsx"
- },
- "orders.sarlavha": {
-  "value": "Buyurtmalar (TZ)",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.yangi_buyurtma": {
-  "value": "Yangi buyurtma",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.yangi_loyiha": {
-  "value": "Yangi loyiha",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.davom_ettiriladigan": {
-  "value": "Davom ettiriladigan",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.turlash_kerak": {
-  "value": "Turlash talab etiladi",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.modernizatsiya": {
-  "value": "Modernizatsiya",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.texnik_xizmat": {
-  "value": "Texnik xizmat",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.jami_sorovlar": {
-  "value": "Jami so'rovlar",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.yangi": {
-  "value": "Yangi",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.jarayonda": {
-  "value": "Jarayonda",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.tugallangan": {
-  "value": "Tugallangan",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.bekor_qilingan": {
-  "value": "Bekor qilingan",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.barcha_loyihalar": {
-  "value": "Barcha loyihalar",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.barcha_holatlar": {
-  "value": "Barcha holatlar",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.barcha_muddatlar": {
-  "value": "Barcha muddatlar",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.search_placeholder": {
-  "value": "Buyurtma raqami, mijoz yoki xizmat...",
-  "note": "pages/ChangeRequests.tsx"
-{
- "workspace_detail.loyiha_yoq": {
-  "value": "Loyiha yoq",
-  "note": "pages/WorkspaceDetail.tsx"
- },
- "workspace_detail.loyihalar": {
-  "value": "Loyihalar:",
-  "note": "pages/WorkspaceDetail.tsx"
- },
- "workspace_detail.malumot": {
-  "value": "Maʼlumot",
-  "note": "pages/WorkspaceDetail.tsx"
- },
- "workspace_detail.maydon_haqida": {
-  "value": "Maydon haqida",
-  "note": "pages/WorkspaceDetail.tsx"
- },
- "workspace_detail.qoshilish_kodi": {
-  "value": "Qoshilish kodi:",
-  "note": "pages/WorkspaceDetail.tsx"
- },
- "workspace_detail.sizga_mos": {
-  "value": "sizga mos",
-  "note": "pages/WorkspaceDetail.tsx"
- },
- "workspace_detail.turi": {
-  "value": "Turi:",
-  "note": "pages/WorkspaceDetail.tsx"
- },
- "workspace_form.jamoa_nima_bilan_shugullanadi": {
-  "value": "Jamoa nima bilan shugullanadi",
-  "note": "pages/WorkspaceForm.tsx"
- },
- "workspace_form.masalan_aloqa_bank_it": {
-  "value": "Masalan: Aloqa Bank IT",
-  "note": "pages/WorkspaceForm.tsx"
- },
- "workspace_form.maydon_malumotlari": {
-  "value": "Maydon maʼlumotlari",
-  "note": "pages/WorkspaceForm.tsx"
- },
- "workspace_form.nomi": {
-  "value": "Nomi",
-  "note": "pages/WorkspaceForm.tsx"
- },
- "workspace_form.ochiq_qoshilish_kodisiz_qoshilsa_boladi": {
-  "value": "Ochiq — qoshilish kodisiz qoshilsa boladi",
-  "note": "pages/WorkspaceForm.tsx"
- },
- "workspace_form.tavsif": {
-  "value": "Tavsif",
-  "note": "pages/WorkspaceForm.tsx"
- },
- "workspace_form.yangi_ish_maydoni": {
-  "value": "Yangi ish maydoni",
-  "note": "pages/WorkspaceForm.tsx"
- },
- "workspace_form.yaratib_bolmadi": {
-  "value": "Yaratib bolmadi",
-  "note": "pages/WorkspaceForm.tsx"
- },
- "workspace_form.yaratish": {
-  "value": "Yaratish",
-  "note": "pages/WorkspaceForm.tsx"
- },
- "workspaces.azo": {
-  "value": "aʼzo",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.egasi": {
-  "value": "Egasi:",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.ish_maydonlari": {
-  "value": "Ish maydonlari",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.kod": {
-  "value": "Kod",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.kodni_kiritib_quyidagi_royxatdan_kerakli": {
-  "value": "Kodni kiritib, quyidagi royxatdan kerakli maydonga Qoshilish tugmasini bosing.",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.loyiha": {
-  "value": "loyiha",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.mening_maydonlarim": {
-  "value": "Mening maydonlarim",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.ochiq_maydonlar": {
-  "value": "Ochiq maydonlar",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.ochish": {
-  "value": "Ochish",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.qoshilib_bolmadi": {
-  "value": "Qoshilib bolmadi",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.qoshilish_kodi_bilan_qoshilish": {
-  "value": "Qoshilish kodi bilan qoshilish",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.siz_hali_ish_maydonida_emassiz": {
-  "value": "Siz hali ish maydonida emassiz",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.yangi_maydon": {
-  "value": "Yangi maydon",
-  "note": "pages/Workspaces.tsx"
- },
- "workspaces.yangi_maydon_yarating_yoki_ochiq": {
-  "value": "Yangi maydon yarating yoki ochiq maydonga qoshiling.",
-  "note": "pages/Workspaces.tsx"
- },
- "suggestions.toliq_sahifada": {
-  "value": "To'liq sahifada ochish",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.yoyish": {
-  "value": "Taklifni yoyish",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.yigish": {
-  "value": "Taklifni yig'ish",
-  "note": "pages/Suggestions.tsx"
- },
- "orders.sarlavha": {
-  "value": "Buyurtmalar (TZ)",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.yangi_buyurtma": {
-  "value": "Yangi buyurtma",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.yangi_loyiha": {
-  "value": "Yangi loyiha",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.davom_ettiriladigan": {
-  "value": "Davom ettiriladigan",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.turlash_kerak": {
-  "value": "Turlash talab etiladi",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.modernizatsiya": {
-  "value": "Modernizatsiya",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.texnik_xizmat": {
-  "value": "Texnik xizmat",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.jami_sorovlar": {
-  "value": "Jami so'rovlar",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.yangi": {
-  "value": "Yangi",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.jarayonda": {
-  "value": "Jarayonda",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.tugallangan": {
-  "value": "Tugallangan",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.bekor_qilingan": {
-  "value": "Bekor qilingan",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.barcha_loyihalar": {
-  "value": "Barcha loyihalar",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.barcha_holatlar": {
-  "value": "Barcha holatlar",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.barcha_muddatlar": {
-  "value": "Barcha muddatlar",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.search_placeholder": {
-  "value": "Buyurtma raqami, mijoz yoki xizmat...",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.bajarildi": {
-  "value": "Bajarildi",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.jami_ta_buyurtma": {
-  "value": "Jami {n} ta buyurtma",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.buyurtmachi_boshqarma": {
-  "value": "Buyurtmachi / Boshqarma",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.ishni_qabul_qilish": {
-  "value": "Ishni qabul qilish (O'zimga olish)",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.sizga_biriktirilgan": {
-  "value": "Siz qabul qilgansiz",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.pm_olinmagan": {
-  "value": "PM olinmagan",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.boshqa_pm_blokirovka": {
-  "value": "Ushbu buyurtmani boshqa loyiha menejeri o'z zimmasiga olgan. Boshqa PM bu ishni o'zgartira olmaydi.",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.ishni_qabul_qilish_taklif": {
-  "value": "Ushbu buyurtma hali birorta loyiha menejeri tomonidan qabul qilinmagan.",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.rad_etish_sababi_majburiy": {
-  "value": "Buyurtmani rad etish sababi va izohini kiritish majburiy!",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.rad_etildi_sabab": {
-  "value": "Loyiha menejeri tomonidan rad etildi. Sababi:",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.masul_dasturchi": {
-  "value": "Mas'ul dasturchi",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.pm_qabul_qilgan_tahrirlab_bolmaydi": {
-  "value": "Ushbu buyurtma loyiha menejeri tomonidan qabul qilingan. Boshqarma uni tahrirlay olmaydi yoki o'chira olmaydi.",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.versions_history": {
-  "value": "TZ versiyalari tarixi",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.version": {
-  "value": "Versiya",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.new_version": {
-  "value": "Yangi versiya",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.upload_new_version": {
-  "value": "Yangi versiya yuborish (TZ)",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.upload_version_title": {
-  "value": "Yangi TZ versiyasini yuborish",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.upload_version_note": {
-  "value": "Yangi versiya loyiha menejeri (PM) tomonidan tasdiqlangandan so'ng eski versiyadagi TZ bekor qilinadi (atmen bo'ladi) va loyiha yangi TZ ga o'tkaziladi.",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.change_note_label": {
-  "value": "Ushbu versiyada nimalar o'zgargani / sababi",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.change_note_placeholder": {
-  "value": "Masalan: Texnik talablarga yangi hisobotlar moduli qo'shildi...",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.requested_change_label": {
-  "value": "Talab qilinayotgan o'zgartirishlar tavsifi (yangi matn)",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.tz_file_label": {
-  "value": "Yangi TZ hujjati (PDF, Word, Excel)",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.pending_version_alert": {
-  "value": "Diqqat: Yangi TZ versiyasi (v{version}) tasdiqlash uchun yuborilgan!",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.pending_version_desc": {
-  "value": "Boshqarma ushbu buyurtma bo'yicha yangi versiya yubordi. Tasdiqlasangiz, eski versiyadagi TZ atmen qilinadi va yangi TZ ga o'tkaziladi.",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.approve_version_btn": {
-  "value": "Yangi versiyani tasdiqlash",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.reject_version_btn": {
-  "value": "Versiyani rad etish",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.status_cancelled": {
-  "value": "Bekor qilingan (Atmen)",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.status_pending_review": {
-  "value": "Kutilmoqda (PM tasdig'ida)",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.status_active": {
-  "value": "Tasdiqlangan (Faol TZ)",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.approve_version_title": {
-  "value": "Yangi TZ versiyasini tasdiqlash",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.approve_version_confirm": {
-  "value": "Haqiqatan ham v{version} versiyani tasdiqlamoqchimisiz? Eski versiyadagi TZ atmen qilinadi.",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.reject_version_title": {
-  "value": "Yangi TZ versiyasini rad etish",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.reject_version_reason_label": {
-  "value": "Rad etish sababi",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.reject_version_reason_placeholder": {
-  "value": "Nima sababdan ushbu versiya rad etilayotganini yozing...",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.version_uploaded_success": {
-  "value": "Yangi versiya muvaffaqiyatli yuborildi. PM tasdiqlashi kutilmoqda.",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.version_approved_success": {
-  "value": "Yangi versiya tasdiqlandi. Eski TZ atmen qilindi va yangi TZ ga o'tkazildi.",
-  "note": "pages/ChangeRequests.tsx"
- },
- "orders.version_rejected_success": {
-  "value": "Versiya rad etildi. Eski TZ o'z kuchida qoldi.",
-  "note": "pages/ChangeRequests.tsx"
  }
 }

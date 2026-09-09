@@ -455,7 +455,7 @@ html, body { transition: background-color .18s ease, color .18s ease; }
 }
 
 .main { flex: 1; min-width: 0; }
-.content { padding: 24px 32px 64px; max-width: 1440px; }
+.content { padding: 24px 32px 64px; width: 100%; }
 
 /* Sahifa sarlavhasi: dizaynda u tuval ustida turadi va tagida chiziq yo'q -
    bo'limlar bir-biridan bo'sh joy bilan ajraladi. */
@@ -1444,7 +1444,11 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 .tl-item.cat-project::before { border-color: var(--attention); box-shadow: 0 0 0 4px var(--canvas), 0 0 12px var(--attention-soft); }
 .tl-item.cat-task::before { border-color: var(--done); box-shadow: 0 0 0 4px var(--canvas), 0 0 12px var(--done-soft); }
 .tl-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tl-actor { font-size: 13.5px; font-weight: 600; color: var(--text); white-space: nowrap; }
 .tl-sum { font-weight: 550; font-size: 14px; }
+.tl-arrow { color: var(--muted); font-size: 13px; margin: 0 4px; }
+.tl-change { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.tl-meta-row { display: block; margin-top: 3px; font-size: 12px; }
 .tl-detail {
   font-size: 13px; color: var(--muted); margin-top: 7px; white-space: pre-wrap;
   background: var(--surface-2); padding: 11px 13px; border-radius: 12px;

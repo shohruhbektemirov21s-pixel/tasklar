@@ -14,8 +14,8 @@
  * Hamma raqam `/api/dashboard/` dan keladi va u Db2 ni ORM orqali o'qiydi:
  * bu yerda hech qanday hisob-kitob ham, namuna qiymat ham yo'q.
  */
-import { useId, useState } from "react";
-import { Link } from "react-router-dom";
+import { useId, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { listOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import type {
@@ -24,9 +24,11 @@ import type {
   DashboardPeriod,
   DashboardPeriodRow,
   DashboardScope,
+  OrderPeriodRow,
   OrderStats,
   Task,
 } from "@/api/types";
+import { ORDER_STATUS_CONFIG, ORDER_TYPE_CONFIG, type PaginatedResponse } from "@/api/orders";
 import { useAuth } from "@/auth/AuthContext";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { PageHead } from "@/components/Layout";
@@ -35,7 +37,7 @@ import {
 } from "@/components/ui";
 import { IconPlus } from "@/components/icons";
 import TaskDrawer from "@/components/TaskDrawer";
-import { toTask } from "@/nav";
+import { toOrder, toTask } from "@/nav";
 import { tx } from "@/i18n";
 
 // Davr sarlavhalari. Kalitlar serverdagi `PERIODS` bilan bir xil, tartibni
@@ -471,20 +473,34 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
   );
 }
 
-const ORDER_STATUS_CONFIG: Record<
-  string,
-  { label: string; icon: string; bg: string; color: string; border: string }
-> = {
-  NEW: { label: "Yangi", icon: "📝", bg: "rgba(234, 179, 8, 0.12)", color: "#b45309", border: "rgba(234, 179, 8, 0.35)" },
-  ACCEPTED: { label: "Qabul qilindi", icon: "📋", bg: "rgba(59, 130, 246, 0.12)", color: "#1d4ed8", border: "rgba(59, 130, 246, 0.35)" },
-  ASSIGNED_TO_DEV: { label: "Dasturchiga topshirildi", icon: "💻", bg: "rgba(99, 102, 241, 0.14)", color: "#4338ca", border: "rgba(99, 102, 241, 0.38)" },
-  IN_PROGRESS: { label: "Jarayonda", icon: "⚙️", bg: "rgba(14, 165, 233, 0.12)", color: "#0369a1", border: "rgba(14, 165, 233, 0.35)" },
-  TESTING: { label: "Testda", icon: "🧪", bg: "rgba(217, 119, 6, 0.12)", color: "#c2410c", border: "rgba(217, 119, 6, 0.35)" },
-  COMPLETED: { label: "Bajarildi", icon: "✅", bg: "rgba(16, 185, 129, 0.12)", color: "#047857", border: "rgba(16, 185, 129, 0.35)" },
-  REJECTED: { label: "Rad etildi", icon: "❌", bg: "rgba(239, 68, 68, 0.12)", color: "#b91c1c", border: "rgba(239, 68, 68, 0.35)" },
-};
+/** Boshqarma buyurtmalari turi nishoni */
+function DashboardOrderTypeBadge({ type }: { type?: string }) {
+  const cfg = ORDER_TYPE_CONFIG[type || "NEW"] || ORDER_TYPE_CONFIG.NEW;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "3px 8px",
+        borderRadius: 6,
+        fontSize: 12,
+        fontWeight: 600,
+        background: cfg.bg,
+        color: cfg.color,
+        border: `1px solid ${cfg.border}`,
+        whiteSpace: "nowrap",
+      }}
+      title={cfg.desc}
+    >
+      <span>{cfg.icon}</span>
+      <span>{cfg.label}</span>
+    </span>
+  );
+}
 
-function OrderStatusBadge({ status, label }: { status: string; label?: string }) {
+/** Boshqarma buyurtmalari holati nishoni */
+function DashboardOrderStatusBadge({ status }: { status: ChangeRequestItem["status"] }) {
   const cfg = ORDER_STATUS_CONFIG[status] || ORDER_STATUS_CONFIG.NEW;
   return (
     <span
@@ -492,260 +508,1006 @@ function OrderStatusBadge({ status, label }: { status: string; label?: string })
         display: "inline-flex",
         alignItems: "center",
         gap: 5,
-        padding: "3px 9px",
+        padding: "3px 8px",
         borderRadius: 6,
-        fontSize: 11.5,
+        fontSize: 12,
         fontWeight: 600,
         background: cfg.bg,
         color: cfg.color,
         border: `1px solid ${cfg.border}`,
         whiteSpace: "nowrap",
       }}
+      title={cfg.desc}
     >
       <span>{cfg.icon}</span>
-      <span>{label || cfg.label}</span>
+      <span>{cfg.label}</span>
     </span>
   );
 }
 
-/** Sohaviy boshqarma o'zi bergan talabnomalari va dasturchilar ijro holatini ko'rsatuvchi widget */
-function DepartmentOrdersWidget({ departmentName }: { departmentName?: string }) {
-  const { data: stats } = useFetch<OrderStats>("/orders/stats/", { mine: 1 });
-  const { data: ordersData, loading } = useFetch<{ count: number; results: ChangeRequestItem[] } | ChangeRequestItem[]>(
-    "/orders/",
-    { page: 1, mine: 1 }
+function CalendarIcon({ size = 20, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
   );
-  const orders = ordersData ? listOf<ChangeRequestItem>(ordersData).slice(0, 5) : [];
+}
+
+function ChevronRightIcon({ size = 16, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+
+function SearchIcon({ size = 16, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function FilterIcon({ size = 15, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  );
+}
+
+function ListIcon({ size = 15, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
+    </svg>
+  );
+}
+
+function getSystemBadge(name: string) {
+  const n = (name || "").toLowerCase();
+  if (n.includes("doc") || n.includes("hujjat")) {
+    return { bg: "#ecfdf5", color: "#059669", icon: "📄" };
+  }
+  if (n.includes("bux") || n.includes("hisob") || n.includes("moliya")) {
+    return { bg: "#fff7ed", color: "#ea580c", icon: "⚙️" };
+  }
+  if (n.includes("cloud") || n.includes("bulut") || n.includes("server")) {
+    return { bg: "#f0f9ff", color: "#0284c7", icon: "☁️" };
+  }
+  if (n.includes("baza") || n.includes("data") || n.includes("my3")) {
+    return { bg: "#faf5ff", color: "#9333ea", icon: "🗄️" };
+  }
+  return { bg: "#eff6ff", color: "#2563eb", icon: "💻" };
+}
+
+function getStatusPill(status: string) {
+  switch (status) {
+    case "ACCEPTED":
+      return { label: tx("dashboard.tasdiqlangan"), bg: "#dcfce7", color: "#15803d", dot: "#22c55e" };
+    case "IN_PROGRESS":
+    case "ASSIGNED_TO_DEV":
+    case "TESTING":
+      return { label: tx("dashboard.jarayonda"), bg: "#dbeafe", color: "#1d4ed8", dot: "#3b82f6" };
+    case "COMPLETED":
+      return { label: tx("dashboard.bajarilgan"), bg: "#f3e8ff", color: "#7e22ce", dot: "#a855f7" };
+    case "NEW":
+      return { label: tx("dashboard.kutilyapti"), bg: "#fef3c7", color: "#b45309", dot: "#f59e0b" };
+    case "REJECTED":
+      return { label: tx("dashboard.rad_etilgan"), bg: "#fee2e2", color: "#b91c1c", dot: "#ef4444" };
+    case "READY_FOR_REVIEW":
+      return { label: tx("dashboard.boshqarma_tasdigida"), bg: "#f5d0fe", color: "#86198f", dot: "#c026d3" };
+    default:
+      return { label: status, bg: "#f1f5f9", color: "#475569", dot: "#94a3b8" };
+  }
+}
+
+function getAvatarInitials(name: string) {
+  if (!name) return "—";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return parts[0].slice(0, 2).toUpperCase();
+}
+
+const PERIOD_THEMES: Record<
+  DashboardPeriod,
+  {
+    iconBg: string;
+    iconColor: string;
+    title: string;
+  }
+> = {
+  year: {
+    iconBg: "#eff6ff",
+    iconColor: "#2563eb",
+    title: tx("dashboard.yil_boshidan"),
+  },
+  month: {
+    iconBg: "#f0fdf4",
+    iconColor: "#16a34a",
+    title: tx("dashboard.oy_boshidan"),
+  },
+  week: {
+    iconBg: "#faf5ff",
+    iconColor: "#9333ea",
+    title: tx("dashboard.hafta_boshidan"),
+  },
+};
+
+/** Boshqarma foydalanuvchisi uchun to'liq bosh panel ko'rinishi (yangi UX dizayn) */
+function DepartmentDashboard({ user }: { user: any }) {
+  const navigate = useNavigate();
+  const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod | null>(null);
+  const [selectedMetric, setSelectedMetric] = useState<"submitted" | "approved" | "completed" | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const scrollToOrders = () => {
+    const el = document.getElementById("department-orders-section");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const { data: stats, reload: reloadStats } = useFetch<OrderStats>("/orders/stats/", { mine: 1 });
+
+  const queryParams = useMemo(() => {
+    const p: Record<string, string | number> = { mine: 1, page_size: 20, ordering: "request_no" };
+    if (selectedPeriod) p.period = selectedPeriod;
+    if (selectedMetric) p.metric = selectedMetric;
+    if (statusFilter) p.status = statusFilter;
+    if (searchQuery.trim()) p.search = searchQuery.trim();
+    return p;
+  }, [selectedPeriod, selectedMetric, statusFilter, searchQuery]);
+
+  const { data: ordersData, loading: ordersLoading, reload: reloadOrders } = useFetch<
+    PaginatedResponse<ChangeRequestItem> | ChangeRequestItem[]
+  >("/orders/", queryParams);
+
+  useDebouncedLive((e) => {
+    if (
+      e.event === "notification" ||
+      e.event === "order.create" ||
+      e.event === "order.update" ||
+      e.event === "order.delete"
+    ) {
+      reloadStats();
+      reloadOrders();
+    }
+  }, 800);
+
+  const total = stats?.total ?? 0;
+  const inProgressCount =
+    (stats?.in_progress ?? 0) + (stats?.assigned_to_dev ?? 0) + (stats?.testing ?? 0);
+  const completed = stats?.completed ?? 0;
+  const readyForReviewCount = stats?.ready_for_review ?? 0;
+
+  const orders = useMemo(() => {
+    if (!ordersData) return [];
+    return listOf<ChangeRequestItem>(ordersData);
+  }, [ordersData]);
+
+  const defaultSince = new Date().toISOString();
+  const periods: OrderPeriodRow[] = stats?.periods || [
+    {
+      key: "year",
+      since: defaultSince,
+      submitted: total,
+      approved: inProgressCount + completed,
+      completed: completed,
+      rejected: stats?.rejected ?? 0,
+    },
+    {
+      key: "month",
+      since: defaultSince,
+      submitted: total,
+      approved: inProgressCount + completed,
+      completed: completed,
+      rejected: stats?.rejected ?? 0,
+    },
+    {
+      key: "week",
+      since: defaultSince,
+      submitted: total,
+      approved: inProgressCount + completed,
+      completed: completed,
+      rejected: stats?.rejected ?? 0,
+    },
+  ];
 
   return (
-    <div className="card" style={{ marginBottom: 20 }}>
-      <div className="card-header row between middle" style={{ padding: "14px 18px", borderBottom: "1px solid var(--border-color)" }}>
-        <div className="row middle" style={{ gap: 10 }}>
-          <span style={{ fontSize: 22 }}>🏛️</span>
-          <div>
-            <strong style={{ fontSize: 15, color: "var(--brand)" }}>
-              {departmentName ? `${departmentName} talabnomalari va ijro monitoringi` : "Boshqarma talabnomalari va ishlar ijrosi holati"}
-            </strong>
-            <div className="muted" style={{ fontSize: 12 }}>
-              Siz tomoningizdan yuborilgan talabnomalar va dasturchilar ijro bosqichlari
-            </div>
-          </div>
-        </div>
-        <div className="row middle" style={{ gap: 8 }}>
-          <Link to="/buyurtma/yangi" className="btn btn-primary btn-sm">
-            <IconPlus size={14} /> Yangi TZ yuborish
-          </Link>
-          <Link to="/buyurtmalar" className="btn btn-outline btn-sm">
-            Barcha buyurtmalaringiz ({stats?.total ?? 0}) →
-          </Link>
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 40 }}>
+      {/* Yuqori o'ng tugmalar: Yangi TZ yuborish & Barcha buyurtmalar */}
+      <div className="row end middle" style={{ gap: 12 }}>
+        <Link
+          to="/buyurtma/yangi"
+          className="btn btn-primary"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 18px",
+            borderRadius: 8,
+            fontSize: 13.5,
+            fontWeight: 600,
+            background: "#2563eb",
+            color: "#fff",
+            boxShadow: "0 1px 3px rgba(37,99,235,0.2)",
+          }}
+        >
+          <IconPlus size={15} /> {tx("dashboard.yangi_tz_yuborish")}
+        </Link>
+        <Link
+          to="/buyurtmalar"
+          className="btn btn-outline"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 18px",
+            borderRadius: 8,
+            fontSize: 13.5,
+            fontWeight: 600,
+            background: "#fff",
+            borderColor: "#e2e8f0",
+            color: "#334155",
+          }}
+        >
+          <ListIcon size={15} color="#64748b" /> {tx("dashboard.barcha_buyurtmalar")}
+        </Link>
       </div>
 
-      {/* KPI Cards */}
+      {/* Agar Boshqarma tasdiqlashi kutilayotgan ishlar bo'lsa ogohlantiruvchi kartochka */}
+      {readyForReviewCount > 0 && (
+        <div
+          style={{
+            background: "rgba(168, 85, 247, 0.08)",
+            border: "1px solid rgba(168, 85, 247, 0.3)",
+            borderRadius: 12,
+            padding: "12px 18px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 22 }}>📑</span>
+            <div>
+              <div style={{ fontWeight: 700, color: "#7e22ce", fontSize: 13.5 }}>
+                {tx("dashboard.boshqarma_tasdigida")} ({readyForReviewCount})
+              </div>
+              <div className="muted" style={{ fontSize: 12.5, marginTop: 1 }}>
+                {tx("dashboard.boshqarma_tasdigida_izoh")}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            onClick={() => setStatusFilter("READY_FOR_REVIEW")}
+          >
+            {tx("dashboard.korish")} →
+          </button>
+        </div>
+      )}
+
+      {/* 3 ta Davriy Statistika kartasi (Yil boshidan, Oy boshidan, Hafta boshidan) */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-          gap: 10,
-          padding: "14px 18px",
-          background: "var(--surface, #f8fafc)",
-          borderBottom: "1px solid var(--border-color)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gap: 16,
         }}
       >
-        <Link
-          to="/buyurtmalar"
-          className="card"
-          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit" }}
-        >
-          <div className="muted" style={{ fontSize: 11.5 }}>Jami talabnomalar</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "var(--brand)" }}>
-            {stats?.total ?? 0}
-          </div>
-        </Link>
-        <Link
-          to="/buyurtmalar?status=NEW"
-          className="card"
-          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit" }}
-        >
-          <div className="muted" style={{ fontSize: 11.5 }}>📝 Kutilmoqda</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#d97706" }}>
-            {stats?.new ?? 0}
-          </div>
-        </Link>
-        <Link
-          to="/buyurtmalar?status=ASSIGNED_TO_DEV"
-          className="card"
-          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit", borderLeft: "3px solid #6366f1" }}
-        >
-          <div className="muted" style={{ fontSize: 11.5 }}>💻 Dasturchiga topshirildi</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#4f46e5" }}>
-            {stats?.assigned_to_dev ?? 0}
-          </div>
-        </Link>
-        <Link
-          to="/buyurtmalar?status=IN_PROGRESS"
-          className="card"
-          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit" }}
-        >
-          <div className="muted" style={{ fontSize: 11.5 }}>⚙️ Jarayonda</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#0284c7" }}>
-            {(stats?.in_progress_strict ?? 0) || (stats?.in_progress ?? 0)}
-          </div>
-        </Link>
-        <Link
-          to="/buyurtmalar?status=TESTING"
-          className="card"
-          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit" }}
-        >
-          <div className="muted" style={{ fontSize: 11.5 }}>🧪 Testda</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#c2410c" }}>
-            {stats?.testing ?? 0}
-          </div>
-        </Link>
-        <Link
-          to="/buyurtmalar?status=COMPLETED"
-          className="card"
-          style={{ padding: "10px 12px", textDecoration: "none", color: "inherit" }}
-        >
-          <div className="muted" style={{ fontSize: 11.5 }}>✅ Bajarildi</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
-            {stats?.completed ?? 0}
-          </div>
-        </Link>
+        {periods.map((p) => {
+          const theme = PERIOD_THEMES[p.key] || PERIOD_THEMES.year;
+          const isSelected = selectedPeriod === p.key;
+
+          return (
+            <div
+              key={p.key}
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                border: isSelected ? "2px solid #2563eb" : "1px solid #f1f5f9",
+                boxShadow: isSelected
+                  ? "0 4px 12px rgba(37,99,235,0.08)"
+                  : "0 1px 3px rgba(0,0,0,0.03)",
+                padding: "20px 22px",
+                transition: "all 0.15s ease",
+              }}
+            >
+              {/* Tepa qator: Kvadrat taqvim + Sarlavha/Sana + Strelka */}
+              <div
+                onClick={() => {
+                  if (selectedPeriod === p.key && !selectedMetric) {
+                    setSelectedPeriod(null);
+                  } else {
+                    setSelectedPeriod(p.key);
+                    setSelectedMetric(null);
+                    setStatusFilter("");
+                    scrollToOrders();
+                  }
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  cursor: "pointer",
+                }}
+                title={`${theme.title} bo'yicha barcha buyurtmalarni ko'rish`}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      background: theme.iconBg,
+                      color: theme.iconColor,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CalendarIcon size={22} color={theme.iconColor} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "#0f172a" }}>
+                      {theme.title}
+                    </h3>
+                    <p style={{ fontSize: 12, color: "#94a3b8", margin: "2px 0 0" }}>
+                      {fmtDate(p.since)} – {tx("dashboard.bugun")}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ color: isSelected ? "#2563eb" : "#cbd5e1", display: "flex", alignItems: "center" }}>
+                  <ChevronRightIcon size={18} />
+                </div>
+              </div>
+
+              {/* Pastki qator: Jami, Tasdiqlangan, Bajarilgan (3 ta alohida mini-kartochka) */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  marginTop: 18,
+                  paddingTop: 14,
+                  borderTop: "1px solid #f1f5f9",
+                  gap: 10,
+                }}
+              >
+                {/* 1. Jami */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (selectedPeriod === p.key && selectedMetric === "submitted") {
+                      setSelectedPeriod(null);
+                      setSelectedMetric(null);
+                    } else {
+                      setSelectedPeriod(p.key);
+                      setSelectedMetric("submitted");
+                      setStatusFilter("");
+                      scrollToOrders();
+                    }
+                  }}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    background:
+                      selectedPeriod === p.key && selectedMetric === "submitted"
+                        ? "#eff6ff"
+                        : "#f8fafc",
+                    border:
+                      selectedPeriod === p.key && selectedMetric === "submitted"
+                        ? "2px solid #2563eb"
+                        : "1px solid #e2e8f0",
+                    boxShadow:
+                      selectedPeriod === p.key && selectedMetric === "submitted"
+                        ? "0 3px 10px rgba(37,99,235,0.15)"
+                        : "0 1px 2px rgba(0,0,0,0.02)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!(selectedPeriod === p.key && selectedMetric === "submitted")) {
+                      e.currentTarget.style.background = "#eff6ff";
+                      e.currentTarget.style.borderColor = "#bfdbfe";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!(selectedPeriod === p.key && selectedMetric === "submitted")) {
+                      e.currentTarget.style.background = "#f8fafc";
+                      e.currentTarget.style.borderColor = "#e2e8f0";
+                      e.currentTarget.style.transform = "none";
+                    }
+                  }}
+                  title={`${theme.title} — ${tx("dashboard.jami")} (${p.submitted ?? 0})`}
+                >
+                  <div
+                    style={{
+                      fontSize: 11.5,
+                      color: "#64748b",
+                      fontWeight: 600,
+                      marginBottom: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: "#2563eb",
+                        display: "inline-block",
+                      }}
+                    />
+                    {tx("dashboard.jami")}
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: "#2563eb", lineHeight: 1.1 }}>
+                    {p.submitted ?? 0}
+                  </div>
+                </div>
+
+                {/* 2. Tasdiqlangan */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (selectedPeriod === p.key && selectedMetric === "approved") {
+                      setSelectedPeriod(null);
+                      setSelectedMetric(null);
+                    } else {
+                      setSelectedPeriod(p.key);
+                      setSelectedMetric("approved");
+                      setStatusFilter("");
+                      scrollToOrders();
+                    }
+                  }}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    background:
+                      selectedPeriod === p.key && selectedMetric === "approved"
+                        ? "#f0fdf4"
+                        : "#f8fafc",
+                    border:
+                      selectedPeriod === p.key && selectedMetric === "approved"
+                        ? "2px solid #16a34a"
+                        : "1px solid #e2e8f0",
+                    boxShadow:
+                      selectedPeriod === p.key && selectedMetric === "approved"
+                        ? "0 3px 10px rgba(22,163,74,0.15)"
+                        : "0 1px 2px rgba(0,0,0,0.02)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!(selectedPeriod === p.key && selectedMetric === "approved")) {
+                      e.currentTarget.style.background = "#f0fdf4";
+                      e.currentTarget.style.borderColor = "#bbf7d0";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!(selectedPeriod === p.key && selectedMetric === "approved")) {
+                      e.currentTarget.style.background = "#f8fafc";
+                      e.currentTarget.style.borderColor = "#e2e8f0";
+                      e.currentTarget.style.transform = "none";
+                    }
+                  }}
+                  title={`${theme.title} — ${tx("dashboard.tasdiqlangan")} (${p.approved ?? 0})`}
+                >
+                  <div
+                    style={{
+                      fontSize: 11.5,
+                      color: "#64748b",
+                      fontWeight: 600,
+                      marginBottom: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: "#16a34a",
+                        display: "inline-block",
+                      }}
+                    />
+                    {tx("dashboard.tasdiqlangan_buyurtmalar")}
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: "#16a34a", lineHeight: 1.1 }}>
+                    {p.approved ?? 0}
+                  </div>
+                </div>
+
+                {/* 3. Bajarilgan */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (selectedPeriod === p.key && selectedMetric === "completed") {
+                      setSelectedPeriod(null);
+                      setSelectedMetric(null);
+                    } else {
+                      setSelectedPeriod(p.key);
+                      setSelectedMetric("completed");
+                      setStatusFilter("");
+                      scrollToOrders();
+                    }
+                  }}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    background:
+                      selectedPeriod === p.key && selectedMetric === "completed"
+                        ? "#faf5ff"
+                        : "#f8fafc",
+                    border:
+                      selectedPeriod === p.key && selectedMetric === "completed"
+                        ? "2px solid #9333ea"
+                        : "1px solid #e2e8f0",
+                    boxShadow:
+                      selectedPeriod === p.key && selectedMetric === "completed"
+                        ? "0 3px 10px rgba(147,51,234,0.15)"
+                        : "0 1px 2px rgba(0,0,0,0.02)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!(selectedPeriod === p.key && selectedMetric === "completed")) {
+                      e.currentTarget.style.background = "#faf5ff";
+                      e.currentTarget.style.borderColor = "#e9d5ff";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!(selectedPeriod === p.key && selectedMetric === "completed")) {
+                      e.currentTarget.style.background = "#f8fafc";
+                      e.currentTarget.style.borderColor = "#e2e8f0";
+                      e.currentTarget.style.transform = "none";
+                    }
+                  }}
+                  title={`${theme.title} — ${tx("dashboard.bajarilgan")} (${p.completed ?? 0})`}
+                >
+                  <div
+                    style={{
+                      fontSize: 11.5,
+                      color: "#64748b",
+                      fontWeight: 600,
+                      marginBottom: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: "#9333ea",
+                        display: "inline-block",
+                      }}
+                    />
+                    {tx("dashboard.bajarilgan_buyurtmalar")}
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: "#9333ea", lineHeight: 1.1 }}>
+                    {p.completed ?? 0}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* So'nggi talabnomalar ro'yxati */}
-      <div style={{ padding: "0 18px 14px" }}>
-        <div className="row between middle" style={{ margin: "14px 0 8px" }}>
-          <strong style={{ fontSize: 13, color: "var(--color-fg-muted)" }}>
-            So'nggi talabnomalaringiz va ijro bosqichlari
-          </strong>
-          <Link to="/buyurtmalar" style={{ fontSize: 12, color: "var(--brand)" }}>
-            Barcha buyurtmalar ro'yxati →
-          </Link>
+      {/* Pastki qism: "Buyurtmalar" bo'limi */}
+      <div id="department-orders-section" style={{ scrollMarginTop: 24 }}>
+        <div className="row between middle" style={{ flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: "#0f172a" }}>
+              {selectedMetric === "approved"
+                ? `${tx("dashboard.tasdiqlangan")} buyurtmalar`
+                : selectedMetric === "completed"
+                ? `${tx("dashboard.bajarilgan")} buyurtmalar`
+                : selectedMetric === "submitted"
+                ? `${tx("dashboard.jami")} buyurtmalar`
+                : tx("dashboard.buyurtmalar")}
+            </h2>
+            <span style={{ fontSize: 13.5, fontWeight: 600, color: "#64748b" }}>
+              ({orders.length} ta)
+            </span>
+            {selectedPeriod && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "#eff6ff",
+                  color: "#2563eb",
+                  borderRadius: 20,
+                  padding: "4px 12px",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  border: "1px solid #bfdbfe",
+                }}
+              >
+                <span>📅 {PERIOD_THEMES[selectedPeriod]?.title}</span>
+                {selectedMetric && (
+                  <span
+                    style={{
+                      color:
+                        selectedMetric === "approved"
+                          ? "#16a34a"
+                          : selectedMetric === "completed"
+                          ? "#9333ea"
+                          : "#2563eb",
+                    }}
+                  >
+                    •{" "}
+                    {selectedMetric === "approved"
+                      ? tx("dashboard.tasdiqlangan")
+                      : selectedMetric === "completed"
+                      ? tx("dashboard.bajarilgan")
+                      : tx("dashboard.jami")}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPeriod(null);
+                    setSelectedMetric(null);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    color: "#2563eb",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    marginLeft: 4,
+                  }}
+                  title="Filtrni olib tashlash"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
+          </div>
         </div>
 
-        {loading ? (
-          <Loading />
-        ) : orders.length ? (
-          <div className="table-wrap">
-            <table className="table" style={{ fontSize: 12.5 }}>
-              <thead>
-                <tr>
-                  <th style={{ width: 110 }}>Talabnoma №</th>
-                  <th>Tizim / Modul</th>
-                  <th>Talab qilingan o'zgartirish</th>
-                  <th>Bo'linma / Mas'ul</th>
-                  <th>Mas'ul dasturchi</th>
-                  <th>Holati va Bosqich</th>
-                  <th style={{ width: 120 }}>PM muddati</th>
-                  <th className="right" style={{ width: 80 }}>Amallar</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((o) => (
-                  <tr key={o.id}>
-                    <td>
-                      <Link to="/buyurtmalar" className="badge badge-brand" style={{ fontSize: 11, textDecoration: "none" }}>
-                        {o.request_no}
-                      </Link>
-                    </td>
-                    <td>
-                      <strong>{o.system_name}</strong>
-                      {o.module && <div className="muted" style={{ fontSize: 11 }}>{o.module}</div>}
-                    </td>
-                    <td style={{ maxWidth: 220 }}>
-                      <div
+        {/* Qidiruv va Holat filtrlari satri */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+          {/* Qidiruv input */}
+          <div style={{ position: "relative", width: 340, maxWidth: "100%" }}>
+            <span
+              style={{
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#94a3b8",
+                display: "flex",
+                alignItems: "center",
+                pointerEvents: "none",
+              }}
+            >
+              <SearchIcon size={16} />
+            </span>
+            <input
+              type="search"
+              placeholder={tx("dashboard.qidiruv_placeholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: "100%",
+                height: 40,
+                borderRadius: 10,
+                border: "1px solid #e2e8f0",
+                padding: "8px 14px 8px 36px",
+                fontSize: 13,
+                background: "#fff",
+                outline: "none",
+                transition: "border-color 0.15s ease",
+              }}
+            />
+          </div>
+
+          {/* Holat filtri dropdown */}
+          <div style={{ position: "relative", minWidth: 170 }}>
+            <div
+              style={{
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#64748b",
+                display: "flex",
+                alignItems: "center",
+                pointerEvents: "none",
+              }}
+            >
+              <FilterIcon size={14} />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                height: 40,
+                width: "100%",
+                borderRadius: 10,
+                border: "1px solid #e2e8f0",
+                padding: "0 14px 0 34px",
+                fontSize: 13,
+                background: "#fff",
+                color: "#334155",
+                fontWeight: 500,
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <option value="">{tx("dashboard.barcha_holatlar")}</option>
+              <option value="ACCEPTED">{tx("dashboard.tasdiqlangan")}</option>
+              <option value="IN_PROGRESS">{tx("dashboard.jarayonda")}</option>
+              <option value="COMPLETED">{tx("dashboard.bajarilgan")}</option>
+              <option value="NEW">{tx("dashboard.kutilyapti")}</option>
+              <option value="REJECTED">{tx("dashboard.rad_etilgan")}</option>
+              <option value="READY_FOR_REVIEW">{tx("dashboard.boshqarma_tasdigida")}</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Jadval kartasi */}
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 14,
+            border: "1px solid #f1f5f9",
+            overflow: "hidden",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+          }}
+        >
+          {ordersLoading && !orders.length ? (
+            <div style={{ padding: 40, textAlign: "center" }}>
+              <Loading text={tx("dashboard.panel_yuklanmoqda")} />
+            </div>
+          ) : orders.length === 0 ? (
+            <div style={{ padding: "48px 20px", textAlign: "center" }}>
+              <div style={{ fontSize: 38, marginBottom: 12 }}>📝</div>
+              <h4 style={{ fontSize: 15, fontWeight: 600, color: "#334155", margin: "0 0 6px" }}>
+                {tx("dashboard.talabnoma_topilmadi")}
+              </h4>
+              <p className="muted" style={{ fontSize: 13, maxWidth: 420, margin: "0 auto 16px" }}>
+                {tx("dashboard.talabnoma_topilmadi_izoh")}
+              </p>
+              <Link
+                to="/buyurtma/yangi"
+                className="btn btn-primary btn-sm"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <IconPlus size={14} /> {tx("dashboard.birinchi_tz_yuborish")}
+              </Link>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table" style={{ width: "100%", borderCollapse: "collapse", margin: 0 }}>
+                <thead>
+                  <tr
+                    style={{
+                      background: "#f8fafc",
+                      borderBottom: "1px solid #e2e8f0",
+                      textAlign: "left",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#64748b",
+                    }}
+                  >
+                    <th style={{ width: 44, textAlign: "center", padding: "12px 14px" }}>№</th>
+                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.talabnoma_no")}</th>
+                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.axborot_tizimi")}</th>
+                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.talab_mazmuni")}</th>
+                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.muddati")}</th>
+                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.holati")}</th>
+                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.masul_pm")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((o, idx) => {
+                    const sysBadge = getSystemBadge(o.system_name);
+                    const pill = getStatusPill(o.status);
+                    const pmInitials = getAvatarInitials(o.assigned_pm_name || "");
+
+                    return (
+                      <tr
+                        key={o.id}
+                        onClick={() => navigate(toOrder(o.id).to)}
                         style={{
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
+                          borderBottom: "1px solid #f8fafc",
+                          transition: "background 0.1s ease",
+                          cursor: "pointer",
                         }}
-                        title={o.requested_change}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#f8fafc";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
                       >
-                        {o.requested_change}
-                      </div>
-                    </td>
-                    <td>
-                      <div>{o.department}</div>
-                      <div className="muted" style={{ fontSize: 11 }}>{o.responsible_person}</div>
-                    </td>
-                    <td>
-                      {o.assigned_developer_name ? (
-                        <div style={{ fontWeight: 600, color: "#4338ca", fontSize: 12 }}>
-                          👨‍💻 {o.assigned_developer_name}
-                        </div>
-                      ) : (
-                        <span className="muted" style={{ fontStyle: "italic", fontSize: 11.5 }}>
-                          Tayinlanmagan
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 130 }}>
-                        <OrderStatusBadge status={o.status} label={o.status_display} />
-                        {o.status !== "REJECTED" && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {/* 1. Tartib raqami */}
+                        <td
+                          style={{
+                            textAlign: "center",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: "#0f172a",
+                            padding: "14px",
+                          }}
+                        >
+                          {idx + 1}
+                        </td>
+
+                        {/* 2. Talabnoma № va sana */}
+                        <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
+                          <Link
+                            {...toOrder(o.id)}
+                            style={{
+                              fontWeight: 700,
+                              fontSize: 13.5,
+                              color: "#2563eb",
+                              textDecoration: "none",
+                            }}
+                          >
+                            {o.request_no || `#${o.id}`}
+                          </Link>
+                          {o.request_date && (
+                            <div style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 2 }}>
+                              {fmtDate(o.request_date)}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* 3. Axborot tizimi */}
+                        <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <div
                               style={{
-                                flex: 1,
-                                height: 4,
-                                borderRadius: 2,
-                                backgroundColor: "#e2e8f0",
-                                overflow: "hidden",
+                                width: 32,
+                                height: 32,
+                                borderRadius: 8,
+                                background: sysBadge.bg,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 15,
                               }}
                             >
+                              {sysBadge.icon}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 13, color: "#0f172a" }}>
+                                {o.system_name}
+                              </div>
+                              {o.module && (
+                                <div style={{ fontSize: 11.5, color: "#94a3b8" }}>{o.module}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* 4. Talab mazmuni */}
+                        <td style={{ padding: "14px", maxWidth: 300 }}>
+                          <div
+                            style={{
+                              fontSize: 13,
+                              color: "#334155",
+                              lineHeight: 1.4,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                            }}
+                            title={o.requested_change}
+                          >
+                            {o.requested_change}
+                          </div>
+                        </td>
+
+                        {/* 5. Muddati */}
+                        <td style={{ padding: "14px", whiteSpace: "nowrap", fontSize: 12.5, color: "#475569" }}>
+                          {o.pm_deadline || o.due_date ? (
+                            fmtDate(o.pm_deadline || o.due_date)
+                          ) : (
+                            <span style={{ color: "#cbd5e1" }}>—</span>
+                          )}
+                        </td>
+
+                        {/* 6. Holati (Ovalsirangan badge nuqta bilan) */}
+                        <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              padding: "4px 12px",
+                              borderRadius: 20,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              background: pill.bg,
+                              color: pill.color,
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: "50%",
+                                background: pill.dot,
+                              }}
+                            />
+                            {pill.label}
+                          </span>
+                        </td>
+
+                        {/* 7. Mas'ul PM */}
+                        <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
+                          {o.assigned_pm_name ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <div
                                 style={{
-                                  height: "100%",
-                                  width: `${Math.min(100, Math.round(((o.stage_index || 1) / 6) * 100))}%`,
-                                  backgroundColor:
-                                    o.status === "COMPLETED"
-                                      ? "#10b981"
-                                      : o.status === "TESTING"
-                                      ? "#f59e0b"
-                                      : o.status === "ASSIGNED_TO_DEV"
-                                      ? "#6366f1"
-                                      : "#3b82f6",
+                                  width: 26,
+                                  height: 26,
+                                  borderRadius: "50%",
+                                  background: "#60a5fa",
+                                  color: "#fff",
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
                                 }}
-                              />
+                              >
+                                {pmInitials}
+                              </div>
+                              <span style={{ fontSize: 12.5, fontWeight: 500, color: "#334155" }}>
+                                {o.assigned_pm_name}
+                              </span>
                             </div>
-                            <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600 }}>
-                              {o.stage_index || 1}/6
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      {o.pm_deadline ? (
-                        <div>📅 {fmtDate(o.pm_deadline)}</div>
-                      ) : o.pm_estimated_duration ? (
-                        <div style={{ color: "var(--brand)", fontWeight: 500 }}>
-                          ⏱ {o.pm_estimated_duration}
-                        </div>
-                      ) : (
-                        <span className="muted">—</span>
-                      )}
-                    </td>
-                    <td className="right">
-                      <Link to="/buyurtmalar" className="btn btn-xs btn-outline">
-                        Ko'rish
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{ padding: "16px 0", textAlign: "center" }} className="muted">
-            Hozircha siz tomoningizdan buyurtmalar yuborilmagan.{" "}
-            <Link to="/buyurtma/yangi" style={{ fontWeight: 600, color: "var(--brand)" }}>
-              Birinchi TZ ni yuborish →
-            </Link>
-          </div>
-        )}
+                          ) : (
+                            <span style={{ color: "#cbd5e1", fontSize: 13 }}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -775,6 +1537,17 @@ export default function Dashboard() {
   // ma'lumot kelgach sakrab paydo bo'lardi.
   const name = <strong>{tx("layout.bosh_panel")}</strong>;
 
+  if (isDepartmentUser) {
+    return (
+      <>
+        <PageHead title={name} />
+        <div className="content">
+          <DepartmentDashboard user={user} />
+        </div>
+      </>
+    );
+  }
+
   if (loading) {
     return (
       <>
@@ -799,14 +1572,6 @@ export default function Dashboard() {
       <PageHead title={name} />
 
       <div className="content">
-        {/* Sohaviy boshqarmalar akkauntida o'zi bergan talabnomalari / ishlari */}
-        {isDepartmentUser && (
-          <DepartmentOrdersWidget departmentName={user?.department_name} />
-        )}
-
-        {/* Raqamlar KIMNIKI ekani - `d.scope` rolga qarab kengayadi va
-            buni aytmasak, «bu mening ishimmi yoki jamoanikimi» degan
-            savol javobsiz qolardi. */}
         <p className="scope-note">{SCOPE_LABELS[d.scope]}</p>
 
         <div className="period-grid">

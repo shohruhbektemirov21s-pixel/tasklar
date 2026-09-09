@@ -22,7 +22,7 @@ class Specialty(models.TextChoices):
     ANALYST = "ANALYST", "Biznes tahlilchi"
     SECURITY = "SECURITY", "Xavfsizlik mutaxassisi"
     PM = "PM", "Loyiha menejeri"
-    SOHAVIY = "SOHAVIY", "Sohaviy boshqarmalar"
+    SOHAVIY = "SOHAVIY", "Boshqarma"
 
 
 class Seniority(models.TextChoices):

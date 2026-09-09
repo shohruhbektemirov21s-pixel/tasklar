@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, listOf, pagesOf, totalOf } from "@/api/client";
-import { uploadVersion, approveVersion, rejectVersion } from "@/api/orders";
+import { claimOrder, uploadVersion, approveVersion, rejectVersion, deleteOrder } from "@/api/orders";
 import type { ChangeRequestItem, OrderStats, Project, UserBrief } from "@/api/types";
 import { useFetch } from "@/api/useFetch";
 import { useAuth } from "@/auth/AuthContext";
@@ -24,7 +24,8 @@ import {
   IconProject,
   IconSearch,
 } from "@/components/icons";
-import { toEditOrder, toNewOrder, useGo } from "@/nav";
+import { toEditOrder, toNewOrder, toOrder, useGo } from "@/nav";
+import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import {
   Card,
   Empty,
@@ -33,11 +34,13 @@ import {
   Pager,
   Progress,
   fmtDate,
+  fmtDateTime,
+  timeAgo,
 } from "@/components/ui";
 
 import { tx } from "@/i18n";
 
-const PER_PAGE = 10;
+const PER_PAGE = 15;
 
 export const ORDER_TYPE_CONFIG: Record<
   string,
@@ -451,9 +454,6 @@ function TableRowSkeleton({ rowNum }: { rowNum: number }) {
         <span style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 600 }}>{rowNum}</span>
       </td>
       <td style={{ padding: "16px 18px" }}>
-        <div className="skeleton-box" style={{ width: 110, height: 26, borderRadius: 9999 }} />
-      </td>
-      <td style={{ padding: "16px 18px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div className="skeleton-box" style={{ width: 36, height: 36, borderRadius: 8, flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
@@ -470,6 +470,10 @@ function TableRowSkeleton({ rowNum }: { rowNum: number }) {
             <div className="skeleton-box" style={{ width: "55%", height: 12 }} />
           </div>
         </div>
+      </td>
+      <td style={{ padding: "16px 18px" }}>
+        <div className="skeleton-box" style={{ width: 110, height: 14, marginBottom: 5 }} />
+        <div className="skeleton-box" style={{ width: 70, height: 12 }} />
       </td>
       <td style={{ padding: "16px 18px" }}>
         <div className="skeleton-box" style={{ width: "90%", height: 14 }} />
@@ -555,6 +559,7 @@ export default function ChangeRequests() {
     "/orders/",
     {
       page,
+      page_size: PER_PAGE,
       search: debouncedSearch || undefined,
       status: statusFilter || undefined,
       priority: priorityFilter || undefined,
@@ -565,6 +570,25 @@ export default function ChangeRequests() {
   );
 
   const { data: statsData, loading: statsLoading } = useFetch<OrderStats>("/orders/stats/");
+
+  // Real-time yangilanish: yangi buyurtma kelganda yoki o'zgarganda darrov yangilanadi
+  useDebouncedLive((e) => {
+    if (
+      e.event === "notification" ||
+      e.event === "order.create" ||
+      e.event === "order.update" ||
+      e.event === "order.delete"
+    ) {
+      reload();
+    }
+  }, 800);
+
+  // Nisbiy vaqt (timeAgo) real-time har 30 soniyada o'zini yangilab turadi
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(timer);
+  }, []);
   const { data: projectsData } = useFetch<{ count: number; results: Project[] } | Project[]>("/projects/", { scope: "visible" });
   const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>("/users/", { is_active: true });
 
@@ -758,31 +782,47 @@ export default function ChangeRequests() {
   };
 
   // PM buyurtmani o'z zimmasiga olishi (Claim)
-  const [claimingId, setClaimingId] = useState<number | null>(null);
+  const [claimModalItem, setClaimModalItem] = useState<ChangeRequestItem | null>(null);
+  const [claimDuration, setClaimDuration] = useState("");
+  const [claimDeadline, setClaimDeadline] = useState("");
+  const [claimDeveloper, setClaimDeveloper] = useState<number | null>(null);
+  const [claimNotes, setClaimNotes] = useState("");
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
+  const claimingId = claimSubmitting && claimModalItem ? claimModalItem.id : null;
 
-  const handleClaimOrder = async (item: ChangeRequestItem) => {
-    if (
-      !window.confirm(
-        `«${item.request_no}» raqamli buyurtmani o'z zimmangizga olishni (PM sifatida qabul qilishni) tasdiqlaysizmi?\n\nSiz qabul qilganingizdan so'ng boshqa PM bu buyurtmani ololmaydi.`
-      )
-    ) {
-      return;
-    }
-    setClaimingId(item.id);
+  const handleOpenClaim = (item: ChangeRequestItem) => {
+    setClaimModalItem(item);
+    setClaimDuration(item.pm_estimated_duration || "");
+    setClaimDeadline(item.pm_deadline || item.due_date || "");
+    setClaimDeveloper(item.assigned_developer || null);
+    setClaimNotes("");
+  };
+
+  const handleClaimSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!claimModalItem) return;
+    setClaimSubmitting(true);
     try {
-      const updated = await api.post<ChangeRequestItem>(
-        `/orders/${item.id}/claim-order/`,
-        {}
-      );
-      if (viewingItem && viewingItem.id === item.id) {
+      const updated = await claimOrder(claimModalItem.id, {
+        pm_estimated_duration: claimDuration.trim() || undefined,
+        pm_deadline: claimDeadline || undefined,
+        assigned_developer: claimDeveloper || null,
+        pm_notes: claimNotes.trim() || undefined,
+      });
+      if (viewingItem && viewingItem.id === claimModalItem.id) {
         setViewingItem(updated);
       }
+      setClaimModalItem(null);
       reload();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Buyurtmani qabul qilishda xatolik yuz berdi.");
     } finally {
-      setClaimingId(null);
+      setClaimSubmitting(false);
     }
+  };
+
+  const handleClaimOrder = (item: ChangeRequestItem) => {
+    handleOpenClaim(item);
   };
 
   // Word (.docx) yuklab olish
@@ -808,18 +848,9 @@ export default function ChangeRequests() {
       .catch((e) => alert("Word faylini yuklab olishda xatolik: " + e.message));
   };
 
-  // Batafsil ko'rishni ochish
+  // Batafsil ko'rishni ochish — yangi sodda tafsilotlar sahifasiga o'tadi
   const handleOpenView = (item: ChangeRequestItem) => {
-    setViewingItem(item);
-    setPmDecisionForm({
-      status: item.status,
-      pm_estimated_duration: item.pm_estimated_duration || "",
-      pm_deadline: item.pm_deadline || "",
-      pm_notes: item.pm_notes || "",
-      assigned_developer: item.assigned_developer || null,
-    });
-    setPmSaveError(null);
-    setPmSaveSuccess(null);
+    go(toOrder(item.id));
   };
 
   const canEditOrder = (item: ChangeRequestItem) => {
@@ -829,6 +860,24 @@ export default function ChangeRequests() {
     }
     // Boshqarma faqat NEW va PM biriktirilmagan buyurtmani tahrirlay oladi
     return item.status === "NEW" && !item.assigned_pm;
+  };
+
+  const canDeleteOrder = (item: ChangeRequestItem) => {
+    if (user?.is_platform_admin || user?.is_boss) return true;
+    // Boshqarma faqat o'zining NEW va PM biriktirilmagan buyurtmasini o'chira oladi
+    return item.status === "NEW" && !item.assigned_pm && Boolean(item.can_manage_by_user);
+  };
+
+  const handleDeleteOrder = async (item: ChangeRequestItem) => {
+    if (!window.confirm(`«${item.request_no}» raqamli buyurtmani o'chirishni tasdiqlaysizmi?`)) {
+      return;
+    }
+    try {
+      await deleteOrder(item.id);
+      reload();
+    } catch (err: unknown) {
+      alert((err as Error)?.message || "Buyurtmani o'chirishda xatolik yuz berdi");
+    }
   };
 
   // PM qarorini saqlash
@@ -1031,12 +1080,12 @@ export default function ChangeRequests() {
                 style={{
                   background: "#f0f7ff",
                   border: !statusFilter ? "2px solid #2563eb" : "1px solid #dbeafe",
-                  borderRadius: 14,
-                  padding: "16px 20px",
+                  borderRadius: 12,
+                  padding: "14px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  gap: 16,
+                  gap: 14,
                   boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
                   transition: "all 0.15s ease",
                 }}
@@ -1044,8 +1093,8 @@ export default function ChangeRequests() {
               >
                 <div
                   style={{
-                    width: 46,
-                    height: 46,
+                    width: 42,
+                    height: 42,
                     borderRadius: "50%",
                     background: "#dbeafe",
                     display: "flex",
@@ -1054,7 +1103,7 @@ export default function ChangeRequests() {
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                     <line x1="16" y1="13" x2="8" y2="13" />
@@ -1063,16 +1112,11 @@ export default function ChangeRequests() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.jami_sorovlar")}
                   </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
-                      {statsData?.total ?? total}
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#16a34a" }}>
-                      ↑ +{statsData?.new || 1}
-                    </span>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
+                    {statsData?.total ?? total}
                   </div>
                 </div>
               </div>
@@ -1086,12 +1130,12 @@ export default function ChangeRequests() {
                 style={{
                   background: "#fffdf0",
                   border: statusFilter === "NEW" ? "2px solid #d97706" : "1px solid #fef3c7",
-                  borderRadius: 14,
-                  padding: "16px 20px",
+                  borderRadius: 12,
+                  padding: "14px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  gap: 16,
+                  gap: 14,
                   boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
                   transition: "all 0.15s ease",
                 }}
@@ -1099,8 +1143,8 @@ export default function ChangeRequests() {
               >
                 <div
                   style={{
-                    width: 46,
-                    height: 46,
+                    width: 42,
+                    height: 42,
                     borderRadius: "50%",
                     background: "#fef3c7",
                     display: "flex",
@@ -1109,7 +1153,7 @@ export default function ChangeRequests() {
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 22h14" />
                     <path d="M5 2h14" />
                     <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
@@ -1117,18 +1161,11 @@ export default function ChangeRequests() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.yangi")}
                   </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
-                      {statsData?.new ?? 0}
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "#64748b" }}>
-                      {(statsData?.total ?? total) > 0
-                        ? `${Math.round(((statsData?.new ?? 0) / (statsData?.total ?? total)) * 100)}%`
-                        : "0%"}
-                    </span>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
+                    {statsData?.new ?? 0}
                   </div>
                 </div>
               </div>
@@ -1142,12 +1179,12 @@ export default function ChangeRequests() {
                 style={{
                   background: "#f0f9ff",
                   border: statusFilter === "IN_PROGRESS" ? "2px solid #0284c7" : "1px solid #e0f2fe",
-                  borderRadius: 14,
-                  padding: "16px 20px",
+                  borderRadius: 12,
+                  padding: "14px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  gap: 16,
+                  gap: 14,
                   boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
                   transition: "all 0.15s ease",
                 }}
@@ -1155,8 +1192,8 @@ export default function ChangeRequests() {
               >
                 <div
                   style={{
-                    width: 46,
-                    height: 46,
+                    width: 42,
+                    height: 42,
                     borderRadius: "50%",
                     background: "#e0f2fe",
                     display: "flex",
@@ -1165,28 +1202,17 @@ export default function ChangeRequests() {
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.jarayonda")}
                   </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
-                      {(statsData?.in_progress_strict ?? 0) || (statsData?.in_progress ?? 0)}
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "#64748b" }}>
-                      {(statsData?.total ?? total) > 0
-                        ? `${Math.round(
-                            (((statsData?.in_progress_strict ?? 0) || (statsData?.in_progress ?? 0)) /
-                              (statsData?.total ?? total)) *
-                              100
-                          )}%`
-                        : "0%"}
-                    </span>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
+                    {(statsData?.in_progress_strict ?? 0) || (statsData?.in_progress ?? 0)}
                   </div>
                 </div>
               </div>
@@ -1200,12 +1226,12 @@ export default function ChangeRequests() {
                 style={{
                   background: "#f0fdf4",
                   border: statusFilter === "COMPLETED" ? "2px solid #16a34a" : "1px solid #dcfce7",
-                  borderRadius: 14,
-                  padding: "16px 20px",
+                  borderRadius: 12,
+                  padding: "14px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  gap: 16,
+                  gap: 14,
                   boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
                   transition: "all 0.15s ease",
                 }}
@@ -1213,8 +1239,8 @@ export default function ChangeRequests() {
               >
                 <div
                   style={{
-                    width: 46,
-                    height: 46,
+                    width: 42,
+                    height: 42,
                     borderRadius: "50%",
                     background: "#dcfce7",
                     display: "flex",
@@ -1223,24 +1249,17 @@ export default function ChangeRequests() {
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                     <polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.tugallangan")}
                   </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
-                      {statsData?.completed ?? 0}
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "#64748b" }}>
-                      {(statsData?.total ?? total) > 0
-                        ? `${Math.round(((statsData?.completed ?? 0) / (statsData?.total ?? total)) * 100)}%`
-                        : "0%"}
-                    </span>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
+                    {statsData?.completed ?? 0}
                   </div>
                 </div>
               </div>
@@ -1254,12 +1273,12 @@ export default function ChangeRequests() {
                 style={{
                   background: "#fef2f2",
                   border: statusFilter === "REJECTED" ? "2px solid #dc2626" : "1px solid #fee2e2",
-                  borderRadius: 14,
-                  padding: "16px 20px",
+                  borderRadius: 12,
+                  padding: "14px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  gap: 16,
+                  gap: 14,
                   boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
                   transition: "all 0.15s ease",
                 }}
@@ -1267,8 +1286,8 @@ export default function ChangeRequests() {
               >
                 <div
                   style={{
-                    width: 46,
-                    height: 46,
+                    width: 42,
+                    height: 42,
                     borderRadius: "50%",
                     background: "#fee2e2",
                     display: "flex",
@@ -1277,25 +1296,18 @@ export default function ChangeRequests() {
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <line x1="15" y1="9" x2="9" y2="15" />
                     <line x1="9" y1="9" x2="15" y2="15" />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.bekor_qilingan")}
                   </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
-                      {statsData?.rejected ?? 0}
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "#64748b" }}>
-                      {(statsData?.total ?? total) > 0
-                        ? `${Math.round(((statsData?.rejected ?? 0) / (statsData?.total ?? total)) * 100)}%`
-                        : "0%"}
-                    </span>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
+                    {statsData?.rejected ?? 0}
                   </div>
                 </div>
               </div>
@@ -1621,18 +1633,25 @@ export default function ChangeRequests() {
               boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
             }}
           >
-            <div className="table-wrap" style={{ overflowX: "auto" }}>
+            <div
+              className="table-wrap"
+              style={{
+                overflowX: "auto",
+                minHeight: displayItems.length <= 3 ? 240 : undefined,
+                paddingBottom: displayItems.length <= 2 ? 60 : 12,
+              }}
+            >
               <table className="table" style={{ margin: 0, width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
-                    <th style={{ width: 50, textAlign: "center", padding: "16px 18px", fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>#</th>
-                    <th style={{ padding: "16px 18px", fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>BUYURTMA</th>
-                    <th style={{ padding: "16px 18px", fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>LOYIHA / TIZIM</th>
-                    <th style={{ padding: "16px 18px", fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>{tx("orders.buyurtmachi_boshqarma")}</th>
-                    <th style={{ padding: "16px 18px", fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>TAVSIF</th>
-                    <th style={{ padding: "16px 18px", fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>MUDDAT</th>
-                    <th style={{ padding: "16px 18px", fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>HOLAT</th>
-                    <th style={{ width: 90, textAlign: "right", padding: "16px 18px", fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>AMALLAR</th>
+                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                    <th style={{ width: 44, textAlign: "center", padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>#</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>LOYIHA / TIZIM</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>{tx("orders.buyurtmachi_boshqarma")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>{tx("orders.yaratilgan_vaqti")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>TAVSIF</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>MUDDAT</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>HOLAT</th>
+                    <th style={{ width: 70, textAlign: "right", padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>AMALLAR</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1645,123 +1664,43 @@ export default function ChangeRequests() {
                       const rowNum = (page - 1) * PER_PAGE + idx + 1;
                     return (
                       <tr key={item.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ textAlign: "center", fontWeight: 700, fontSize: 13.5, color: "#0f172a", padding: "16px 18px" }}>
+                        <td style={{ textAlign: "center", fontWeight: 700, fontSize: 13, color: "#0f172a", padding: "12px 14px" }}>
                           {rowNum}
                         </td>
-                        <td style={{ padding: "16px 18px" }}>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenView(item)}
-                            style={{
-                              background: "#ffffff",
-                              border: "1.5px solid #cbd5e1",
-                              borderRadius: 9999,
-                              padding: "4px 16px",
-                              fontWeight: 700,
-                              fontSize: 13,
-                              color: "#0f172a",
-                              cursor: "pointer",
-                              display: "inline-block",
-                              transition: "all 0.15s ease",
-                              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-                            }}
-                            title="Batafsil ko'rish"
-                          >
-                            {item.request_no}
-                          </button>
-                        </td>
-                        <td style={{ padding: "16px 18px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <div
-                              style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 8,
-                                background: item.project_detail?.color || "#2563eb",
-                                color: "#fff",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontWeight: 700,
-                                fontSize: 12.5,
-                                flexShrink: 0,
-                              }}
-                            >
-                              {item.project_detail?.key?.slice(0, 3) || "TF"}
+                        <td
+                          style={{ padding: "12px 14px", cursor: "pointer" }}
+                          onClick={() => handleOpenView(item)}
+                          title="Batafsil ko'rish"
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 13.5, color: "#2563eb", lineHeight: 1.3 }}>
+                              {item.project_detail?.name || item.system_name || "TeamFlow"}
                             </div>
-                            <div>
-                              <div style={{ fontWeight: 700, fontSize: 13.5, color: "#0f172a", lineHeight: 1.3 }}>
-                                {item.project_detail?.name || item.system_name || "TeamFlow"}
+                            {item.module && (
+                              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                                {item.module}
                               </div>
-                              <div style={{ fontSize: 12, color: "#64748b", marginTop: 1 }}>
-                                {item.module || "Platforma 2.0"}
-                              </div>
-                              {item.assigned_developer_name && (
-                                <div
-                                  style={{
-                                    fontSize: 11,
-                                    color: "#4338ca",
-                                    fontWeight: 600,
-                                    marginTop: 3,
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 3,
-                                    background: "#ede9fe",
-                                    padding: "1.5px 6px",
-                                    borderRadius: 4,
-                                  }}
-                                  title={`Mas'ul dasturchi (Ijrochi): ${item.assigned_developer_name}`}
-                                >
-                                  <span>👨‍💻</span>
-                                  <span>{item.assigned_developer_name}</span>
-                                </div>
-                              )}
-                            </div>
+                            )}
                           </div>
                         </td>
-                        <td style={{ padding: "16px 18px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <div
-                              style={{
-                                width: 34,
-                                height: 34,
-                                borderRadius: "50%",
-                                background: "#eff6ff",
-                                color: "#2563eb",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: 15,
-                                flexShrink: 0,
-                                border: "1px solid #bfdbfe",
-                              }}
-                            >
-                              🏛️
+                        <td style={{ padding: "12px 14px" }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
+                              {item.department || item.created_by_department || item.responsible_person || "Boshqarma"}
                             </div>
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
-                                {item.responsible_person || item.created_by_name || "Mijoz"}
+                            {item.responsible_person && item.responsible_person !== (item.department || item.created_by_department) && (
+                              <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
+                                {item.responsible_person}
                               </div>
-                              <div
-                                style={{
-                                  fontSize: 11.5,
-                                  color: "#64748b",
-                                  marginTop: 2,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                }}
-                                title={item.department || item.created_by_department || "Boshqarma ko'rsatilmagan"}
-                              >
-                                <span>🏢</span>
-                                <span style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {item.department || item.created_by_department || "Boshqarma ko'rsatilmagan"}
-                                </span>
-                              </div>
-                            </div>
+                            )}
                           </div>
                         </td>
-                        <td style={{ maxWidth: 220, padding: "16px 18px" }}>
+                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
+                          <div style={{ fontSize: 13, color: "#334155" }}>
+                            {fmtDate(item.created_at || item.request_date)}
+                          </div>
+                        </td>
+                        <td style={{ maxWidth: 360, padding: "12px 14px" }}>
                           <div
                             style={{
                               overflow: "hidden",
@@ -1775,62 +1714,33 @@ export default function ChangeRequests() {
                             {item.requested_change || item.current_state || "—"}
                           </div>
                         </td>
-                        <td style={{ padding: "16px 18px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                              <line x1="16" y1="2" x2="16" y2="6" />
-                              <line x1="8" y1="2" x2="8" y2="6" />
-                              <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: 500, color: "#0f172a" }}>
-                                {item.pm_deadline
-                                  ? fmtDate(item.pm_deadline)
-                                  : item.due_date
-                                  ? fmtDate(item.due_date)
-                                  : "—"}
-                              </div>
-                              {(() => {
-                                const rem = getRemainingDaysText(item.pm_deadline || item.due_date, item.status);
-                                if (!rem) return null;
-                                return (
-                                  <div
-                                    style={{
-                                      fontSize: 11.5,
-                                      color: rem.isOverdue ? "#dc2626" : "#64748b",
-                                      fontWeight: rem.isOverdue ? 600 : 400,
-                                      marginTop: 1,
-                                    }}
-                                  >
-                                    {rem.text}
-                                  </div>
-                                );
-                              })()}
-                            </div>
+                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
+                          <div style={{ fontSize: 13, color: "#334155" }}>
+                            {item.pm_deadline
+                              ? fmtDate(item.pm_deadline)
+                              : item.due_date
+                              ? fmtDate(item.due_date)
+                              : "—"}
                           </div>
                         </td>
-                        <td style={{ padding: "16px 18px" }}>
+                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
                           {item.status === "COMPLETED" && (
                             <span
                               style={{
                                 background: "#dcfce7",
                                 color: "#15803d",
                                 border: "1px solid #bbf7d0",
-                                padding: "4px 14px",
-                                borderRadius: 9999,
-                                fontSize: 12.5,
+                                padding: "3px 10px",
+                                borderRadius: 6,
+                                fontSize: 12,
                                 fontWeight: 600,
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: 6,
+                                gap: 4,
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                              {tx("orders.bajarildi")}
+                              ✓ {tx("orders.bajarildi")}
                             </span>
                           )}
                           {item.status === "READY_FOR_REVIEW" && (
@@ -1839,20 +1749,16 @@ export default function ChangeRequests() {
                                 background: "#f3e8ff",
                                 color: "#7e22ce",
                                 border: "1px solid #e9d5ff",
-                                padding: "4px 14px",
-                                borderRadius: 9999,
-                                fontSize: 12.5,
+                                padding: "3px 10px",
+                                borderRadius: 6,
+                                fontSize: 12,
                                 fontWeight: 600,
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: 6,
+                                gap: 4,
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                              </svg>
                               Tasdiqlashda
                             </span>
                           )}
@@ -1862,21 +1768,17 @@ export default function ChangeRequests() {
                                 background: "#e0f2fe",
                                 color: "#0369a1",
                                 border: "1px solid #bae6fd",
-                                padding: "4px 14px",
-                                borderRadius: 9999,
-                                fontSize: 12.5,
+                                padding: "3px 10px",
+                                borderRadius: 6,
+                                fontSize: 12,
                                 fontWeight: 600,
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: 6,
+                                gap: 4,
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <polyline points="12 6 12 12 16 14" />
-                              </svg>
-                              {tx("orders.jarayonda")}
+                              ⚙️ {tx("orders.jarayonda")}
                             </span>
                           )}
                           {item.status === "TESTING" && (
@@ -1885,13 +1787,13 @@ export default function ChangeRequests() {
                                 background: "#ffedd5",
                                 color: "#c2410c",
                                 border: "1px solid #fed7aa",
-                                padding: "4px 14px",
-                                borderRadius: 9999,
-                                fontSize: 12.5,
+                                padding: "3px 10px",
+                                borderRadius: 6,
+                                fontSize: 12,
                                 fontWeight: 600,
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: 6,
+                                gap: 4,
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -1904,13 +1806,13 @@ export default function ChangeRequests() {
                                 background: "#ede9fe",
                                 color: "#5b21b6",
                                 border: "1px solid #ddd6fe",
-                                padding: "4px 14px",
-                                borderRadius: 9999,
-                                fontSize: 12.5,
+                                padding: "3px 10px",
+                                borderRadius: 6,
+                                fontSize: 12,
                                 fontWeight: 600,
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: 6,
+                                gap: 4,
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -1923,13 +1825,13 @@ export default function ChangeRequests() {
                                 background: "#eff6ff",
                                 color: "#1d4ed8",
                                 border: "1px solid #bfdbfe",
-                                padding: "4px 14px",
-                                borderRadius: 9999,
-                                fontSize: 12.5,
+                                padding: "3px 10px",
+                                borderRadius: 6,
+                                fontSize: 12,
                                 fontWeight: 600,
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: 6,
+                                gap: 4,
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -1942,13 +1844,13 @@ export default function ChangeRequests() {
                                 background: "#fef3c7",
                                 color: "#b45309",
                                 border: "1px solid #fde68a",
-                                padding: "4px 14px",
-                                borderRadius: 9999,
-                                fontSize: 12.5,
+                                padding: "3px 10px",
+                                borderRadius: 6,
+                                fontSize: 12,
                                 fontWeight: 600,
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: 6,
+                                gap: 4,
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -1956,132 +1858,23 @@ export default function ChangeRequests() {
                             </span>
                           )}
                           {item.status === "REJECTED" && (
-                            <div>
-                              <span
-                                style={{
-                                  background: "#fee2e2",
-                                  color: "#b91c1c",
-                                  border: "1px solid #fecaca",
-                                  padding: "4px 14px",
-                                  borderRadius: 9999,
-                                  fontSize: 12.5,
-                                  fontWeight: 600,
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 6,
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                ✕ {tx("orders.bekor_qilingan")}
-                              </span>
-                              {item.pm_notes && (
-                                <div
-                                  style={{
-                                    marginTop: 4,
-                                    fontSize: 11,
-                                    color: "#991b1b",
-                                    background: "#fef2f2",
-                                    border: "1px solid #fecaca",
-                                    padding: "2px 6px",
-                                    borderRadius: 4,
-                                    maxWidth: 160,
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                  title={`Rad etish sababi: ${item.pm_notes}`}
-                                >
-                                  ⚠️ Sabab: {item.pm_notes}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* PM biriktirilganlik holati */}
-                          {item.assigned_pm ? (
-                            user?.id === item.assigned_pm ? (
-                              <div style={{ marginTop: 6 }}>
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 4,
-                                    padding: "2px 8px",
-                                    borderRadius: 9999,
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    background: "#ecfdf5",
-                                    color: "#059669",
-                                    border: "1px solid #a7f3d0",
-                                  }}
-                                  title="Ushbu buyurtmani siz qabul qilgansiz"
-                                >
-                                  🎯 {tx("orders.sizga_biriktirilgan")}
-                                </span>
-                              </div>
-                            ) : (
-                              <div style={{ marginTop: 6 }}>
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 4,
-                                    padding: "2px 8px",
-                                    borderRadius: 9999,
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    background: "#f1f5f9",
-                                    color: "#475569",
-                                    border: "1px solid #cbd5e1",
-                                  }}
-                                  title={`Ushbu buyurtmani ${item.assigned_pm_name || "boshqa PM"} o'z zimmasiga olgan`}
-                                >
-                                  🔒 PM: {item.assigned_pm_name || "Boshqa PM"}
-                                </span>
-                              </div>
-                            )
-                          ) : (
-                            <div style={{ marginTop: 6 }}>
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                  padding: "2px 8px",
-                                  borderRadius: 9999,
-                                  fontSize: 11,
-                                  fontWeight: 600,
-                                  background: "#fffbeb",
-                                  color: "#d97706",
-                                  border: "1px solid #fde68a",
-                                }}
-                              >
-                                ⏳ {tx("orders.pm_olinmagan")}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Yangi versiya kutilayotganligi belgisi */}
-                          {item.has_pending_version && (
-                            <div style={{ marginTop: 6 }}>
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                  padding: "2px 8px",
-                                  borderRadius: 9999,
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  background: "#fef3c7",
-                                  color: "#b45309",
-                                  border: "1px solid #fcd34d",
-                                }}
-                                title={`v${item.pending_version?.version || "yangi"} versiya tasdiqlash uchun kutilmoqda`}
-                              >
-                                ⚡ v{item.pending_version?.version || "yangi"} kutilmoqda
-                              </span>
-                            </div>
+                            <span
+                              style={{
+                                background: "#fee2e2",
+                                color: "#b91c1c",
+                                border: "1px solid #fecaca",
+                                padding: "3px 10px",
+                                borderRadius: 6,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              ✕ {tx("orders.bekor_qilingan")}
+                            </span>
                           )}
                         </td>
                         <td style={{ textAlign: "right", position: "relative", padding: "16px 18px" }}>
@@ -2111,13 +1904,15 @@ export default function ChangeRequests() {
                               style={{
                                 position: "absolute",
                                 right: 16,
-                                top: "80%",
+                                ...(idx >= Math.max(1, displayItems.length - 2)
+                                  ? { bottom: "100%", marginBottom: 6 }
+                                  : { top: "80%" }),
                                 background: "#fff",
                                 borderRadius: 8,
-                                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+                                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
                                 border: "1px solid #e2e8f0",
-                                zIndex: 50,
-                                minWidth: 190,
+                                zIndex: 100,
+                                minWidth: 200,
                                 padding: 6,
                                 textAlign: "left",
                               }}
@@ -2260,6 +2055,19 @@ export default function ChangeRequests() {
                                   }}
                                 >
                                   ✏️ Tahrirlash
+                                </button>
+                              )}
+
+                              {canDeleteOrder(item) && (
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#dc2626" }}
+                                  onClick={() => {
+                                    setActiveActionMenuId(null);
+                                    void handleDeleteOrder(item);
+                                  }}
+                                >
+                                  🗑️ {tx("common.ochirish") || "O'chirish"}
                                 </button>
                               )}
                             </div>
@@ -2437,6 +2245,141 @@ export default function ChangeRequests() {
           </div>
         )}
       </div>
+
+      {/* PM BUYURTMANI QABUL QILISH VA MUDDAT BELGILASH MODALI */}
+      {claimModalItem && (
+        <div className="modal-overlay" onClick={() => !claimSubmitting && setClaimModalItem(null)}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: 540, width: "95%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header row between middle">
+              <div className="row middle" style={{ gap: 8 }}>
+                <span style={{ fontSize: 20 }}>📌</span>
+                <div>
+                  <strong style={{ fontSize: 15 }}>{tx("orders.claim_modal_title")}</strong>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                    {claimModalItem.request_no} — {claimModalItem.project_detail?.name || claimModalItem.system_name}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                onClick={() => setClaimModalItem(null)}
+                disabled={claimSubmitting}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleClaimSubmit}>
+              <div className="modal-body" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+                <div
+                  style={{
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    fontSize: 12.5,
+                    color: "#166534",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {tx("orders.claim_modal_desc")}
+                </div>
+
+                {claimModalItem.due_date && (
+                  <div style={{ fontSize: 12.5, color: "#475569", background: "#f8fafc", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0" }}>
+                    📅 <strong>Mijoz so'ragan muddat:</strong> {fmtDate(claimModalItem.due_date)}
+                  </div>
+                )}
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                    {tx("orders.claim_deadline_label")} *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    className="input"
+                    value={claimDeadline}
+                    onChange={(e) => setClaimDeadline(e.target.value)}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                    {tx("orders.claim_duration_label")}
+                  </label>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder={tx("orders.claim_duration_placeholder")}
+                    value={claimDuration}
+                    onChange={(e) => setClaimDuration(e.target.value)}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                    {tx("orders.claim_dev_label")}
+                  </label>
+                  <select
+                    className="select"
+                    value={claimDeveloper || ""}
+                    onChange={(e) => setClaimDeveloper(e.target.value ? Number(e.target.value) : null)}
+                    style={{ width: "100%" }}
+                  >
+                    <option value="">{tx("orders.claim_dev_placeholder")}</option>
+                    {developersList.map((dev) => (
+                      <option key={dev.id} value={dev.id}>
+                        {dev.full_name} ({dev.specialty || dev.department || "Dasturchi"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                    {tx("orders.claim_notes_label")}
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="textarea"
+                    placeholder={tx("orders.claim_notes_placeholder")}
+                    value={claimNotes}
+                    onChange={(e) => setClaimNotes(e.target.value)}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setClaimModalItem(null)}
+                  disabled={claimSubmitting}
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ background: "#059669", borderColor: "#059669" }}
+                  disabled={claimSubmitting || !claimDeadline}
+                >
+                  {claimSubmitting ? tx("orders.claim_submitting") : tx("orders.claim_submit_btn")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* 1. BATAFSIL KO'RISH MODAL (Буюртма.docx blankasi, Loyiha ma'lumoti va PM Paneli) */}
       {viewingItem && (
@@ -2903,8 +2846,15 @@ export default function ChangeRequests() {
                   <div style={{ fontWeight: 600, color: "var(--text)" }}>{viewingItem.responsible_person || "-"}</div>
                 </div>
                 <div>
-                  <span className="muted" style={{ fontSize: 11 }}>Yuborilgan sana:</span>
-                  <div style={{ fontWeight: 600, color: "var(--text)" }}>{fmtDate(viewingItem.request_date)}</div>
+                  <span className="muted" style={{ fontSize: 11 }}>{tx("orders.yaratilgan_sana_vaqti")}:</span>
+                  <div style={{ fontWeight: 700, color: "var(--text)" }}>
+                    📅 {fmtDateTime(viewingItem.created_at || viewingItem.request_date)}
+                    {viewingItem.created_at && (
+                      <span className="muted" style={{ fontSize: 11.5, marginLeft: 6, fontWeight: 400 }}>
+                        ({timeAgo(viewingItem.created_at)})
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <span className="muted" style={{ fontSize: 11 }}>Muhimlik:</span>

@@ -5,7 +5,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
                                                   TokenRefreshSerializer)
 
-from .models import GlobalRole
+from .models import Department, GlobalRole
 from .specialties import Seniority, Specialty, specialty_catalog
 
 User = get_user_model()
@@ -20,7 +20,7 @@ class UserBriefSerializer(serializers.ModelSerializer):
     specialty_icon = serializers.CharField(read_only=True)
     specialty_color = serializers.CharField(read_only=True)
     seniority_display = serializers.CharField(source="get_seniority_display", read_only=True)
-    department_name = serializers.CharField(source="department.name", read_only=True, default="")
+    department_name = serializers.CharField(read_only=True)
     # Nisbiy manzil: proksi Host ni almashtirsa ham brauzer rasmni ocha oladi.
     avatar = serializers.SerializerMethodField()
 
@@ -63,7 +63,7 @@ class UserSerializer(serializers.ModelSerializer):
     # Tajriba chegarasi royxatdan otishdagi bilan bir xil: 0-30 yil.
     years_experience = serializers.IntegerField(required=False, min_value=0, max_value=30)
     # Rasm /api/auth/me/avatar/ orqali yuklanadi, bu yerda faqat o'qiladi.
-    department_name = serializers.CharField(source="department.name", read_only=True, default="")
+    department_name = serializers.CharField(read_only=True)
     avatar = serializers.SerializerMethodField()
 
     class Meta:
@@ -220,6 +220,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True)
     specialty = serializers.ChoiceField(choices=Specialty.choices, required=True)
+    department_name = serializers.CharField(required=False, allow_blank=True, write_only=True)
     seniority = serializers.ChoiceField(choices=Seniority.choices, required=False,
                                         default=Seniority.JUNIOR)
     years_experience = serializers.IntegerField(required=False, min_value=0, max_value=30,
@@ -228,7 +229,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["email", "full_name", "specialty", "seniority", "years_experience",
-                  "job_title", "skills", "password", "password_confirm"]
+                  "job_title", "skills", "password", "password_confirm", "department_name"]
 
     def validate_email(self, value):
         email = value.strip().lower()
@@ -252,6 +253,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         bosib qo'shiladigan taklif sifatida qoladi (`suggested_skills`).
         """
         specialty = validated_data.get("specialty")
+        dept_name = (validated_data.pop("department_name", None) or "").strip()
+        if dept_name:
+            department, _ = Department.objects.get_or_create(
+                name=dept_name,
+                defaults={"code": dept_name[:10].upper()}
+            )
+            validated_data["department"] = department
 
         if not (validated_data.get("job_title") or "").strip():
             validated_data["job_title"] = dict(Specialty.choices).get(specialty, "")
@@ -261,7 +269,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         elif specialty == Specialty.SOHAVIY:
             validated_data["global_role"] = GlobalRole.SOHAVIY
             if not (validated_data.get("job_title") or "").strip():
-                validated_data["job_title"] = "Sohaviy boshqarma mas'ul xodimi"
+                validated_data["job_title"] = f"{dept_name} mas'ul xodimi" if dept_name else "Boshqarma mas'ul xodimi"
 
         password = validated_data.pop("password")
         user = User(**validated_data)

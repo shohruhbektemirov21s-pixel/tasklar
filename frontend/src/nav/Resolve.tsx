@@ -32,10 +32,10 @@ import { useParams } from "react-router-dom";
 
 import { Loading } from "@/components/ui";
 import { tx } from "@/i18n";
-import { toMessages, toProject, toTask, toWorkspaceChat, useGo, type NavTarget } from "./index";
+import { toMessages, toOrder, toProject, toTask, toWorkspaceChat, useGo, type NavTarget } from "./index";
 
 /** Qaysi yozuv turini yechayotganimiz - marshrut shabloni bilan juftlashadi. */
-export type ResolveKind = "task" | "project" | "messages" | "workspace-chat";
+export type ResolveKind = "task" | "project" | "messages" | "workspace-chat" | "order";
 
 /** Yechib bo'lmagan havola shu yerga olib boradi - oq ekran qolmasin. */
 const FALLBACK = "/bildirishnomalar";
@@ -56,6 +56,8 @@ function build(kind: ResolveKind, params: Record<string, string | undefined>): N
     case "workspace-chat":
       // Ish maydoni raqam emas, manzil (slug) bilan ochiladi.
       return slug ? toWorkspaceChat(slug) : null;
+    case "order":
+      return isId(id) ? toOrder(id!) : null;
     default:
       return null;
   }

@@ -158,6 +158,24 @@ function SuggestionRow({ item, rank, open, onToggle, onEdit, onDelete, onQuickVo
               </h3>
             </button>
             {renderStatusPill(item.status, item.status_display)}
+            {item.can_decide && item.status === "PENDING" && (
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  background: "#fef3c7",
+                  color: "#b45309",
+                  border: "1px solid #fcd34d",
+                  borderRadius: 9999,
+                  padding: "2px 8px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                ⚡ {tx("suggestions.boshliq_korib_chiqmoqda")}
+              </span>
+            )}
           </div>
 
           <div className="repo-meta" style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", display: "flex", gap: 6, alignItems: "center" }}>
@@ -237,6 +255,21 @@ function SuggestionRow({ item, rank, open, onToggle, onEdit, onDelete, onQuickVo
                 <span>{item.neutral_count}</span>
               </button>
             </div>
+          )}
+
+          {item.can_decide && (
+            <button
+              type="button"
+              className={`btn btn-xs ${item.status === "PENDING" ? "btn-primary" : "btn-outline"}`}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 12, fontWeight: 700, borderRadius: 6 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
+              title="Taklif bo'yicha qaror qabul qilish yoki o'zgartirish"
+            >
+              ⚖️ {item.status === "PENDING" ? "Qaror qabul qilish" : "Qarorni ko'rish"}
+            </button>
           )}
 
           <div className="sg-actions" onClick={(e) => e.stopPropagation()}>

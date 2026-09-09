@@ -212,6 +212,10 @@ export const toOrders = (): NavTarget => ({
   to: "/buyurtmalar", state: {},
 });
 
+export const toOrder = (id: Id): NavTarget => ({
+  to: "/buyurtma", state: { order: id },
+});
+
 export const toNewOrder = (): NavTarget => ({
   to: "/buyurtma/yangi", state: { order: null },
 });
