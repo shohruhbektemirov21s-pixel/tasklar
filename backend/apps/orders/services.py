@@ -144,3 +144,106 @@ def notify_order_new_version(order, version_obj, actor):
         },
     )
 
+
+def notify_order_completion_submitted(order, actor):
+    """PM tugatilgan ish hujjati bilan boshqarmaga topshirganda bildirishnoma."""
+    recipients = get_order_notification_recipients(order=order, exclude_id=actor.id)
+    if not recipients:
+        return 0
+
+    return notify_many(
+        recipients,
+        NotificationKind.ORDER_STATUS,
+        title=f"Ish yakunlandi va tasdiqlash uchun topshirildi: {order.request_no}",
+        body=f"{actor.full_name} ishni yakunladi va tugatilgan ish hujjatini biriktirdi. Iltimos, tekshirib tasdiqlang yoki kamchilik bo'lsa qaytaring.",
+        url=URL,
+        actor=actor,
+        meta={"order_id": order.pk, "status": order.status},
+    )
+
+
+def notify_order_client_approved(order, actor):
+    """Boshqarma ishni tasdiqlab qabul qilganda (yopilganda) bildirishnoma."""
+    recipients = []
+    if order.assigned_pm:
+        recipients.append(order.assigned_pm)
+    if order.assigned_developer and order.assigned_developer != order.assigned_pm:
+        recipients.append(order.assigned_developer)
+
+    if not recipients:
+        return 0
+
+    return notify_many(
+        recipients,
+        NotificationKind.ORDER_STATUS,
+        title=f"Boshqarma ishni tasdiqladi va qabul qildi: {order.request_no}",
+        body=f"{actor.full_name} tomonidan bajarilgan ish to'liq tasdiqlandi va buyurtma muvaffaqiyatli yakunlandi.",
+        url=URL,
+        actor=actor,
+        meta={"order_id": order.pk, "status": order.status},
+    )
+
+
+def notify_order_completion_rejected(order, actor, feedback_note):
+    """Boshqarma ishda kamchilik aniqlab qayta ishlashga yuborganda bildirishnoma."""
+    recipients = []
+    if order.assigned_pm:
+        recipients.append(order.assigned_pm)
+    if order.assigned_developer and order.assigned_developer != order.assigned_pm:
+        recipients.append(order.assigned_developer)
+
+    if not recipients:
+        return 0
+
+    note_text = f": «{feedback_note[:100]}»" if feedback_note else "."
+
+    return notify_many(
+        recipients,
+        NotificationKind.ORDER_STATUS,
+        title=f"Ishda kamchilik aniqlandi (Qayta ishlashga): {order.request_no}",
+        body=f"Boshqarma vakili ({actor.full_name}) kamchiliklarni ko'rsatib ishni qayta tugatishga yubordi{note_text}",
+        url=URL,
+        actor=actor,
+        meta={"order_id": order.pk, "status": order.status, "feedback_note": feedback_note},
+    )
+
+
+def notify_order_version_approved(order, version_obj, actor):
+    """PM yangi TZ versiyasini tasdiqlaganda bildirishnoma."""
+    recipients = get_order_notification_recipients(order=order, exclude_id=actor.id)
+    if not recipients:
+        return 0
+
+    return notify_many(
+        recipients,
+        NotificationKind.ORDER_STATUS,
+        title=f"Yangi TZ versiyasi tasdiqlandi (v{version_obj.version}): {order.request_no}",
+        body=f"PM ({actor.full_name}) yangi TZ versiyasini tasdiqladi. Eski TZ atmen qilindi va loyiha yangi TZ ga o'tkazildi.",
+        url=URL,
+        actor=actor,
+        meta={"order_id": order.pk, "version": version_obj.version, "status": "ACCEPTED"},
+    )
+
+
+def notify_order_version_rejected(order, version_obj, actor, reason):
+    """PM yangi TZ versiyasini rad etganda bildirishnoma."""
+    recipients = []
+    if order.created_by and order.created_by_id != actor.id:
+        recipients.append(order.created_by)
+    if version_obj.uploaded_by and version_obj.uploaded_by_id != actor.id and version_obj.uploaded_by not in recipients:
+        recipients.append(version_obj.uploaded_by)
+
+    if not recipients:
+        return 0
+
+    reason_text = f": «{reason[:100]}»" if reason else "."
+    return notify_many(
+        recipients,
+        NotificationKind.ORDER_STATUS,
+        title=f"Yangi TZ versiyasi rad etildi (v{version_obj.version}): {order.request_no}",
+        body=f"PM ({actor.full_name}) TZ versiyasini rad etdi{reason_text} Eski versiya o'z kuchida qoldi.",
+        url=URL,
+        actor=actor,
+        meta={"order_id": order.pk, "version": version_obj.version, "reason": reason, "status": "REJECTED"},
+    )
+

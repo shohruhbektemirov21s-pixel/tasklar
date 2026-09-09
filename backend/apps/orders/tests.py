@@ -263,25 +263,31 @@ class OrdersSeniorDevTests(ApiTestCase):
         self.assertEqual(patch_res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("qabul qilingan", str(patch_res.content))
 
-    def test_upload_new_version_after_acceptance(self):
-        """Qabul qilingan TZ ga yangi versiya (v2) yuklash va PM ga ko'rib chiqishga borishi."""
+    def test_upload_new_version_and_pm_approval_workflow(self):
+        """Boshqarma yangi versiya yuklaganda eski TZ saqlanib turishi, PM tasdiqlasa eski TZ atmen bo'lib yangisiga o'tishi."""
+        initial_file = SimpleUploadedFile("Eski_TZ_v1.pdf", b"initial v1", content_type="application/pdf")
         order = ChangeRequest.objects.create(
             project=self.project,
             system_name="Smart CRM",
             department="Moliya",
             responsible_person="Karimov",
             current_state="Boshlang'ich",
-            requested_change="O'zgarish",
+            requested_change="Eski o'zgarish",
             reason="Sabab",
             status=ChangeRequestStatus.ACCEPTED,
+            version=1,
+            tz_file=initial_file,
+            tz_file_name="Eski_TZ_v1.pdf",
             created_by=self.sohaviy_user,
+            assigned_pm=self.pm_user,
         )
 
+        # 1. Boshqarma yangi v2 versiyani yuboradi
         client = APIClient()
         client.force_authenticate(user=self.sohaviy_user)
 
         new_file = SimpleUploadedFile(
-            "TZ_Loyiha_Boshqaruvi_v2.pdf",
+            "Yangi_TZ_v2.pdf",
             b"%PDF-1.4 updated v2 content",
             content_type="application/pdf",
         )
@@ -291,24 +297,103 @@ class OrdersSeniorDevTests(ApiTestCase):
             {
                 "tz_file": new_file,
                 "change_note": "Hisobotlarga qo'shimcha jadval ustunlari qo'shildi",
-                "requested_change": "Yangilangan TZ talablari",
+                "requested_change": "Yangilangan TZ talablari v2",
             },
             format="multipart",
         )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         data = res.json()
 
-        # Versiya raqami 2 ga oshganligi va status yana NEW bo'lganligi
-        self.assertEqual(data["version"], 2)
-        self.assertEqual(data["status"], ChangeRequestStatus.NEW)
-        self.assertFalse(data["is_locked"])
-        self.assertEqual(data["tz_file_name"], "TZ_Loyiha_Boshqaruvi_v2.pdf")
+        # PM hali tasdiqlamagan: buyurtma joriy versiyasi (v1) va eski faylda qolgan
+        self.assertEqual(data["version"], 1)
+        self.assertEqual(data["tz_file_name"], "Eski_TZ_v1.pdf")
+        self.assertTrue(data["has_pending_version"])
+        self.assertIsNotNone(data["pending_version"])
+        self.assertEqual(data["pending_version"]["version"], 2)
+        self.assertEqual(data["pending_version"]["status"], ChangeRequestStatus.NEW)
+        self.assertEqual(data["pending_version"]["tz_file_name"], "Yangi_TZ_v2.pdf")
 
-        # Versiyalar tarixida ikkala versiya ham borligi
+        # Versiyalar tarixida 2 ta versiya bor: v1 (ACCEPTED) va v2 (NEW)
         self.assertEqual(len(data["versions"]), 2)
-        v2 = data["versions"][0]
-        self.assertEqual(v2["version"], 2)
-        self.assertEqual(v2["change_note"], "Hisobotlarga qo'shimcha jadval ustunlari qo'shildi")
+
+        # 2. PM yangi versiyani tasdiqlaydi (approve-version)
+        pm_client = APIClient()
+        pm_client.force_authenticate(user=self.pm_user)
+
+        app_res = pm_client.post(
+            f"/api/orders/{order.id}/approve-version/",
+            {
+                "version": 2,
+                "decision_note": "Yangi talablar ma'qullandi va qabul qilindi",
+                "pm_estimated_duration": "3 hafta",
+            },
+            format="json",
+        )
+        self.assertEqual(app_res.status_code, status.HTTP_200_OK)
+        app_data = app_res.json()
+
+        # Endi buyurtma yangi v2 versiyaga o'tdi!
+        self.assertEqual(app_data["version"], 2)
+        self.assertEqual(app_data["tz_file_name"], "Yangi_TZ_v2.pdf")
+        self.assertEqual(app_data["requested_change"], "Yangilangan TZ talablari v2")
+        self.assertEqual(app_data["pm_estimated_duration"], "3 hafta")
+        self.assertFalse(app_data["has_pending_version"])
+
+        # Versiyalar tarixi: eski v1 CANCELLED (atmen), yangi v2 ACCEPTED
+        v_list = {v["version"]: v for v in app_data["versions"]}
+        self.assertEqual(v_list[1]["status"], ChangeRequestStatus.CANCELLED)
+        self.assertEqual(v_list[2]["status"], ChangeRequestStatus.ACCEPTED)
+        self.assertEqual(v_list[2]["decided_by"], self.pm_user.id)
+        self.assertEqual(v_list[2]["decision_note"], "Yangi talablar ma'qullandi va qabul qilindi")
+
+    def test_pm_reject_version_keeps_old_tz(self):
+        """PM yangi versiyani rad etganda yangi versiya REJECTED bo'ladi va eski TZ saqlanib qoladi."""
+        initial_file = SimpleUploadedFile("Eski_TZ_v1.pdf", b"initial v1", content_type="application/pdf")
+        order = ChangeRequest.objects.create(
+            project=self.project,
+            system_name="Smart CRM",
+            department="Moliya",
+            responsible_person="Karimov",
+            current_state="Boshlang'ich",
+            requested_change="Eski o'zgarish",
+            status=ChangeRequestStatus.ACCEPTED,
+            version=1,
+            tz_file=initial_file,
+            tz_file_name="Eski_TZ_v1.pdf",
+            created_by=self.sohaviy_user,
+            assigned_pm=self.pm_user,
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=self.sohaviy_user)
+        new_file = SimpleUploadedFile("Rad_etuvchi_v2.pdf", b"v2 data", content_type="application/pdf")
+
+        client.post(
+            f"/api/orders/{order.id}/upload-version/",
+            {"tz_file": new_file, "change_note": "Qo'shimcha modul talabi"},
+            format="multipart",
+        )
+
+        # PM rad etadi
+        pm_client = APIClient()
+        pm_client.force_authenticate(user=self.pm_user)
+        rej_res = pm_client.post(
+            f"/api/orders/{order.id}/reject-version/",
+            {"version": 2, "decision_note": "Ushbu talab hozirgi bosqichga to'g'ri kelmaydi."},
+            format="json",
+        )
+        self.assertEqual(rej_res.status_code, status.HTTP_200_OK)
+        rej_data = rej_res.json()
+
+        # Buyurtma eski v1 da qolgan
+        self.assertEqual(rej_data["version"], 1)
+        self.assertEqual(rej_data["tz_file_name"], "Eski_TZ_v1.pdf")
+        self.assertFalse(rej_data["has_pending_version"])
+
+        # Versiyalar tekshiruvi: v2 REJECTED, v1 esa ACCEPTED qolgan
+        v_list = {v["version"]: v for v in rej_data["versions"]}
+        self.assertEqual(v_list[2]["status"], ChangeRequestStatus.REJECTED)
+        self.assertEqual(v_list[1]["status"], ChangeRequestStatus.ACCEPTED)
 
     def test_order_types_creation_and_filtering(self):
         """Boshqarmalar loyiha berganda turlari (Yangi, Davom ettiriladigan, Turlash kerak bo'lgan) to'g'ri ishlashi."""
@@ -461,5 +546,129 @@ class OrdersSeniorDevTests(ApiTestCase):
         self.assertIn("assigned_to_dev", data)
         self.assertGreaterEqual(data["assigned_to_dev"], 1)
         self.assertIn("in_progress_strict", data)
+
+    def test_pm_cannot_create_order(self):
+        """Loyiha menejeri (PM) yangi buyurtma yarata olmasligi shart (403 Forbidden)."""
+        client = APIClient()
+        client.force_authenticate(user=self.pm_user)
+
+        payload = {
+            "system_name": "Smart CRM",
+            "department": "Boshqaruv",
+            "responsible_person": "Akbar PM",
+        }
+        res = client.post("/api/orders/", payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_sohaviy_can_create_order_with_only_tz_file_and_basic_fields(self):
+        """Sohaviy xodim matn maydonlarisiz (shablonsiz), faqat TZ fayli va asosiy ma'lumotlar bilan buyurtma yarata olishi."""
+        client = APIClient()
+        client.force_authenticate(user=self.sohaviy_user)
+
+        tz_img_content = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR..."
+        test_file = SimpleUploadedFile("tz_screenshot.png", tz_img_content, content_type="image/png")
+
+        payload = {
+            "system_name": "Elektron Navbat",
+            "department": "Axborot xizmati",
+            "responsible_person": "Sherzodbek",
+            "tz_file": test_file,
+        }
+        res = client.post("/api/orders/", payload, format="multipart")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.content)
+        data = res.json()
+        self.assertEqual(data["system_name"], "Elektron Navbat")
+        self.assertEqual(data["tz_file_name"], "tz_screenshot.png")
+        self.assertEqual(data["current_state"], "")
+        self.assertEqual(data["requested_change"], "")
+
+    def test_pm_cannot_directly_complete_order(self):
+        """PM ishni to'g'ridan-to'g'ri COMPLETED qilib yopolmasligi (faqat hujjat yuklab boshqarmaga yuborishi kerak)."""
+        order = ChangeRequest.objects.create(
+            project=self.project,
+            system_name="Smart CRM",
+            department="Moliya",
+            responsible_person="Sobirov",
+            created_by=self.sohaviy_user,
+            status=ChangeRequestStatus.IN_PROGRESS,
+            assigned_pm=self.pm_user,
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=self.pm_user)
+
+        res = client.post(
+            f"/api/orders/{order.id}/set-pm-decision/",
+            {"status": ChangeRequestStatus.COMPLETED},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("boshqarma tasdig'iga", res.json().get("status", ""))
+
+    def test_completion_and_client_approval_flow(self):
+        """To'liq sikl: PM hujjat yuklab topshiradi -> Boshqarma xatolik bilan qaytaradi -> PM qayta topshiradi -> Boshqarma tasdiqlaydi (ish yopiladi)."""
+        order = ChangeRequest.objects.create(
+            project=self.project,
+            system_name="Smart CRM",
+            department="Moliya",
+            responsible_person="Sobirov",
+            created_by=self.sohaviy_user,
+            status=ChangeRequestStatus.IN_PROGRESS,
+            assigned_pm=self.pm_user,
+        )
+
+        pm_client = APIClient()
+        pm_client.force_authenticate(user=self.pm_user)
+
+        sohaviy_client = APIClient()
+        sohaviy_client.force_authenticate(user=self.sohaviy_user)
+
+        # 1. PM tugatilgan ish hujjati bilan topshiradi
+        completion_doc = SimpleUploadedFile("Bajarilgan_ishlar_dasturi.pdf", b"%PDF-1.4 done", content_type="application/pdf")
+        res1 = pm_client.post(
+            f"/api/orders/{order.id}/submit-completion/",
+            {"completion_file": completion_doc, "completion_note": "Barcha talablar bajarildi."},
+            format="multipart",
+        )
+        self.assertEqual(res1.status_code, status.HTTP_200_OK, res1.content)
+        order.refresh_from_db()
+        self.assertEqual(order.status, ChangeRequestStatus.READY_FOR_REVIEW)
+        self.assertEqual(order.completion_file_name, "Bajarilgan_ishlar_dasturi.pdf")
+        self.assertTrue(order.completed_at)
+
+        # 2. Boshqarma tekshiradi va kamchilik/xatolik topadi -> Qayta tugatishga yuboradi
+        res2 = sohaviy_client.post(
+            f"/api/orders/{order.id}/client-reject-completion/",
+            {"feedback_note": "Hisobotning 2-bo'limida ma'lumotlar to'liq emas, qayta ko'rilsin."},
+            format="json",
+        )
+        self.assertEqual(res2.status_code, status.HTTP_200_OK, res2.content)
+        order.refresh_from_db()
+        self.assertEqual(order.status, ChangeRequestStatus.IN_PROGRESS)
+        self.assertEqual(order.client_feedback_note, "Hisobotning 2-bo'limida ma'lumotlar to'liq emas, qayta ko'rilsin.")
+
+        # 3. PM kamchilikni tuzatib, yangilangan hisobot bilan yana topshiradi
+        res3 = pm_client.post(
+            f"/api/orders/{order.id}/submit-completion/",
+            {"completion_note": "Kamchiliklar to'liq bartaraf etildi."},
+            format="json",
+        )
+        self.assertEqual(res3.status_code, status.HTTP_200_OK)
+        order.refresh_from_db()
+        self.assertEqual(order.status, ChangeRequestStatus.READY_FOR_REVIEW)
+
+        # 4. Boshqarma tasdiqlaydi va ish rasman yakunlanadi (COMPLETED)
+        res4 = sohaviy_client.post(
+            f"/api/orders/{order.id}/client-approve/",
+            {"client_signer": "Sobirov (Moliya)", "note": "Barcha kamchiliklar bartaraf qilingan, ish qabul qilindi."},
+            format="json",
+        )
+        self.assertEqual(res4.status_code, status.HTTP_200_OK)
+        order.refresh_from_db()
+        self.assertEqual(order.status, ChangeRequestStatus.COMPLETED)
+        self.assertEqual(order.client_approved_by, self.sohaviy_user)
+        self.assertTrue(order.client_approved_at)
+        self.assertEqual(order.client_signer, "Sobirov (Moliya)")
+
 
 

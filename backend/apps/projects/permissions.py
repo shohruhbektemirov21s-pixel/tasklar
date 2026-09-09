@@ -409,6 +409,13 @@ class ProjectAccess:
         return self.can_manage
 
     @property
+    def can_create_subtask(self):
+        """Vazifa ichiga ostki vazifa (subtask) biriktirish yoki yaratish.
+        Faqat loyiha menejeri (PM), loyiha admini yoki tizim adminiga ruxsat beriladi.
+        """
+        return bool(self.is_admin or self.manages_all or self.is_manager or self.is_project_admin)
+
+    @property
     def can_delete_task(self):
         return self.can_manage
 
@@ -534,6 +541,7 @@ class ProjectAccess:
             "can_view": self.can_view,
             "can_manage": self.can_manage,
             "can_create_task": self.can_create_task,
+            "can_create_subtask": self.can_create_subtask,
             "can_delete_task": self.can_delete_task,
             "can_review": self.can_review,
             "can_work": self.can_work,

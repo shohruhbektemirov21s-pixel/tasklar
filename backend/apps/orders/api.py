@@ -1,4 +1,5 @@
 import logging
+from django.db import transaction
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, permissions, viewsets
@@ -18,26 +19,57 @@ from .models import (
     ChangeRequestVersion,
 )
 from .serializers import ChangeRequestSerializer, PMDecisionSerializer
-from .services import notify_order_created, notify_order_new_version, notify_order_status, notify_pm_decision
+from .services import (
+    notify_order_created,
+    notify_order_new_version,
+    notify_order_status,
+    notify_pm_decision,
+    notify_order_completion_submitted,
+    notify_order_client_approved,
+    notify_order_completion_rejected,
+    notify_order_version_approved,
+    notify_order_version_rejected,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class CanAccessOrders(permissions.BasePermission):
-    """Buyurtmalar bo'limini Sohaviy boshqarmalar, PM (loyiha menejerlari), Boshliq va adminlar ko'ra oladi."""
+    """Buyurtmalar bo'limini Sohaviy boshqarmalar, PM (loyiha menejerlari), Boshliq va adminlar ko'ra oladi.
+
+    Lekin yangi buyurtma yaratish (POST) faqat Sohaviy boshqarmalar (va admin/boshliq) ga ruxsat etiladi.
+    Loyiha menejeri (PM) yangi buyurtma yarata olmaydi.
+    """
     message = "Buyurtmalar bo'limi Sohaviy boshqarmalar va loyiha menejerlari uchun mo'ljallangan."
 
     def has_permission(self, request, view):
         user = request.user
         if not (user and user.is_authenticated):
             return False
-        return bool(
+
+        can_access = bool(
             user.is_platform_admin
             or getattr(user, "is_boss", False)
             or getattr(user, "is_manager", False)
             or getattr(user, "can_access_orders", False)
             or getattr(user, "is_sohaviy_boshqarma", False)
         )
+        if not can_access:
+            return False
+
+        # Yangi buyurtma yaratish (POST create) faqat sohaviy boshqarma va admin/boss uchun.
+        # PM yangi buyurtma yarata olmaydi.
+        if request.method == "POST" and getattr(view, "action", "") == "create":
+            is_sohaviy_or_admin = bool(
+                getattr(user, "is_sohaviy_boshqarma", False)
+                or user.is_platform_admin
+                or getattr(user, "is_boss", False)
+            )
+            if not is_sohaviy_or_admin:
+                self.message = "Yangi buyurtma (TZ) yaratish faqat sohaviy boshqarma vakillariga ruxsat etilgan. PM buyurtma yarata olmaydi."
+                return False
+
+        return True
 
 
 class ChangeRequestViewSet(viewsets.ModelViewSet):
@@ -92,22 +124,57 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         if for_pm and user.is_authenticated:
             qs = qs.filter(Q(assigned_pm=user) | Q(project__manager=user))
         elif mine and user.is_authenticated:
-            qs = qs.filter(Q(created_by=user) | Q(assigned_pm=user) | Q(project__manager=user))
+            mine_q = Q(created_by=user) | Q(assigned_pm=user) | Q(project__manager=user)
+            if getattr(user, "department_id", None) and user.department:
+                mine_q |= Q(department__iexact=user.department.name) | Q(created_by__department=user.department)
+            qs = qs.filter(mine_q)
+
+        deadline_param = self.request.query_params.get("deadline")
+        if deadline_param:
+            import datetime
+            today = timezone.localdate()
+            if deadline_param.upper() == "OVERDUE":
+                qs = qs.filter(
+                    Q(pm_deadline__lt=today) | Q(pm_deadline__isnull=True, due_date__lt=today)
+                ).exclude(status__in=[ChangeRequestStatus.COMPLETED, ChangeRequestStatus.REJECTED])
+            elif deadline_param.upper() == "TODAY":
+                qs = qs.filter(
+                    Q(pm_deadline=today) | Q(pm_deadline__isnull=True, due_date=today)
+                )
+            elif deadline_param.upper() == "WEEK":
+                next_week = today + datetime.timedelta(days=7)
+                qs = qs.filter(
+                    Q(pm_deadline__gte=today, pm_deadline__lte=next_week)
+                    | Q(pm_deadline__isnull=True, due_date__gte=today, due_date__lte=next_week)
+                )
+            elif deadline_param.upper() == "URGENT":
+                qs = qs.filter(priority__in=[ChangeRequestPriority.URGENT, ChangeRequestPriority.HIGH])
+
         return qs
 
     def perform_create(self, serializer):
-        order = serializer.save(created_by=self.request.user)
-        if order.tz_file:
-            ChangeRequestVersion.objects.create(
-                order=order,
-                version=1,
-                tz_file=order.tz_file,
-                tz_file_name=order.tz_file_name,
-                tz_file_size=order.tz_file_size,
-                change_note="Dastlabki yuborilgan TZ (v1)",
-                status=order.status,
-                uploaded_by=self.request.user,
-            )
+        user = self.request.user
+        is_sohaviy_or_admin = bool(
+            getattr(user, "is_sohaviy_boshqarma", False)
+            or user.is_platform_admin
+            or getattr(user, "is_boss", False)
+        )
+        if not is_sohaviy_or_admin:
+            raise ValidationError({"detail": "Yangi buyurtma (TZ) yaratish faqat sohaviy boshqarma vakillariga ruxsat etilgan. PM buyurtma yarata olmaydi."})
+
+        with transaction.atomic():
+            order = serializer.save(created_by=user)
+            if order.tz_file:
+                ChangeRequestVersion.objects.create(
+                    order=order,
+                    version=1,
+                    tz_file=order.tz_file,
+                    tz_file_name=order.tz_file_name,
+                    tz_file_size=order.tz_file_size,
+                    change_note="Dastlabki yuborilgan TZ (v1)",
+                    status=order.status,
+                    uploaded_by=self.request.user,
+                )
         try:
             notify_order_created(order)
         except Exception:
@@ -115,6 +182,16 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         instance = serializer.instance
+        user = self.request.user
+        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        is_sohaviy = bool(getattr(user, "is_sohaviy_boshqarma", False) or getattr(user, "specialty", "") == "SOHAVIY")
+
+        # Agar buyurtma PM tomonidan qabul qilingan bo'lsa, boshqarma tahrirlay olmaydi
+        if is_sohaviy and (instance.status != ChangeRequestStatus.NEW or instance.assigned_pm_id is not None):
+            raise ValidationError(
+                {"detail": "Ushbu buyurtma loyiha menejeri (PM) tomonidan qabul qilingan. Boshqarma qabul qilingan TZ va buyurtmani tahrirlay olmaydi."}
+            )
+
         locked_statuses = [
             ChangeRequestStatus.ACCEPTED,
             ChangeRequestStatus.ASSIGNED_TO_DEV,
@@ -122,11 +199,10 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             ChangeRequestStatus.TESTING,
             ChangeRequestStatus.COMPLETED,
         ]
-        if instance.status in locked_statuses:
+        if instance.status in locked_statuses and not is_admin_or_boss:
             raise ValidationError(
                 {"detail": "Ushbu TZ loyiha menejeri (PM) tomonidan qabul qilingan. "
-                           "Uni to'g'ridan-to'g'ri tahrirlab bo'lmaydi. "
-                           "O'zgartirish kiritish uchun yangi versiya joylashtiring."}
+                           "Uni to'g'ridan-to'g'ri tahrirlab bo'lmaydi."}
             )
 
         old_status = instance.status
@@ -137,6 +213,74 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 notify_order_status(order, self.request.user, old_status, new_status)
             except Exception:
                 logger.exception("Buyurtma holati o'zgarganda bildirishnoma yuborishda xatolik: %s", order.pk)
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+
+        # Agar PM qabul qilgan yoki jarayonda bo'lsa, boshqarma o'chira olmaydi
+        if instance.status != ChangeRequestStatus.NEW or instance.assigned_pm_id is not None:
+            if not is_admin_or_boss:
+                raise ValidationError(
+                    {"detail": "Loyiha menejeri (PM) tomonidan qabul qilingan yoki ko'rib chiqilgan buyurtmani (TZ) o'chirib bo'lmaydi."}
+                )
+
+        # Faqat o'zining NEW buyurtmasini o'chira oladi (yoki admin/boss)
+        if not is_admin_or_boss and instance.created_by_id != user.id:
+            raise ValidationError(
+                {"detail": "Faqat buyurtmani yaratgan boshqarma vakili yoki tizim administratori o'chira oladi."}
+            )
+
+        super().perform_destroy(instance)
+
+    @action(detail=True, methods=["post"], url_path="claim-order")
+    def claim_order(self, request, pk=None):
+        """Loyiha menejeri (PM) yangi yoki ochiq buyurtmani o'z zimmasiga olishi (biriktirishi)."""
+        user = request.user
+        is_pm_or_admin = bool(
+            user.is_platform_admin
+            or getattr(user, "is_boss", False)
+            or getattr(user, "is_manager", False)
+            or getattr(user, "specialty", "") == "PM"
+            or getattr(user, "global_role", "") == "MANAGER"
+        )
+        if not is_pm_or_admin:
+            return Response(
+                {"detail": "Faqat loyiha menejeri (PM) yoki admin buyurtmani qabul qila oladi."},
+                status=403,
+            )
+
+        order = self.get_object()
+
+        # Agar bu buyurtmani allaqachon boshqa PM olgan bo'lsa:
+        if order.assigned_pm_id and order.assigned_pm_id != user.id:
+            if not (user.is_platform_admin or getattr(user, "is_boss", False)):
+                raise ValidationError(
+                    {"detail": f"Ushbu buyurtmani allaqachon boshqa loyiha menejeri ({order.assigned_pm.full_name}) o'z zimmasiga olgan. Boshqa PM bu ishni ololmaydi."}
+                )
+
+        with transaction.atomic():
+            order.assigned_pm = user
+            role_label = getattr(user, "get_global_role_display", lambda: "PM")()
+            order.executor_signer = f"{user.full_name} ({role_label})"
+            if order.status == ChangeRequestStatus.NEW:
+                order.status = ChangeRequestStatus.ACCEPTED
+            order.save()
+
+            cur_ver = order.versions.filter(version=order.version).first()
+            if cur_ver:
+                cur_ver.decided_by = user
+                cur_ver.decided_at = timezone.now()
+                if order.status == ChangeRequestStatus.ACCEPTED:
+                    cur_ver.status = ChangeRequestStatus.ACCEPTED
+                cur_ver.save()
+
+        try:
+            notify_pm_decision(order, user)
+        except Exception:
+            logger.exception("PM qabul qilishi bildirishnomasida xatolik: %s", order.pk)
+
+        return Response(ChangeRequestSerializer(order, context={"request": request}).data)
 
     @action(detail=True, methods=["post"], url_path="set-pm-decision")
     def set_pm_decision(self, request, pk=None):
@@ -154,39 +298,53 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             )
 
         order = self.get_object()
+
+        # Agar bu buyurtmani allaqachon boshqa PM olgan bo'lsa:
+        if order.assigned_pm_id and order.assigned_pm_id != user.id:
+            if not (user.is_platform_admin or getattr(user, "is_boss", False)):
+                raise ValidationError(
+                    {"detail": f"Ushbu buyurtmani {order.assigned_pm.full_name} o'z zimmasiga olgan. Boshqa PM unga qaror yoki muddat belgilay olmaydi."}
+                )
+
         serializer = PMDecisionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        order.status = data["status"]
-        if "pm_estimated_duration" in data:
-            order.pm_estimated_duration = data["pm_estimated_duration"]
-        if "pm_deadline" in data:
-            order.pm_deadline = data["pm_deadline"]
-        if "pm_notes" in data:
-            order.pm_notes = data["pm_notes"]
-        if "assigned_developer" in data:
-            order.assigned_developer = data["assigned_developer"]
-        if "linked_task" in data:
-            order.linked_task = data["linked_task"]
+        if data["status"] == ChangeRequestStatus.COMPLETED:
+            raise ValidationError(
+                {"status": "Ishni to'g'ridan-to'g'ri yakunlab bo'lmaydi. Tugatilgan ish haqidagi hujjatni yuklab, boshqarma tasdig'iga yuborishingiz kerak."}
+            )
 
-        if data.get("executor_signer"):
-            order.executor_signer = data["executor_signer"]
-        else:
-            role_label = getattr(user, "get_global_role_display", lambda: "PM")()
-            order.executor_signer = f"{user.full_name} ({role_label})"
+        with transaction.atomic():
+            order.status = data["status"]
+            if "pm_estimated_duration" in data:
+                order.pm_estimated_duration = data["pm_estimated_duration"]
+            if "pm_deadline" in data:
+                order.pm_deadline = data["pm_deadline"]
+            if "pm_notes" in data:
+                order.pm_notes = data["pm_notes"]
+            if "assigned_developer" in data:
+                order.assigned_developer = data["assigned_developer"]
+            if "linked_task" in data:
+                order.linked_task = data["linked_task"]
 
-        order.assigned_pm = user
-        order.save()
+            if data.get("executor_signer"):
+                order.executor_signer = data["executor_signer"]
+            else:
+                role_label = getattr(user, "get_global_role_display", lambda: "PM")()
+                order.executor_signer = f"{user.full_name} ({role_label})"
 
-        # Joriy versiyani ham yangilash
-        cur_ver = order.versions.filter(version=order.version).first()
-        if cur_ver:
-            cur_ver.status = data["status"]
-            cur_ver.decided_by = user
-            cur_ver.decided_at = timezone.now()
-            cur_ver.decision_note = data.get("pm_notes", "")
-            cur_ver.save()
+            order.assigned_pm = user
+            order.save()
+
+            # Joriy versiyani ham yangilash
+            cur_ver = order.versions.filter(version=order.version).first()
+            if cur_ver:
+                cur_ver.status = data["status"]
+                cur_ver.decided_by = user
+                cur_ver.decided_at = timezone.now()
+                cur_ver.decision_note = data.get("pm_notes", "")
+                cur_ver.save()
 
         try:
             notify_pm_decision(order, user)
@@ -195,10 +353,149 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
         return Response(ChangeRequestSerializer(order, context={"request": request}).data)
 
+    @action(detail=True, methods=["post"], url_path="submit-completion")
+    def submit_completion(self, request, pk=None):
+        """PM ishni bajarib bo'lgach, tugatilgan ish hujjati bilan boshqarmaga topshirishi."""
+        user = request.user
+        is_pm_or_admin = bool(
+            user.is_platform_admin
+            or getattr(user, "is_boss", False)
+            or getattr(user, "is_manager", False)
+        )
+        if not is_pm_or_admin:
+            return Response(
+                {"detail": "Faqat loyiha menejeri (PM) yoki admin tugatilgan ish haqida hujjat topshira oladi."},
+                status=403,
+            )
+
+        order = self.get_object()
+
+        # Agar bu buyurtmani allaqachon boshqa PM olgan bo'lsa:
+        if order.assigned_pm_id and order.assigned_pm_id != user.id:
+            if not (user.is_platform_admin or getattr(user, "is_boss", False)):
+                raise ValidationError(
+                    {"detail": f"Ushbu buyurtmani {order.assigned_pm.full_name} o'z zimmasiga olgan. Faqat mas'ul PM tugatilgan ish hisobotini topshira oladi."}
+                )
+        completion_file = request.FILES.get("completion_file")
+        completion_note = (request.data.get("completion_note") or "").strip()
+
+        if not completion_file and not completion_note:
+            raise ValidationError({"completion_file": "Tugatilgan ish haqidagi hujjatni (fayl/rasm) yoki hisobot izohini kiriting."})
+
+        if completion_file:
+            from apps.core.uploads import check_upload
+            check_upload(completion_file)
+
+        with transaction.atomic():
+            if completion_file:
+                order.completion_file = completion_file
+                order.completion_file_name = getattr(completion_file, "name", "")[:255]
+                order.completion_file_size = getattr(completion_file, "size", 0)
+            if completion_note:
+                order.completion_note = completion_note
+
+            order.completed_at = timezone.now()
+            order.status = ChangeRequestStatus.READY_FOR_REVIEW
+            order.save()
+
+        try:
+            notify_order_completion_submitted(order, user)
+        except Exception:
+            logger.exception("Tugatish xabarini yuborishda xatolik: %s", order.pk)
+
+        return Response(ChangeRequestSerializer(order, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"], url_path="client-approve")
+    def client_approve(self, request, pk=None):
+        """Boshqarma vakili bajarilgan ishni tasdiqlab, buyurtmani yakunlashi (yopishi)."""
+        user = request.user
+        order = self.get_object()
+
+        can_approve = bool(
+            getattr(user, "is_sohaviy_boshqarma", False)
+            or user.is_platform_admin
+            or getattr(user, "is_boss", False)
+            or (order.created_by_id == user.id)
+        )
+        if not can_approve:
+            return Response(
+                {"detail": "Faqat buyurtmachi boshqarma vakili yoki admin ishni tasdiqlab yakunlay oladi."},
+                status=403,
+            )
+
+        with transaction.atomic():
+            order.status = ChangeRequestStatus.COMPLETED
+            order.client_approved_at = timezone.now()
+            order.client_approved_by = user
+            dept_name = getattr(user, "department_name", "") or "Boshqarma"
+            signer = request.data.get("client_signer") or f"{user.full_name} ({dept_name})"
+            order.client_signer = signer[:200]
+            if request.data.get("note"):
+                order.test_result = request.data["note"]
+            order.save()
+
+        try:
+            notify_order_client_approved(order, user)
+        except Exception:
+            logger.exception("Boshqarma tasdiq bildirishnomasini yuborishda xatolik: %s", order.pk)
+
+        return Response(ChangeRequestSerializer(order, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"], url_path="client-reject-completion")
+    def client_reject_completion(self, request, pk=None):
+        """Boshqarma kamchilik / xatolik aniqlaganda ishni qayta tugatishga yuborishi."""
+        user = request.user
+        order = self.get_object()
+
+        can_reject = bool(
+            getattr(user, "is_sohaviy_boshqarma", False)
+            or user.is_platform_admin
+            or getattr(user, "is_boss", False)
+            or (order.created_by_id == user.id)
+        )
+        if not can_reject:
+            return Response(
+                {"detail": "Faqat buyurtmachi boshqarma vakili yoki admin kamchiliklarni ko'rsatib qaytara oladi."},
+                status=403,
+            )
+
+        feedback_note = (request.data.get("feedback_note") or "").strip()
+        if not feedback_note:
+            raise ValidationError({"feedback_note": "Qaytarish sababi yoki aniqlangan kamchilik/xatolikni yozing."})
+
+        with transaction.atomic():
+            order.status = ChangeRequestStatus.IN_PROGRESS
+            order.client_feedback_note = feedback_note
+            order.save()
+
+        try:
+            notify_order_completion_rejected(order, user, feedback_note)
+        except Exception:
+            logger.exception("Qaytarish bildirishnomasini yuborishda xatolik: %s", order.pk)
+
+        return Response(ChangeRequestSerializer(order, context={"request": request}).data)
+
     @action(detail=True, methods=["post"], url_path="upload-version")
     def upload_version(self, request, pk=None):
-        """Qabul qilingan yoki mavjud TZ ga yangi versiya (v2, v3...) faylini va o'zgarishlar tavsifini yuklash."""
+        """Boshqarma tomonidan yangi TZ versiyasini (v2, v3...) yuborish.
+
+        Ushbu versiya PM ko'rib chiqishi uchun NEW (kutilmoqda) holatida saqlanadi.
+        Eski versiyadagi TZ PM yangi versiyani tasdiqlagunga qadar amalda qoladi.
+        """
+        user = request.user
         order = self.get_object()
+
+        # Buyurtma yakunlangan yoki rad etilgan bo'lsa yangi versiya yuklanmaydi
+        if order.status in [ChangeRequestStatus.COMPLETED, ChangeRequestStatus.REJECTED]:
+            raise ValidationError({"detail": "Yakunlangan yoki rad etilgan buyurtmaga yangi versiya yuborib bo'lmaydi."})
+
+        # Huquq tekshiruvi: faqat buyurtmachi (boshqarma), sohaviy yoki admin/boss
+        is_owner = order.created_by_id == user.id
+        is_sohaviy = bool(getattr(user, "is_sohaviy_boshqarma", False) or getattr(user, "specialty", "") == "SOHAVIY")
+        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        if not (is_owner or is_sohaviy or is_admin_or_boss):
+            raise ValidationError({"detail": "Yangi versiya yuborish faqat buyurtmachi boshqarma vakillariga ruxsat etilgan."})
+
         tz_file = request.FILES.get("tz_file")
         if not tz_file:
             raise ValidationError({"tz_file": "Yangi TZ faylini yuklang."})
@@ -210,50 +507,215 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         if not change_note:
             raise ValidationError({"change_note": "Ushbu versiyada nimalar o'zgarganini (sababi/izoh) yozing."})
 
-        # Agar v1 versiya yozuvi hali yaratilmagan bo'lsa, avval uni kafolatlaymiz
-        if not order.versions.filter(version=1).exists():
-            ChangeRequestVersion.objects.create(
+        requested_change = (request.data.get("requested_change") or "").strip()
+
+        with transaction.atomic():
+            # Agar v1 versiya yozuvi hali yaratilmagan bo'lsa, avval uni kafolatlaymiz
+            if not order.versions.filter(version=1).exists():
+                ChangeRequestVersion.objects.create(
+                    order=order,
+                    version=1,
+                    tz_file=order.tz_file,
+                    tz_file_name=order.tz_file_name or "Dastlabki_TZ.pdf",
+                    tz_file_size=order.tz_file_size or 0,
+                    change_note="Dastlabki versiya (v1)",
+                    requested_change=order.requested_change or "",
+                    status=order.status if order.status != ChangeRequestStatus.NEW else ChangeRequestStatus.ACCEPTED,
+                    uploaded_by=order.created_by,
+                )
+
+            last_ver = order.versions.order_by("-version").values_list("version", flat=True).first()
+            next_ver = (last_ver or order.version or 1) + 1
+
+            name = (getattr(tz_file, "name", "") or "").rsplit("/", 1)[-1][:255]
+            size = getattr(tz_file, "size", 0) or 0
+
+            ver = ChangeRequestVersion.objects.create(
                 order=order,
-                version=1,
-                tz_file=order.tz_file,
-                tz_file_name=order.tz_file_name or "Dastlabki_TZ.pdf",
-                tz_file_size=order.tz_file_size or 0,
-                change_note="Dastlabki versiya (v1)",
-                status=order.status,
-                uploaded_by=order.created_by,
+                version=next_ver,
+                tz_file=tz_file,
+                tz_file_name=name,
+                tz_file_size=size,
+                change_note=change_note,
+                requested_change=requested_change,
+                status=ChangeRequestStatus.NEW,
+                uploaded_by=request.user,
             )
-
-        last_ver = order.versions.order_by("-version").values_list("version", flat=True).first()
-        next_ver = (last_ver or order.version or 1) + 1
-
-        name = (getattr(tz_file, "name", "") or "").rsplit("/", 1)[-1][:255]
-        size = getattr(tz_file, "size", 0) or 0
-
-        ver = ChangeRequestVersion.objects.create(
-            order=order,
-            version=next_ver,
-            tz_file=tz_file,
-            tz_file_name=name,
-            tz_file_size=size,
-            change_note=change_note,
-            status=ChangeRequestStatus.NEW,
-            uploaded_by=request.user,
-        )
-
-        order.version = next_ver
-        order.tz_file = tz_file
-        order.tz_file_name = name
-        order.tz_file_size = size
-        # Yangi versiya yuborilgach, PM qayta ko'rib chiqishi uchun status NEW ga o'tadi
-        order.status = ChangeRequestStatus.NEW
-        if request.data.get("requested_change"):
-            order.requested_change = request.data["requested_change"]
-        order.save()
 
         try:
             notify_order_new_version(order, ver, request.user)
         except Exception:
             logger.exception("Yangi versiya bildirishnomasini yuborishda xatolik: %s", order.pk)
+
+        order = (
+            ChangeRequest.objects.select_related("created_by", "project", "project__manager", "assigned_pm")
+            .prefetch_related("versions__uploaded_by", "versions__decided_by")
+            .get(pk=order.pk)
+        )
+        return Response(ChangeRequestSerializer(order, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"], url_path="approve-version")
+    def approve_version(self, request, pk=None):
+        """PM yangi TZ versiyasini tasdiqlashi.
+
+        Tasdiqlanganda:
+        1. Eski versiyadagi TZ bekor qilinadi (atmen / CANCELLED).
+        2. Yangi versiya ACCEPTED holatiga o'tadi.
+        3. Buyurtma (ChangeRequest) yangi TZ fayli, versiya raqami va parametrlariga o'tkaziladi.
+        """
+        user = request.user
+        is_pm_or_admin = bool(
+            user.is_platform_admin
+            or getattr(user, "is_boss", False)
+            or getattr(user, "is_manager", False)
+            or getattr(user, "specialty", "") == "PM"
+            or getattr(user, "global_role", "") == "MANAGER"
+        )
+        if not is_pm_or_admin:
+            return Response(
+                {"detail": "Faqat loyiha menejeri (PM) yoki admin yangi versiyani tasdiqlay oladi."},
+                status=403,
+            )
+
+        order = self.get_object()
+
+        # Agar buyurtmani boshqa PM olgan bo'lsa
+        if order.assigned_pm_id and order.assigned_pm_id != user.id:
+            if not (user.is_platform_admin or getattr(user, "is_boss", False)):
+                raise ValidationError(
+                    {"detail": f"Ushbu buyurtmani {order.assigned_pm.full_name} o'z zimmasiga olgan. Boshqa PM versiyani tasdiqlay olmaydi."}
+                )
+
+        version_num = request.data.get("version")
+        if version_num:
+            target_version = order.versions.filter(version=version_num).first()
+        else:
+            # Agar versiya raqami ko'rsatilmagan bo'lsa, eng oxirgi NEW versiya olinadi
+            target_version = order.versions.filter(status=ChangeRequestStatus.NEW).order_by("-version").first()
+
+        if not target_version:
+            raise ValidationError({"detail": "Tasdiqlash uchun yangi versiya topilmadi."})
+
+        if target_version.status == ChangeRequestStatus.ACCEPTED and target_version.version == order.version:
+            raise ValidationError({"detail": "Ushbu versiya allaqachon tasdiqlangan va amalda."})
+
+        decision_note = (request.data.get("decision_note") or "").strip()
+        pm_estimated_duration = (request.data.get("pm_estimated_duration") or "").strip()
+        pm_deadline = request.data.get("pm_deadline")
+        assigned_developer_id = request.data.get("assigned_developer")
+        status_choice = request.data.get("status")
+
+        with transaction.atomic():
+            # 1. Eski tasdiqlangan barcha versiyalar atmen (CANCELLED) qilinadi
+            order.versions.filter(
+                version__lt=target_version.version
+            ).exclude(
+                status__in=[ChangeRequestStatus.CANCELLED, ChangeRequestStatus.REJECTED]
+            ).update(
+                status=ChangeRequestStatus.CANCELLED
+            )
+
+            # 2. Yangi versiya tasdiqlanadi
+            target_version.status = ChangeRequestStatus.ACCEPTED
+            target_version.decided_by = user
+            target_version.decided_at = timezone.now()
+            target_version.decision_note = decision_note
+            target_version.save()
+
+            # 3. Buyurtma yangi TZ ga o'tkaziladi
+            order.version = target_version.version
+            if target_version.tz_file:
+                order.tz_file = target_version.tz_file
+                order.tz_file_name = target_version.tz_file_name
+                order.tz_file_size = target_version.tz_file_size
+            if target_version.requested_change:
+                order.requested_change = target_version.requested_change
+
+            if pm_estimated_duration:
+                order.pm_estimated_duration = pm_estimated_duration
+            if pm_deadline:
+                order.pm_deadline = pm_deadline
+            if assigned_developer_id:
+                order.assigned_developer_id = assigned_developer_id
+            if decision_note:
+                order.pm_notes = decision_note
+
+            if not order.assigned_pm:
+                order.assigned_pm = user
+
+            # Buyurtma holati: agar yangi bo'lsa yoki maxsus status uzatilgan bo'lsa
+            if status_choice and status_choice in ChangeRequestStatus.values:
+                order.status = status_choice
+            elif order.status == ChangeRequestStatus.NEW:
+                order.status = ChangeRequestStatus.ACCEPTED
+
+            order.save()
+
+        try:
+            notify_order_version_approved(order, target_version, user)
+        except Exception:
+            logger.exception("Versiya tasdiqlanganda bildirishnoma yuborishda xatolik: %s", order.pk)
+
+        order = (
+            ChangeRequest.objects.select_related("created_by", "project", "project__manager", "assigned_pm")
+            .prefetch_related("versions__uploaded_by", "versions__decided_by")
+            .get(pk=order.pk)
+        )
+        return Response(ChangeRequestSerializer(order, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"], url_path="reject-version")
+    def reject_version(self, request, pk=None):
+        """PM yangi TZ versiyasini rad etishi.
+
+        Rad etilganda yangi versiya REJECTED holatiga o'tadi, lekin
+        eski versiyadagi TZ o'z kuchida qoladi.
+        """
+        user = request.user
+        is_pm_or_admin = bool(
+            user.is_platform_admin
+            or getattr(user, "is_boss", False)
+            or getattr(user, "is_manager", False)
+            or getattr(user, "specialty", "") == "PM"
+            or getattr(user, "global_role", "") == "MANAGER"
+        )
+        if not is_pm_or_admin:
+            return Response(
+                {"detail": "Faqat loyiha menejeri (PM) yoki admin yangi versiyani rad eta oladi."},
+                status=403,
+            )
+
+        order = self.get_object()
+
+        if order.assigned_pm_id and order.assigned_pm_id != user.id:
+            if not (user.is_platform_admin or getattr(user, "is_boss", False)):
+                raise ValidationError(
+                    {"detail": f"Ushbu buyurtmani {order.assigned_pm.full_name} o'z zimmasiga olgan. Boshqa PM versiyani rad eta olmaydi."}
+                )
+
+        decision_note = (request.data.get("decision_note") or "").strip()
+        if not decision_note:
+            raise ValidationError({"decision_note": "Yangi TZ versiyasini rad etish sababini kiritish majburiy!"})
+
+        version_num = request.data.get("version")
+        if version_num:
+            target_version = order.versions.filter(version=version_num).first()
+        else:
+            target_version = order.versions.filter(status=ChangeRequestStatus.NEW).order_by("-version").first()
+
+        if not target_version:
+            raise ValidationError({"detail": "Rad etish uchun yangi versiya topilmadi."})
+
+        with transaction.atomic():
+            target_version.status = ChangeRequestStatus.REJECTED
+            target_version.decided_by = user
+            target_version.decided_at = timezone.now()
+            target_version.decision_note = decision_note
+            target_version.save()
+
+        try:
+            notify_order_version_rejected(order, target_version, user, decision_note)
+        except Exception:
+            logger.exception("Versiya rad etilganda bildirishnoma yuborishda xatolik: %s", order.pk)
 
         order = (
             ChangeRequest.objects.select_related("created_by", "project", "project__manager", "assigned_pm")
@@ -295,6 +757,8 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             ]
         ).count()
         completed = qs.filter(status=ChangeRequestStatus.COMPLETED).count()
+        ready_for_review = qs.filter(status=ChangeRequestStatus.READY_FOR_REVIEW).count()
+        rejected = qs.filter(status=ChangeRequestStatus.REJECTED).count()
         urgent = qs.filter(priority=ChangeRequestPriority.URGENT).count()
         high = qs.filter(priority=ChangeRequestPriority.HIGH).count()
         by_type = {
@@ -313,7 +777,9 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             "in_progress": in_progress,
             "in_progress_strict": in_progress_strict_count,
             "testing": testing_count,
+            "ready_for_review": ready_for_review,
             "completed": completed,
+            "rejected": rejected,
             "urgent": urgent,
             "high": high,
             "by_type": by_type,

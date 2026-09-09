@@ -221,7 +221,8 @@ class Task(SoftDeleteModel):
             # Raqam olish va yozish bitta tranzaksiyada bo'lishi shart -
             # `next_task_number` qo'ygan qulf shunda ma'no kasb etadi.
             with transaction.atomic():
-                self.number = self.project.next_task_number()
+                if not getattr(self, "_number_assigned", False):
+                    self.number = self.project.next_task_number()
                 return super().save(*args, **kwargs)
         super().save(*args, **kwargs)
 

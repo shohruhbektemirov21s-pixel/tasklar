@@ -44,25 +44,29 @@ export const tokens = {
 
 export class ApiError extends Error {
   status: number;
-  data: any;
+  data: unknown;
 
-  constructor(status: number, data: any) {
+  constructor(status: number, data: unknown) {
     super(ApiError.readable(data) || tx("api_client.xatolik_kodi", { kod: status }));
     this.status = status;
     this.data = data;
   }
 
   /** DRF xatolik javobini o'qiladigan matnga aylantiradi */
-  static readable(data: any): string {
+  static readable(data: unknown): string {
     if (!data) return "";
     if (typeof data === "string") return ApiError.fromText(data);
-    if (data.detail) return String(data.detail);
-    const parts: string[] = [];
-    for (const [key, val] of Object.entries(data)) {
-      const text = Array.isArray(val) ? val.join(" ") : String(val);
-      parts.push(key === "non_field_errors" ? text : `${key}: ${text}`);
+    if (typeof data === "object") {
+      const obj = data as Record<string, unknown>;
+      if (obj.detail) return String(obj.detail);
+      const parts: string[] = [];
+      for (const [key, val] of Object.entries(obj)) {
+        const text = Array.isArray(val) ? val.join(" ") : String(val);
+        parts.push(key === "non_field_errors" ? text : `${key}: ${text}`);
+      }
+      return parts.join(" | ");
     }
-    return parts.join(" | ");
+    return String(data);
   }
 
   /**
@@ -86,7 +90,7 @@ export class ApiError extends Error {
   get fields(): Record<string, string> {
     const out: Record<string, string> = {};
     if (this.data && typeof this.data === "object") {
-      for (const [k, v] of Object.entries(this.data)) {
+      for (const [k, v] of Object.entries(this.data as Record<string, unknown>)) {
         out[k] = Array.isArray(v) ? (v as string[]).join(" ") : String(v);
       }
     }
@@ -158,7 +162,7 @@ async function request<T>(path: string, opts: RequestOptions = {}, retry = true)
   if (res.status === 204) return undefined as T;
 
   const text = await res.text();
-  let data: any = null;
+  let data: unknown = null;
   try {
     data = text ? JSON.parse(text) : null;
   } catch {
@@ -196,9 +200,11 @@ export const api = {
 };
 
 /** Sahifalangan javobdan ro'yxatni oladi (paginated yoki oddiy massiv) */
-export function listOf<T>(data: any): T[] {
+export function listOf<T>(data: unknown): T[] {
   if (Array.isArray(data)) return data as T[];
-  if (data && Array.isArray(data.results)) return data.results as T[];
+  if (data && typeof data === "object" && "results" in data && Array.isArray((data as { results: unknown }).results)) {
+    return (data as { results: T[] }).results;
+  }
   return [];
 }
 

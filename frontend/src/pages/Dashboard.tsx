@@ -37,7 +37,6 @@ import { IconPlus } from "@/components/icons";
 import TaskDrawer from "@/components/TaskDrawer";
 import { toTask } from "@/nav";
 import { tx } from "@/i18n";
-import { OrderStatusBadge } from "./ChangeRequests";
 
 // Davr sarlavhalari. Kalitlar serverdagi `PERIODS` bilan bir xil, tartibni
 // esa server beradi - bu yerda faqat o'zbekcha nomi turadi.
@@ -472,10 +471,50 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
   );
 }
 
-/** Sohaviy boshqarmalar buyurtmalari va ijro holatini ko'rsatuvchi widget */
-function DepartmentOrdersWidget({ isDepartmentUser }: { isDepartmentUser: boolean }) {
-  const { data: stats } = useFetch<OrderStats>("/orders/stats/");
-  const { data: ordersData, loading } = useFetch<{ count: number; results: ChangeRequestItem[] } | ChangeRequestItem[]>("/orders/", { page: 1 });
+const ORDER_STATUS_CONFIG: Record<
+  string,
+  { label: string; icon: string; bg: string; color: string; border: string }
+> = {
+  NEW: { label: "Yangi", icon: "📝", bg: "rgba(234, 179, 8, 0.12)", color: "#b45309", border: "rgba(234, 179, 8, 0.35)" },
+  ACCEPTED: { label: "Qabul qilindi", icon: "📋", bg: "rgba(59, 130, 246, 0.12)", color: "#1d4ed8", border: "rgba(59, 130, 246, 0.35)" },
+  ASSIGNED_TO_DEV: { label: "Dasturchiga topshirildi", icon: "💻", bg: "rgba(99, 102, 241, 0.14)", color: "#4338ca", border: "rgba(99, 102, 241, 0.38)" },
+  IN_PROGRESS: { label: "Jarayonda", icon: "⚙️", bg: "rgba(14, 165, 233, 0.12)", color: "#0369a1", border: "rgba(14, 165, 233, 0.35)" },
+  TESTING: { label: "Testda", icon: "🧪", bg: "rgba(217, 119, 6, 0.12)", color: "#c2410c", border: "rgba(217, 119, 6, 0.35)" },
+  COMPLETED: { label: "Bajarildi", icon: "✅", bg: "rgba(16, 185, 129, 0.12)", color: "#047857", border: "rgba(16, 185, 129, 0.35)" },
+  REJECTED: { label: "Rad etildi", icon: "❌", bg: "rgba(239, 68, 68, 0.12)", color: "#b91c1c", border: "rgba(239, 68, 68, 0.35)" },
+};
+
+function OrderStatusBadge({ status, label }: { status: string; label?: string }) {
+  const cfg = ORDER_STATUS_CONFIG[status] || ORDER_STATUS_CONFIG.NEW;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "3px 9px",
+        borderRadius: 6,
+        fontSize: 11.5,
+        fontWeight: 600,
+        background: cfg.bg,
+        color: cfg.color,
+        border: `1px solid ${cfg.border}`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span>{cfg.icon}</span>
+      <span>{label || cfg.label}</span>
+    </span>
+  );
+}
+
+/** Sohaviy boshqarma o'zi bergan talabnomalari va dasturchilar ijro holatini ko'rsatuvchi widget */
+function DepartmentOrdersWidget({ departmentName }: { departmentName?: string }) {
+  const { data: stats } = useFetch<OrderStats>("/orders/stats/", { mine: 1 });
+  const { data: ordersData, loading } = useFetch<{ count: number; results: ChangeRequestItem[] } | ChangeRequestItem[]>(
+    "/orders/",
+    { page: 1, mine: 1 }
+  );
   const orders = ordersData ? listOf<ChangeRequestItem>(ordersData).slice(0, 5) : [];
 
   return (
@@ -485,12 +524,10 @@ function DepartmentOrdersWidget({ isDepartmentUser }: { isDepartmentUser: boolea
           <span style={{ fontSize: 22 }}>🏛️</span>
           <div>
             <strong style={{ fontSize: 15, color: "var(--brand)" }}>
-              {isDepartmentUser
-                ? "Sohaviy boshqarma buyurtmalari va ishlar ijrosi holati"
-                : "Boshqarmalar talabnomalari va dasturchilar ijro monitoringi"}
+              {departmentName ? `${departmentName} talabnomalari va ijro monitoringi` : "Boshqarma talabnomalari va ishlar ijrosi holati"}
             </strong>
             <div className="muted" style={{ fontSize: 12 }}>
-              Dasturchiga topshirilgan, jarayondagi va sinovdagi ishlar zanjiri
+              Siz tomoningizdan yuborilgan talabnomalar va dasturchilar ijro bosqichlari
             </div>
           </div>
         </div>
@@ -499,7 +536,7 @@ function DepartmentOrdersWidget({ isDepartmentUser }: { isDepartmentUser: boolea
             <IconPlus size={14} /> Yangi TZ yuborish
           </Link>
           <Link to="/buyurtmalar" className="btn btn-outline btn-sm">
-            Barcha buyurtmalar ({stats?.total ?? 0}) →
+            Barcha buyurtmalaringiz ({stats?.total ?? 0}) →
           </Link>
         </div>
       </div>
@@ -577,11 +614,11 @@ function DepartmentOrdersWidget({ isDepartmentUser }: { isDepartmentUser: boolea
         </Link>
       </div>
 
-      {/* So'nggi buyurtmalar ro'yxati */}
+      {/* So'nggi talabnomalar ro'yxati */}
       <div style={{ padding: "0 18px 14px" }}>
         <div className="row between middle" style={{ margin: "14px 0 8px" }}>
           <strong style={{ fontSize: 13, color: "var(--color-fg-muted)" }}>
-            So'nggi talabnomalar va ijro bosqichlari
+            So'nggi talabnomalaringiz va ijro bosqichlari
           </strong>
           <Link to="/buyurtmalar" style={{ fontSize: 12, color: "var(--brand)" }}>
             Barcha buyurtmalar ro'yxati →
@@ -703,7 +740,7 @@ function DepartmentOrdersWidget({ isDepartmentUser }: { isDepartmentUser: boolea
           </div>
         ) : (
           <div style={{ padding: "16px 0", textAlign: "center" }} className="muted">
-            Hozircha buyurtmalar mavjud emas.{" "}
+            Hozircha siz tomoningizdan buyurtmalar yuborilmagan.{" "}
             <Link to="/buyurtma/yangi" style={{ fontWeight: 600, color: "var(--brand)" }}>
               Birinchi TZ ni yuborish →
             </Link>
@@ -718,12 +755,11 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [picked, setPicked] = useState<Picked | null>(null);
 
-  const hasOrderAccess = Boolean(
+  // Faqat sohaviy boshqarmalar akkaunti uchun (PM, Admin yoki oddiy dasturchiga chiqmaydi)
+  const isDepartmentUser = Boolean(
     user?.is_sohaviy_boshqarma ||
-    user?.can_access_orders ||
-    user?.is_platform_admin ||
-    user?.is_manager ||
-    user?.is_boss
+    user?.global_role === "SOHAVIY" ||
+    user?.specialty === "SOHAVIY"
   );
 
   // Xato yutilmaydi: sabab ekranga chiqadi, aks holda sahifa abadiy
@@ -763,9 +799,9 @@ export default function Dashboard() {
       <PageHead title={name} />
 
       <div className="content">
-        {/* Sohaviy boshqarmalar buyurtmalari va ijro holati monitoringi */}
-        {hasOrderAccess && (
-          <DepartmentOrdersWidget isDepartmentUser={Boolean(user?.is_sohaviy_boshqarma)} />
+        {/* Sohaviy boshqarmalar akkauntida o'zi bergan talabnomalari / ishlari */}
+        {isDepartmentUser && (
+          <DepartmentOrdersWidget departmentName={user?.department_name} />
         )}
 
         {/* Raqamlar KIMNIKI ekani - `d.scope` rolga qarab kengayadi va

@@ -11,15 +11,73 @@ import { toTask, useGo, type NavTarget } from "@/nav";
 import { tx } from "@/i18n";
 
 /* ---------------------------------------------------------------- Avatar */
-export function Avatar({ user, size = "" }: { user?: UserBrief | null; size?: "sm" | "lg" | "xl" | "" }) {
+export function Avatar({
+  user,
+  size = "",
+  showHoverCard = true,
+}: {
+  user?: UserBrief | null;
+  size?: "sm" | "lg" | "xl" | "";
+  showHoverCard?: boolean;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const hoverTimer = useRef<number | null>(null);
+
   if (!user) return <span className={`avatar ${size}`} style={{ background: "#30363d" }}>?</span>;
-  if (user.avatar) {
-    return <img className={`avatar ${size}`} src={user.avatar} alt={user.full_name} title={user.full_name} />;
-  }
-  return (
+
+  const handleMouseEnter = () => {
+    if (!showHoverCard) return;
+    hoverTimer.current = window.setTimeout(() => {
+      setHovered(true);
+    }, 140);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    setHovered(false);
+  };
+
+  const avatarElement = user.avatar ? (
+    <img className={`avatar ${size}`} src={user.avatar} alt={user.full_name} title={user.full_name} />
+  ) : (
     <span className={`avatar ${size}`} style={{ background: user.avatar_color }} title={user.full_name}>
       {user.initials}
     </span>
+  );
+
+  if (!showHoverCard) return avatarElement;
+
+  return (
+    <div
+      className="avatar-hover-wrap"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {avatarElement}
+      {hovered && (
+        <div className="avatar-hover-popover" onClick={(e) => e.stopPropagation()}>
+          {user.avatar ? (
+            <img src={user.avatar} alt={user.full_name} className="avatar-hover-photo" />
+          ) : (
+            <div className="avatar-hover-initials" style={{ background: user.avatar_color }}>
+              {user.initials}
+            </div>
+          )}
+          <div className="avatar-hover-name">{user.full_name}</div>
+          {(user.job_title || user.specialty_display) && (
+            <div className="avatar-hover-role">{user.job_title || user.specialty_display}</div>
+          )}
+          {user.department_name && (
+            <div className="avatar-hover-dept" title={user.department_name}>
+              {user.department_name}
+            </div>
+          )}
+          {user.email && (
+            <div className="avatar-hover-email">{user.email}</div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

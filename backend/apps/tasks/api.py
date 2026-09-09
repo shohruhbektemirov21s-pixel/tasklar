@@ -29,249 +29,8 @@ from .serializers import (AttachmentSerializer, BoardTaskSerializer, BulkTaskSer
 User = get_user_model()
 
 
-def send_to_review(task, access):
-    """Ish topshirilgach vazifani TEKSHIRUVGA olib boradi.
-
-    Dasturchi TODO yoki "Tuzatish kerak" holatidan togridan-togri tekshiruvga
-    ota olmaydi - avval "Jarayonda" bolishi kerak. Foydalanuvchi bu ichki
-    qoidani bilishi shart emas: ishni topshirdi - demak tugatgan. Shuning uchun
-    oraliq qadamni ozimiz bosib otamiz.
-
-    True qaytsa - vazifa tekshiruvga otdi.
-    """
-    if task.status in (TaskStatus.IN_REVIEW, TaskStatus.DONE, TaskStatus.CANCELLED):
-        return False
-
-    if TaskStatus.IN_REVIEW not in task.allowed_transitions(access):
-        if TaskStatus.IN_PROGRESS not in task.allowed_transitions(access):
-            return False
-        task.apply_status(TaskStatus.IN_PROGRESS)
-
-    if TaskStatus.IN_REVIEW not in task.allowed_transitions(access):
-        return False
-
-    task.apply_status(TaskStatus.IN_REVIEW)
-    task.review_round += 1
-    task.save()
-    return True
-
-
-def move_status(task, new_status, access, actor, blocked_reason=""):
-    """Vazifa holatini QOIDA bilan o'zgartiradi: ruxsat, vaqt belgilari, tarix, signal.
-
-    Yagona yo'l: `/status/` ham, vazifani tahrirlash (`PATCH`) ham shu yerdan
-    o'tadi. Ilgari tahrirlash `serializer.save()` bilan holatni to'g'ridan-to'g'ri
-    yozardi - natijada «Bajarildi» ni qo'lda qo'yish taqiqi chetlab o'tilardi,
-    `completed_at` bo'sh qolardi (hisobotlar buzilardi) va o'zgarish tarixda
-    umuman ko'rinmasdi.
-
-    Holat o'zgarmasa (bir xil status yuborilsa) hech narsa qilinmaydi va `False`
-    qaytadi - doskada element o'z ustuniga qaytarilsa xato chiqmasin.
-    """
-    if new_status == task.status:
-        return False
-
-    if new_status not in task.allowed_transitions(access):
-        if new_status == TaskStatus.DONE:
-            # Vazifa qaysi bosqichda turganiga qarab odamga NIMA QILISH
-            # kerakligini aytamiz. Ilgari ikki holatga bitta xabar chiqardi va
-            # tekshiruvchi "nega men tasdiqlay olmayapman?" degan savolda
-            # qolardi.
-            if task.status == TaskStatus.IN_REVIEW:
-                raise PermissionDenied(
-                    "Bu vazifa tekshiruvda. Uni loyiha menejeri yoki admin "
-                    "tasdiqlaydi.")
-            raise PermissionDenied(
-                "«Bajarildi» ni qolda qoyib bolmaydi: avval ijrochi ishni "
-                "topshiradi, keyin menejer yoki admin tekshirib tasdiqlaydi.")
-        raise PermissionDenied(
-            "Siz bu vazifani '{}' holatiga ota olmaysiz.".format(TaskStatus(new_status).label))
-
-    old_label = task.get_status_display()
-    old_status = task.status
-    task.apply_status(new_status)
-    if new_status == TaskStatus.BLOCKED:
-        task.blocked_reason = (blocked_reason or "")[:250]
-    if new_status == TaskStatus.IN_REVIEW:
-        task.review_round += 1
-    task.save()
-
-    # TEKSHIRUVDAN QAYTARIB OLINDI. Navbatda turgan ish g'oyib bo'ldi -
-    # buni tekshiruvchi bilishi kerak, aks holda u ochib ko'rgan ishini
-    # qidirib qolardi yoki allaqachon o'qib chiqqanini bekorga tekshirardi.
-    # Xabar topshirilganidagi bilan juft: biri navbatga qo'yadi, ikkinchisi
-    # oladi.
-    if old_status == TaskStatus.IN_REVIEW and new_status == TaskStatus.IN_PROGRESS:
-        reviewers = [m.user for m in task.project.memberships.filter(
-            is_active=True, role__in=[ProjectRole.MANAGER, ProjectRole.ADMIN])
-            .select_related("user")]
-        notify_many(reviewers, NotificationKind.TASK_REVIEW,
-                    title="{} tekshiruvdan qaytarib olindi".format(task.code),
-                    body="{}: {}".format(getattr(actor, "full_name", ""), task.title[:100]),
-                    url="/vazifa/{}".format(task.pk), actor=actor)
-
-    verb = "task.status"
-    if new_status == TaskStatus.IN_REVIEW:
-        verb = "task.submitted"
-    elif new_status == TaskStatus.BLOCKED:
-        verb = "task.blocked"
-    log(actor=actor, verb=verb, task=task,
-        summary="{}: {} -> {}".format(task.code, old_label, task.get_status_display()),
-        detail=task.blocked_reason,
-        meta={"from": old_label, "to": task.get_status_display()})
-    live_task(task, "status", actor,
-              status_display=task.get_status_display(), previous=old_label)
-
-    from apps.panel.cache import invalidate_panel_many
-    uids = [u.id for u in task.assignee_list]
-    if task.project.manager_id:
-        uids.append(task.project.manager_id)
-    if actor and actor.id:
-        uids.append(actor.id)
-    invalidate_panel_many(uids)
-    return True
-
-
-def apply_review(task, review, actor):
-    """Tekshiruv yozuvi yaratilgandan keyingi hamma narsa: holat, tarix, xabar, signal.
-
-    Ikki joydan chaqiriladi - tekshiruv formasi (`/review/`) va doskada
-    kartani «Bajarildi» ustuniga tashlash (`/status/`). Shu tufayli ikkovi
-    bir xil iz qoldiradi: `Review` yozuvi, `completed_at`, tarix va
-    ijrochiga bildirishnoma.
-    """
-    if review.verdict == ReviewVerdict.APPROVED:
-        task.apply_status(TaskStatus.DONE)
-        verb = "task.approved"
-    elif review.verdict == ReviewVerdict.CHANGES_REQUESTED:
-        task.apply_status(TaskStatus.CHANGES_REQUESTED)
-        verb = "task.changes_requested"
-    else:
-        task.apply_status(TaskStatus.CANCELLED)
-        verb = "task.rejected"
-    task.save()
-
-    log(actor=actor, verb=verb, task=task,
-        summary="{} - {} ({}-aylana)".format(task.code, review.get_verdict_display(),
-                                             review.round_no),
-        detail=review.comment[:1000],
-        meta={"verdict": review.verdict, "round": review.round_no})
-
-    # Natijani birinchi bo'lib ishni qilgan odam bilishi kerak.
-    notify_many(task.assignee_list, NotificationKind.TASK_DECIDED,
-                title="{} - {}".format(task.code, review.get_verdict_display()),
-                body=(review.comment[:150] or task.title[:150]),
-                url="/vazifa/{}".format(task.pk), actor=actor,
-                meta={"task": task.pk, "verdict": review.verdict})
-    live_task(task, "review", actor,
-              verdict=review.verdict, status_display=task.get_status_display())
-
-    from apps.panel.cache import invalidate_panel_many
-    uids = [u.id for u in task.assignee_list]
-    if task.project.manager_id:
-        uids.append(task.project.manager_id)
-    if actor and actor.id:
-        uids.append(actor.id)
-    invalidate_panel_many(uids)
-    return review
-
-
-def project_people(project, roles=None):
-    """Loyihaning faol a'zolari (kerak bo'lsa faqat kerakli rollari)."""
-    qs = project.memberships.filter(is_active=True).select_related("user")
-    if roles:
-        qs = qs.filter(role__in=roles)
-    return [m.user for m in qs]
-
-
-def task_watchers(task):
-    """Vazifa taqdiri qiziqadigan odamlar: ijrochilar, tekshiruvchi va muallif."""
-    people = list(task.assignee_list)
-    if task.reviewer_id:
-        people.append(task.reviewer)
-    if task.created_by_id:
-        people.append(task.created_by)
-    return people
-
-
-def live_task(task, action, actor=None, **extra):
-    """Loyiha a'zolarining ochiq sahifalariga "vazifa o'zgardi" signali.
-
-    Bildirishnomadan farqi: bazaga yozilmaydi, qo'ng'iroqni chalmaydi. Doska,
-    vazifalar ro'yxati va vazifa sahifasi shu signalni eshitib o'zini
-    jimgina yangilaydi - odam F5 bosib o'tirmaydi.
-    """
-    payload = {
-        "event": "task.update",
-        "action": action,
-        "project": task.project_id,
-        "task": task.pk,
-        "code": task.code,
-        "status": task.status,
-        "actor": getattr(actor, "pk", None),
-    }
-    payload.update(extra)
-    send_to_users(project_people(task.project), payload)
-
-
-def sync_assignees(task, user_ids, actor):
-    """Ijrochilar ro'yxatini yangilaydi va tarixga yozadi.
-
-    Faqat LOYIHA A'ZOSINI biriktirib bo'ladi. Ilgari `user_ids` dagi har qanday
-    id qabul qilinardi: loyihaga aloqasi yo'q odamga vazifa kodi va sarlavhasi
-    bilan bildirishnoma ketar, vazifa esa uning "mening ishim" ro'yxatida
-    paydo bo'lardi. `bulk` da bu qoida ilgaridan bor edi - endi ikkovi bir xil.
-
-    Jamoada yo'q id lar jimgina tashlab yuborilmaydi: ular `skipped` bo'lib
-    qaytadi, chaqiruvchi kerak bo'lsa foydalanuvchiga aytadi.
-    """
-    wanted = set(user_ids or [])
-    members = set(task.project.memberships.filter(is_active=True)
-                  .values_list("user_id", flat=True))
-    skipped = sorted(wanted - members)
-    wanted &= members
-    current = {a.user_id: a for a in task.assignments.select_related("user")}
-    added, removed = [], []
-
-    for uid in wanted:
-        a = current.get(uid)
-        if a is None:
-            user = User.objects.filter(pk=uid).first()
-            if not user:
-                continue
-            TaskAssignment.objects.create(task=task, user=user, assigned_by=actor)
-            added.append(user)
-        elif not a.is_active:
-            a.is_active = True
-            a.unassigned_at = None
-            a.assigned_by = actor
-            a.save(update_fields=["is_active", "unassigned_at", "assigned_by"])
-            added.append(a.user)
-
-    from django.utils import timezone
-
-    for uid, a in current.items():
-        if uid not in wanted and a.is_active:
-            a.is_active = False
-            a.unassigned_at = timezone.now()
-            a.save(update_fields=["is_active", "unassigned_at"])
-            removed.append(a.user)
-
-    if added:
-        log(actor=actor, verb="task.assigned", task=task,
-            summary="{}: {} biriktirildi".format(task.code,
-                                                 ", ".join(u.full_name for u in added)))
-        # Ish tekkanini odam darrov bilsin - navbatdagi kirishini kutmasin.
-        notify_many(added, NotificationKind.TASK_ASSIGNED,
-                    title="{} sizga biriktirildi".format(task.code),
-                    body=task.title[:150],
-                    url="/vazifa/{}".format(task.pk), actor=actor,
-                    meta={"task": task.pk, "project": task.project_id})
-    if removed:
-        log(actor=actor, verb="task.unassigned", task=task,
-            summary="{}: {} olib tashlandi".format(task.code,
-                                                   ", ".join(u.full_name for u in removed)))
-    return added, removed, skipped
+from .services import (apply_review, live_task, move_status, project_people,
+                       send_to_review, sync_assignees, task_watchers)
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -356,11 +115,16 @@ class TaskViewSet(viewsets.ModelViewSet):
         assignee_ids = serializer.validated_data.pop("assignee_ids", [])
         label_ids = serializer.validated_data.pop("label_ids", [])
         reviewer_id = serializer.validated_data.pop("reviewer_id", None)
-        # Ota vazifa boshqa loyihadan bo'lmasin: aks holda vazifa bir loyihada
-        # turib, ikkinchisining ichki tuzilishini ochib qo'yardi.
+        # Ota vazifa: faqat PM va loyiha admini biriktira oladi.
         parent = serializer.validated_data.get("parent")
-        if parent is not None and parent.project_id != project.pk:
-            raise ValidationError({"parent": "Ota vazifa shu loyihadan bolishi kerak."})
+        if parent is not None:
+            access = ProjectAccess(request.user, project)
+            if not access.can_create_subtask:
+                raise PermissionDenied(
+                    "Vazifa ichiga ostki vazifa (subtask) joylash faqat loyiha menejeri (PM) yoki loyiha adminiga ruxsat etilgan."
+                )
+            if parent.project_id != project.pk:
+                raise ValidationError({"parent": "Ota vazifa shu loyihadan bolishi kerak."})
         # «Bajarildi» - tekshiruvning natijasi, boshlang'ich holat emas.
         if serializer.validated_data.get("status") == TaskStatus.DONE:
             raise ValidationError({
@@ -406,11 +170,23 @@ class TaskViewSet(viewsets.ModelViewSet):
         reviewer_id = serializer.validated_data.pop("reviewer_id", "skip")
         if reviewer_id != "skip":
             serializer.validated_data["reviewer_id"] = reviewer_id
-        # Ota vazifa boshqa loyihadan bo'lmasin: aks holda vazifa bir loyihada
-        # turib, ikkinchisining ichki tuzilishini ochib qo'yardi.
+        # Ota vazifa tekshiruvi: faqat PM va loyiha admini biriktira yoki ajrata oladi.
         parent = serializer.validated_data.get("parent")
-        if parent is not None and parent.project_id != task.project_id:
-            raise ValidationError({"parent": "Ota vazifa shu loyihadan bolishi kerak."})
+        if "parent" in serializer.validated_data and serializer.validated_data["parent"] != task.parent:
+            if not access.can_create_subtask:
+                raise PermissionDenied(
+                    "Vazifa ichiga ostki vazifa joylash yoki ajratish faqat loyiha menejeri (PM) yoki loyiha adminiga ruxsat etilgan."
+                )
+            if parent is not None:
+                if parent.project_id != task.project_id:
+                    raise ValidationError({"parent": "Ota vazifa shu loyihadan bolishi kerak."})
+                if parent.pk == task.pk:
+                    raise ValidationError({"parent": "Vazifa o'ziga ota vazifa bo'la olmaydi."})
+                curr = parent
+                while curr:
+                    if curr.pk == task.pk:
+                        raise ValidationError({"parent": "Siklik bog'liqlik: vazifa o'zining ostki vazifasiga biriktirilishi mumkin emas."})
+                    curr = curr.parent
         # Holat shu yerda yozilmaydi: u `move_status` dan o'tadi - aks holda
         # «Bajarildi» taqig'i, `completed_at` va tarix yozuvi chetlab o'tilardi.
         new_status = serializer.validated_data.pop("status", None)
@@ -439,14 +215,12 @@ class TaskViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         task = self.get_object()
         check_access(request.user, task.project, "manage")
+        # Yumshoq o'chirish: avval bazada qator belgilanadi. Agar baza xatosi
+        # bo'lsa, xatolik qaytadi; efirga yolg'on "o'chirildi" signali ketmaydi.
+        task.soft_delete(request.user)
         log(actor=request.user, verb="task.deleted", project=task.project,
             summary="{} ochirildi: {}".format(task.code, task.title))
         live_task(task, "deleted", request.user)
-        # Yumshoq o'chirish: yozuv bazada qoladi. Ilgari `delete()` edi va u
-        # bilan birga izohlar, ish jurnali, tekshiruvlar va biriktirilgan
-        # fayllar ham CASCADE bilan yo'q bo'lardi - bitta tugma butun
-        # vazifaning tarixini o'chirib yuborardi.
-        task.soft_delete(request.user)
         return Response(status=204)
 
     # ------------------------------------------------------------ ommaviy yaratish
@@ -485,12 +259,20 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Bildirishnoma va tarix ataylab tashqarida: ular yozuvlar bazaga
         # tushgandan keyin ketadi.
         with transaction.atomic():
+            # Bitta qulf bilan loyihaning eng so'nggi raqamini olamiz
+            type(project).objects.select_for_update().filter(pk=project.pk).exists()
+            last_no = (Task.all_objects.filter(project=project)
+                       .order_by("-number").values_list("number", flat=True).first() or 0)
+
             for idx, title in enumerate(d["titles"]):
+                last_no += 1
                 task = Task(project=project, title=title[:250], created_by=request.user,
                             priority=d["priority"], task_type=d["task_type"],
                             status=d["status"], due_date=d.get("due_date"),
                             required_specialty=required,
-                            acceptance_criteria=d.get("acceptance_criteria", ""))
+                            acceptance_criteria=d.get("acceptance_criteria", ""),
+                            number=last_no)
+                task._number_assigned = True
                 task.save()
                 if assignees:
                     targets = ([assignees[idx % len(assignees)]] if d["distribute"]
@@ -536,17 +318,18 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Ruxsat butun doska uchun bitta - kartalarga kontekst orqali beriladi.
         ctx = self.get_serializer_context()
         ctx["board_access"] = access
+        raw_limit = request.query_params.get("limit")
+        limit = int_param(raw_limit, "limit") if raw_limit else 100
+        limit = max(1, min(limit, 500))
         columns = []
         for status in BOARD_COLUMNS:
-            items = BoardTaskSerializer(
-                qs.filter(status=status).order_by("position", "-priority", "id"),
-                many=True, context=ctx).data
+            col_qs = qs.filter(status=status).order_by("position", "-priority", "id")
+            total_count = col_qs.count()
+            items = BoardTaskSerializer(col_qs[:limit], many=True, context=ctx).data
             columns.append({
                 "status": status,
                 "label": TaskStatus(status).label,
-                # Sanoq serializatsiya qilingan ro'yxatdan olinadi: har ustun
-                # uchun alohida `COUNT` yuborish shart emas (oltita so'rov).
-                "count": len(items),
+                "count": total_count,
                 "tasks": items,
             })
         return Response({"columns": columns, "access": access.as_dict()})
@@ -1017,6 +800,140 @@ class TaskViewSet(viewsets.ModelViewSet):
         task = self.get_object()
         qs = Activity.objects.filter(task=task).select_related("actor").order_by("-created_at")
         return Response(ActivitySerializer(qs, many=True, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"], url_path="subtasks")
+    def create_subtask(self, request, pk=None):
+        """Vazifa ichiga yangi ostki vazifa (subtask) yaratish.
+        Faqat loyiha menejeri (PM) va loyiha admini qila oladi.
+        """
+        task = self.get_object()
+        access = ProjectAccess(request.user, task.project)
+        if not access.can_create_subtask:
+            raise PermissionDenied(
+                "Ostki vazifa (subtask) yaratish faqat loyiha menejeri (PM) yoki loyiha adminiga ruxsat etilgan."
+            )
+
+        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        data["project"] = task.project_id
+        data["parent"] = task.pk
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+
+        assignee_ids = serializer.validated_data.pop("assignee_ids", [])
+        label_ids = serializer.validated_data.pop("label_ids", [])
+        reviewer_id = serializer.validated_data.pop("reviewer_id", None)
+
+        if serializer.validated_data.get("status") == TaskStatus.DONE:
+            raise ValidationError({
+                "status": "Yangi vazifa «Bajarildi» holatida yaratilmaydi."
+            })
+
+        subtask = serializer.save(
+            project=task.project,
+            parent=task,
+            created_by=request.user,
+            reviewer_id=reviewer_id or task.reviewer_id,
+        )
+        if label_ids:
+            subtask.labels.set(Label.objects.filter(project=task.project, id__in=label_ids))
+        _, _, skipped = sync_assignees(subtask, assignee_ids, request.user)
+
+        log(actor=request.user, verb="task.created", task=subtask,
+            summary="{} ostki vazifasi yaratildi: {}".format(subtask.code, subtask.title),
+            detail=subtask.description[:500],
+            meta={"priority": subtask.priority_label, "type": subtask.get_task_type_display(),
+                  "parent_code": task.code})
+        live_task(subtask, "created", request.user, title=subtask.title[:120])
+        live_task(task, "updated", request.user, title=task.title[:120])
+
+        payload = TaskSerializer(subtask, context=self.get_serializer_context()).data
+        payload["skipped_assignees"] = skipped
+        return Response(payload, status=201)
+
+    @action(detail=True, methods=["post"], url_path="link-subtask")
+    def link_subtask(self, request, pk=None):
+        """Mavjud vazifani shu vazifaga ostki vazifa qilib biriktirish.
+        Faqat loyiha menejeri (PM) va loyiha admini qila oladi.
+        """
+        task = self.get_object()
+        access = ProjectAccess(request.user, task.project)
+        if not access.can_create_subtask:
+            raise PermissionDenied(
+                "Ostki vazifa biriktirish faqat loyiha menejeri (PM) yoki loyiha adminiga ruxsat etilgan."
+            )
+        subtask_id = request.data.get("subtask_id")
+        if not subtask_id:
+            raise ValidationError({"subtask_id": "Biriktiriladigan vazifa tanlanishi shart."})
+
+        subtask = object_or_404(Task.objects.filter(deleted_at__isnull=True), pk=subtask_id)
+        if subtask.project_id != task.project_id:
+            raise ValidationError({"subtask_id": "Vazifa boshqa loyihaga tegishli."})
+        if subtask.pk == task.pk:
+            raise ValidationError({"subtask_id": "Vazifa o'ziga ostki vazifa bo'la olmaydi."})
+
+        curr = task
+        while curr:
+            if curr.pk == subtask.pk:
+                raise ValidationError({"subtask_id": "Siklik bog'liqlik: vazifa o'zining avlodiga biriktirilishi mumkin emas."})
+            curr = curr.parent
+
+        subtask.parent = task
+        subtask.save(update_fields=["parent", "updated_at"])
+
+        log(actor=request.user, verb="task.updated", task=subtask,
+            summary="{} vazifasi {} ning ostki vazifasi qilib biriktirildi".format(subtask.code, task.code))
+        live_task(task, "updated", request.user, title=task.title[:120])
+        live_task(subtask, "updated", request.user, title=subtask.title[:120])
+
+        return Response(TaskDetailSerializer(task, context=self.get_serializer_context()).data)
+
+    @action(detail=True, methods=["post"], url_path="unlink-subtask")
+    def unlink_subtask(self, request, pk=None):
+        """Ostki vazifani ota vazifadan ajratish (mustaqil vazifaga aylantirish).
+        Faqat loyiha menejeri (PM) va loyiha admini qila oladi.
+        """
+        task = self.get_object()
+        access = ProjectAccess(request.user, task.project)
+        if not access.can_create_subtask:
+            raise PermissionDenied(
+                "Ostki vazifani ajratish faqat loyiha menejeri (PM) yoki loyiha adminiga ruxsat etilgan."
+            )
+        subtask_id = request.data.get("subtask_id")
+        if not subtask_id:
+            raise ValidationError({"subtask_id": "Ajratiladigan vazifa ko'rsatilishi shart."})
+
+        subtask = object_or_404(task.subtasks.filter(deleted_at__isnull=True), pk=subtask_id)
+        subtask.parent = None
+        subtask.save(update_fields=["parent", "updated_at"])
+
+        log(actor=request.user, verb="task.updated", task=subtask,
+            summary="{} ostki vazifasi {} dan ajratildi".format(subtask.code, task.code))
+        live_task(task, "updated", request.user, title=task.title[:120])
+        live_task(subtask, "updated", request.user, title=subtask.title[:120])
+
+        return Response(TaskDetailSerializer(task, context=self.get_serializer_context()).data)
+
+    @action(detail=True, methods=["get"], url_path="available-subtasks")
+    def available_subtasks(self, request, pk=None):
+        """Shu vazifaga ostki vazifa qilib biriktirish mumkin bo'lgan ochiq vazifalar ro'yxati."""
+        task = self.get_object()
+        exclude_ids = {task.pk}
+        for sid in task.subtasks.filter(deleted_at__isnull=True).values_list("id", flat=True):
+            exclude_ids.add(sid)
+        curr = task.parent
+        while curr:
+            exclude_ids.add(curr.pk)
+            curr = curr.parent
+
+        qs = (Task.objects.filter(project=task.project, deleted_at__isnull=True, parent__isnull=True)
+              .exclude(id__in=exclude_ids)
+              .order_by("-id"))
+
+        q = request.query_params.get("q", "").strip()
+        if q:
+            qs = qs.filter(Q(title__icontains=q) | Q(number__icontains=q))
+
+        return Response(TaskSerializer(qs[:50], many=True, context=self.get_serializer_context()).data)
 
 
 class LabelViewSet(viewsets.ModelViewSet):

@@ -9,7 +9,8 @@ import Timeline from "@/components/Timeline";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import { Avatar, AvatarStack, Card, DateField, DateTimeField, ErrorMsg, fmtDate, fmtDateTime, fromDateTimeInput, Loading, Priority, StatusBadge, timeAgo, toDateTimeInput, todayInTz } from "@/components/ui";
 import { confirmDialog } from "@/components/Confirm";
-import { toProject, toTaskEdit, useEntityId, useGo } from "@/nav";
+import { toProject, toTask, toTaskEdit, useEntityId, useGo } from "@/nav";
+import { createSubtask, getAvailableSubtasks, linkSubtask, unlinkSubtask } from "@/api/tasks";
 import { tx } from "@/i18n";
 
 const FILE_ICON: Record<string, string> = {
@@ -42,6 +43,20 @@ export default function TaskDetail() {
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [handTo, setHandTo] = useState("");
   const [handNote, setHandNote] = useState("");
+
+  // Subtasklar boshqaruvi (faqat PM va loyiha admini)
+  const [subtaskModalOpen, setSubtaskModalOpen] = useState(false);
+  const [subtaskTab, setSubtaskTab] = useState<"create" | "link">("create");
+  const [stTitle, setStTitle] = useState("");
+  const [stDesc, setStDesc] = useState("");
+  const [stPriority, setStPriority] = useState<number>(2);
+  const [stType, setStType] = useState("FEATURE");
+  const [stDueDate, setStDueDate] = useState("");
+  const [stAssignees, setStAssignees] = useState<number[]>([]);
+  const [availableTasks, setAvailableTasks] = useState<Task[]>([]);
+  const [availLoading, setAvailLoading] = useState(false);
+  const [selectedSubtaskId, setSelectedSubtaskId] = useState("");
+  const [availSearch, setAvailSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -110,6 +125,71 @@ export default function TaskDetail() {
     }
   }
 
+  const loadAvailableTasks = useCallback(async (q?: string) => {
+    if (!taskId) return;
+    setAvailLoading(true);
+    try {
+      const items = await getAvailableSubtasks(Number(taskId), q);
+      setAvailableTasks(items);
+    } catch {
+      setAvailableTasks([]);
+    } finally {
+      setAvailLoading(false);
+    }
+  }, [taskId]);
+
+  useEffect(() => {
+    if (subtaskModalOpen && subtaskTab === "link") {
+      void loadAvailableTasks(availSearch);
+    }
+  }, [subtaskModalOpen, subtaskTab, availSearch, loadAvailableTasks]);
+
+  async function handleCreateSubtask(e: React.FormEvent) {
+    e.preventDefault();
+    if (!stTitle.trim() || !task) return;
+    await run(async () => {
+      await createSubtask(task.id, {
+        title: stTitle.trim(),
+        description: stDesc.trim(),
+        priority: stPriority,
+        task_type: stType,
+        assignee_ids: stAssignees,
+        due_date: stDueDate ? fromDateTimeInput(stDueDate) : null,
+      });
+      setStTitle("");
+      setStDesc("");
+      setStPriority(2);
+      setStType("FEATURE");
+      setStDueDate("");
+      setStAssignees([]);
+      setSubtaskModalOpen(false);
+    });
+  }
+
+  async function handleLinkSubtask(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedSubtaskId || !task) return;
+    await run(async () => {
+      await linkSubtask(task.id, Number(selectedSubtaskId));
+      setSelectedSubtaskId("");
+      setSubtaskModalOpen(false);
+    });
+  }
+
+  async function handleUnlinkSubtask(subtaskId: number, title: string) {
+    if (!task) return;
+    const ok = await confirmDialog({
+      title: tx("task_detail.ajratish"),
+      body: tx("task_detail.ajratish_tasdiq") + ` (${title})`,
+      confirmText: tx("task_detail.ajratish"),
+      danger: false,
+    });
+    if (!ok) return;
+    await run(async () => {
+      await unlinkSubtask(task.id, subtaskId);
+    });
+  }
+
   if (error && !task) return <div className="content"><div className="msg msg-error">{error}</div></div>;
   if (!task) return <div className="content"><Loading /></div>;
 
@@ -117,6 +197,7 @@ export default function TaskDetail() {
   // Muddatni menejer (yoki ijrochining o'zi) qo'yadi - tahrirlash huquqi bilan bir xil.
   // Vazifa mazmunini faqat menejer va admin o'zgartiradi (serverda ham shunday).
   const canEdit = acc.can_create_task;
+  const canManageSubtasks = Boolean(acc.can_create_subtask || acc.is_manager || acc.is_project_admin || acc.is_admin);
   const transitions = task.allowed_transitions || [];
 
   /**
@@ -176,6 +257,15 @@ export default function TaskDetail() {
 
       <div className="content">
         <ErrorMsg error={error} />
+
+        {task.parent && (
+          <div style={{ marginBottom: 12 }}>
+            <Link {...toTask(task.parent)} className="parent-task-badge">
+              <span>↖</span>
+              <span>{tx("task_detail.asosiy_ota_vazifa")}: <strong>{task.parent_code || `#${task.parent}`}</strong> {task.parent_title ? `— ${task.parent_title}` : ""}</span>
+            </Link>
+          </div>
+        )}
 
         <div className="row wrap mb">
           <StatusBadge task={task} />
@@ -241,6 +331,82 @@ export default function TaskDetail() {
                 <div className="callout ok pre-wrap">{task.acceptance_criteria}</div>
               </Card>
             )}
+
+            {/* ------------------------------------------------ OSTKI VAZIFALAR (SUBTASKS) */}
+            <Card
+              title={tx("task_detail.ostki_vazifalar")}
+              badge={<span className="badge">{task.subtasks?.length || 0}</span>}
+              action={canManageSubtasks && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  onClick={() => setSubtaskModalOpen(true)}
+                  disabled={busy}
+                >
+                  + {tx("task_detail.ostki_vazifa_qoshish")}
+                </button>
+              )}
+            >
+              {/* Progress bar */}
+              {Boolean(task.subtasks && task.subtasks.length > 0) && (() => {
+                const total = task.subtasks!.length;
+                const done = task.subtasks!.filter((s) => s.status === "DONE").length;
+                const pct = Math.round((done / total) * 100);
+                return (
+                  <div className="subtasks-progress-wrap">
+                    <div className="row" style={{ fontSize: 13, justifyContent: "space-between" }}>
+                      <span className="muted">{tx("task_detail.bajarildi_nisbati", { done, total, pct })}</span>
+                      <strong className="mono">{pct}%</strong>
+                    </div>
+                    <div className="subtasks-progress-bar-bg">
+                      <div className="subtasks-progress-bar-fill" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {Boolean(task.subtasks && task.subtasks.length > 0) ? (
+                <ul className="subtask-list">
+                  {task.subtasks!.map((s) => (
+                    <li key={s.id} className={`subtask-item ${s.status === "DONE" ? "done" : ""}`}>
+                      <div className="subtask-main">
+                        <StatusBadge task={s} />
+                        <Link {...toTask(s.id)} className="subtask-title" title={s.title}>
+                          <span className="mono muted" style={{ marginRight: 6 }}>{s.code}</span>
+                          <span>{s.title}</span>
+                        </Link>
+                      </div>
+                      <div className="subtask-meta">
+                        <Priority task={s} />
+                        {s.assignees && s.assignees.length > 0 && (
+                          <AvatarStack users={s.assignees} />
+                        )}
+                        {s.due_date && (
+                          <span className={`badge ${s.is_overdue ? "badge-danger" : ""}`} style={{ fontSize: 11 }}>
+                            {fmtDate(s.due_date)}
+                          </span>
+                        )}
+                        {canManageSubtasks && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-ghost"
+                            title={tx("task_detail.ajratish")}
+                            onClick={() => void handleUnlinkSubtask(s.id, s.title)}
+                            style={{ padding: "2px 8px", color: "var(--muted)", fontSize: 12 }}
+                          >
+                            ✕ {tx("task_detail.ajratish")}
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+                  {tx("task_detail.ostki_vazifalar_yoq")}
+                </p>
+              )}
+            </Card>
 
             {/* ------------------------------------------------ FAYLLAR */}
             <Card
@@ -608,6 +774,214 @@ export default function TaskDetail() {
           </div>
         </div>
       </div>
+
+      {/* ------------------------------------------------ SUBTASK MODAL (FAQAT PM VA ADMIN) */}
+      {subtaskModalOpen && canManageSubtasks && (
+        <div className="modal-overlay" onClick={() => setSubtaskModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <span>⚡</span>
+                <span>{tx("task_detail.ostki_vazifa_qoshish")}</span>
+              </h3>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setSubtaskModalOpen(false)}>✕</button>
+            </div>
+
+            {/* Rejim tablari: Yangi yaratish yoki Mavjudini biriktirish */}
+            <div style={{ display: "flex", borderBottom: "1px solid var(--border-muted)", padding: "0 18px", gap: 16 }}>
+              <button
+                type="button"
+                onClick={() => setSubtaskTab("create")}
+                style={{
+                  padding: "10px 0",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: subtaskTab === "create" ? "2px solid var(--accent)" : "2px solid transparent",
+                  color: subtaskTab === "create" ? "var(--accent)" : "var(--muted)",
+                  fontWeight: subtaskTab === "create" ? 600 : 400,
+                  cursor: "pointer",
+                  fontSize: 13.5,
+                }}
+              >
+                {tx("task_detail.ostki_vazifa_yaratish")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubtaskTab("link")}
+                style={{
+                  padding: "10px 0",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: subtaskTab === "link" ? "2px solid var(--accent)" : "2px solid transparent",
+                  color: subtaskTab === "link" ? "var(--accent)" : "var(--muted)",
+                  fontWeight: subtaskTab === "link" ? 600 : 400,
+                  cursor: "pointer",
+                  fontSize: 13.5,
+                }}
+              >
+                {tx("task_detail.mavjud_vazifani_biriktirish")}
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {subtaskTab === "create" ? (
+                <form id="subtask-create-form" onSubmit={(e) => void handleCreateSubtask(e)}>
+                  <div className="field">
+                    <label htmlFor="st-title">{tx("task_detail.subtask_nomi")} *</label>
+                    <input
+                      id="st-title"
+                      value={stTitle}
+                      onChange={(e) => setStTitle(e.target.value)}
+                      required
+                      autoFocus
+                      placeholder="Ostki vazifa sarlavhasi..."
+                    />
+                  </div>
+
+                  <div className="row" style={{ gap: 12 }}>
+                    <div className="field" style={{ flex: 1 }}>
+                      <label htmlFor="st-type">{tx("task_form.turi") || "Turi"}</label>
+                      <select id="st-type" value={stType} onChange={(e) => setStType(e.target.value)}>
+                        <option value="FEATURE">Yangi funksiya</option>
+                        <option value="BUG">Xatolik</option>
+                        <option value="CHORE">Texnik ish</option>
+                        <option value="DOCS">Hujjat</option>
+                        <option value="RESEARCH">Tadqiqot</option>
+                      </select>
+                    </div>
+                    <div className="field" style={{ flex: 1 }}>
+                      <label htmlFor="st-priority">{tx("task_form.muhimlik") || "Muhimlik"}</label>
+                      <select id="st-priority" value={stPriority} onChange={(e) => setStPriority(Number(e.target.value))}>
+                        <option value={1}>Past</option>
+                        <option value={2}>O'rtacha</option>
+                        <option value={3}>Yuqori</option>
+                        <option value={4}>Shoshilinch</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="field">
+                    <label htmlFor="st-due">{tx("task_detail.muddat")}</label>
+                    <DateTimeField id="st-due" value={stDueDate} onChange={setStDueDate} />
+                  </div>
+
+                  <div className="field">
+                    <label htmlFor="st-desc">{tx("task_detail.nima_qilish_kerak")}</label>
+                    <textarea
+                      id="st-desc"
+                      rows={3}
+                      value={stDesc}
+                      onChange={(e) => setStDesc(e.target.value)}
+                      placeholder="Nima qilish kerak..."
+                    />
+                  </div>
+
+                  {members.length > 0 && (
+                    <div className="field">
+                      <label>{tx("common.ijrochilar")}</label>
+                      <div style={{ maxHeight: 120, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 6, padding: 6 }}>
+                        {members.map((m) => {
+                          const checked = stAssignees.includes(m.user.id);
+                          return (
+                            <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  setStAssignees((prev) =>
+                                    checked ? prev.filter((id) => id !== m.user.id) : [...prev, m.user.id]
+                                  );
+                                }}
+                              />
+                              <span>{m.user.full_name}</span>
+                              <span className="muted" style={{ fontSize: 11 }}>({m.role_display})</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </form>
+              ) : (
+                <form id="subtask-link-form" onSubmit={(e) => void handleLinkSubtask(e)}>
+                  <div className="field">
+                    <label htmlFor="st-link-search">{tx("common.qidiruv") || "Qidiruv"}</label>
+                    <input
+                      id="st-link-search"
+                      value={availSearch}
+                      onChange={(e) => setAvailSearch(e.target.value)}
+                      placeholder="Vazifa kodi yoki nomi bo'yicha qidirish..."
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label>{tx("task_detail.vazifani_tanlang")}</label>
+                    {availLoading ? (
+                      <div className="muted" style={{ padding: 12, fontSize: 13 }}>Yuklanmoqda...</div>
+                    ) : availableTasks.length > 0 ? (
+                      <div style={{ maxHeight: 220, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 6 }}>
+                        {availableTasks.map((t) => {
+                          const selected = selectedSubtaskId === String(t.id);
+                          return (
+                            <div
+                              key={t.id}
+                              onClick={() => setSelectedSubtaskId(String(t.id))}
+                              style={{
+                                padding: "8px 12px",
+                                cursor: "pointer",
+                                background: selected ? "var(--accent-soft)" : "transparent",
+                                borderBottom: "1px solid var(--border-muted)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 8,
+                                fontSize: 13,
+                              }}
+                            >
+                              <div style={{ minWidth: 0 }}>
+                                <span className="mono muted" style={{ marginRight: 6 }}>{t.code}</span>
+                                <strong>{t.title}</strong>
+                              </div>
+                              <StatusBadge task={t} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="muted" style={{ fontSize: 13, padding: 8 }}>Biriktirish uchun mos erkin vazifa topilmadi.</p>
+                    )}
+                  </div>
+                </form>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button type="button" className="btn btn-sm" onClick={() => setSubtaskModalOpen(false)}>
+                {tx("task_detail.bekor")}
+              </button>
+              {subtaskTab === "create" ? (
+                <button
+                  type="submit"
+                  form="subtask-create-form"
+                  className="btn btn-sm btn-primary"
+                  disabled={busy || !stTitle.trim()}
+                >
+                  {busy ? "Saqlanmoqda..." : tx("common.saqlash")}
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  form="subtask-link-form"
+                  className="btn btn-sm btn-primary"
+                  disabled={busy || !selectedSubtaskId}
+                >
+                  {busy ? "Biriktirilmoqda..." : tx("task_detail.biriktirish")}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -207,4 +207,4 @@ class SidebarCountsTest(ApiTestCase):
         outsider = make_user("boshqa@sinov.uz", "Boshqa Odam")
         r = self.client_for(outsider).get("/api/counts/")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, {"open": 0, "reviews": 0, "joins": 0})
+        self.assertEqual(r.data, {"open": 0, "reviews": 0, "joins": 0, "orders": 0})

@@ -107,6 +107,10 @@ class TaskSerializer(serializers.ModelSerializer):
     logged_hours = serializers.DecimalField(max_digits=8, decimal_places=1, read_only=True)
     specialty_label = serializers.CharField(read_only=True)
     attachment_count = serializers.SerializerMethodField()
+    parent_code = serializers.CharField(source="parent.code", read_only=True, allow_null=True)
+    parent_title = serializers.CharField(source="parent.title", read_only=True, allow_null=True)
+    subtask_count = serializers.SerializerMethodField()
+    subtasks_completed_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
@@ -115,7 +119,9 @@ class TaskSerializer(serializers.ModelSerializer):
                   "status", "status_display", "priority", "priority_label",
                   "task_type", "type_display", "required_specialty", "specialty_label",
                   "created_by", "reviewer", "reviewer_id",
-                  "parent", "labels", "label_ids", "assignees", "assignee_ids",
+                  "parent", "parent_code", "parent_title",
+                  "subtask_count", "subtasks_completed_count",
+                  "labels", "label_ids", "assignees", "assignee_ids",
                   "start_date", "due_date", "estimate_hours",
                   "branch_name", "pr_url", "blocked_reason",
                   "review_round", "is_overdue", "logged_hours", "attachment_count",
@@ -136,6 +142,12 @@ class TaskSerializer(serializers.ModelSerializer):
         # Ro'yxatda annotatsiya bo'ladi, alohida ochilganda - bazadan.
         annotated = getattr(obj, "attachments_total", None)
         return annotated if annotated is not None else obj.attachments.count()
+
+    def get_subtask_count(self, obj):
+        return obj.subtasks.filter(deleted_at__isnull=True).count()
+
+    def get_subtasks_completed_count(self, obj):
+        return obj.subtasks.filter(deleted_at__isnull=True, status=TaskStatus.DONE).count()
 
     def get_assignees(self, obj):
         users = [a.user for a in obj.assignments.all() if a.is_active]
@@ -205,7 +217,10 @@ class TaskDetailSerializer(TaskSerializer):
         return []
 
     def get_subtasks(self, obj):
-        return TaskSerializer(obj.subtasks.all(), many=True, context=self.context).data
+        qs = (obj.subtasks.filter(deleted_at__isnull=True)
+              .select_related("project", "created_by", "reviewer")
+              .prefetch_related("assignments__user", "labels"))
+        return TaskSerializer(qs, many=True, context=self.context).data
 
     def _access(self):
         from apps.projects.permissions import ProjectAccess

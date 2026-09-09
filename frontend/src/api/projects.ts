@@ -60,7 +60,7 @@ export async function deleteProject(id: number | string, name: string): Promise<
     await api.delete(`/projects/${id}/`);
     return true;
   } catch (err) {
-    if (!(err instanceof ApiError) || err.status !== 409 || !err.data?.needs_confirm) throw err;
+    if (!(err instanceof ApiError) || err.status !== 409 || !(err.data as LiveWork | null)?.needs_confirm) throw err;
 
     const ok = await confirmDialog({
       title: tx("api_projects.rostdan_ochirilsinmi", { nom: name }),

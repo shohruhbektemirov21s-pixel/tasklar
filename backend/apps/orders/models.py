@@ -23,8 +23,10 @@ class ChangeRequestStatus(models.TextChoices):
     ASSIGNED_TO_DEV = "ASSIGNED_TO_DEV", "Dasturchiga topshirildi"
     IN_PROGRESS = "IN_PROGRESS", "Jarayonda"
     TESTING = "TESTING", "Test qilinmoqda"
-    COMPLETED = "COMPLETED", "Bajarildi"
+    READY_FOR_REVIEW = "READY_FOR_REVIEW", "Boshqarma tasdig'ida"
+    COMPLETED = "COMPLETED", "Bajarildi (Tasdiqlangan)"
     REJECTED = "REJECTED", "Rad etildi"
+    CANCELLED = "CANCELLED", "Bekor qilingan (Atmen)"
 
 
 class ChangeRequestType(models.TextChoices):
@@ -51,7 +53,7 @@ class ChangeRequest(models.Model):
     # Metama'lumotlar
     request_no = models.CharField("Talabnoma raqami", max_length=50, unique=True, db_index=True)
     system_name = models.CharField("Tizim nomi", max_length=150, default="TeamFlow")
-    module = models.CharField("Modul", max_length=150, blank=True)
+    module = models.CharField("Modul", max_length=150, blank=True, default="")
     order_type = models.CharField(
         "Loyiha / Talabnoma turi",
         max_length=30,
@@ -92,9 +94,9 @@ class ChangeRequest(models.Model):
     tz_file_size = models.PositiveBigIntegerField("TZ fayl hajmi (bayt)", default=0)
 
     # 1. TIZIMGA QO'SHIMCHA VA O'ZGARTIRISH KIRITISH
-    current_state = models.TextField("1.1 Joriy holat (nima ishlamayapti / nimani o'zgartirish kerak)")
-    requested_change = models.TextField("1.2 Talab qilinayotgan o'zgartirish (aniq va batafsil tavsif)")
-    reason = models.TextField("1.3 Sabab / maqsad (qonun talabi, biznes ehtiyoji, xato va h.k.)")
+    current_state = models.TextField("1.1 Joriy holat (nima ishlamayapti / nimani o'zgartirish kerak)", blank=True, default="")
+    requested_change = models.TextField("1.2 Talab qilinayotgan o'zgartirish (aniq va batafsil tavsif)", blank=True, default="")
+    reason = models.TextField("1.3 Sabab / maqsad (qonun talabi, biznes ehtiyoji, xato va h.k.)", blank=True, default="")
 
     # 2. TA'SIR DOIRASI
     affected_modules = models.TextField("2.1 Qaysi modul / funksionallikka ta'sir qiladi", blank=True)
@@ -165,6 +167,30 @@ class ChangeRequest(models.Model):
         help_text="Loyiha menejeri izohi yoki topshiriq tafsilotlari",
     )
 
+    # 6. TUGATILGAN ISH HUJJATI VA TASDIQLASH (PM va Boshqarma o'rtasida)
+    completion_file = models.FileField(
+        "Tugatilgan ish hujjati",
+        upload_to="orders/completion/",
+        null=True,
+        blank=True,
+        help_text="Bajarilgan ish haqidagi hujjat yoki hisobot (PDF, Word, rasm va h.k.)",
+    )
+    completion_file_name = models.CharField("Tugatilgan ish fayli nomi", max_length=255, blank=True, default="")
+    completion_file_size = models.PositiveBigIntegerField("Tugatilgan ish fayl hajmi", default=0)
+    completion_note = models.TextField("Tugatilgan ish bo'yicha hisobot / PM izohi", blank=True, default="")
+    completed_at = models.DateTimeField("Tugatishga topshirilgan sana", null=True, blank=True)
+
+    client_feedback_note = models.TextField("Boshqarma fikri / qaytarishdagi xatolik izohi", blank=True, default="")
+    client_approved_at = models.DateTimeField("Boshqarma tasdiqlagan sana", null=True, blank=True)
+    client_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_change_requests",
+        verbose_name="Tasdiqlagan boshqarma vakili",
+    )
+
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                    null=True, blank=True, related_name="change_requests")
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -181,6 +207,15 @@ class ChangeRequest(models.Model):
     @property
     def tz_file_size_display(self):
         size = float(self.tz_file_size or 0)
+        for unit in ("B", "KB", "MB", "GB"):
+            if size < 1024 or unit == "GB":
+                return "{:.0f} {}".format(size, unit) if unit == "B" else "{:.1f} {}".format(size, unit)
+            size /= 1024
+        return "{:.1f} GB".format(size)
+
+    @property
+    def completion_file_size_display(self):
+        size = float(self.completion_file_size or 0)
         for unit in ("B", "KB", "MB", "GB"):
             if size < 1024 or unit == "GB":
                 return "{:.0f} {}".format(size, unit) if unit == "B" else "{:.1f} {}".format(size, unit)
@@ -240,6 +275,7 @@ class ChangeRequestVersion(models.Model):
     tz_file_name = models.CharField("TZ fayl nomi", max_length=255, blank=True, default="")
     tz_file_size = models.PositiveBigIntegerField("TZ fayl hajmi (bayt)", default=0)
     change_note = models.TextField("O'zgarishlar tavsifi / sababi", blank=True, default="")
+    requested_change = models.TextField("Talab qilinayotgan o'zgarishlar tavsifi", blank=True, default="")
 
     status = models.CharField(
         "Holati",

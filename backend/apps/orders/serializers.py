@@ -42,6 +42,7 @@ class ChangeRequestVersionSerializer(serializers.ModelSerializer):
             "tz_file_size",
             "tz_file_size_display",
             "change_note",
+            "requested_change",
             "status",
             "status_display",
             "uploaded_by",
@@ -84,6 +85,14 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     due_date = SafeDateField(required=False, allow_null=True)
     pm_deadline = SafeDateField(required=False, allow_null=True)
 
+    current_state = serializers.CharField(required=False, allow_blank=True, default="")
+    requested_change = serializers.CharField(required=False, allow_blank=True, default="")
+    reason = serializers.CharField(required=False, allow_blank=True, default="")
+    affected_modules = serializers.CharField(required=False, allow_blank=True, default="")
+    dependent_systems = serializers.CharField(required=False, allow_blank=True, default="")
+    additional_materials = serializers.CharField(required=False, allow_blank=True, default="")
+    module = serializers.CharField(required=False, allow_blank=True, default="")
+
     project = serializers.PrimaryKeyRelatedField(
         queryset=Project.objects.all(), required=False, allow_null=True
     )
@@ -92,10 +101,17 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     version = serializers.IntegerField(read_only=True)
     is_locked = serializers.SerializerMethodField(read_only=True)
     versions = serializers.SerializerMethodField(read_only=True)
+    pending_version = serializers.SerializerMethodField(read_only=True)
+    has_pending_version = serializers.SerializerMethodField(read_only=True)
 
     tz_file = serializers.FileField(required=False, allow_null=True)
     tz_file_url = serializers.SerializerMethodField(read_only=True)
     tz_file_size_display = serializers.SerializerMethodField(read_only=True)
+
+    completion_file = serializers.FileField(required=False, allow_null=True)
+    completion_file_url = serializers.SerializerMethodField(read_only=True)
+    completion_file_size_display = serializers.SerializerMethodField(read_only=True)
+    client_approved_by_name = serializers.CharField(source="client_approved_by.full_name", read_only=True, default="")
 
     assigned_pm = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), required=False, allow_null=True
@@ -113,6 +129,9 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     )
     linked_task_detail = serializers.SerializerMethodField(read_only=True)
     stage_index = serializers.SerializerMethodField(read_only=True)
+    created_by_department = serializers.CharField(source="created_by.department.name", read_only=True, default="")
+    can_manage_by_user = serializers.SerializerMethodField(read_only=True)
+    is_assigned_to_other_pm = serializers.SerializerMethodField(read_only=True)
 
     def to_internal_value(self, data):
         data = data.copy() if hasattr(data, "copy") else dict(data)
@@ -129,6 +148,8 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "is_locked",
             "stage_index",
             "versions",
+            "pending_version",
+            "has_pending_version",
             "system_name",
             "module",
             "order_type",
@@ -163,6 +184,17 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "estimated_resources",
             "pm_estimated_duration",
             "pm_deadline",
+            "completion_file",
+            "completion_file_url",
+            "completion_file_name",
+            "completion_file_size",
+            "completion_file_size_display",
+            "completion_note",
+            "completed_at",
+            "client_feedback_note",
+            "client_approved_at",
+            "client_approved_by",
+            "client_approved_by_name",
             "assigned_pm",
             "assigned_pm_name",
             "assigned_developer",
@@ -173,6 +205,9 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "pm_notes",
             "created_by",
             "created_by_name",
+            "created_by_department",
+            "can_manage_by_user",
+            "is_assigned_to_other_pm",
             "created_at",
             "updated_at",
         ]
@@ -182,14 +217,27 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "version",
             "is_locked",
             "versions",
+            "pending_version",
+            "has_pending_version",
             "tz_file_name",
             "tz_file_size",
+            "completion_file_name",
+            "completion_file_size",
+            "completed_at",
+            "client_approved_at",
+            "client_approved_by",
             "created_by",
             "created_at",
             "updated_at",
         ]
 
     def validate_tz_file(self, value):
+        if value:
+            from apps.core.uploads import check_upload
+            check_upload(value)
+        return value
+
+    def validate_completion_file(self, value):
         if value:
             from apps.core.uploads import check_upload
             check_upload(value)
@@ -238,7 +286,8 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             ChangeRequestStatus.ASSIGNED_TO_DEV: 3,
             ChangeRequestStatus.IN_PROGRESS: 4,
             ChangeRequestStatus.TESTING: 5,
-            ChangeRequestStatus.COMPLETED: 6,
+            ChangeRequestStatus.READY_FOR_REVIEW: 6,
+            ChangeRequestStatus.COMPLETED: 7,
             ChangeRequestStatus.REJECTED: -1,
         }
         return stages.get(obj.status, 1)
@@ -266,12 +315,30 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             }]
         return ChangeRequestVersionSerializer(vers, many=True, context=self.context).data
 
+    def get_pending_version(self, obj):
+        vers = list(obj.versions.all())
+        candidates = [v for v in vers if v.status == ChangeRequestStatus.NEW and v.version > obj.version]
+        if candidates:
+            candidates.sort(key=lambda x: x.version, reverse=True)
+            return ChangeRequestVersionSerializer(candidates[0], context=self.context).data
+        return None
+
+    def get_has_pending_version(self, obj):
+        return bool(self.get_pending_version(obj))
+
     def get_tz_file_url(self, obj):
         from apps.core.media import media_url
         return media_url(obj.tz_file)
 
     def get_tz_file_size_display(self, obj):
         return obj.tz_file_size_display
+
+    def get_completion_file_url(self, obj):
+        from apps.core.media import media_url
+        return media_url(obj.completion_file)
+
+    def get_completion_file_size_display(self, obj):
+        return obj.completion_file_size_display
 
     def get_project_detail(self, obj):
         if not obj.project:
@@ -296,6 +363,68 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "docs_url": p.docs_url,
         }
 
+    def get_can_manage_by_user(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        user = request.user
+        if user.is_platform_admin or getattr(user, "is_boss", False):
+            return True
+        is_pm = bool(
+            getattr(user, "is_manager", False)
+            or getattr(user, "specialty", "") == "PM"
+            or getattr(user, "global_role", "") == "MANAGER"
+        )
+        if not is_pm:
+            return False
+        if obj.assigned_pm_id:
+            return obj.assigned_pm_id == user.id
+        return True
+
+    def get_is_assigned_to_other_pm(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        user = request.user
+        if user.is_platform_admin or getattr(user, "is_boss", False):
+            return False
+        if obj.assigned_pm_id and obj.assigned_pm_id != user.id:
+            return True
+        return False
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        request = self.context.get("request")
+        if request and request.user and request.user.is_authenticated:
+            user = request.user
+            is_privileged = bool(
+                user.is_platform_admin
+                or getattr(user, "is_boss", False)
+                or getattr(user, "is_manager", False)
+                or getattr(user, "specialty", "") == "PM"
+                or getattr(user, "global_role", "") == "MANAGER"
+                or instance.assigned_pm_id == user.id
+                or instance.assigned_developer_id == user.id
+            )
+            user_dept_name = getattr(user.department, "name", "") if getattr(user, "department", None) else ""
+            is_order_owner = bool(
+                instance.created_by_id == user.id
+                or (
+                    user_dept_name
+                    and (
+                        (instance.department and user_dept_name.strip().lower() == instance.department.strip().lower())
+                        or (getattr(instance.created_by, "department_id", None) and instance.created_by.department_id == user.department_id)
+                    )
+                )
+            )
+            # Faqat buyurtma egasiga (tegishli boshqarmaga) va PM/adminlarga ko'rinadi
+            if not is_privileged and not is_order_owner:
+                ret["assigned_developer"] = None
+                ret["assigned_developer_name"] = ""
+                ret["assigned_developer_detail"] = None
+
+        return ret
+
 
 class PMDecisionSerializer(serializers.Serializer):
     """Loyiha menejeri (PM) qarorini qabul qilish va muddatlarni belgilash serializeri."""
@@ -310,3 +439,13 @@ class PMDecisionSerializer(serializers.Serializer):
     linked_task = serializers.PrimaryKeyRelatedField(
         queryset=Task.objects.all(), required=False, allow_null=True
     )
+
+    def validate(self, attrs):
+        status = attrs.get("status")
+        pm_notes = attrs.get("pm_notes", "").strip()
+        if status == ChangeRequestStatus.REJECTED:
+            if not pm_notes:
+                raise serializers.ValidationError(
+                    {"pm_notes": "Buyurtmani rad etish (atkaz qilish) uchun nima sababdan rad etilganligi haqida izoh yozish majburiy!"}
+                )
+        return attrs

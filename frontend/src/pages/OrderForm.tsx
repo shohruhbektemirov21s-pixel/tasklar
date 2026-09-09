@@ -21,13 +21,22 @@ export default function OrderForm() {
   const { user } = useAuth();
   const editing = Boolean(id);
 
+  const isPM = Boolean(
+    (user?.is_manager || user?.global_role === "MANAGER" || user?.specialty === "PM") &&
+    !user?.is_sohaviy_boshqarma &&
+    !user?.is_platform_admin &&
+    !user?.is_boss
+  );
+
+  const [existingItem, setExistingItem] = useState<ChangeRequestItem | null>(null);
   const [loaded, setLoaded] = useState(!editing);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   const [tzFile, setTzFile] = useState<File | null>(null);
-  const [draftRestored, setDraftRestored] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const { data: projectsData } = useFetch<{ count: number; results: Project[] } | Project[]>(
     "/projects/",
@@ -44,13 +53,6 @@ export default function OrderForm() {
     priority: "URGENT" | "HIGH" | "MEDIUM" | "LOW";
     due_date: string;
     project: number | null;
-    current_state: string;
-    requested_change: string;
-    reason: string;
-    affected_modules: string;
-    dependent_systems: string;
-    change_nature: "BOTH" | "USER_FACING" | "BACKEND";
-    additional_materials: string;
     tz_file_url?: string;
     tz_file_name?: string;
   }>({
@@ -62,13 +64,6 @@ export default function OrderForm() {
     priority: "HIGH",
     due_date: "",
     project: null,
-    current_state: "",
-    requested_change: "",
-    reason: "",
-    affected_modules: "",
-    dependent_systems: "",
-    change_nature: "BOTH",
-    additional_materials: "",
   });
 
   // Tahrirlash rejimida mavjud buyurtmani yuklash
@@ -79,6 +74,7 @@ export default function OrderForm() {
       try {
         const item = await api.get<ChangeRequestItem>(`/orders/${id}/`);
         if (!alive) return;
+        setExistingItem(item);
         setF({
           system_name: item.system_name || "TeamFlow",
           order_type: item.order_type || "NEW",
@@ -88,13 +84,6 @@ export default function OrderForm() {
           priority: item.priority || "HIGH",
           due_date: item.due_date ? item.due_date.split("T")[0] : "",
           project: item.project || null,
-          current_state: item.current_state || "",
-          requested_change: item.requested_change || "",
-          reason: item.reason || "",
-          affected_modules: item.affected_modules || "",
-          dependent_systems: item.dependent_systems || "",
-          change_nature: item.change_nature || "BOTH",
-          additional_materials: item.additional_materials || "",
           tz_file_url: item.tz_file_url || "",
           tz_file_name: item.tz_file_name || "",
         });
@@ -111,80 +100,44 @@ export default function OrderForm() {
     };
   }, [editing, id]);
 
-  // Qoralamani yuklash (agar oldin to'ldirib chiqib ketgan bo'lsa)
+  // Rasm preview tayyorlash
   useEffect(() => {
-    if (editing) return;
-    try {
-      const raw = localStorage.getItem(ORDER_DRAFT_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (
-          parsed &&
-          (parsed.module?.trim() ||
-            parsed.requested_change?.trim() ||
-            parsed.reason?.trim() ||
-            parsed.current_state?.trim() ||
-            parsed.system_name?.trim())
-        ) {
-          setF((prev) => ({ ...prev, ...parsed }));
-          setDraftRestored(true);
+    if (!tzFile) {
+      setImagePreview(null);
+      return;
+    }
+    const isImg = tzFile.type.startsWith("image/") || /\.(png|jpe?g|webp|gif|bmp)$/i.test(tzFile.name);
+    if (isImg) {
+      const url = URL.createObjectURL(tzFile);
+      setImagePreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setImagePreview(null);
+    }
+  }, [tzFile]);
+
+  // Clipboard orqali paste (Ctrl+V) hodisasi
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith("image/")) {
+          const file = items[i].getAsFile();
+          if (file) {
+            setTzFile(file);
+            break;
+          }
         }
       }
-    } catch {
-      // ignore
-    }
-  }, [editing]);
-
-  // Qoralamani avtomatik saqlash
-  useEffect(() => {
-    if (editing) return;
-    const hasData =
-      f.module.trim() ||
-      f.requested_change.trim() ||
-      f.reason.trim() ||
-      f.current_state.trim() ||
-      f.affected_modules.trim();
-    if (!hasData) return;
-    const timer = setTimeout(() => {
-      try {
-        localStorage.setItem(ORDER_DRAFT_KEY, JSON.stringify(f));
-      } catch {
-        // ignore
-      }
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [editing, f]);
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, []);
 
   const set = (k: string, v: unknown) => {
     setF((p) => ({ ...p, [k]: v }));
   };
-
-  const clearDraft = () => {
-    localStorage.removeItem(ORDER_DRAFT_KEY);
-    setF({
-      system_name: "TeamFlow",
-      order_type: "NEW",
-      module: "",
-      department: user?.department_name || "",
-      responsible_person: user?.full_name || "",
-      priority: "HIGH",
-      due_date: "",
-      project: null,
-      current_state: "",
-      requested_change: "",
-      reason: "",
-      affected_modules: "",
-      dependent_systems: "",
-      change_nature: "BOTH",
-      additional_materials: "",
-    });
-    setDraftRestored(false);
-  };
-
-  const selectedProject = useMemo(() => {
-    if (!f.project) return null;
-    return projects.find((p) => p.id === Number(f.project)) || null;
-  }, [f.project, projects]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -225,6 +178,23 @@ export default function OrderForm() {
     }
   }
 
+  if (creating && isPM) {
+    return (
+      <div className="content">
+        <div className="card" style={{ maxWidth: 540, margin: "40px auto", padding: 32, textAlign: "center" }}>
+          <div style={{ fontSize: 44, marginBottom: 12 }}>🚫</div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Ruxsat berilmagan</h2>
+          <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
+            Yangi buyurtma (TZ) yaratish faqat sohaviy boshqarma vakillariga ruxsat etilgan. Loyiha menejeri (PM) buyurtma yarata olmaydi.
+          </p>
+          <button className="btn btn-primary" onClick={() => go(toOrders())}>
+            Buyurtmalar ro'yxatiga qaytish
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!loaded) {
     return (
       <div className="content">
@@ -233,14 +203,37 @@ export default function OrderForm() {
     );
   }
 
+  const isSohaviy = Boolean(user?.is_sohaviy_boshqarma || user?.specialty === "SOHAVIY");
+  const isLockedForDepartment = Boolean(
+    editing &&
+    existingItem &&
+    isSohaviy &&
+    !user?.is_platform_admin &&
+    !user?.is_boss &&
+    (existingItem.status !== "NEW" || existingItem.assigned_pm)
+  );
+
+  if (isLockedForDepartment) {
+    return (
+      <div className="content">
+        <div className="card" style={{ maxWidth: 580, margin: "40px auto", padding: 32, textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Buyurtmani tahrirlash cheklangan</h2>
+          <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
+            «{existingItem?.request_no}» raqamli buyurtma loyiha menejeri (PM) tomonidan qabul qilingan yoki jarayonga o'tkazilgan. Sohaviy boshqarma qabul qilingan TZ va buyurtmani tahrirlay olmaydi yoki o'chira olmaydi.
+          </p>
+          <button className="btn btn-primary" onClick={() => go(toOrders())}>
+            Buyurtmalar ro'yxatiga qaytish
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHead
-        title={
-          <strong>
-            {editing ? "Buyurtmani tahrirlash" : "Yangi buyurtma (TZ talabnomasi)"}
-          </strong>
-        }
+        title={<strong>{editing ? "Buyurtmani tahrirlash" : "Yangi buyurtma (TZ)"}</strong>}
         actions={
           <div className="row" style={{ gap: 8 }}>
             <select
@@ -256,11 +249,7 @@ export default function OrderForm() {
               <option value="LOW">⚪ Past</option>
             </select>
             <button className="btn btn-primary" form={formId} disabled={busy}>
-              {busy
-                ? "Yuborilmoqda..."
-                : editing
-                ? "O'zgarishlarni saqlash"
-                : "Buyurtma yuborish"}
+              {busy ? "Yuborilmoqda..." : editing ? "O'zgarishlarni saqlash" : "Buyurtma yuborish"}
             </button>
             <button type="button" className="btn" onClick={() => go(toOrders())}>
               Bekor qilish
@@ -272,51 +261,18 @@ export default function OrderForm() {
       <div className="content">
         <ErrorMsg error={error} />
 
-        {draftRestored && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "rgba(59, 130, 246, 0.08)",
-              border: "1px solid rgba(59, 130, 246, 0.3)",
-              borderRadius: 8,
-              padding: "10px 14px",
-              marginBottom: 14,
-              fontSize: 13,
-              color: "var(--color-fg-default)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span>📝</span>
-              <span>
-                <strong>Qoralama tiklandi:</strong> Oldin to'ldirilgan buyurtma ma'lumotlari avtomatik yuklandi.
-              </span>
-            </div>
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={clearDraft}
-              style={{ color: "var(--color-danger, #ef4444)" }}
-            >
-              Qoralamani tozalash
-            </button>
-          </div>
-        )}
-
         <form id={formId} onSubmit={submit}>
           <div className="split">
-            {/* Chap ustun: Asosiy ma'lumotlar va TZ bo'limlari */}
+            {/* Chap ustun: Asosiy ma'lumotlar */}
             <div>
               <Card title="Asosiy ma'lumot">
                 <div className="field">
-                  <label htmlFor={`${fid}-sys`}>Tizim / Mahsulot nomi *</label>
+                  <label htmlFor={`${fid}-sys`}>Tizim nomi *</label>
                   <input
                     id={`${fid}-sys`}
                     value={f.system_name}
                     required
                     onChange={(e) => set("system_name", e.target.value)}
-                    placeholder="Masalan: Yagona darcha, TeamFlow, Elektron ta'lim"
                   />
                   {errors.system_name && <div className="err">{errors.system_name}</div>}
                 </div>
@@ -331,161 +287,13 @@ export default function OrderForm() {
                     <option value="NEW">🚀 Yangi loyiha</option>
                     <option value="CONTINUATION">🔄 Davom ettiriladigan</option>
                     <option value="NEEDS_CLASSIFICATION">🏷️ Turlash kerak bo'lgan</option>
-                    <option value="MODERNIZATION">⚡ Modernizatsiya va takomillashtirish</option>
-                    <option value="MAINTENANCE">🛠️ Texnik qo'llab-quvvatlash</option>
+                    <option value="MODERNIZATION">⚡ Modernizatsiya</option>
+                    <option value="MAINTENANCE">🛠️ Texnik xizmat</option>
                   </select>
                 </div>
 
                 <div className="field">
-                  <label htmlFor={`${fid}-mod`}>Modul / Yo'nalish *</label>
-                  <input
-                    id={`${fid}-mod`}
-                    value={f.module}
-                    required
-                    onChange={(e) => set("module", e.target.value)}
-                    placeholder="Masalan: Xavfsizlik, Auth, Integratsiya, Hisobotlar"
-                  />
-                  {errors.module && <div className="err">{errors.module}</div>}
-                </div>
-
-                <div className="row" style={{ gap: 12 }}>
-                  <div className="field" style={{ flex: 1 }}>
-                    <label htmlFor={`${fid}-dep`}>Buyurtma qilayotgan bo'linma *</label>
-                    <input
-                      id={`${fid}-dep`}
-                      value={f.department}
-                      required
-                      onChange={(e) => set("department", e.target.value)}
-                      placeholder="Masalan: Axborot xavfsizligi boshqarmasi"
-                    />
-                    {errors.department && <div className="err">{errors.department}</div>}
-                  </div>
-
-                  <div className="field" style={{ flex: 1 }}>
-                    <label htmlFor={`${fid}-resp`}>Mas'ul shaxs (F.I.Sh.) *</label>
-                    <input
-                      id={`${fid}-resp`}
-                      value={f.responsible_person}
-                      required
-                      onChange={(e) => set("responsible_person", e.target.value)}
-                      placeholder="F.I.Sh."
-                    />
-                    {errors.responsible_person && <div className="err">{errors.responsible_person}</div>}
-                  </div>
-                </div>
-
-                <div className="row" style={{ gap: 12 }}>
-                  <div className="field" style={{ flex: 1 }}>
-                    <label htmlFor={`${fid}-due`}>Kerakli muddat (so'ralgan sana)</label>
-                    <input
-                      id={`${fid}-due`}
-                      type="date"
-                      value={f.due_date}
-                      onChange={(e) => set("due_date", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </Card>
-
-              <Card title="TZ va Talabnoma mazmuni (Буюртма.docx)">
-                <div className="field">
-                  <label htmlFor={`${fid}-cur`}>
-                    1.1 Joriy holat (nima ishlamayapti / nimani o'zgartirish kerak) *
-                  </label>
-                  <textarea
-                    id={`${fid}-cur`}
-                    rows={4}
-                    required
-                    value={f.current_state}
-                    onChange={(e) => set("current_state", e.target.value)}
-                    placeholder="Mavjud kamchilik yoki tizimning joriy holatini batafsil bayon qiling..."
-                  />
-                  {errors.current_state && <div className="err">{errors.current_state}</div>}
-                </div>
-
-                <div className="field">
-                  <label htmlFor={`${fid}-req`}>
-                    1.2 Talab qilinayotgan o'zgartirish (aniq va batafsil tavsif) *
-                  </label>
-                  <textarea
-                    id={`${fid}-req`}
-                    rows={5}
-                    required
-                    value={f.requested_change}
-                    onChange={(e) => set("requested_change", e.target.value)}
-                    placeholder="Tizimga nimalar qo'shilishi, o'zgartirilishi yoki yangilanishi kerak..."
-                  />
-                  {errors.requested_change && <div className="err">{errors.requested_change}</div>}
-                </div>
-
-                <div className="field">
-                  <label htmlFor={`${fid}-rea`}>
-                    1.3 Sabab / maqsad (qonun talabi, biznes ehtiyoji va h.k.) *
-                  </label>
-                  <textarea
-                    id={`${fid}-rea`}
-                    rows={3}
-                    required
-                    value={f.reason}
-                    onChange={(e) => set("reason", e.target.value)}
-                    placeholder="Ushbu o'zgartirish nima sababdan kiritilmoqda..."
-                  />
-                  {errors.reason && <div className="err">{errors.reason}</div>}
-                </div>
-              </Card>
-
-              <Card title="Ta'sir doirasi va qo'shimcha ma'lumotlar">
-                <div className="field">
-                  <label htmlFor={`${fid}-aff`}>2.1 Qaysi modul / funksionallikka ta'sir qiladi</label>
-                  <input
-                    id={`${fid}-aff`}
-                    value={f.affected_modules}
-                    onChange={(e) => set("affected_modules", e.target.value)}
-                    placeholder="Ta'sirlanuvchi modullar..."
-                  />
-                </div>
-
-                <div className="field">
-                  <label htmlFor={`${fid}-dep-sys`}>2.2 Bog'liq tizimlar / integratsiyalar</label>
-                  <input
-                    id={`${fid}-dep-sys`}
-                    value={f.dependent_systems}
-                    onChange={(e) => set("dependent_systems", e.target.value)}
-                    placeholder="Tashqi yoki ichki integratsiyalar..."
-                  />
-                </div>
-
-                <div className="field">
-                  <label htmlFor={`${fid}-nature`}>2.3 O'zgarish xarakteri</label>
-                  <select
-                    id={`${fid}-nature`}
-                    value={f.change_nature}
-                    onChange={(e) => set("change_nature", e.target.value as "BOTH" | "USER_FACING" | "BACKEND")}
-                  >
-                    <option value="BOTH">🔄 Ikkalasi ham (To'liq tizim bo'ylab)</option>
-                    <option value="USER_FACING">💻 Foydalanuvchiga ko'rinadigan (Frontend / UI)</option>
-                    <option value="BACKEND">⚙️ Ichki o'zgarish (Backend / Baza / API)</option>
-                  </select>
-                </div>
-
-                <div className="field">
-                  <label htmlFor={`${fid}-mat`}>3. Qo'shimcha materiallar va havolalar</label>
-                  <textarea
-                    id={`${fid}-mat`}
-                    rows={2}
-                    value={f.additional_materials}
-                    onChange={(e) => set("additional_materials", e.target.value)}
-                    placeholder="Skrinshotlar havolalari, texnik talablar, me'yoriy hujjatlar raqami..."
-                  />
-                </div>
-              </Card>
-            </div>
-
-            {/* O'ng ustun: Loyiha tanlash va Fayl yuklash */}
-            <div>
-              <Card title="Tegishli loyiha (Project)">
-                <div className="field">
-                  <label htmlFor={`${fid}-proj`}>Mavjud loyihaga biriktirish</label>
+                  <label htmlFor={`${fid}-proj`}>Tegishli loyiha</label>
                   <select
                     id={`${fid}-proj`}
                     value={f.project || ""}
@@ -499,34 +307,60 @@ export default function OrderForm() {
                     ))}
                   </select>
                 </div>
-                {selectedProject && (
-                  <div
-                    style={{
-                      padding: 12,
-                      background: "var(--color-canvas-subtle, #f6f8fa)",
-                      borderRadius: 6,
-                      border: "1px solid var(--border-color)",
-                      fontSize: 12.5,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                      📁 {selectedProject.name}
-                    </div>
-                    <div className="muted" style={{ fontSize: 11.5 }}>
-                      {selectedProject.description || "Loyiha tavsifi kiritilmagan"}
-                    </div>
-                  </div>
-                )}
-              </Card>
 
-              <Card title="TZ Fayli (Texnik topshiriq)">
-                <p className="muted" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>
-                  Rasmiy Texnik topshiriq (TZ), Word (.docx) yoki PDF faylini biriktiring.
-                </p>
+                <div className="field">
+                  <label htmlFor={`${fid}-mod`}>Modul / Yo'nalish</label>
+                  <input
+                    id={`${fid}-mod`}
+                    value={f.module}
+                    onChange={(e) => set("module", e.target.value)}
+                  />
+                  {errors.module && <div className="err">{errors.module}</div>}
+                </div>
+
+                <div className="row" style={{ gap: 12 }}>
+                  <div className="field" style={{ flex: 1 }}>
+                    <label htmlFor={`${fid}-dep`}>Buyurtma qilayotgan bo'linma *</label>
+                    <input
+                      id={`${fid}-dep`}
+                      value={f.department}
+                      required
+                      onChange={(e) => set("department", e.target.value)}
+                    />
+                    {errors.department && <div className="err">{errors.department}</div>}
+                  </div>
+
+                  <div className="field" style={{ flex: 1 }}>
+                    <label htmlFor={`${fid}-resp`}>Mas'ul shaxs (F.I.Sh.) *</label>
+                    <input
+                      id={`${fid}-resp`}
+                      value={f.responsible_person}
+                      required
+                      onChange={(e) => set("responsible_person", e.target.value)}
+                    />
+                    {errors.responsible_person && <div className="err">{errors.responsible_person}</div>}
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label htmlFor={`${fid}-due`}>Kerakli muddat</label>
+                  <input
+                    id={`${fid}-due`}
+                    type="date"
+                    value={f.due_date}
+                    onChange={(e) => set("due_date", e.target.value)}
+                  />
+                </div>
+              </Card>
+            </div>
+
+            {/* O'ng ustun: TZ Fayli yoki Rasmi */}
+            <div>
+              <Card title="TZ Fayli yoki Rasmi">
                 <input
                   type="file"
                   id={`${fid}-tz`}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.zip"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.png,.jpg,.jpeg,.webp,image/*"
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
                       setTzFile(e.target.files[0]);
@@ -534,52 +368,113 @@ export default function OrderForm() {
                   }}
                   style={{ display: "none" }}
                 />
-                <label
-                  htmlFor={`${fid}-tz`}
-                  className="btn btn-outline"
+
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      setTzFile(e.dataTransfer.files[0]);
+                    }
+                  }}
                   style={{
-                    width: "100%",
+                    border: isDragging ? "2px dashed var(--brand, #2563eb)" : "2px dashed #cbd5e1",
+                    backgroundColor: isDragging ? "rgba(37, 99, 235, 0.05)" : "#f8fafc",
+                    borderRadius: 10,
+                    padding: 24,
                     textAlign: "center",
                     cursor: "pointer",
-                    display: "block",
+                    transition: "all 0.15s ease",
                   }}
+                  onClick={() => document.getElementById(`${fid}-tz`)?.click()}
                 >
-                  📎 {tzFile ? "Faylni o'zgartirish" : "Fayl tanlash (Word, PDF, TZ)"}
-                </label>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>📎</div>
+                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
+                    {tzFile ? "Boshqa fayl tanlash" : "Fayl yoki rasm tanlang"}
+                  </div>
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    Word, PDF, Excel yoki Rasm (PNG, JPG)
+                  </div>
+                </div>
 
+                {/* Yuklangan fayl yoki rasm preview */}
                 {tzFile && (
                   <div
                     style={{
-                      marginTop: 10,
-                      padding: "8px 12px",
-                      background: "rgba(16, 185, 129, 0.08)",
-                      border: "1px solid rgba(16, 185, 129, 0.25)",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
+                      marginTop: 14,
+                      padding: 12,
+                      background: "#f0fdf4",
+                      border: "1px solid #bbf7d0",
+                      borderRadius: 8,
                     }}
                   >
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      📄 <strong>{tzFile.name}</strong> ({(tzFile.size / 1024).toFixed(0)} KB)
-                    </span>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => setTzFile(null)}
-                      style={{ padding: "0 4px", marginLeft: 8 }}
-                    >
-                      ✕
-                    </button>
+                    <div className="row between middle">
+                      <div className="row middle" style={{ gap: 8, overflow: "hidden" }}>
+                        <span style={{ fontSize: 18 }}>{imagePreview ? "🖼️" : "📄"}</span>
+                        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: "#166534" }}>
+                            {tzFile.name}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#15803d" }}>
+                            {(tzFile.size / 1024).toFixed(0)} KB
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => setTzFile(null)}
+                        style={{ padding: "2px 8px", color: "#dc2626" }}
+                        title="Faylni o'chirish"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {imagePreview && (
+                      <div style={{ marginTop: 10, textAlign: "center" }}>
+                        <img
+                          src={imagePreview}
+                          alt="TZ Rasmi"
+                          style={{
+                            maxWidth: "100%",
+                            maxHeight: 280,
+                            borderRadius: 6,
+                            border: "1px solid #dcfce7",
+                            objectFit: "contain",
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 
+                {/* Tahrirlash rejimida mavjud TZ fayli */}
                 {editing && f.tz_file_url && !tzFile && (
-                  <div style={{ marginTop: 10, fontSize: 12 }} className="muted">
-                    Mavjud TZ fayli:{" "}
-                    <a href={f.tz_file_url} target="_blank" rel="noreferrer">
-                      {f.tz_file_name || "Hujjat"}
+                  <div
+                    style={{
+                      marginTop: 14,
+                      padding: 12,
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>
+                      Mavjud biriktirilgan TZ:
+                    </div>
+                    <a
+                      href={f.tz_file_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontWeight: 600, fontSize: 13, color: "var(--brand)" }}
+                    >
+                      📎 {f.tz_file_name || "Faylni ko'rish"}
                     </a>
                   </div>
                 )}

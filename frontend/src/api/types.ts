@@ -103,6 +103,7 @@ export interface Access {
   can_view: boolean;
   can_manage: boolean;
   can_create_task: boolean;
+  can_create_subtask?: boolean;
   can_review: boolean;
   can_work: boolean;
   /**
@@ -250,6 +251,10 @@ export interface Task {
   created_by: UserBrief | null;
   reviewer: UserBrief | null;
   parent: number | null;
+  parent_code?: string | null;
+  parent_title?: string | null;
+  subtask_count?: number;
+  subtasks_completed_count?: number;
   labels: Label[];
   assignees: UserBrief[];
   start_date: string | null;
@@ -881,7 +886,9 @@ export interface OrderStats {
   in_progress: number;
   in_progress_strict?: number;
   testing?: number;
+  ready_for_review?: number;
   completed: number;
+  rejected?: number;
   urgent: number;
   high?: number;
   by_type?: {
@@ -922,7 +929,8 @@ export interface ChangeRequestVersionItem {
   tz_file_size?: number;
   tz_file_size_display?: string;
   change_note: string;
-  status: "NEW" | "ACCEPTED" | "ASSIGNED_TO_DEV" | "IN_PROGRESS" | "TESTING" | "COMPLETED" | "REJECTED";
+  requested_change?: string;
+  status: "NEW" | "ACCEPTED" | "ASSIGNED_TO_DEV" | "IN_PROGRESS" | "TESTING" | "COMPLETED" | "REJECTED" | "CANCELLED";
   status_display: string;
   uploaded_by?: number | null;
   uploaded_by_name?: string;
@@ -941,6 +949,8 @@ export interface ChangeRequestItem {
   is_locked?: boolean;
   stage_index?: number;
   versions?: ChangeRequestVersionItem[];
+  pending_version?: ChangeRequestVersionItem | null;
+  has_pending_version?: boolean;
   system_name: string;
   module: string;
   order_type?: OrderTypeValue;
@@ -967,9 +977,20 @@ export interface ChangeRequestItem {
   change_nature: "USER_FACING" | "BACKEND" | "BOTH";
   change_nature_display: string;
   additional_materials: string;
-  test_result: string;
-  status: "NEW" | "ACCEPTED" | "ASSIGNED_TO_DEV" | "IN_PROGRESS" | "TESTING" | "COMPLETED" | "REJECTED";
+  test_result?: string;
+  status: "NEW" | "ACCEPTED" | "ASSIGNED_TO_DEV" | "IN_PROGRESS" | "TESTING" | "READY_FOR_REVIEW" | "COMPLETED" | "REJECTED" | "CANCELLED";
   status_display: string;
+  completion_file?: string | null;
+  completion_file_url?: string | null;
+  completion_file_name?: string;
+  completion_file_size?: number;
+  completion_file_size_display?: string;
+  completion_note?: string;
+  completed_at?: string | null;
+  client_feedback_note?: string;
+  client_approved_at?: string | null;
+  client_approved_by?: number | null;
+  client_approved_by_name?: string;
   client_signer: string;
   executor_signer: string;
   estimated_resources: string;
@@ -999,6 +1020,9 @@ export interface ChangeRequestItem {
   } | null;
   pm_notes?: string;
   created_by_name?: string;
+  created_by_department?: string;
+  can_manage_by_user?: boolean;
+  is_assigned_to_other_pm?: boolean;
   created_at: string;
   updated_at?: string;
 }

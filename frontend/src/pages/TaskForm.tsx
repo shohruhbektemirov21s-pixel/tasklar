@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ApiError, api } from "@/api/client";
 import type { Project, Task, UserBrief } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
@@ -19,6 +20,9 @@ interface Suggestion {
 
 export default function TaskForm() {
   const fid = useId();
+  const [sp] = useSearchParams();
+  const queryParent = sp.get("parent");
+
   // `taskId` bo'lsa - tahrirlash, bo'lmasa - `id` loyihasida yangi vazifa.
   // Rejim MARSHRUTDAN aniqlanadi: `/loyiha/vazifa-yaratish` da sessiyada
   // qolgan vazifa raqami bo'lsa, forma yangi vazifa o'rniga eskisini
@@ -42,6 +46,10 @@ export default function TaskForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
+
+  // Ota vazifa
+  const [parentTaskId, setParentTaskId] = useState<string>(queryParent || "");
+  const [parentTask, setParentTask] = useState<Task | null>(null);
 
   const [f, setF] = useState({
     title: "", description: "", acceptance_criteria: "",
@@ -69,6 +77,7 @@ export default function TaskForm() {
           reviewer_id: t.reviewer ? String(t.reviewer.id) : "",
         });
         setAssignees(t.assignees.map((a) => a.id));
+        if (t.parent) setParentTaskId(String(t.parent));
       }
       const p = await api.get<Project>(`/projects/${pid}/`);
       if (!alive) return;
@@ -80,6 +89,20 @@ export default function TaskForm() {
     });
     return () => { alive = false; };
   }, [id, taskId, editing]);
+
+  useEffect(() => {
+    if (!parentTaskId) {
+      setParentTask(null);
+      return;
+    }
+    let alive = true;
+    void api.get<Task>(`/tasks/${parentTaskId}/`).then((t) => {
+      if (alive) setParentTask(t);
+    }).catch(() => {
+      if (alive) setParentTask(null);
+    });
+    return () => { alive = false; };
+  }, [parentTaskId]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -159,6 +182,7 @@ export default function TaskForm() {
       project: Number(projectId),
       priority: Number(f.priority),
       assignee_ids: assignees,
+      parent: parentTaskId ? Number(parentTaskId) : null,
       start_date: fromDateTimeInput(f.start_date),
       due_date: fromDateTimeInput(f.due_date),
       reviewer_id: f.reviewer_id ? Number(f.reviewer_id) : null,
@@ -346,6 +370,40 @@ export default function TaskForm() {
 
             <div>
               <Card title={tx("task_form.xususiyatlar")}>
+                {(project.access?.can_create_subtask || project.access?.is_manager || project.access?.is_project_admin) && (
+                  <div className="field">
+                    <label>{tx("task_detail.asosiy_ota_vazifa")}</label>
+                    {parentTask ? (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "8px 12px",
+                        background: "var(--canvas-inset)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 6,
+                        fontSize: 13
+                      }}>
+                        <div>
+                          <span className="mono muted" style={{ marginRight: 6 }}>{parentTask.code}</span>
+                          <strong>{parentTask.title}</strong>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => { setParentTaskId(""); setParentTask(null); }}
+                          title="Ota vazifani olib tashlash"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+                        Mustaqil vazifa (ostki vazifa emas).
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div className="field">
                   <label htmlFor={`${fid}-3`}>{tx("task_form.kerakli_mutaxassislik")}</label>
                   <select id={`${fid}-3`} value={f.required_specialty}
