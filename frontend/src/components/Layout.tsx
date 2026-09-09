@@ -401,6 +401,8 @@ export default function Layout() {
                     ? user.global_role_display
                     : user?.specialty_display}
                 </span>
+                <br />
+                <span className="email">{user?.email}</span>
               </span>
             </Link>
             <button

@@ -2452,6 +2452,7 @@ export default function ChangeRequests() {
                 <span className="badge" style={{ background: "#4f46e5", color: "#fff", fontWeight: 700, fontSize: 11 }}>
                   v{viewingItem.version || 1}
                 </span>
+                <OrderStatusBadge status={viewingItem.status} label={viewingItem.status_display} />
                 <strong>{viewingItem.system_name} — {viewingItem.module || "Tizim"}</strong>
                 {viewingItem.project_detail && (
                   <span
@@ -2669,8 +2670,6 @@ export default function ChangeRequests() {
                 </div>
               )}
 
-              {/* Ish jarayoni va bosqichlar zanjiri (Visual Stepper) */}
-              <OrderProgressStepper item={viewingItem} />
 
               {/* PM tomonidan rad etilgan (atkaz qilingan) xabarnoma */}
               {viewingItem.status === "REJECTED" && (
@@ -2860,28 +2859,6 @@ export default function ChangeRequests() {
                     </div>
                   )}
 
-                  {/\.(png|jpe?g|webp|gif|bmp)$/i.test(
-                    viewingItem.completion_file_name || viewingItem.completion_file_url || ""
-                  ) && viewingItem.completion_file_url && (
-                    <div
-                      style={{
-                        marginTop: 8,
-                        textAlign: "center",
-                        background: "#fff",
-                        borderRadius: 6,
-                        padding: 8,
-                        border: "1px solid #bfdbfe",
-                      }}
-                    >
-                      <a href={viewingItem.completion_file_url} target="_blank" rel="noreferrer">
-                        <img
-                          src={viewingItem.completion_file_url}
-                          alt="Tugatilgan ish rasmi"
-                          style={{ maxWidth: "100%", maxHeight: 360, objectFit: "contain", borderRadius: 4 }}
-                        />
-                      </a>
-                    </div>
-                  )}
 
                   {viewingItem.client_approved_at && (
                     <div
@@ -2903,372 +2880,34 @@ export default function ChangeRequests() {
                 </div>
               )}
 
-              {/* Rasmiy Blank Sarlavhasi */}
-              <div
-                style={{
-                  background: "var(--brand-dark, #1e3a8a)",
-                  color: "#fff",
-                  padding: "12px 16px",
-                  borderRadius: 6,
-                  textAlign: "center",
-                  marginBottom: 16,
-                }}
-              >
-                <div style={{ fontSize: 14, fontWeight: 700 }}>
-                  AXBOROT TIZIMIGA O'ZGARTIRISH KIRITISH BO'YICHA SO'ROV BLANKASI
-                </div>
-                <div style={{ fontSize: 12, opacity: 0.85, fontStyle: "italic" }}>
-                  Har bir yangi funksiya yoki o'zgartirish (TZ) uchun alohida to'ldiriladi
-                </div>
-              </div>
-
-              {/* A. TEGISHLI LOYIHA (PROJECT) MA'LUMOTLARI */}
-              {viewingItem.project_detail ? (
-                <div
-                  style={{
-                    background: "var(--surface, #f8fafc)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: 6,
-                    padding: 14,
-                    marginBottom: 16,
-                  }}
-                >
-                  <div className="row between middle" style={{ marginBottom: 10 }}>
-                    <div className="row middle" style={{ gap: 8 }}>
-                      <IconProject size={18} />
-                      <strong style={{ fontSize: 14, color: "var(--brand)" }}>
-                        Tegishli Loyiha (Project) Ma'lumotlari
-                      </strong>
-                    </div>
-                    <Link
-                      to={`/loyiha/${viewingItem.project_detail.id}`}
-                      className="btn btn-xs btn-outline"
-                    >
-                      Loyihaga o'tish →
-                    </Link>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                      gap: 12,
-                      fontSize: 13,
-                    }}
-                  >
-                    <div>
-                      <span className="muted" style={{ fontSize: 11.5 }}>Loyiha nomi va Kaliti:</span>
-                      <div>
-                        <strong>{viewingItem.project_detail.name}</strong>{" "}
-                        <span className="badge badge-brand">{viewingItem.project_detail.key}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="muted" style={{ fontSize: 11.5 }}>Loyiha Menejeri (PM):</span>
-                      <div>
-                        <strong>{viewingItem.project_detail.manager_name || "Menejer biriktirilmagan"}</strong>
-                        {viewingItem.project_detail.manager_email && (
-                          <div className="muted" style={{ fontSize: 11 }}>
-                            {viewingItem.project_detail.manager_email}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="muted" style={{ fontSize: 11.5 }}>Loyiha holati va Muddat:</span>
-                      <div>
-                        <span className="badge badge-ok">{viewingItem.project_detail.status_display}</span>
-                        {viewingItem.project_detail.due_date && (
-                          <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
-                            (Muddat: {fmtDate(viewingItem.project_detail.due_date)})
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="muted" style={{ fontSize: 11.5 }}>Bajarilish holati:</span>
-                      <div className="row middle" style={{ gap: 8, marginTop: 4 }}>
-                        <div style={{ flex: 1 }}>
-                          <Progress value={viewingItem.project_detail.progress || 0} />
-                        </div>
-                        <span style={{ fontWeight: 700, fontSize: 12 }}>
-                          {viewingItem.project_detail.progress}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {viewingItem.project_detail.description && (
-                    <div style={{ marginTop: 10, fontSize: 12.5, color: "var(--muted)" }}>
-                      <strong>Loyiha tavsifi:</strong> {viewingItem.project_detail.description}
-                    </div>
-                  )}
-                </div>
-              ) : null}
-
-              {/* B. BIRIKTIRILGAN TZ FAYLI YOKI RASMI */}
-              {viewingItem.tz_file_url && (
-                <div
-                  style={{
-                    background: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
-                    borderRadius: 8,
-                    padding: 14,
-                    marginBottom: 16,
-                  }}
-                >
-                  <div className="row between middle" style={{ marginBottom: /\.(png|jpe?g|webp|gif|bmp)$/i.test(viewingItem.tz_file_name || viewingItem.tz_file_url) ? 10 : 0 }}>
-                    <div className="row middle" style={{ gap: 10 }}>
-                      <span style={{ fontSize: 24 }}>
-                        {/\.(png|jpe?g|webp|gif|bmp)$/i.test(viewingItem.tz_file_name || viewingItem.tz_file_url) ? "🖼️" : "📄"}
-                      </span>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: "#166534" }}>
-                          Biriktirilgan TZ hujjati / rasmi
-                        </div>
-                        <div style={{ fontSize: 12, color: "#15803d" }}>
-                          {viewingItem.tz_file_name || "Texnik topshiriq"} •{" "}
-                          {viewingItem.tz_file_size_display || ""}
-                        </div>
-                      </div>
-                    </div>
-                    <a
-                      href={viewingItem.tz_file_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-sm btn-primary"
-                      style={{ backgroundColor: "#16a34a", borderColor: "#16a34a" }}
-                    >
-                      <IconDownload size={14} /> Faylni yuklab olish
-                    </a>
-                  </div>
-                  {/\.(png|jpe?g|webp|gif|bmp)$/i.test(viewingItem.tz_file_name || viewingItem.tz_file_url) && (
-                    <div style={{ marginTop: 8, textAlign: "center", background: "#fff", borderRadius: 6, padding: 8, border: "1px solid #e2e8f0" }}>
-                      <a href={viewingItem.tz_file_url} target="_blank" rel="noreferrer">
-                        <img
-                          src={viewingItem.tz_file_url}
-                          alt="TZ Rasmi"
-                          style={{ maxWidth: "100%", maxHeight: 360, objectFit: "contain", borderRadius: 4 }}
-                        />
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* C. TZ VERSIYALARI TARIXI */}
-              <div
-                style={{
-                  background: "#f8fafc",
-                  border: "1.5px solid #e2e8f0",
-                  borderRadius: 8,
-                  padding: 14,
-                  marginBottom: 16,
-                }}
-              >
-                <div className="row between middle" style={{ marginBottom: 12 }}>
-                  <div className="row middle" style={{ gap: 8 }}>
-                    <span style={{ fontSize: 18 }}>📑</span>
-                    <strong style={{ fontSize: 13.5, color: "#1e293b" }}>
-                      {tx("orders.versions_history")}
-                    </strong>
-                    <span className="badge badge-brand" style={{ fontSize: 11 }}>
-                      Joriy: v{viewingItem.version || 1}
-                    </span>
-                  </div>
-                  {isSohaviyOrAdmin && viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && (
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-primary"
-                      style={{ background: "#0284c7", borderColor: "#0284c7" }}
-                      onClick={() => handleOpenUploadVersion(viewingItem)}
-                    >
-                      + {tx("orders.upload_new_version")}
-                    </button>
-                  )}
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {(viewingItem.versions || []).map((v) => {
-                    const isCurrentActive = v.version === viewingItem.version && v.status === "ACCEPTED";
-                    const isCancelled = v.status === "CANCELLED";
-                    const isPending = v.status === "NEW";
-                    const isRejected = v.status === "REJECTED";
-
-                    return (
-                      <div
-                        key={v.id || v.version}
-                        style={{
-                          background: isCurrentActive
-                            ? "#f0fdf4"
-                            : isPending
-                            ? "#fffbeb"
-                            : isRejected
-                            ? "#fef2f2"
-                            : "#fff",
-                          border: isCurrentActive
-                            ? "1.5px solid #86efac"
-                            : isPending
-                            ? "1.5px solid #fde68a"
-                            : isRejected
-                            ? "1px solid #fecaca"
-                            : "1px solid #e2e8f0",
-                          borderRadius: 6,
-                          padding: "10px 14px",
-                          fontSize: 12.5,
-                        }}
-                      >
-                        <div className="row between middle" style={{ flexWrap: "wrap", gap: 8 }}>
-                          <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
-                            <span
-                              style={{
-                                fontWeight: 700,
-                                fontSize: 12,
-                                padding: "2px 8px",
-                                borderRadius: 4,
-                                background: isCurrentActive ? "#16a34a" : isPending ? "#d97706" : isCancelled ? "#64748b" : "#dc2626",
-                                color: "#fff",
-                              }}
-                            >
-                              v{v.version}
-                            </span>
-
-                            {isCurrentActive && (
-                              <span className="badge badge-ok" style={{ fontSize: 11 }}>
-                                ✓ {tx("orders.status_active")}
-                              </span>
-                            )}
-                            {isPending && (
-                              <span className="badge badge-warning" style={{ fontSize: 11 }}>
-                                ⏳ {tx("orders.status_pending_review")}
-                              </span>
-                            )}
-                            {isCancelled && (
-                              <span className="badge badge-ghost" style={{ fontSize: 11, background: "#e2e8f0", color: "#475569" }}>
-                                🚫 {tx("orders.status_cancelled")}
-                              </span>
-                            )}
-                            {isRejected && (
-                              <span className="badge badge-danger" style={{ fontSize: 11 }}>
-                                ✕ Rad etilgan
-                              </span>
-                            )}
-
-                            <span style={{ color: "#334155", fontWeight: 600 }}>
-                              {v.tz_file_name || "TZ fayli"} {v.tz_file_size_display ? `(${v.tz_file_size_display})` : ""}
-                            </span>
-                          </div>
-
-                          <div className="row middle" style={{ gap: 8 }}>
-                            {v.tz_file_url && (
-                              <a
-                                href={v.tz_file_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="btn btn-xs btn-outline"
-                                style={{ background: "#fff" }}
-                              >
-                                <IconDownload size={12} /> Yuklab olish
-                              </a>
-                            )}
-
-                            {isPending && isPMOrAdmin && (user?.is_platform_admin || user?.is_boss || !viewingItem.assigned_pm || viewingItem.assigned_pm === user?.id) && (
-                              <>
-                                <button
-                                  type="button"
-                                  className="btn btn-xs btn-ok"
-                                  onClick={() => handleOpenApproveVersion(viewingItem, v.version)}
-                                >
-                                  ✓ Tasdiqlash
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-xs btn-danger"
-                                  onClick={() => handleOpenRejectVersion(viewingItem, v.version)}
-                                >
-                                  ✕ Rad etish
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        {v.change_note && (
-                          <div style={{ marginTop: 6, color: "#334155", fontSize: 12 }}>
-                            <strong>O'zgarishlar tavsifi:</strong> {v.change_note}
-                          </div>
-                        )}
-
-                        {v.requested_change && (
-                          <div style={{ marginTop: 4, color: "#475569", fontSize: 12 }}>
-                            <strong>Talablar matni:</strong> {v.requested_change}
-                          </div>
-                        )}
-
-                        <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 16, color: "#64748b", fontSize: 11 }}>
-                          <span>Yuklagan: {v.uploaded_by_name || "Boshqarma vakili"} ({fmtDate(v.created_at)})</span>
-                          {v.decided_by_name && (
-                            <span>Qaror qilgan PM: {v.decided_by_name} ({fmtDate(v.decided_at)})</span>
-                          )}
-                          {v.decision_note && (
-                            <span style={{ color: isRejected ? "#b91c1c" : "#15803d", fontWeight: 600 }}>
-                              PM izohi: {v.decision_note}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-
-              {/* Metama'lumotlar to'ri */}
+              {/* Asosiy ma'lumotlar to'ri */}
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
                   gap: 12,
                   background: "var(--surface, #f8fafc)",
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                  borderRadius: 8,
                   padding: 14,
-                  borderRadius: 6,
-                  border: "1px solid var(--border-color)",
                   marginBottom: 16,
-                  fontSize: 13,
+                  fontSize: 12.5,
                 }}
               >
                 <div>
-                  <span className="muted">Tizim nomi:</span>
-                  <div><strong>{viewingItem.system_name}</strong></div>
+                  <span className="muted" style={{ fontSize: 11 }}>Buyurtmachi bo'linma:</span>
+                  <div style={{ fontWeight: 600, color: "var(--text)" }}>{viewingItem.department || "-"}</div>
                 </div>
                 <div>
-                  <span className="muted">Modul:</span>
-                  <div><strong>{viewingItem.module || "-"}</strong></div>
+                  <span className="muted" style={{ fontSize: 11 }}>Mas'ul shaxs:</span>
+                  <div style={{ fontWeight: 600, color: "var(--text)" }}>{viewingItem.responsible_person || "-"}</div>
                 </div>
                 <div>
-                  <span className="muted">Loyiha turi:</span>
-                  <div style={{ marginTop: 2 }}>
-                    <OrderTypeBadge type={viewingItem.order_type} />
-                  </div>
+                  <span className="muted" style={{ fontSize: 11 }}>Yuborilgan sana:</span>
+                  <div style={{ fontWeight: 600, color: "var(--text)" }}>{fmtDate(viewingItem.request_date)}</div>
                 </div>
                 <div>
-                  <span className="muted">Talabnoma raqami:</span>
-                  <div><strong>{viewingItem.request_no}</strong></div>
-                </div>
-                <div>
-                  <span className="muted">Sana:</span>
-                  <div><strong>{fmtDate(viewingItem.request_date)}</strong></div>
-                </div>
-                <div>
-                  <span className="muted">Buyurtmachi bo'linma:</span>
-                  <div><strong>{viewingItem.department}</strong></div>
-                </div>
-                <div>
-                  <span className="muted">Mas'ul shaxs:</span>
-                  <div><strong>{viewingItem.responsible_person}</strong></div>
-                </div>
-                <div>
-                  <span className="muted">Muhimlilik turi:</span>
+                  <span className="muted" style={{ fontSize: 11 }}>Muhimlik:</span>
                   <div>
                     <span
                       className={`badge ${
@@ -3280,230 +2919,162 @@ export default function ChangeRequests() {
                           ? "badge-brand"
                           : ""
                       }`}
+                      style={{ fontSize: 11 }}
                     >
                       {viewingItem.priority_display || viewingItem.priority}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <span className="muted">Kerakli muddat (so'ralgan):</span>
-                  <div><strong>{viewingItem.due_date ? fmtDate(viewingItem.due_date) : "-"}</strong></div>
-                </div>
-              </div>
-
-              {/* C. 1-Bo'lim: Tizimga qo'shimcha va o'zgartirish kiritish */}
-              <div className="section-box" style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    background: "var(--brand, #2563eb)",
-                    color: "#fff",
-                    padding: "6px 12px",
-                    fontWeight: 700,
-                    fontSize: 13,
-                    borderRadius: "4px 4px 0 0",
-                  }}
-                >
-                  1. TIZIMGA QO'SHIMCHA VA O'ZGARTIRISH KIRITISH
-                </div>
-                <div
-                  style={{
-                    border: "1px solid var(--border-color)",
-                    borderTop: "none",
-                    padding: 14,
-                    borderRadius: "0 0 4px 4px",
-                  }}
-                >
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>
-                      1.1 Joriy holat (nima ishlamayapti / nimani o'zgartirish kerak):
-                    </div>
-                    <div className="tl-detail" style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
-                      {viewingItem.current_state || "-"}
-                    </div>
+                  <span className="muted" style={{ fontSize: 11 }}>Mas'ul PM:</span>
+                  <div style={{ fontWeight: 600, color: "var(--text)" }}>
+                    {viewingItem.assigned_pm_name ? `👤 ${viewingItem.assigned_pm_name}` : "Biriktirilmagan"}
                   </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>
-                      1.2 Talab qilinayotgan o'zgartirish (aniq va batafsil tavsif):
-                    </div>
-                    <div className="tl-detail" style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
-                      {viewingItem.requested_change || "-"}
-                    </div>
+                </div>
+                <div>
+                  <span className="muted" style={{ fontSize: 11 }}>Mas'ul dasturchi:</span>
+                  <div style={{ fontWeight: 600, color: "var(--text)" }}>
+                    {viewingItem.assigned_developer_name ? `👨‍💻 ${viewingItem.assigned_developer_name}` : "Biriktirilmagan"}
                   </div>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>
-                      1.3 Sabab / maqsad (qonun talabi, biznes ehtiyoji, xato va h.k.):
-                    </div>
-                    <div className="tl-detail" style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
-                      {viewingItem.reason || "-"}
-                    </div>
+                </div>
+                <div>
+                  <span className="muted" style={{ fontSize: 11 }}>Kerakli muddat:</span>
+                  <div style={{ fontWeight: 600, color: "var(--text)" }}>
+                    {viewingItem.due_date ? fmtDate(viewingItem.due_date) : "-"}
+                  </div>
+                </div>
+                <div>
+                  <span className="muted" style={{ fontSize: 11 }}>PM yakuniy muddati:</span>
+                  <div style={{ fontWeight: 600, color: viewingItem.pm_deadline ? "var(--brand)" : "var(--text)" }}>
+                    {viewingItem.pm_deadline
+                      ? fmtDate(viewingItem.pm_deadline)
+                      : viewingItem.pm_estimated_duration || "Belgilanmagan"}
                   </div>
                 </div>
               </div>
 
-              {/* D. 2-Bo'lim: Ta'sir doirasi */}
-              <div className="section-box" style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    background: "var(--brand, #2563eb)",
-                    color: "#fff",
-                    padding: "6px 12px",
-                    fontWeight: 700,
-                    fontSize: 13,
-                    borderRadius: "4px 4px 0 0",
-                  }}
-                >
-                  2. TA'SIR DOIRASI
+              {/* Talab qilinayotgan o'zgartirish (Tavsif) */}
+              <div
+                style={{
+                  background: "var(--surface, #f8fafc)",
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                  borderRadius: 8,
+                  padding: 14,
+                  marginBottom: 16,
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)", marginBottom: 6 }}>
+                  📝 Talab qilinayotgan o'zgartirish / vazifa tavsifi:
                 </div>
-                <div
-                  style={{
-                    border: "1px solid var(--border-color)",
-                    borderTop: "none",
-                    padding: 14,
-                    borderRadius: "0 0 4px 4px",
-                  }}
-                >
-                  <div style={{ marginBottom: 10 }}>
-                    <strong>2.1 Qaysi modul / funksionallikka ta'sir qiladi:</strong>{" "}
-                    <span>{viewingItem.affected_modules || "-"}</span>
-                  </div>
-                  <div style={{ marginBottom: 10 }}>
-                    <strong>2.2 Bog'liq tizimlar / integratsiyalar:</strong>{" "}
-                    <span>{viewingItem.dependent_systems || "-"}</span>
-                  </div>
-                  <div>
-                    <strong>2.3 O'zgarish xarakteri:</strong>{" "}
-                    <span className="badge badge-brand">
-                      {viewingItem.change_nature_display || viewingItem.change_nature}
-                    </span>
-                  </div>
+                <div style={{ fontSize: 13, color: "var(--text)", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+                  {viewingItem.requested_change || viewingItem.current_state || "Tavsif kiritilmagan"}
                 </div>
+                {viewingItem.reason && (
+                  <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed var(--border-color, #e2e8f0)", fontSize: 12, color: "var(--muted)" }}>
+                    <strong>Sabab / Asos:</strong> {viewingItem.reason}
+                  </div>
+                )}
               </div>
 
-              {/* E. 3-Bo'lim: Qo'shimcha materiallar */}
-              <div className="section-box" style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    background: "var(--brand, #2563eb)",
-                    color: "#fff",
-                    padding: "6px 12px",
-                    fontWeight: 700,
-                    fontSize: 13,
-                    borderRadius: "4px 4px 0 0",
-                  }}
-                >
-                  3. QO'SHIMCHA MATERIALLAR (ILOVALAR)
-                </div>
-                <div
-                  style={{
-                    border: "1px solid var(--border-color)",
-                    borderTop: "none",
-                    padding: 14,
-                    borderRadius: "0 0 4px 4px",
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {viewingItem.additional_materials || "Mavjud emas"}
-                </div>
-              </div>
-
-              {/* F. 4-Bo'lim: Test qilish */}
-              <div className="section-box" style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    background: "var(--brand, #2563eb)",
-                    color: "#fff",
-                    padding: "6px 12px",
-                    fontWeight: 700,
-                    fontSize: 13,
-                    borderRadius: "4px 4px 0 0",
-                  }}
-                >
-                  4. O'ZGARISHNI TEST QILISH (BUYURTMACHI TOMONIDAN TEST QILINADI)
-                </div>
-                <div
-                  style={{
-                    border: "1px solid var(--border-color)",
-                    borderTop: "none",
-                    padding: 14,
-                    borderRadius: "0 0 4px 4px",
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {viewingItem.test_result || "Hali test qilinmagan"}
-                </div>
-              </div>
-
-              {/* G. 5-Bo'lim: Tasdiqlash va PM Qarori */}
-              <div className="section-box" style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    background: "var(--brand, #2563eb)",
-                    color: "#fff",
-                    padding: "6px 12px",
-                    fontWeight: 700,
-                    fontSize: 13,
-                    borderRadius: "4px 4px 0 0",
-                  }}
-                >
-                  5. TASDIQLASH VA IJRO (PM TOMONIDAN BELGILANADI)
-                </div>
-                <div
-                  style={{
-                    border: "1px solid var(--border-color)",
-                    borderTop: "none",
-                    padding: 14,
-                    borderRadius: "0 0 4px 4px",
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: 16,
-                  }}
-                >
+              {/* Biriktirilgan TZ fayli */}
+              <div
+                style={{
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: 8,
+                  padding: "12px 14px",
+                  marginBottom: 16,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div className="row middle" style={{ gap: 8 }}>
+                  <span style={{ fontSize: 22 }}>📄</span>
                   <div>
-                    <span className="muted" style={{ fontSize: 12 }}>Buyurtmachi:</span>
-                    <div><strong>{viewingItem.client_signer || viewingItem.responsible_person}</strong></div>
-                  </div>
-                  <div>
-                    <span className="muted" style={{ fontSize: 12 }}>Ijrochi / Mas'ul PM:</span>
-                    <div>
-                      <strong>
-                        {viewingItem.assigned_pm_name || viewingItem.executor_signer || "Biriktirilmagan"}
-                      </strong>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: "#166534" }}>
+                      {viewingItem.tz_file_name || "Biriktirilgan TZ hujjati"}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "#15803d" }}>
+                      v{viewingItem.version || 1} {viewingItem.tz_file_size_display ? `• ${viewingItem.tz_file_size_display}` : ""}
                     </div>
                   </div>
-                  <div>
-                    <span className="muted" style={{ fontSize: 12 }}>Mas'ul Dasturchi (Ijrochi):</span>
-                    <div>
-                      <strong>
-                        {viewingItem.assigned_developer_name ? `👨‍💻 ${viewingItem.assigned_developer_name}` : "Hali biriktirilmagan"}
-                      </strong>
-                    </div>
-                  </div>
-                  <div>
-                    <span className="muted" style={{ fontSize: 12 }}>Qanchada tugashi (PM bahosi):</span>
-                    <div>
-                      <strong>
-                        {viewingItem.pm_estimated_duration || viewingItem.estimated_resources || "Ko'rib chiqilmoqda"}
-                      </strong>
-                    </div>
-                  </div>
-                  <div>
-                    <span className="muted" style={{ fontSize: 12 }}>PM belgilagan yakuniy muddat:</span>
-                    <div>
-                      <strong>
-                        {viewingItem.pm_deadline ? fmtDate(viewingItem.pm_deadline) : "Hali belgilanmagan"}
-                      </strong>
-                    </div>
-                  </div>
-                  {viewingItem.pm_notes && (
-                    <div style={{ gridColumn: "span 2" }}>
-                      <span className="muted" style={{ fontSize: 12 }}>PM xulosasi va ko'rsatmalari:</span>
-                      <div style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
-                        {viewingItem.pm_notes}
-                      </div>
-                    </div>
+                </div>
+                <div className="row middle" style={{ gap: 6 }}>
+                  {viewingItem.tz_file_url && (
+                    <a
+                      href={viewingItem.tz_file_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-sm btn-primary"
+                      style={{ background: "#16a34a", borderColor: "#16a34a" }}
+                    >
+                      <IconDownload size={13} /> TZ faylini yuklab olish
+                    </a>
+                  )}
+                  {isSohaviyOrAdmin && viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline"
+                      onClick={() => handleOpenUploadVersion(viewingItem)}
+                    >
+                      📤 Yangi versiya
+                    </button>
                   )}
                 </div>
               </div>
+
+              {/* Versiyalar tarixi (agar 1 tadan ortiq bo'lsa) */}
+              {viewingItem.versions && viewingItem.versions.length > 1 && (
+                <div
+                  style={{
+                    background: "#f8fafc",
+                    border: "1px solid var(--border-color, #e2e8f0)",
+                    borderRadius: 8,
+                    padding: 12,
+                    marginBottom: 16,
+                  }}
+                >
+                  <div style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", marginBottom: 8 }}>
+                    📑 Barcha TZ versiyalari:
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {viewingItem.versions.map((v) => (
+                      <div
+                        key={v.id || v.version}
+                        className="row between middle"
+                        style={{
+                          background: v.version === viewingItem.version ? "#f0fdf4" : "#fff",
+                          border: "1px solid var(--border-color, #e2e8f0)",
+                          borderRadius: 6,
+                          padding: "6px 10px",
+                          fontSize: 12,
+                        }}
+                      >
+                        <div className="row middle" style={{ gap: 8 }}>
+                          <span className="badge badge-brand" style={{ fontSize: 11 }}>v{v.version}</span>
+                          <span>{v.tz_file_name || "TZ fayli"}</span>
+                          {v.version === viewingItem.version && (
+                            <span className="badge badge-ok" style={{ fontSize: 10 }}>Joriy</span>
+                          )}
+                        </div>
+                        {v.tz_file_url && (
+                          <a
+                            href={v.tz_file_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-xs btn-outline"
+                          >
+                            <IconDownload size={11} /> Yuklab olish
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* H. PM MAXSUS BOSHQARUV PANELI (PM O'ZI VAQT VA MUDDATNI BELGILAYDI) */}
               {isPMOrAdmin && (
