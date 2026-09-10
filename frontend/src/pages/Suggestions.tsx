@@ -406,7 +406,10 @@ export default function Suggestions() {
 
   return (
     <>
-      <PageHead title={<strong>{tx("suggestions.sarlavha_sahifa")}</strong>} />
+      <PageHead
+        title={<strong>{tx("suggestions.sarlavha_sahifa")}</strong>}
+        subtitle={tx("suggestions.sahifa_tavsifi")}
+      />
 
       <div className="content wl sg">
         {!creating && !editing && (

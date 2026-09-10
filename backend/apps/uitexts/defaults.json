@@ -5462,5 +5462,153 @@
  "dashboard.loyihalarga_otish": {
   "value": "Loyihalarni ko'rish",
   "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.sahifa_tavsifi": {
+  "value": "Davrlar va muddatlar kesimidagi umumiy ko'rsatkichlar sarhisobi",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.katak_bosing_tavsif": {
+  "value": "Ko'rsatkich ustiga bosib, tegishli vazifalar ro'yxatini oching",
+  "note": "pages/Dashboard.tsx"
+ },
+ "my_work.sahifa_tavsifi": {
+  "value": "Muddati bo'yicha saralangan shaxsiy vazifalaringiz taxtasi",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.sudrab_otkazish_tavsif": {
+  "value": "Muddatini belgilash uchun kartalarni ustunlar bo'ylab sudrang",
+  "note": "pages/MyWork.tsx"
+ },
+ "projects.sahifa_tavsifi_menejer": {
+  "value": "Barcha loyihalar, ularning borishi va a'zolari nazorati",
+  "note": "pages/Projects.tsx"
+ },
+ "projects.sahifa_tavsifi_ijrochi": {
+  "value": "Siz ishtirok etayotgan loyihalar va ulardagi vazifalaringiz",
+  "note": "pages/Projects.tsx"
+ },
+ "tasks.sahifa_tavsifi": {
+  "value": "Jamoa a'zolarining ish yuklamasi va vazifalari nazorati",
+  "note": "pages/Tasks.tsx"
+ },
+ "tasks.xodim_bosish_tavsif": {
+  "value": "Xodim ustiga bosib, uning barcha vazifalarini ko'ring",
+  "note": "pages/Tasks.tsx"
+ },
+ "calendar.sahifa_tavsifi": {
+  "value": "Loyihalar va vazifalar muddatlarining kalendar rejasi",
+  "note": "pages/Calendar.tsx"
+ },
+ "calendar.kun_bosish_tavsif": {
+  "value": "Kun ustiga bosib, shu kungi muddatlarni ko'ring",
+  "note": "pages/Calendar.tsx"
+ },
+ "review_queue.sahifa_tavsifi": {
+  "value": "Bajarilgan deb topshirilgan ishlarni tekshirish va qabul qilish",
+  "note": "pages/ReviewQueue.tsx"
+ },
+ "messages.sahifa_tavsifi": {
+  "value": "Hamkasblar bilan to'g'ridan-to'g'ri tezkor muloqot va fayl almashish",
+  "note": "pages/Messages.tsx"
+ },
+ "messages.suhbatdosh_tanlang": {
+  "value": "Xodimni tanlang va muloqotni boshlang",
+  "note": "pages/Messages.tsx"
+ },
+ "notifications.sahifa_tavsifi": {
+  "value": "Sizga tegishli barcha yangilanishlar, izohlar va o'zgarishlar",
+  "note": "pages/Notifications.tsx"
+ },
+ "suggestions.sahifa_tavsifi": {
+  "value": "Tizim va jarayonlarni yaxshilash bo'yicha jamoaviy tashabbuslar",
+  "note": "pages/Suggestions.tsx"
+ },
+ "inquiries.sahifa_tavsifi": {
+  "value": "Boshqarma va xodimlardan kelgan rasmiy va texnik murojaatlar",
+  "note": "pages/Inquiries.tsx"
+ },
+ "orders.sahifa_tavsifi": {
+  "value": "Axborot tizimiga o'zgartirish kiritish so'rovlari va texnik topshiriqlar (TZ)",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "people.sahifa_tavsifi": {
+  "value": "Tashkilot jamoasi, mutaxassislar va ularning yo'nalishlari",
+  "note": "pages/People.tsx"
+ },
+ "feed.sahifa_tavsifi": {
+  "value": "Tizimda sodir bo'lgan so'nggi harakatlar va o'zgarishlar xronologiyasi",
+  "note": "pages/Feed.tsx"
+ },
+ "workspaces.sahifa_tavsifi": {
+  "value": "Loyihalarni yo'nalishlar bo'yicha guruhlash va boshqarish",
+  "note": "pages/Workspaces.tsx"
+ },
+ "layout.tooltip_panel": {
+  "value": "Bosh panel — statistika va muddatlar sarhisobi",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_loyihalar": {
+  "value": "Loyihalar — barcha loyihalar va ularning borishi",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_mening_ishim": {
+  "value": "Mening ishim — shaxsiy vazifalar taxtasi",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_buyurtmalar": {
+  "value": "Buyurtmalar — axborot tizimiga TZ so'rovlari",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_vazifalar": {
+  "value": "Vazifalar — jamoa yuklamasi va nazorati",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_jamoa": {
+  "value": "Jamoa — tashkilot xodimlari",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_tekshiruv": {
+  "value": "Tekshiruv navbati — topshirilgan ishlarni qabul qilish",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_xabarlar": {
+  "value": "Xabarlar — xodimlar bilan tezkor muloqot",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_bildirishnomalar": {
+  "value": "Bildirishnomalar — yangilik va ogohlantirishlar",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_taqvim": {
+  "value": "Taqvim — muddatlar va rejalar kalendari",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_takliflar": {
+  "value": "Takliflar — tashabbuslar va ovoz berish",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_sorovlar": {
+  "value": "So'rovlar — rasmiy va texnik murojaatlar",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_tarix": {
+  "value": "Umumiy tarix — barcha harakatlar xronologiyasi",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_admin": {
+  "value": "Admin panel — tizim sozlamalari",
+  "note": "components/Layout.tsx"
+ },
+ "layout.bolim_ish": {
+  "value": "Ish jarayoni",
+  "note": "components/Layout.tsx"
+ },
+ "layout.bolim_muloqot": {
+  "value": "Muloqot",
+  "note": "components/Layout.tsx"
+ },
+ "layout.bolim_boshqaruv": {
+  "value": "Boshqaruv",
+  "note": "components/Layout.tsx"
  }
 }

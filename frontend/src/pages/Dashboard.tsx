@@ -1539,10 +1539,12 @@ export default function Dashboard() {
 
   return (
     <>
-      <PageHead title={name} />
+      <PageHead title={name} subtitle={tx("dashboard.sahifa_tavsifi")} />
 
       <div className="content">
-        <p className="scope-note">{SCOPE_LABELS[d.scope]}</p>
+        <p className="scope-note">
+          {SCOPE_LABELS[d.scope]} · <span style={{ opacity: 0.85 }}>{tx("dashboard.katak_bosing_tavsif")}</span>
+        </p>
 
         <div className="period-grid">
           {d.periods.map((p) => (

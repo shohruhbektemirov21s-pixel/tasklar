@@ -6,7 +6,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { IconCalendar } from "@/components/icons";
 import {
-  Avatar, DUE_PERIODS, DateField, Empty, ErrorMsg, Loading, Pager, Progress,
+  Avatar, DUE_PERIODS, Empty, ErrorMsg, Loading, Pager, Progress,
   SpecialtyTag, fmtDate,
 } from "@/components/ui";
 import { toTask, toUser } from "@/nav";
@@ -77,6 +77,7 @@ export default function Tasks() {
     <>
       <PageHead
         title={<strong>{tx("common.vazifalar")}</strong>}
+        subtitle={tx("tasks.sahifa_tavsifi")}
         /* Sanoq JAMI ijrochilarniki, sahifadagilarniki emas: u jamoaning
            kattaligini aytadi. */
         actions={!!data && <span className="badge">{data.count} {tx("common.kishi")}</span>}
@@ -123,12 +124,6 @@ export default function Tasks() {
                 ))}
               </select>
             </div>
-            <div className="f wl-date">
-              {/* AYNAN shu kunga muddati tushadigan vazifalar: "23-avgustda
-                  kimda nima bor?". Muddati yo'q ish bu kesimda ko'rinmaydi. */}
-              <label htmlFor={`${fid}-d`}>{tx("common.sana")}</label>
-              <DateField id={`${fid}-d`} value={f.due} onChange={(v) => set("due", v)} />
-            </div>
             <div className="f">
               <label htmlFor={`${fid}-t`}>{tx("tasks.vazifa_holati")}</label>
               {/* Standart ko'rinish - TUGALLANMAGAN ish: bajarilgani ro'yxatni
@@ -146,6 +141,13 @@ export default function Tasks() {
             )}
           </div>
         </div>
+
+        {!!rows?.length && (
+          <div className="page-hint-strip">
+            <span className="ico">ℹ</span>
+            <span>{tx("tasks.xodim_bosish_tavsif")}</span>
+          </div>
+        )}
 
         {loading ? <Loading /> : !rows ? null : !rows.length ? (
           <div className="card">

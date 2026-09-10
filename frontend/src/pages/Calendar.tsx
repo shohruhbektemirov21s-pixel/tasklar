@@ -173,6 +173,7 @@ export default function CalendarPage() {
     <>
       <PageHead
         title={<strong>{tx("calendar.taqvim")}</strong>}
+        subtitle={tx("calendar.sahifa_tavsifi")}
       />
 
       <div className="content">

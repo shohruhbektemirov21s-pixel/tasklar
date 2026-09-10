@@ -464,6 +464,35 @@ html, body { transition: background-color .18s ease, color .18s ease; }
    26px sarlavha uchun edi. */
 .page-head { padding: 18px 32px 0; background: transparent; }
 .page-head .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.page-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.page-hint-strip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+.page-hint-strip .ico {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
 /* Amallar qatoridan keyin darrov kontent kelsa - orasi tor bo'lib qolmasin */
 .page-head + .content { padding-top: 14px; }
 

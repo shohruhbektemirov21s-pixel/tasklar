@@ -191,6 +191,7 @@ export default function MyWork() {
     <>
       <PageHead
         title={<strong>{tx("my_work.mening_ishim")}</strong>}
+        subtitle={tx("my_work.sahifa_tavsifi")}
       />
       <div className="content">
         {error ? (
@@ -208,6 +209,10 @@ export default function MyWork() {
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
+              </div>
+              <span className="spacer" />
+              <div className="muted" style={{ fontSize: 12.5, alignSelf: "center" }}>
+                ⇄ {tx("my_work.sudrab_otkazish_tavsif")}
               </div>
             </div>
 

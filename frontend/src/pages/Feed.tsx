@@ -198,8 +198,11 @@ export default function Feed() {
 
   return (
     <>
-      <PageHead title={<strong>{tx("feed.umumiy_tarix")}</strong>}
-                actions={<span className="badge">{total} {tx("feed.yozuv")}</span>} />
+      <PageHead
+        title={<strong>{tx("feed.umumiy_tarix")}</strong>}
+        subtitle={tx("feed.sahifa_tavsifi")}
+        actions={<span className="badge">{total} {tx("feed.yozuv")}</span>}
+      />
       <div className="content">
         <div className="filters">
           <div className="f grow">

@@ -270,15 +270,16 @@ export default function Layout() {
     (NAV_FAMILY[to] || []).some(
       (base) => loc.pathname === base || loc.pathname.startsWith(base + "/"));
 
-  const item = (to: string, icon: React.ReactNode, label: string, count?: number, hot = false) =>
-    itemTo({ to, state: {} }, icon, label, count, hot);
+  const item = (to: string, icon: React.ReactNode, label: string, count?: number, hot = false, title?: string) =>
+    itemTo({ to, state: {} }, icon, label, count, hot, title);
 
   // Ba'zi bo'limlar sessiyadagi raqamni ATAYLAB tozalaydi (masalan
   // «Xabarlar» - suhbatdosh emas, ro'yxat ochilsin), shuning uchun
   // maqsadni to'liq qabul qiladigan variant ham bor.
   const itemTo = (target: NavTarget, icon: React.ReactNode, label: string,
-                  count?: number, hot = false) => (
+                  count?: number, hot = false, title?: string) => (
     <NavLink to={target.to} state={target.state}
+             title={title || label}
              className={({ isActive }) =>
                `nav-item ${isActive || inFamily(target.to) ? "active" : ""}`} end>
       <span className="ico">{icon}</span>
@@ -479,48 +480,42 @@ export default function Layout() {
             <span>{tx("common.teamflow")}</span>
           </Link>
 
+          {/* 1. ASOSIY ISH JARAYONI */}
           <div className="nav-section">
-            {item("/panel", <IconDashboard />, tx("layout.bosh_panel"))}
-            {/* Loyihalar birma-bir sanalmaydi - hammasi shu sahifada, qidiruv
-                bilan. Jamoa kattalashganda yon panel uzayib ketmasin. Ochiq
-                loyihalar ham o'sha yerdagi «Ochiq» tugmasida. */}
-            {/* BIR MANZIL, IKKI NOM. `/loyihalar` menejerga loyiha
-                kartalarini, ijrochiga esa o'z vazifalarini ochadi
-                (`pages/Projects.tsx`) - yorliq ham shunga qarab yoziladi.
-                Ijrochida «Loyihalar» degan yozuv turib, ichidan vazifalar
-                chiqishi chalkash edi. */}
+            <div className="nav-title">{tx("layout.bolim_ish")}</div>
+            {item("/panel", <IconDashboard />, tx("layout.bosh_panel"), undefined, false, tx("layout.tooltip_panel"))}
             {manages || user?.is_sohaviy_boshqarma
-              ? item("/loyihalar", <IconBoard />, tx("common.loyihalar"))
-              : item("/loyihalar", <IconLayers />, tx("common.vazifalar"))}
-            {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Buyurtmalar / TZ) - sohaviy boshqarmada eng asosiy bo'lim */}
-            {user?.is_sohaviy_boshqarma &&
-              item("/buyurtmalar", <IconOrder />, tx("orders.sarlavha"), counts.orders, true)}
-            {/* Jamoaning ishi - kim nima qilayapti. */}
-            {manages && item("/vazifalar", <IconLayers />, tx("common.vazifalar"))}
-            {/* Tashkilot jamoasi / xodimlar - faqat Boshliq akkauntida ko'rinadi */}
-            {user?.is_boss &&
-              item("/jamoa", <IconUsers />, tx("common.jamoa") || "Jamoa")}
+              ? item("/loyihalar", <IconBoard />, tx("common.loyihalar"), undefined, false, tx("layout.tooltip_loyihalar"))
+              : item("/loyihalar", <IconLayers />, tx("common.vazifalar"), undefined, false, tx("layout.tooltip_loyihalar"))}
             {!user?.is_sohaviy_boshqarma &&
-              item("/mening-ishim", <IconTasks />, tx("layout.mening_ishim"), counts.open)}
-            {/* Tekshiruv navbati - ishni QABUL QILADIGAN odamga (menejer va
-                admin). Marshrut ham himoyalangan (`ManagesOnly`), server
-                ham (`review-queue` boshqariladigan loyihalar bo'yicha). */}
-            {manages && item("/tekshiruv", <IconReview />, tx("common.tekshiruv_navbati"), counts.reviews, true)}
-            {/* Ro'yxat ochilsin: sessiyada qolgan suhbatdosh emas. */}
-            {itemTo(toMessages(), <IconChat />, tx("layout.xabarlar"))}
-            {item("/bildirishnomalar", <IconBell />, tx("common.bildirishnomalar"))}
-            {item("/taqvim", <IconCalendar />, tx("layout.taqvim"))}
-            {/* Takliflar - kutilayotgan takliflar soni boshliq uchun ko'rinadi */}
-            {item("/takliflar", <IconIdea />, tx("layout.takliflar"), counts.suggestions, true)}
-            {/* So'rovlar - faqat ruxsat berilganlar, boshliq va adminga */}
-            {user?.has_inquiries_access && item("/sorovlar", <IconInquiry />, tx("layout.sorovlar"))}
-            {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Buyurtmalar / TZ) - PM, boshliq va adminga */}
+              item("/mening-ishim", <IconTasks />, tx("layout.mening_ishim"), counts.open, false, tx("layout.tooltip_mening_ishim"))}
+            {user?.is_sohaviy_boshqarma &&
+              item("/buyurtmalar", <IconOrder />, tx("orders.sarlavha"), counts.orders, true, tx("layout.tooltip_buyurtmalar"))}
             {!user?.is_sohaviy_boshqarma &&
               (user?.can_access_orders || user?.is_platform_admin || user?.is_manager || user?.is_boss) &&
-              item("/buyurtmalar", <IconOrder />, tx("orders.sarlavha"), counts.orders, true)}
+              item("/buyurtmalar", <IconOrder />, tx("orders.sarlavha"), counts.orders, true, tx("layout.tooltip_buyurtmalar"))}
+            {manages && item("/vazifalar", <IconLayers />, tx("common.vazifalar"), undefined, false, tx("layout.tooltip_vazifalar"))}
+            {item("/taqvim", <IconCalendar />, tx("layout.taqvim"), undefined, false, tx("layout.tooltip_taqvim"))}
+          </div>
+
+          {/* 2. MULOQOT VA HAMKORLIK */}
+          <div className="nav-section">
+            <div className="nav-title">{tx("layout.bolim_muloqot")}</div>
+            {itemTo(toMessages(), <IconChat />, tx("layout.xabarlar"), undefined, false, tx("layout.tooltip_xabarlar"))}
+            {item("/bildirishnomalar", <IconBell />, tx("common.bildirishnomalar"), undefined, false, tx("layout.tooltip_bildirishnomalar"))}
+            {manages && item("/tekshiruv", <IconReview />, tx("common.tekshiruv_navbati"), counts.reviews, true, tx("layout.tooltip_tekshiruv"))}
+            {item("/takliflar", <IconIdea />, tx("layout.takliflar"), counts.suggestions, true, tx("layout.tooltip_takliflar"))}
+            {user?.has_inquiries_access && item("/sorovlar", <IconInquiry />, tx("layout.sorovlar"), undefined, false, tx("layout.tooltip_sorovlar"))}
+          </div>
+
+          {/* 3. KUZATUV VA BOSHQARUV */}
+          <div className="nav-section">
+            <div className="nav-title">{tx("layout.bolim_boshqaruv")}</div>
+            {user?.is_boss &&
+              item("/jamoa", <IconUsers />, tx("common.jamoa") || "Jamoa", undefined, false, tx("layout.tooltip_jamoa"))}
+            {item("/tarix", <IconHistory />, tx("layout.umumiy_tarix"), undefined, false, tx("layout.tooltip_tarix"))}
             {user?.is_platform_admin &&
-              item("/admin", <IconSettings />, tx("common.admin_panel") || "Admin panel")}
-            {item("/tarix", <IconHistory />, tx("layout.umumiy_tarix"))}
+              item("/admin", <IconSettings />, tx("common.admin_panel") || "Admin panel", undefined, false, tx("layout.tooltip_admin"))}
           </div>
 
           <div className="sidebar-footer">
@@ -597,22 +592,19 @@ export default function Layout() {
  */
 export function PageHead({
   title,
+  subtitle,
   actions,
   tabs,
   sticky = false,
 }: {
   /** Yuqori panelga chiqadigan nom - matn ham, tugunlar ham bo'ladi */
   title: React.ReactNode;
+  /** Sahifa vazifasini 1 qarashda tushuntiruvchi qisqa izoh / ma'lumot */
+  subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   tabs?: React.ReactNode;
   /**
    * Aylantirilganda sarlavha tepada YOPISHIB qoladi.
-   *
-   * Uzun formalar uchun: «Saqlash» va «Bekor qilish» sarlavhaning o'ng
-   * chetida turadi va pastdagi maydonni to'ldirayotgan odam ularni
-   * ko'rmay qoladi - saqlash uchun har safar tepaga qaytish kerak
-   * bo'lardi. Doim yoqib qo'yilmagan: qolgan sahifalarda sarlavha
-   * bekorga joy egallardi.
    */
   sticky?: boolean;
 }) {
@@ -620,19 +612,15 @@ export function PageHead({
 
   return (
     <>
-      {/* Sahifaning YAGONA `h1` i - u endi panelda turadi. Uya hali
-          yo'q bo'lsa (birinchi chizish) hech narsa chizilmaydi.
-
-          Bosilganda sahifa boshiga qaytadi. Tugmaga aylantirilmadi:
-          ba'zi nomlar ichida havola bor («Loyihalar / Nomi») va havola
-          tugma ichida yaroqsiz bo'lardi. */}
+      {/* Sahifaning YAGONA `h1` i - u endi panelda turadi. */}
       {slot && createPortal(
         <h1 onClick={toPageTop} title={tx("layout.sahifa_boshiga")}>{title}</h1>, slot)}
 
-      {(actions || tabs) && (
+      {(subtitle || actions || tabs) && (
         <div className={`page-head ${sticky ? "sticky" : ""}`}>
-          {actions && (
+          {(subtitle || actions) && (
             <div className="title-row">
+              {subtitle && <div className="page-subtitle">{subtitle}</div>}
               <span className="spacer" />
               {actions}
             </div>

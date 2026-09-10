@@ -71,7 +71,10 @@ export default function Messages() {
 
   return (
     <>
-      <PageHead title={<strong>{tx("messages.xabarlar")}</strong>} />
+      <PageHead
+        title={<strong>{tx("messages.xabarlar")}</strong>}
+        subtitle={tx("messages.sahifa_tavsifi")}
+      />
 
       <div className="content">
         <div className="dm-layout">

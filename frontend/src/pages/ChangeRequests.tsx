@@ -1031,6 +1031,7 @@ export default function ChangeRequests() {
             <strong>{tx("orders.sarlavha")}</strong>
           </span>
         }
+        subtitle={tx("orders.sahifa_tavsifi")}
         actions={
           canCreateOrder ? (
             <button
@@ -1317,8 +1318,8 @@ export default function ChangeRequests() {
         {/* Qidiruv va filtrlar paneli */}
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e2e8f0",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
             borderRadius: 12,
             padding: "12px 16px",
             marginBottom: 20,
@@ -1326,7 +1327,7 @@ export default function ChangeRequests() {
             alignItems: "center",
             gap: 12,
             flexWrap: "wrap",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+            boxShadow: "var(--shadow)",
           }}
         >
           {/* Qidiruv maydoni */}
@@ -1337,7 +1338,7 @@ export default function ChangeRequests() {
                 left: 14,
                 top: "50%",
                 transform: "translateY(-50%)",
-                color: "#94a3b8",
+                color: "var(--muted)",
                 pointerEvents: "none",
                 display: "flex",
                 alignItems: "center",
@@ -1358,11 +1359,11 @@ export default function ChangeRequests() {
                 paddingRight: search ? 34 : 14,
                 height: 42,
                 borderRadius: 8,
-                border: "1px solid #e2e8f0",
-                background: "#fff",
+                border: "1px solid var(--border)",
+                background: "var(--canvas-inset, var(--surface-2))",
                 fontSize: 13,
                 boxSizing: "border-box",
-                color: "#0f172a",
+                color: "var(--text)",
               }}
             />
             {search && (
@@ -1403,13 +1404,13 @@ export default function ChangeRequests() {
                 width: "100%",
                 height: 42,
                 borderRadius: 8,
-                border: "1px solid #e2e8f0",
-                background: "#fff",
+                border: "1px solid var(--border)",
+                background: "var(--surface-2)",
                 fontSize: 13,
                 padding: "0 34px 0 14px",
                 cursor: "pointer",
                 appearance: "none",
-                color: "#334155",
+                color: "var(--text)",
                 fontWeight: 500,
               }}
             >
@@ -1449,13 +1450,13 @@ export default function ChangeRequests() {
                 width: "100%",
                 height: 42,
                 borderRadius: 8,
-                border: "1px solid #e2e8f0",
-                background: "#fff",
+                border: "1px solid var(--border)",
+                background: "var(--surface-2)",
                 fontSize: 13,
                 padding: "0 34px 0 14px",
                 cursor: "pointer",
                 appearance: "none",
-                color: "#334155",
+                color: "var(--text)",
                 fontWeight: 500,
               }}
             >
@@ -1503,13 +1504,13 @@ export default function ChangeRequests() {
                 width: "100%",
                 height: 42,
                 borderRadius: 8,
-                border: "1px solid #e2e8f0",
-                background: "#fff",
+                border: "1px solid var(--border)",
+                background: "var(--surface-2)",
                 fontSize: 13,
                 padding: "0 34px 0 14px",
                 cursor: "pointer",
                 appearance: "none",
-                color: "#334155",
+                color: "var(--text)",
                 fontWeight: 500,
               }}
             >
