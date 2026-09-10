@@ -61,7 +61,7 @@ class RegistrationSuite(TestCase):
         payload = {
             "email": "dasturchi_vali@tizim.uz",
             "full_name": "Valiyev Ali",
-            "specialty": Specialty.BACKEND,
+            "specialty": Specialty.DEVELOPER,
             "password": "murakkab-parol-2026",
             "password_confirm": "murakkab-parol-2026",
         }
@@ -129,7 +129,7 @@ class RegistrationSuite(TestCase):
         specialties = res.json().get("specialties", [])
         sohaviy = next((s for s in specialties if s["value"] == Specialty.SOHAVIY), None)
         self.assertIsNotNone(sohaviy, "Sohaviy boshqarmalar mutaxassisliklar ro'yxatida topilmadi!")
-        self.assertEqual(sohaviy["label"], "Sohaviy boshqarmalar")
+        self.assertIn(sohaviy["label"], ["Boshqarmalar", "Sohaviy boshqarmalar"])
         self.assertEqual(sohaviy["icon"], "[S]")
 
 
@@ -151,7 +151,7 @@ class BuyurtmalarAccessControlSuite(ApiTestCase):
         )
         self.developer_user = make_user(
             "dev_test@sinov.uz", "Dasturchi Botir",
-            role=GlobalRole.DEVELOPER, specialty=Specialty.BACKEND
+            role=GlobalRole.DEVELOPER, specialty=Specialty.DEVELOPER
         )
 
         self.client_sohaviy = self.client_for(self.sohaviy_user)
@@ -257,11 +257,11 @@ class SpecialtyAnalyticsAdminSuite(TestCase):
         cls.dept_finance = Department.objects.create(name="Moliya Boshqarma", code="FIN")
 
         # Turli mutaxassislikdagi xodimlarni yaratish
-        make_user("backend1@tizim.uz", "Backend 1", specialty=Specialty.BACKEND, seniority=Seniority.SENIOR, department=cls.dept_it)
-        make_user("backend2@tizim.uz", "Backend 2", specialty=Specialty.BACKEND, seniority=Seniority.MIDDLE, department=cls.dept_it)
+        make_user("backend1@tizim.uz", "Backend 1", specialty=Specialty.DEVELOPER, seniority=Seniority.SENIOR, department=cls.dept_it)
+        make_user("backend2@tizim.uz", "Backend 2", specialty=Specialty.DEVELOPER, seniority=Seniority.MIDDLE, department=cls.dept_it)
         make_user("sohaviy1@tizim.uz", "Sohaviy 1", role=GlobalRole.SOHAVIY, specialty=Specialty.SOHAVIY, department=cls.dept_finance)
         make_user("sohaviy2@tizim.uz", "Sohaviy 2", role=GlobalRole.SOHAVIY, specialty=Specialty.SOHAVIY)
-        make_user("qa1@tizim.uz", "QA 1", specialty=Specialty.QA, seniority=Seniority.JUNIOR)
+        make_user("qa1@tizim.uz", "QA 1", specialty=Specialty.OTHER, seniority=Seniority.JUNIOR)
 
     def test_admin_can_access_specialties_analytics_view(self):
         """Platforma admini Mutaxassisliklar tahlili sahifasini 200 OK bilan ochishi shart."""
@@ -297,8 +297,8 @@ class SpecialtyAnalyticsAdminSuite(TestCase):
         # Mutaxassisliklar guruhlanishi
         spec_stats = {item["code"]: item for item in ctx["specialty_stats"]}
         self.assertIn(Specialty.SOHAVIY, spec_stats)
-        self.assertIn(Specialty.BACKEND, spec_stats)
-        self.assertEqual(spec_stats[Specialty.BACKEND]["count"], 4)
+        self.assertIn(Specialty.DEVELOPER, spec_stats)
+        self.assertEqual(spec_stats[Specialty.DEVELOPER]["count"], 4)
         self.assertEqual(spec_stats[Specialty.SOHAVIY]["count"], 2)
 
     def test_analytics_department_and_seniority_distribution(self):
@@ -337,7 +337,7 @@ class SecurityAndIntegritySuite(TestCase):
 
     def test_user_properties_integrity(self):
         """User modelidagi is_sohaviy_boshqarma va can_access_orders mantiqiy to'g'riligi."""
-        u1 = make_user("soh_role@sinov.uz", role=GlobalRole.SOHAVIY, specialty=Specialty.ANALYST)
+        u1 = make_user("soh_role@sinov.uz", role=GlobalRole.SOHAVIY, specialty=Specialty.OTHER)
         self.assertTrue(u1.is_sohaviy_boshqarma)
         self.assertTrue(u1.can_access_orders)
 
@@ -348,7 +348,7 @@ class SecurityAndIntegritySuite(TestCase):
         u3 = make_user("admin_acc@sinov.uz", role=GlobalRole.ADMIN)
         self.assertTrue(u3.can_access_orders)
 
-        u4 = make_user("dev_acc@sinov.uz", role=GlobalRole.DEVELOPER, specialty=Specialty.DEVOPS)
+        u4 = make_user("dev_acc@sinov.uz", role=GlobalRole.DEVELOPER, specialty=Specialty.DEVELOPER)
         self.assertFalse(u4.is_sohaviy_boshqarma)
         self.assertFalse(u4.can_access_orders)
 
@@ -374,7 +374,7 @@ class OrderNotificationSuite(ApiTestCase):
         self.sohaviy1 = make_user("sohaviy1@boshqarma.uz", role=GlobalRole.SOHAVIY, specialty=Specialty.SOHAVIY)
         self.sohaviy2 = make_user("sohaviy2@boshqarma.uz", role=GlobalRole.SOHAVIY, specialty=Specialty.SOHAVIY)
         self.admin = make_user("admin_notif@boshqarma.uz", role=GlobalRole.ADMIN)
-        self.dev = make_user("dev_notif@boshqarma.uz", role=GlobalRole.DEVELOPER, specialty=Specialty.BACKEND)
+        self.dev = make_user("dev_notif@boshqarma.uz", role=GlobalRole.DEVELOPER, specialty=Specialty.DEVELOPER)
 
     def test_sidebar_counts_includes_orders_for_sohaviy_profile(self):
         """Sohaviy boshqarma profiliga /api/counts/ da faol buyurtmalar soni (orders) qaytishi shart."""

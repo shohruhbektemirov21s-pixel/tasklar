@@ -1,4 +1,4 @@
-﻿from rest_framework.test import APIClient
+from rest_framework.test import APIClient
 from apps.accounts.models import GlobalRole, Specialty
 from apps.projects.models import Project, ProjectMember, ProjectRole
 from apps.tasks.models import Task
@@ -15,7 +15,7 @@ class TaskSubtaskTests(ApiTestCase):
         )
         self.dev_user = make_user(
             "dev_test@teamflow.uz", "Dasturchi",
-            role=GlobalRole.DEVELOPER, specialty=Specialty.BACKEND
+            role=GlobalRole.DEVELOPER, specialty=Specialty.DEVELOPER
         )
         self.workspace = Workspace.objects.create(name="Test Maydon", owner=self.pm_user)
         self.project = Project.objects.create(

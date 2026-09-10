@@ -20,7 +20,7 @@ class SpecialtyAPITestCase(APITestCase):
         res = self.client.get("/api/auth/specialties/")
         self.assertEqual(res.status_code, 200)
         self.assertIn("specialties", res.data)
-        self.assertTrue(len(res.data["specialties"]) >= 12)
+        self.assertTrue(len(res.data["specialties"]) >= 4)
 
     def test_create_specialty_as_admin(self):
         self.client.force_authenticate(user=self.admin_user)

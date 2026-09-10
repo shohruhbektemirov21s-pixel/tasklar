@@ -13,7 +13,7 @@ from apps.projects.models import Project, ProjectMember, ProjectRole
 from apps.workspaces.models import Workspace
 
 
-def make_user(email, name="Sinov Foydalanuvchi", role="DEVELOPER", specialty="BACKEND", **kw):
+def make_user(email, name="Sinov Foydalanuvchi", role="DEVELOPER", specialty="DEVELOPER", **kw):
     return User.objects.create_user(
         email=email, password="sinov-parol-12345", full_name=name,
         global_role=role, specialty=specialty, **kw)

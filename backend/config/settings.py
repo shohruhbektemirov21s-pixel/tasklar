@@ -294,6 +294,20 @@ CSRF_TRUSTED_ORIGINS = env_list(
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 
+# ---------------------------------------------------------------- Security Headers & Hardening
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+
+# Ishlab chiqarish (HTTPS) rejimida qo'llanadigan xavfsizlik cheklovlari.
+# DEBUG=1 bo'lganda lokal HTTP (http://localhost:8010) ishlashi uchun o'chiq turadi.
+SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", not DEBUG)
+SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
+SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000" if not DEBUG else "0"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", not DEBUG)
+SECURE_HSTS_PRELOAD = env_bool("SECURE_HSTS_PRELOAD", not DEBUG)
+
 # ---------------------------------------------------------------- Real-time
 # Bildirishnoma va chat WebSocket orqali yetkaziladi. Kanal qatlami Redis da (DB 0):
 # bir nechta backend jarayoni bo'lsa ham xabar hammaga yetib boradi.

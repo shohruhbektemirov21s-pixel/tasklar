@@ -19,8 +19,8 @@ backend/.env.local
 # Konteyner ichidagi jarayon yiqilganda qoladigan xotira dampi. 1 GB dan
 # oshadi, o'qib bo'lmaydi (root, 600) va Vite ni ham, Docker build
 # kontekstini ham behuda og'irlashtiradi.
-core
-core.*
+/core
+/core.*
 
 # `.env` ning qo'lda olingan zaxiralari - ichida parollar bor.
 .env.bak*

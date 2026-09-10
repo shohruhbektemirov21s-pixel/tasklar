@@ -177,7 +177,7 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
     # `validate_email` da - u loginga mos qoidalarni qo'llaydi.
     email = serializers.CharField(max_length=254)
     password = serializers.CharField(write_only=True, min_length=8)
-    specialty = serializers.CharField(required=False, default="BACKEND")
+    specialty = serializers.CharField(required=False, default="DEVELOPER")
     seniority = serializers.ChoiceField(choices=Seniority.choices, required=False,
                                         default=Seniority.JUNIOR)
     global_role = serializers.ChoiceField(choices=GlobalRole.choices, required=False,

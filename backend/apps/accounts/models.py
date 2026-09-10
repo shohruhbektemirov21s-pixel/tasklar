@@ -93,7 +93,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     global_role = models.CharField("Tizim roli", max_length=20,
                                    choices=GlobalRole.choices, default=GlobalRole.DEVELOPER)
     specialty = models.CharField("Mutaxassislik", max_length=20, choices=Specialty.choices,
-                                 default=Specialty.BACKEND,
+                                 default=Specialty.DEVELOPER,
                                  help_text="Royxatdan otishda tanlanadi va vazifa taqsimotiga tasir qiladi")
     seniority = models.CharField("Daraja", max_length=20, choices=Seniority.choices,
                                  default=Seniority.JUNIOR)

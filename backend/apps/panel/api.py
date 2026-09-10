@@ -763,8 +763,20 @@ def due_board(qs, ctx, params):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def my_work(request):
-    """Menga biriktirilgan barcha vazifalar - status bo'yicha guruhlangan."""
+    """Menga biriktirilgan barcha vazifalar - status bo'yicha guruhlangan.
+    
+    KESH: Redis da 15 soniya saqlanadi (baza yuklamasini kamaytirish uchun).
+    `?fresh=1` keshni chetlab o'tadi.
+    """
+    from apps.panel.cache import MY_WORK_TTL, my_work_key
+
     user = request.user
+    query_str = request.META.get("QUERY_STRING", "")
+    if not request.query_params.get("fresh"):
+        cached = django_cache.get(my_work_key(user.id, query_str))
+        if cached is not None:
+            return Response(cached)
+
     ctx = {"request": request}
     qs = (Task.objects.for_display().filter(Exists(TaskAssignment.objects.filter(
               task=OuterRef("pk"), user=user, is_active=True)),
@@ -820,12 +832,14 @@ def my_work(request):
     on_board = {t["project"] for g in groups for t in g["tasks"]}
     managed = (Project.objects.filter(managed_projects_q(user), id__in=on_board)
                .values_list("id", flat=True) if on_board else [])
-    return Response({
+    data = {
         "groups": groups,
         "projects": [{"id": p.id, "name": p.name, "key": p.key, "color": p.color}
                      for p in projects],
         "managed_projects": sorted(managed),
-    })
+    }
+    django_cache.set(my_work_key(user.id, query_str), data, timeout=MY_WORK_TTL)
+    return Response(data)
 
 
 @api_view(["GET"])

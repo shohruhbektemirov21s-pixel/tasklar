@@ -37,7 +37,7 @@ class RegistrationAndAuthSeniorQATest(ApiTestCase):
         payload = {
             "email": "yangi.backendchi@teamflow.uz",
             "full_name": "Aziz Backendchi",
-            "specialty": Specialty.BACKEND,
+            "specialty": Specialty.DEVELOPER,
             "seniority": Seniority.MIDDLE,
             "years_experience": 3,
             "password": "murakkab-parol-2026",
@@ -50,8 +50,8 @@ class RegistrationAndAuthSeniorQATest(ApiTestCase):
 
         user_data = r.data["user"]
         self.assertEqual(user_data["email"], "yangi.backendchi@teamflow.uz")
-        self.assertEqual(user_data["specialty"], Specialty.BACKEND)
-        self.assertEqual(user_data["job_title"], "Backend dasturchi")
+        self.assertEqual(user_data["specialty"], Specialty.DEVELOPER)
+        self.assertEqual(user_data["job_title"], "Dasturchi")
         self.assertEqual(user_data["global_role"], GlobalRole.DEVELOPER)
 
         # Bazadagi foydalanuvchi holatini tekshirish
@@ -108,7 +108,7 @@ class RegistrationAndAuthSeniorQATest(ApiTestCase):
         payload = {
             "email": self.dev.email,
             "full_name": "Takroriy Foydalanuvchi",
-            "specialty": Specialty.FRONTEND,
+            "specialty": Specialty.DEVELOPER,
             "password": "kuchli-parol-2026",
             "password_confirm": "kuchli-parol-2026",
         }
@@ -121,7 +121,7 @@ class RegistrationAndAuthSeniorQATest(ApiTestCase):
         payload = {
             "email": self.dev.email.upper(),
             "full_name": "Katta Harfli Email",
-            "specialty": Specialty.FRONTEND,
+            "specialty": Specialty.DEVELOPER,
             "password": "kuchli-parol-2026",
             "password_confirm": "kuchli-parol-2026",
         }
@@ -134,7 +134,7 @@ class RegistrationAndAuthSeniorQATest(ApiTestCase):
         payload = {
             "email": "mos.emas@teamflow.uz",
             "full_name": "Mos Emas",
-            "specialty": Specialty.DEVOPS,
+            "specialty": Specialty.DEVELOPER,
             "password": "birinchi-parol-1234",
             "password_confirm": "ikkinchi-parol-5678",
         }
@@ -147,7 +147,7 @@ class RegistrationAndAuthSeniorQATest(ApiTestCase):
         payload = {
             "email": "qisqa@teamflow.uz",
             "full_name": "Qisqa Parol",
-            "specialty": Specialty.QA,
+            "specialty": Specialty.OTHER,
             "password": "123",
             "password_confirm": "123",
         }

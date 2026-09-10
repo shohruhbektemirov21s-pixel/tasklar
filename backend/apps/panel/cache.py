@@ -21,8 +21,10 @@ harakati darrov ko'rinadi: men topshirdim -> navbat raqami oshdi.
 from apps.core.cache import (
     DASHBOARD_TTL,
     SIDEBAR_TTL,
+    MY_WORK_TTL,
     dashboard_key,
     sidebar_key,
+    my_work_key,
     invalidate_panel,
     invalidate_panel_many,
 )
@@ -30,8 +32,10 @@ from apps.core.cache import (
 __all__ = [
     "DASHBOARD_TTL",
     "SIDEBAR_TTL",
+    "MY_WORK_TTL",
     "dashboard_key",
     "sidebar_key",
+    "my_work_key",
     "invalidate_panel",
     "invalidate_panel_many",
 ]

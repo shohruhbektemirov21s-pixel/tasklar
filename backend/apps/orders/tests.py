@@ -39,7 +39,7 @@ class OrdersSeniorDevTests(ApiTestCase):
             "dev_test@teamflow.uz",
             "Jasur Dasturchi",
             role=GlobalRole.DEVELOPER,
-            specialty=Specialty.BACKEND,
+            specialty=Specialty.DEVELOPER,
         )
 
         # Ish maydoni va loyiha

@@ -42,7 +42,7 @@ def run_seed():
             "full_name": "Jasur Backendchi",
             "job_title": "Senior Backend Dasturchi",
             "global_role": GlobalRole.DEVELOPER,
-            "specialty": Specialty.BACKEND,
+            "specialty": Specialty.DEVELOPER,
             "seniority": Seniority.SENIOR,
             "years_experience": 4,
             "skills": "Python, Django, PostgreSQL, Db2, Docker, Redis",
@@ -53,7 +53,7 @@ def run_seed():
             "full_name": "Malika Frontendchi",
             "job_title": "Middle Frontend Dasturchi",
             "global_role": GlobalRole.DEVELOPER,
-            "specialty": Specialty.FRONTEND,
+            "specialty": Specialty.DEVELOPER,
             "seniority": Seniority.MIDDLE,
             "years_experience": 3,
             "skills": "TypeScript, React, Vite, CSS, Redux, HTML5",
@@ -120,7 +120,7 @@ def run_seed():
         project.manager = pm
         project.created_by = boss
         project.save()
-    project.needed_specialties = [Specialty.BACKEND, Specialty.FRONTEND, Specialty.PM]
+    project.needed_specialties = [Specialty.DEVELOPER, Specialty.PM]
     project.save()
     print(f"Loyiha: {project.name} ({project.key})")
 
@@ -142,7 +142,7 @@ def run_seed():
             "status": TaskStatus.IN_PROGRESS,
             "priority": TaskPriority.HIGH,
             "task_type": TaskType.CHORE,
-            "required_specialty": Specialty.BACKEND,
+            "required_specialty": Specialty.DEVELOPER,
             "created_by": pm,
             "reviewer": pm,
             "assignee": dev_backend,
@@ -155,7 +155,7 @@ def run_seed():
             "status": TaskStatus.IN_PROGRESS,
             "priority": TaskPriority.HIGH,
             "task_type": TaskType.FEATURE,
-            "required_specialty": Specialty.FRONTEND,
+            "required_specialty": Specialty.DEVELOPER,
             "created_by": pm,
             "reviewer": pm,
             "assignee": dev_frontend,
@@ -168,7 +168,7 @@ def run_seed():
             "status": TaskStatus.IN_REVIEW,
             "priority": TaskPriority.URGENT,
             "task_type": TaskType.FEATURE,
-            "required_specialty": Specialty.BACKEND,
+            "required_specialty": Specialty.DEVELOPER,
             "created_by": pm,
             "reviewer": boss,
             "assignee": dev_backend,
@@ -181,7 +181,7 @@ def run_seed():
             "status": TaskStatus.DONE,
             "priority": TaskPriority.MEDIUM,
             "task_type": TaskType.FEATURE,
-            "required_specialty": Specialty.FRONTEND,
+            "required_specialty": Specialty.DEVELOPER,
             "created_by": pm,
             "reviewer": pm,
             "assignee": dev_frontend,
@@ -194,7 +194,7 @@ def run_seed():
             "status": TaskStatus.TODO,
             "priority": TaskPriority.MEDIUM,
             "task_type": TaskType.FEATURE,
-            "required_specialty": Specialty.BACKEND,
+            "required_specialty": Specialty.DEVELOPER,
             "created_by": pm,
             "reviewer": pm,
             "assignee": dev_backend,
@@ -208,7 +208,7 @@ def run_seed():
             "blocked_reason": "Backend fayllar versiyalash API si hali to'liq yakunlanmagan",
             "priority": TaskPriority.LOW,
             "task_type": TaskType.FEATURE,
-            "required_specialty": Specialty.FRONTEND,
+            "required_specialty": Specialty.DEVELOPER,
             "created_by": pm,
             "reviewer": pm,
             "assignee": dev_frontend,

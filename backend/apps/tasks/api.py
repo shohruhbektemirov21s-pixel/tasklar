@@ -406,6 +406,13 @@ class TaskViewSet(viewsets.ModelViewSet):
         log_field_changes(request.user, task,
                           {str(task._meta.get_field("due_date").verbose_name): (before, due)})
         live_task(task, "updated", request.user, title=task.title[:120])
+        from apps.core.cache import invalidate_panel_many
+        uids = [u.id for u in task.assignee_list]
+        if task.project.manager_id:
+            uids.append(task.project.manager_id)
+        if request.user and request.user.id:
+            uids.append(request.user.id)
+        invalidate_panel_many(uids)
         return Response(TaskDetailSerializer(
             task, context=self.get_serializer_context()).data)
 
