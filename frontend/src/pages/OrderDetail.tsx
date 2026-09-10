@@ -206,6 +206,16 @@ export default function OrderDetail() {
     setClaimModalOpen(true);
   }
 
+  function applyQuickDeadline(days: number, durationText: string) {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    const iso = d.toISOString().split("T")[0];
+    setClaimDeadlineInput(iso);
+    if (!claimDuration.trim()) {
+      setClaimDuration(durationText);
+    }
+  }
+
   async function handleClaimSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
@@ -945,23 +955,44 @@ export default function OrderDetail() {
         <div className="modal-overlay" onClick={() => setVersionModal(false)}>
           <div
             className="modal-card"
-            style={{ maxWidth: 460, width: "95%", borderRadius: 12 }}
+            style={{ maxWidth: 480, width: "95%" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header row between middle" style={{ padding: "14px 18px" }}>
-              <strong style={{ fontSize: 14 }}>Yangi TZ versiyasi yuklash</strong>
+            <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
+              <div className="row middle" style={{ gap: 10 }}>
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 8,
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 16,
+                  }}
+                >
+                  📄
+                </div>
+                <strong style={{ fontSize: 15 }}>Yangi TZ versiyasi yuklash</strong>
+              </div>
               <button
                 type="button"
                 className="btn btn-xs btn-ghost"
                 onClick={() => setVersionModal(false)}
+                style={{ width: 28, height: 28, padding: 0 }}
+                title={tx("common.bekor_qilish")}
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleUploadVersionSubmit}>
-              <div className="modal-body" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 12 }}>Yangi TZ fayli (PDF/DOCX/Rasm) *</label>
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6 }}>
+                    Yangi TZ fayli (PDF/DOCX/Rasm) <span style={{ color: "var(--danger)" }}>*</span>
+                  </label>
                   <input
                     type="file"
                     required
@@ -969,27 +1000,30 @@ export default function OrderDetail() {
                   />
                 </div>
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 12 }}>O'zgarishlar tavsifi (sababi) *</label>
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6 }}>
+                    O'zgarishlar tavsifi (sababi) <span style={{ color: "var(--danger)" }}>*</span>
+                  </label>
                   <textarea
                     rows={3}
                     required
+                    className="textarea"
                     placeholder="Ushbu versiyada qanday o'zgarishlar kiritildi..."
                     value={versionNote}
                     onChange={(e) => setVersionNote(e.target.value)}
                   />
                 </div>
               </div>
-              <div className="modal-footer row end" style={{ padding: "12px 18px", gap: 8 }}>
+              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
-                  className="btn btn-sm btn-ghost"
+                  className="btn btn-ghost"
                   onClick={() => setVersionModal(false)}
                 >
-                  Bekor qilish
+                  {tx("common.bekor_qilish")}
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-sm btn-primary"
+                  className="btn btn-primary"
                   disabled={versionSubmitting || !versionFile}
                 >
                   {versionSubmitting ? "Yuklanmoqda..." : "Yuborish"}
@@ -1005,14 +1039,51 @@ export default function OrderDetail() {
         <div className="modal-overlay" onClick={() => !claimSubmitting && setClaimModalOpen(false)}>
           <div
             className="modal-card"
-            style={{ maxWidth: 520, width: "95%", borderRadius: 12 }}
+            style={{ maxWidth: 540, width: "95%" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header row between middle" style={{ padding: "14px 18px" }}>
-              <div>
-                <strong style={{ fontSize: 14 }}>{tx("orders.claim_modal_title")}</strong>
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                  {item.request_no} — {item.project_detail?.name || item.system_name}
+            <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
+              <div className="row middle" style={{ gap: 12 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "rgba(16, 185, 129, 0.14)",
+                    color: "var(--success)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    flexShrink: 0,
+                  }}
+                >
+                  ✓
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>
+                    {tx("orders.claim_modal_title")}
+                  </div>
+                  <div className="row middle" style={{ gap: 6, marginTop: 3 }}>
+                    <span
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontWeight: 600,
+                        fontSize: 11.5,
+                        padding: "1px 7px",
+                        background: "var(--surface-3)",
+                        borderRadius: 4,
+                        color: "var(--text)",
+                      }}
+                    >
+                      {item.request_no}
+                    </span>
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>•</span>
+                    <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
+                      {item.project_detail?.name || item.system_name}
+                    </span>
+                  </div>
                 </div>
               </div>
               <button
@@ -1020,40 +1091,105 @@ export default function OrderDetail() {
                 className="btn btn-xs btn-ghost"
                 onClick={() => setClaimModalOpen(false)}
                 disabled={claimSubmitting}
+                style={{ fontSize: 15, width: 30, height: 30, padding: 0 }}
+                title={tx("common.bekor_qilish")}
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleClaimSubmit}>
-              <div className="modal-body" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
                 <div
                   style={{
-                    background: "var(--surface-2, #f8fafc)",
-                    border: "1px solid var(--border-color, #e2e8f0)",
-                    borderRadius: 8,
-                    padding: "8px 12px",
-                    fontSize: 12,
-                    color: "var(--text)",
-                    lineHeight: 1.4,
+                    background: "var(--accent-soft)",
+                    border: "1px solid rgba(106, 141, 255, 0.2)",
+                    borderRadius: 10,
+                    padding: "10px 14px",
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "flex-start",
                   }}
                 >
-                  {tx("orders.claim_modal_desc")}
+                  <span style={{ fontSize: 16, lineHeight: 1.2 }}>💡</span>
+                  <div style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.45 }}>
+                    {tx("orders.claim_modal_desc")}
+                  </div>
                 </div>
 
                 {item.due_date && (
-                  <div style={{ fontSize: 12, color: "var(--text)", background: "var(--surface-2, #f8fafc)", padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border-color, #e2e8f0)" }}>
-                    <strong>{tx("orders.soralgan_muddat")}:</strong> {fmtDate(item.due_date)}
+                  <div
+                    style={{
+                      background: "var(--attention-soft)",
+                      border: "1px solid rgba(251, 191, 36, 0.3)",
+                      borderRadius: 10,
+                      padding: "8px 12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      fontSize: 12.5,
+                    }}
+                  >
+                    <div className="row middle" style={{ gap: 8 }}>
+                      <span>📅</span>
+                      <span style={{ color: "var(--muted)" }}>{tx("orders.soralgan_muddat")}:</span>
+                      <strong style={{ color: "var(--text)" }}>{fmtDate(item.due_date)}</strong>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost"
+                      style={{ fontSize: 11.5, color: "var(--accent)", fontWeight: 600 }}
+                      onClick={() => {
+                        const d = item.due_date?.split("T")[0];
+                        if (d) setClaimDeadlineInput(d);
+                      }}
+                    >
+                      {tx("orders.claim_use_client_date")}
+                    </button>
                   </div>
                 )}
 
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 12, display: "block", marginBottom: 4 }}>
-                    {tx("orders.claim_deadline_label")} *
-                  </label>
+                  <div className="row between middle" style={{ marginBottom: 6 }}>
+                    <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0 }}>
+                      {tx("orders.claim_deadline_label")} <span style={{ color: "var(--danger)" }}>*</span>
+                    </label>
+                    <div className="row middle" style={{ gap: 4 }}>
+                      <span style={{ fontSize: 11, color: "var(--muted)", marginRight: 2 }}>{tx("orders.claim_quick_label")}</span>
+                      <button
+                        type="button"
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(3, tx("orders.claim_3days_duration"))}
+                      >
+                        {tx("orders.claim_3days")}
+                      </button>
+                      <button
+                        type="button"
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(7, tx("orders.claim_1week_duration"))}
+                      >
+                        {tx("orders.claim_1week")}
+                      </button>
+                      <button
+                        type="button"
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(14, tx("orders.claim_2weeks_duration"))}
+                      >
+                        {tx("orders.claim_2weeks")}
+                      </button>
+                      <button
+                        type="button"
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(30, tx("orders.claim_1month_duration"))}
+                      >
+                        {tx("orders.claim_1month")}
+                      </button>
+                    </div>
+                  </div>
                   <input
                     type="date"
                     required
+                    min={new Date().toISOString().split("T")[0]}
                     className="input"
                     value={claimDeadlineInput}
                     onChange={(e) => setClaimDeadlineInput(e.target.value)}
@@ -1062,7 +1198,7 @@ export default function OrderDetail() {
                 </div>
 
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 12, display: "block", marginBottom: 4 }}>
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_duration_label")}
                   </label>
                   <input
@@ -1073,10 +1209,13 @@ export default function OrderDetail() {
                     onChange={(e) => setClaimDuration(e.target.value)}
                     style={{ width: "100%" }}
                   />
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                    {tx("orders.claim_duration_hint")}
+                  </div>
                 </div>
 
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 12, display: "block", marginBottom: 4 }}>
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_dev_label")}
                   </label>
                   <select
@@ -1092,10 +1231,13 @@ export default function OrderDetail() {
                       </option>
                     ))}
                   </select>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                    {tx("orders.claim_dev_hint")}
+                  </div>
                 </div>
 
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 12, display: "block", marginBottom: 4 }}>
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_notes_label")}
                   </label>
                   <textarea
@@ -1104,27 +1246,45 @@ export default function OrderDetail() {
                     placeholder={tx("orders.claim_notes_placeholder")}
                     value={claimNotesInput}
                     onChange={(e) => setClaimNotesInput(e.target.value)}
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", resize: "vertical" }}
                   />
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                    {tx("orders.claim_notes_hint")}
+                  </div>
                 </div>
               </div>
 
-              <div className="modal-footer row end" style={{ padding: "12px 18px", gap: 8 }}>
+              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
-                  className="btn btn-sm btn-ghost"
+                  className="btn btn-ghost"
                   onClick={() => setClaimModalOpen(false)}
                   disabled={claimSubmitting}
                 >
-                  Bekor qilish
+                  {tx("common.bekor_qilish")}
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-sm btn-primary"
-                  style={{ background: "#059669", borderColor: "#059669" }}
+                  className="btn btn-ok"
                   disabled={claimSubmitting || !claimDeadlineInput}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontWeight: 600,
+                  }}
                 >
-                  {claimSubmitting ? tx("orders.claim_submitting") : tx("orders.claim_submit_btn")}
+                  {claimSubmitting ? (
+                    <>
+                      <span className="spinner-xs" />
+                      <span>{tx("orders.claim_submitting")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>✓</span>
+                      <span>{tx("orders.claim_submit_btn")}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -1137,14 +1297,32 @@ export default function OrderDetail() {
         <div className="modal-overlay" onClick={() => !rejectSubmitting && setRejectModalOpen(false)}>
           <div
             className="modal-card"
-            style={{ maxWidth: 500, width: "95%", borderRadius: 12 }}
+            style={{ maxWidth: 500, width: "95%" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header row between middle" style={{ padding: "14px 18px" }}>
-              <div>
-                <strong style={{ fontSize: 14 }}>Kamchilik yoki e'tiroz sababini kiriting</strong>
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                  {item.request_no} — {item.project_detail?.name || item.system_name}
+            <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
+              <div className="row middle" style={{ gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "var(--danger-soft)",
+                    color: "var(--danger)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 16,
+                    flexShrink: 0,
+                  }}
+                >
+                  ⚠️
+                </div>
+                <div>
+                  <strong style={{ fontSize: 15, color: "var(--text)" }}>Kamchilik yoki e'tiroz sababini kiriting</strong>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                    {item.request_no} — {item.project_detail?.name || item.system_name}
+                  </div>
                 </div>
               </div>
               <button
@@ -1152,30 +1330,32 @@ export default function OrderDetail() {
                 className="btn btn-xs btn-ghost"
                 onClick={() => setRejectModalOpen(false)}
                 disabled={rejectSubmitting}
+                style={{ width: 28, height: 28, padding: 0 }}
+                title={tx("common.bekor_qilish")}
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleRejectSubmit}>
-              <div className="modal-body" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div
                   style={{
-                    background: "rgba(239, 68, 68, 0.08)",
+                    background: "var(--danger-soft)",
                     border: "1px solid rgba(239, 68, 68, 0.25)",
-                    borderRadius: 8,
-                    padding: "8px 12px",
-                    fontSize: 12,
-                    color: "#b91c1c",
-                    lineHeight: 1.4,
+                    borderRadius: 10,
+                    padding: "10px 14px",
+                    fontSize: 12.5,
+                    color: "var(--danger)",
+                    lineHeight: 1.45,
                   }}
                 >
                   Buyurtmachi tomonidan aniqlangan kamchiliklar qayd etiladi va vazifa qayta ishlash uchun qaytariladi.
                 </div>
 
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 12, display: "block", marginBottom: 4 }}>
-                    E'tiroz va kamchilik tavsifi *
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                    E'tiroz va kamchilik tavsifi <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
                   <textarea
                     rows={4}
@@ -1184,23 +1364,23 @@ export default function OrderDetail() {
                     placeholder="Qaysi qismda kamchilik yoki xatolik aniqlandi..."
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", resize: "vertical" }}
                   />
                 </div>
               </div>
 
-              <div className="modal-footer row end" style={{ padding: "12px 18px", gap: 8 }}>
+              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
-                  className="btn btn-sm btn-ghost"
+                  className="btn btn-ghost"
                   onClick={() => setRejectModalOpen(false)}
                   disabled={rejectSubmitting}
                 >
-                  Bekor qilish
+                  {tx("common.bekor_qilish")}
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-sm btn-danger"
+                  className="btn btn-danger"
                   disabled={rejectSubmitting || !rejectReason.trim()}
                 >
                   {rejectSubmitting ? "Yuborilmoqda..." : "Kamchilik bilan qaytarish"}

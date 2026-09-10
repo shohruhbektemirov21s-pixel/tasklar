@@ -2055,6 +2055,58 @@
   "value": "Qabul qilinmoqda...",
   "note": "pages/ChangeRequests.tsx"
  },
+ "orders.claim_quick_label": {
+  "value": "Tezkor muddat:",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_use_client_date": {
+  "value": "Mijoz muddatini tanlash",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_duration_hint": {
+  "value": "Mijozga ham ko'rinadi (taxminiy ish hajmi yoki muddati)",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_dev_hint": {
+  "value": "Keyinroq ham boshqa dasturchiga o'tkazish yoki biriktirish mumkin",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_notes_hint": {
+  "value": "Dasturchi yoki buyurtmachi uchun ko'rsatma va muhim eslatmalar",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_3days": {
+  "value": "+3 kun",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_1week": {
+  "value": "+1 hafta",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_2weeks": {
+  "value": "+2 hafta",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_1month": {
+  "value": "+1 oy",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_3days_duration": {
+  "value": "3 ish kuni",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_1week_duration": {
+  "value": "1 hafta",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_2weeks_duration": {
+  "value": "2 hafta",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.claim_1month_duration": {
+  "value": "1 oy",
+  "note": "pages/OrderDetail.tsx"
+ },
  "orders.davom_ettiriladigan": {
   "value": "Davom ettiriladigan",
   "note": "pages/ChangeRequests.tsx"

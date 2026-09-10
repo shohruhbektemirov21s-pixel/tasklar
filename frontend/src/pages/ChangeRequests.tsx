@@ -808,6 +808,16 @@ export default function ChangeRequests() {
     setClaimNotes("");
   };
 
+  const applyQuickDeadline = (days: number, durationText: string) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    const iso = d.toISOString().split("T")[0];
+    setClaimDeadline(iso);
+    if (!claimDuration.trim()) {
+      setClaimDuration(durationText);
+    }
+  };
+
   const handleClaimSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!claimModalItem) return;
@@ -2286,55 +2296,154 @@ export default function ChangeRequests() {
             style={{ maxWidth: 540, width: "95%" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header row between middle">
-              <div className="row middle" style={{ gap: 8 }}>
-                <span style={{ fontSize: 20 }}>📌</span>
+            <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
+              <div className="row middle" style={{ gap: 12 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "rgba(16, 185, 129, 0.14)",
+                    color: "var(--success)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    flexShrink: 0,
+                  }}
+                >
+                  ✓
+                </div>
                 <div>
-                  <strong style={{ fontSize: 15 }}>{tx("orders.claim_modal_title")}</strong>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                    {claimModalItem.request_no} — {claimModalItem.project_detail?.name || claimModalItem.system_name}
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>
+                    {tx("orders.claim_modal_title")}
+                  </div>
+                  <div className="row middle" style={{ gap: 6, marginTop: 3 }}>
+                    <span
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontWeight: 600,
+                        fontSize: 11.5,
+                        padding: "1px 7px",
+                        background: "var(--surface-3)",
+                        borderRadius: 4,
+                        color: "var(--text)",
+                      }}
+                    >
+                      {claimModalItem.request_no}
+                    </span>
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>•</span>
+                    <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
+                      {claimModalItem.project_detail?.name || claimModalItem.system_name}
+                    </span>
                   </div>
                 </div>
               </div>
               <button
                 type="button"
-                className="btn btn-sm btn-ghost"
+                className="btn btn-xs btn-ghost"
                 onClick={() => setClaimModalItem(null)}
                 disabled={claimSubmitting}
+                style={{ fontSize: 15, width: 30, height: 30, padding: 0 }}
+                title={tx("common.bekor_qilish")}
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleClaimSubmit}>
-              <div className="modal-body" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
                 <div
                   style={{
-                    background: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
-                    borderRadius: 8,
+                    background: "var(--accent-soft)",
+                    border: "1px solid rgba(106, 141, 255, 0.2)",
+                    borderRadius: 10,
                     padding: "10px 14px",
-                    fontSize: 12.5,
-                    color: "#166534",
-                    lineHeight: 1.4,
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "flex-start",
                   }}
                 >
-                  {tx("orders.claim_modal_desc")}
+                  <span style={{ fontSize: 16, lineHeight: 1.2 }}>💡</span>
+                  <div style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.45 }}>
+                    {tx("orders.claim_modal_desc")}
+                  </div>
                 </div>
 
                 {claimModalItem.due_date && (
-                  <div style={{ fontSize: 12.5, color: "#475569", background: "#f8fafc", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0" }}>
-                    📅 <strong>Mijoz so'ragan muddat:</strong> {fmtDate(claimModalItem.due_date)}
+                  <div
+                    style={{
+                      background: "var(--attention-soft)",
+                      border: "1px solid rgba(251, 191, 36, 0.3)",
+                      borderRadius: 10,
+                      padding: "8px 12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      fontSize: 12.5,
+                    }}
+                  >
+                    <div className="row middle" style={{ gap: 8 }}>
+                      <span>📅</span>
+                      <span style={{ color: "var(--muted)" }}>{tx("orders.soralgan_muddat")}:</span>
+                      <strong style={{ color: "var(--text)" }}>{fmtDate(claimModalItem.due_date)}</strong>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost"
+                      style={{ fontSize: 11.5, color: "var(--accent)", fontWeight: 600 }}
+                      onClick={() => {
+                        const d = claimModalItem.due_date?.split("T")[0];
+                        if (d) setClaimDeadline(d);
+                      }}
+                    >
+                      {tx("orders.claim_use_client_date")}
+                    </button>
                   </div>
                 )}
 
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
-                    {tx("orders.claim_deadline_label")} *
-                  </label>
+                  <div className="row between middle" style={{ marginBottom: 6 }}>
+                    <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0 }}>
+                      {tx("orders.claim_deadline_label")} <span style={{ color: "var(--danger)" }}>*</span>
+                    </label>
+                    <div className="row middle" style={{ gap: 4 }}>
+                      <span style={{ fontSize: 11, color: "var(--muted)", marginRight: 2 }}>{tx("orders.claim_quick_label")}</span>
+                      <button
+                        type="button"
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(3, tx("orders.claim_3days_duration"))}
+                      >
+                        {tx("orders.claim_3days")}
+                      </button>
+                      <button
+                        type="button"
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(7, tx("orders.claim_1week_duration"))}
+                      >
+                        {tx("orders.claim_1week")}
+                      </button>
+                      <button
+                        type="button"
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(14, tx("orders.claim_2weeks_duration"))}
+                      >
+                        {tx("orders.claim_2weeks")}
+                      </button>
+                      <button
+                        type="button"
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(30, tx("orders.claim_1month_duration"))}
+                      >
+                        {tx("orders.claim_1month")}
+                      </button>
+                    </div>
+                  </div>
                   <input
                     type="date"
                     required
+                    min={new Date().toISOString().split("T")[0]}
                     className="input"
                     value={claimDeadline}
                     onChange={(e) => setClaimDeadline(e.target.value)}
@@ -2343,7 +2452,7 @@ export default function ChangeRequests() {
                 </div>
 
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_duration_label")}
                   </label>
                   <input
@@ -2354,10 +2463,13 @@ export default function ChangeRequests() {
                     onChange={(e) => setClaimDuration(e.target.value)}
                     style={{ width: "100%" }}
                   />
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                    {tx("orders.claim_duration_hint")}
+                  </div>
                 </div>
 
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_dev_label")}
                   </label>
                   <select
@@ -2373,10 +2485,13 @@ export default function ChangeRequests() {
                       </option>
                     ))}
                   </select>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                    {tx("orders.claim_dev_hint")}
+                  </div>
                 </div>
 
                 <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_notes_label")}
                   </label>
                   <textarea
@@ -2385,27 +2500,45 @@ export default function ChangeRequests() {
                     placeholder={tx("orders.claim_notes_placeholder")}
                     value={claimNotes}
                     onChange={(e) => setClaimNotes(e.target.value)}
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", resize: "vertical" }}
                   />
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                    {tx("orders.claim_notes_hint")}
+                  </div>
                 </div>
               </div>
 
-              <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
+              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
                   className="btn btn-ghost"
                   onClick={() => setClaimModalItem(null)}
                   disabled={claimSubmitting}
                 >
-                  Bekor qilish
+                  {tx("common.bekor_qilish")}
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-primary"
-                  style={{ background: "#059669", borderColor: "#059669" }}
+                  className="btn btn-ok"
                   disabled={claimSubmitting || !claimDeadline}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontWeight: 600,
+                  }}
                 >
-                  {claimSubmitting ? tx("orders.claim_submitting") : tx("orders.claim_submit_btn")}
+                  {claimSubmitting ? (
+                    <>
+                      <span className="spinner-xs" />
+                      <span>{tx("orders.claim_submitting")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>✓</span>
+                      <span>{tx("orders.claim_submit_btn")}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
