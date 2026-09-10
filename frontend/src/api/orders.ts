@@ -64,6 +64,16 @@ export const ORDER_STATUS_CONFIG: Record<
     step: number;
   }
 > = {
+  DRAFT: {
+    get label() { return tx("orders.status_draft"); },
+    icon: "📝",
+    bg: "rgba(100, 116, 139, 0.12)",
+    color: "#475569",
+    border: "rgba(100, 116, 139, 0.35)",
+    badgeClass: "badge-ghost",
+    desc: "Talabnoma qoralama sifatida saqlangan, hali yuborilmagan",
+    step: 0,
+  },
   NEW: {
     label: "Yangi (Yuborilgan)",
     icon: "📝",
@@ -278,10 +288,17 @@ export async function deleteOrderAttachment(
 }
 
 /**
- * Buyurtmani o'chirish (Faqat NEW holatda).
+ * Buyurtmani o'chirish (Faqat DRAFT holatda).
  */
 export async function deleteOrder(id: number | string): Promise<void> {
   return api.delete<void>(`/orders/${id}/`);
+}
+
+/**
+ * Qoralama holatidagi buyurtmani rasman yuborish.
+ */
+export async function sendOrder(id: number | string): Promise<ChangeRequestItem> {
+  return api.post<ChangeRequestItem>(`/orders/${id}/send/`, {});
 }
 
 /**

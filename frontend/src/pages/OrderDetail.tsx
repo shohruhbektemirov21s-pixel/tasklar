@@ -31,6 +31,7 @@ import {
   clientReject,
   deleteOrder,
   getOrder,
+  sendOrder,
   setPmDecision,
   uploadVersion,
 } from "@/api/orders";
@@ -140,19 +141,40 @@ export default function OrderDetail() {
       user?.is_boss
   );
 
+  // Foydalanuvchi talabi: "uchirish taxrirlashni qila olmasin saqlagani keyinchalik ham kirib kurib junata olsin"
+  // Oddiy foydalanuvchilar va boshqarma buyurtmani tahrirlay yoki o'chira olmaydi, faqat kirib ko'rib yuborishi mumkin.
   const canEdit = Boolean(
-    item &&
-      (user?.is_platform_admin ||
-        user?.is_boss ||
-        (item.status === "NEW" && !item.assigned_pm))
+    item && (user?.is_platform_admin || user?.is_boss)
   );
 
   const canDelete = Boolean(
-    item &&
-      (user?.is_platform_admin ||
-        user?.is_boss ||
-        (item.status === "NEW" && !item.assigned_pm))
+    item && (user?.is_platform_admin || user?.is_boss)
   );
+
+  const [sendingOrder, setSendingOrder] = useState(false);
+
+  // Qoralama buyurtmani yuborish
+  async function handleSendDraftOrder() {
+    if (!item) return;
+    const ok = await confirmDialog({
+      title: tx("orders.send_order_confirm_title"),
+      body: tx("orders.send_order_confirm_desc"),
+      confirmText: tx("orders.send_order"),
+      danger: false,
+    });
+    if (!ok) return;
+
+    try {
+      setSendingOrder(true);
+      setActionError(null);
+      const updated = await sendOrder(item.id);
+      setItem(updated);
+    } catch (err: any) {
+      setActionError(err?.message || "Buyurtmani yuborishda xatolik yuz berdi.");
+    } finally {
+      setSendingOrder(false);
+    }
+  }
 
   // Buyurtmani o'chirish
   async function handleDelete() {
@@ -422,6 +444,19 @@ export default function OrderDetail() {
               </a>
             )}
 
+            {item.status === "DRAFT" && (
+              <button
+                type="button"
+                className="btn btn-sm btn-primary row middle"
+                style={{ gap: 6 }}
+                onClick={() => void handleSendDraftOrder()}
+                disabled={sendingOrder}
+              >
+                <span>🚀</span>
+                <span>{sendingOrder ? "Yuborilmoqda..." : tx("orders.send_order")}</span>
+              </button>
+            )}
+
             {canEdit && (
               <button
                 type="button"
@@ -446,8 +481,45 @@ export default function OrderDetail() {
           </div>
         </div>
 
+        {/* Qoralama (DRAFT) holatidagi buyurtma banneri */}
+        {item.status === "DRAFT" && (
+          <div
+            style={{
+              background: "rgba(234, 179, 8, 0.08)",
+              border: "1px solid rgba(234, 179, 8, 0.35)",
+              borderRadius: 8,
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 22 }}>📝</span>
+              <div>
+                <strong style={{ color: "#b45309" }}>{tx("orders.status_draft")}: </strong>
+                <span style={{ fontSize: 13, color: "var(--color-fg-default)" }}>
+                  {tx("orders.draft_badge_desc")}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => void handleSendDraftOrder()}
+              disabled={sendingOrder}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+            >
+              <span>🚀</span>
+              <span>{sendingOrder ? "Yuborilmoqda..." : tx("orders.send_order")}</span>
+            </button>
+          </div>
+        )}
+
         {/* PM Ishni o'z zimmasiga olish banneri */}
-        {!item.assigned_pm && isPMOrAdmin && (
+        {!item.assigned_pm && isPMOrAdmin && item.status !== "DRAFT" && (
           <div
             style={{
               background: "var(--surface-2, #f8fafc)",

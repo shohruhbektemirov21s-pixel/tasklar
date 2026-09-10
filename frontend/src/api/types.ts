@@ -1016,7 +1016,7 @@ export interface ChangeRequestItem {
   change_nature_display: string;
   additional_materials: string;
   test_result?: string;
-  status: "NEW" | "ACCEPTED" | "ASSIGNED_TO_DEV" | "IN_PROGRESS" | "TESTING" | "READY_FOR_REVIEW" | "COMPLETED" | "REJECTED" | "CANCELLED";
+  status: "DRAFT" | "NEW" | "ACCEPTED" | "ASSIGNED_TO_DEV" | "IN_PROGRESS" | "TESTING" | "READY_FOR_REVIEW" | "COMPLETED" | "REJECTED" | "CANCELLED";
   status_display: string;
   completion_file?: string | null;
   completion_file_url?: string | null;
@@ -1057,9 +1057,12 @@ export interface ChangeRequestItem {
     status_display: string;
   } | null;
   pm_notes?: string;
+  created_by?: number;
   created_by_name?: string;
   created_by_department?: string;
   can_manage_by_user?: boolean;
+  can_edit?: boolean;
+  can_delete?: boolean;
   is_assigned_to_other_pm?: boolean;
   created_at: string;
   updated_at?: string;

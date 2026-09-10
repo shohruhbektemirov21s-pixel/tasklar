@@ -5850,5 +5850,65 @@
  "suggestions.qaror_qildi": {
   "value": "{ism} qaror qildi",
   "note": "components/suggestion.tsx"
+ },
+ "orders.status_draft": {
+  "value": "Qoralama",
+  "note": "api/orders.ts"
+ },
+ "orders.draft_restored_title": {
+  "value": "Qoralama tiklandi:",
+  "note": "pages/OrderForm.tsx"
+ },
+ "orders.draft_restored_desc": {
+  "value": "Oldin kiritilgan ma'lumotlar avtomatik yuklandi.",
+  "note": "pages/OrderForm.tsx"
+ },
+ "orders.draft_clear": {
+  "value": "Qoralamani tozalash",
+  "note": "pages/OrderForm.tsx"
+ },
+ "orders.save_draft": {
+  "value": "Qoralama sifatida saqlash",
+  "note": "pages/OrderForm.tsx"
+ },
+ "orders.send_order": {
+  "value": "Buyurtmani yuborish",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.send_order_confirm_title": {
+  "value": "Buyurtma yuborilsinmi?",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.send_order_confirm_desc": {
+  "value": "Buyurtma yuborilgach, uni tahrirlash va o'chirish imkoniyati cheklanadi hamda mas'ullarga ko'rinadi.",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.draft_saved_success": {
+  "value": "Buyurtma qoralama sifatida saqlandi.",
+  "note": "pages/OrderForm.tsx"
+ },
+ "orders.order_sent_success": {
+  "value": "Buyurtma muvaffaqiyatli yuborildi!",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.locked_after_send_title": {
+  "value": "Buyurtmani tahrirlash cheklangan",
+  "note": "pages/OrderForm.tsx"
+ },
+ "orders.locked_after_send_desc": {
+  "value": "Ushbu buyurtma rasman yuborilgan. Yuborilgan buyurtmani tahrirlab yoki o'chirib bo'lmaydi.",
+  "note": "pages/OrderForm.tsx"
+ },
+ "orders.draft_badge_desc": {
+  "value": "Ushbu buyurtma qoralama (jo'natilmagan) holatda. Boshqa xodimlar va PM buni hali ko'ra olmaydi. Barcha talablarni tekshirib, buyurtmani yuborishingiz mumkin.",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.autosave_saving": {
+  "value": "Avtomatik saqlanmoqda...",
+  "note": "pages/OrderForm.tsx"
+ },
+ "orders.autosave_saved": {
+  "value": "Avtomatik saqlandi (Qoralama)",
+  "note": "pages/OrderForm.tsx"
  }
 }

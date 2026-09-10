@@ -670,5 +670,47 @@ class OrdersSeniorDevTests(ApiTestCase):
         self.assertTrue(order.client_approved_at)
         self.assertEqual(order.client_signer, "Sobirov (Moliya)")
 
+    def test_draft_order_save_and_send_workflow(self):
+        """Buyurtmani yubormasdan qoralama (DRAFT) sifatida saqlash va keyinchalik rasman yuborish."""
+        sohaviy_client = APIClient()
+        sohaviy_client.force_authenticate(user=self.sohaviy_user)
 
+        # 1. Qoralama sifatida saqlash
+        draft_payload = {
+            "system_name": "Qoralama Tizim",
+            "order_type": ChangeRequestType.NEW,
+            "status": ChangeRequestStatus.DRAFT,
+            "department": "Moliya",
+            "responsible_person": "Aliyev",
+        }
+        res = sohaviy_client.post("/api/orders/", draft_payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.content)
+        order_id = res.json()["id"]
+        self.assertEqual(res.json()["status"], ChangeRequestStatus.DRAFT)
 
+        # 2. PM uchun qoralama buyurtma ko'rinmasligi kerak
+        pm_client = APIClient()
+        pm_client.force_authenticate(user=self.pm_user)
+        pm_orders = pm_client.get("/api/orders/?for_pm=true").json()
+        results = pm_orders.get("results", pm_orders)
+        self.assertFalse(any(o["id"] == order_id for o in results))
+
+        # 3. Yaratuvchi qoralamani tahrirlay olishi
+        patch_res = sohaviy_client.patch(f"/api/orders/{order_id}/", {"module": "Modul 1"}, format="json")
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+
+        # 4. Keyinchalik kirib ko'rib, rasman yuborish (send)
+        send_res = sohaviy_client.post(f"/api/orders/{order_id}/send/")
+        self.assertEqual(send_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(send_res.json()["status"], ChangeRequestStatus.NEW)
+
+        # 5. Yuborilgandan so'ng (NEW) uni tahrirlab yoki o'chirib bo'lmasligi
+        patch_res2 = sohaviy_client.patch(f"/api/orders/{order_id}/", {"module": "Modul 2"}, format="json")
+        self.assertEqual(patch_res2.status_code, status.HTTP_400_BAD_REQUEST)
+
+        del_res = sohaviy_client.delete(f"/api/orders/{order_id}/")
+        self.assertEqual(del_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # PM ham o'chira olmasligi
+        del_pm_res = pm_client.delete(f"/api/orders/{order_id}/")
+        self.assertEqual(del_pm_res.status_code, status.HTTP_400_BAD_REQUEST)

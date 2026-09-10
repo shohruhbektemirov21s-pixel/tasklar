@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ApiError, api, listOf } from "@/api/client";
 import { addOrderAttachments, deleteOrderAttachment } from "@/api/orders";
 import type { ChangeRequestItem, OrderAttachmentItem, OrderTypeValue, Project } from "@/api/types";
@@ -85,6 +85,118 @@ export default function OrderForm() {
     project: null,
   });
 
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [serverDraftId, setServerDraftId] = useState<number | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Qoralamani yuklash (agar foydalanuvchi oldin kiritib chiqib ketgan bo'lsa)
+  useEffect(() => {
+    if (editing) return;
+    try {
+      const raw = localStorage.getItem(ORDER_DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.f && ((parsed.f.system_name && parsed.f.system_name !== "TeamFlow") || parsed.f.module?.trim() || parsed.f.due_date || parsed.f.project)) {
+          setF((prev) => ({ ...prev, ...parsed.f }));
+          if (parsed.serverDraftId) {
+            setServerDraftId(parsed.serverDraftId);
+          }
+          setDraftRestored(true);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [editing]);
+
+  // Serverga avtomatik saqlash (huddi auto-saveday, bazada DRAFT holatida saqlanadi)
+  useEffect(() => {
+    if (editing || isPM) return;
+    const hasData = Boolean(
+      (f.system_name && f.system_name !== "TeamFlow") ||
+      f.module.trim() ||
+      f.due_date ||
+      f.project ||
+      files.length > 0
+    );
+    if (!hasData) return;
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(async () => {
+      try {
+        if (!isMountedRef.current) return;
+        setAutoSaveStatus("saving");
+        const payload: Record<string, unknown> = {};
+        Object.entries(f).forEach(([key, val]) => {
+          if (val === null || val === undefined) return;
+          payload[key] = val;
+        });
+        payload.status = "DRAFT";
+
+        if (serverDraftId) {
+          await api.patch(`/orders/${serverDraftId}/`, payload);
+        } else {
+          const res = await api.post<ChangeRequestItem>("/orders/", payload);
+          if (res?.id && isMountedRef.current) {
+            setServerDraftId(res.id);
+            try {
+              localStorage.setItem(ORDER_DRAFT_KEY, JSON.stringify({ f, serverDraftId: res.id }));
+            } catch {
+              // ignore
+            }
+          }
+        }
+        if (isMountedRef.current) {
+          setAutoSaveStatus("saved");
+          const nowTime = new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+          setLastSavedTime(nowTime);
+        }
+      } catch {
+        if (isMountedRef.current) {
+          setAutoSaveStatus("error");
+        }
+      }
+    }, 1500);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [editing, f, isPM, serverDraftId, files.length]);
+
+  function clearDraft() {
+    localStorage.removeItem(ORDER_DRAFT_KEY);
+    setServerDraftId(null);
+    setF({
+      system_name: "TeamFlow",
+      order_type: "NEW",
+      module: "",
+      department: userDepartment,
+      responsible_person: user?.full_name || "",
+      priority: "HIGH",
+      due_date: "",
+      project: null,
+    });
+    setFiles([]);
+    setDraftRestored(false);
+    setAutoSaveStatus("idle");
+    setLastSavedTime(null);
+  }
+
   // Yangi buyurtmada akkaunt ma'lumotlari yuklangach bo'linma va mas'ul shaxsni avtomatik to'ldirish
   useEffect(() => {
     if (!editing && user) {
@@ -133,8 +245,34 @@ export default function OrderForm() {
     setF((p) => ({ ...p, [k]: v }));
   };
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleCancelOrExit() {
+    // Agar foydalanuvchi ma'lumot kiritgan bo'lsa va hali serverga tushmagan bo'lsa,
+    // chiqib ketayotganda ham avtomatik DRAFT qilib bazada saqlab qoladi
+    const hasData = Boolean(
+      (f.system_name && f.system_name !== "TeamFlow") ||
+      f.module.trim() ||
+      f.due_date ||
+      f.project ||
+      files.length > 0
+    );
+    if (!editing && !serverDraftId && hasData) {
+      try {
+        const payload: Record<string, unknown> = {};
+        Object.entries(f).forEach(([key, val]) => {
+          if (val === null || val === undefined) return;
+          payload[key] = val;
+        });
+        payload.status = "DRAFT";
+        await api.post("/orders/", payload);
+      } catch {
+        // ignore
+      }
+    }
+    localStorage.removeItem(ORDER_DRAFT_KEY);
+    go(toOrders());
+  }
+
+  async function saveAsDraft() {
     setBusy(true);
     setError(null);
     setErrors({});
@@ -145,13 +283,16 @@ export default function OrderForm() {
         if (val === null || val === undefined) return;
         payload[key] = val;
       });
+      payload.status = "DRAFT";
 
-      if (editing && id) {
-        await api.patch(`/orders/${id}/`, payload);
+      const targetId = editing && id ? id : serverDraftId;
+
+      if (targetId) {
+        await api.patch(`/orders/${targetId}/`, payload);
         if (files.length > 0) {
           const fd = new FormData();
           files.forEach((file) => fd.append("files", file));
-          await addOrderAttachments(id, fd);
+          await addOrderAttachments(targetId, fd);
         }
       } else {
         if (files.length > 0) {
@@ -164,9 +305,57 @@ export default function OrderForm() {
         } else {
           await api.post("/orders/", payload);
         }
-        localStorage.removeItem(ORDER_DRAFT_KEY);
       }
+      localStorage.removeItem(ORDER_DRAFT_KEY);
+      go(toOrders());
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        setErrors(err.fields);
+        setError(err.message);
+      } else {
+        setError(err instanceof Error ? err.message : "Qoralamani saqlashda xatolik yuz berdi.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
 
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setErrors({});
+
+    try {
+      const payload: Record<string, unknown> = {};
+      Object.entries(f).forEach(([key, val]) => {
+        if (val === null || val === undefined) return;
+        payload[key] = val;
+      });
+      payload.status = "NEW";
+
+      const targetId = editing && id ? id : serverDraftId;
+
+      if (targetId) {
+        await api.patch(`/orders/${targetId}/`, payload);
+        if (files.length > 0) {
+          const fd = new FormData();
+          files.forEach((file) => fd.append("files", file));
+          await addOrderAttachments(targetId, fd);
+        }
+      } else {
+        if (files.length > 0) {
+          const fd = new FormData();
+          Object.entries(payload).forEach(([key, val]) => {
+            if (val !== null && val !== undefined) fd.append(key, String(val));
+          });
+          files.forEach((file) => fd.append("files", file));
+          await api.post("/orders/", fd);
+        } else {
+          await api.post("/orders/", payload);
+        }
+      }
+      localStorage.removeItem(ORDER_DRAFT_KEY);
       go(toOrders());
     } catch (err: unknown) {
       if (err instanceof ApiError) {
@@ -205,24 +394,22 @@ export default function OrderForm() {
     );
   }
 
-  const isSohaviy = Boolean(user?.is_sohaviy_boshqarma || user?.specialty === "SOHAVIY");
-  const isLockedForDepartment = Boolean(
+  const isLockedSubmitted = Boolean(
     editing &&
     existingItem &&
-    isSohaviy &&
+    existingItem.status !== "DRAFT" &&
     !user?.is_platform_admin &&
-    !user?.is_boss &&
-    (existingItem.status !== "NEW" || existingItem.assigned_pm)
+    !user?.is_boss
   );
 
-  if (isLockedForDepartment) {
+  if (isLockedSubmitted) {
     return (
       <div className="content">
         <div className="card" style={{ maxWidth: 580, margin: "40px auto", padding: 32, textAlign: "center" }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Buyurtmani tahrirlash cheklangan</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{tx("orders.locked_after_send_title")}</h2>
           <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
-            «{existingItem?.request_no}» raqamli buyurtma loyiha menejeri (PM) tomonidan qabul qilingan yoki jarayonga o'tkazilgan. Sohaviy boshqarma qabul qilingan TZ va buyurtmani tahrirlay olmaydi yoki o'chira olmaydi.
+            «{existingItem?.request_no}» raqamli buyurtma rasman yuborilgan. Yuborilgan buyurtmani tahrirlab yoki o'chirib bo'lmaydi.
           </p>
           <button className="btn btn-primary" onClick={() => go(toOrders())}>
             Buyurtmalar ro'yxatiga qaytish
@@ -235,7 +422,21 @@ export default function OrderForm() {
   return (
     <>
       <PageHead
-        title={<strong>{editing ? "Buyurtmani tahrirlash" : "Yangi buyurtma (TZ)"}</strong>}
+        title={
+          <div className="row middle" style={{ gap: 12, flexWrap: "wrap" }}>
+            <strong>{editing ? "Buyurtmani tahrirlash" : "Yangi buyurtma (TZ)"}</strong>
+            {autoSaveStatus === "saving" && (
+              <span style={{ fontSize: 12, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 500 }}>
+                <span>⏳</span> {tx("orders.autosave_saving")}
+              </span>
+            )}
+            {autoSaveStatus === "saved" && (
+              <span style={{ fontSize: 12, color: "#059669", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}>
+                <span>✓</span> {tx("orders.autosave_saved")} {lastSavedTime ? `(${lastSavedTime})` : ""}
+              </span>
+            )}
+          </div>
+        }
         actions={
           <div className="row" style={{ gap: 8 }}>
             <select
@@ -254,10 +455,21 @@ export default function OrderForm() {
                 <option key={String(p.value)} value={String(p.value)}>{p.label}</option>
               ))}
             </select>
-            <button className="btn btn-primary" form={formId} disabled={busy}>
-              {busy ? "Yuborilmoqda..." : editing ? "O'zgarishlarni saqlash" : "Buyurtma yuborish"}
+            <button
+              type="button"
+              className="btn"
+              onClick={saveAsDraft}
+              disabled={busy}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+              title={tx("orders.save_draft")}
+            >
+              <span>💾</span>
+              <span>{tx("orders.save_draft")}</span>
             </button>
-            <button type="button" className="btn" onClick={() => go(toOrders())}>
+            <button className="btn btn-primary" form={formId} disabled={busy}>
+              {busy ? "Yuborilmoqda..." : "Buyurtma yuborish"}
+            </button>
+            <button type="button" className="btn" onClick={handleCancelOrExit}>
               Bekor qilish
             </button>
           </div>
@@ -266,6 +478,38 @@ export default function OrderForm() {
 
       <div className="content">
         <ErrorMsg error={error} />
+
+        {draftRestored && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "rgba(59, 130, 246, 0.08)",
+              border: "1px solid rgba(59, 130, 246, 0.3)",
+              borderRadius: 8,
+              padding: "10px 14px",
+              marginBottom: 14,
+              fontSize: 13,
+              color: "var(--color-fg-default)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span>📝</span>
+              <span>
+                <strong>{tx("orders.draft_restored_title")}</strong> {tx("orders.draft_restored_desc")}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={clearDraft}
+              style={{ color: "var(--color-danger, #ef4444)" }}
+            >
+              {tx("orders.draft_clear")}
+            </button>
+          </div>
+        )}
 
         <form id={formId} onSubmit={submit}>
           <div style={{ maxWidth: 840, margin: "0 auto" }}>

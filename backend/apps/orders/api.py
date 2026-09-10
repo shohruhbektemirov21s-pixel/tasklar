@@ -168,24 +168,31 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         )
 
         if is_sohaviy and not is_admin_or_boss:
-            # Sohaviy boshqarma vakili faqat o'zining yoki o'z boshqarmasining buyurtmalarini ko'radi
+            # Sohaviy boshqarma vakili faqat o'zining yoki o'z boshqarmasining buyurtmalarini ko'radi.
+            # DRAFT holatidagi buyurtmalar faqat uni yaratgan shaxsga ko'rinadi!
             sohaviy_q = Q(created_by=user)
             if getattr(user, "department_id", None) and user.department:
                 sohaviy_q |= (
-                    Q(department__iexact=user.department.name)
-                    | Q(created_by__department=user.department)
+                    (Q(department__iexact=user.department.name) | Q(created_by__department=user.department))
+                    & ~Q(status=ChangeRequestStatus.DRAFT)
                 )
             elif getattr(user, "department_name", None) and user.department_name != "Sohaviy boshqarmalar":
-                sohaviy_q |= Q(department__iexact=user.department_name)
+                sohaviy_q |= (Q(department__iexact=user.department_name) & ~Q(status=ChangeRequestStatus.DRAFT))
             qs = qs.filter(sohaviy_q)
         else:
             if for_pm and user.is_authenticated:
-                qs = qs.filter(Q(assigned_pm=user) | Q(project__manager=user))
+                qs = qs.filter(Q(assigned_pm=user) | Q(project__manager=user)).exclude(status=ChangeRequestStatus.DRAFT)
             elif mine and user.is_authenticated:
                 mine_q = Q(created_by=user) | Q(assigned_pm=user) | Q(project__manager=user)
                 if getattr(user, "department_id", None) and user.department:
-                    mine_q |= Q(department__iexact=user.department.name) | Q(created_by__department=user.department)
+                    mine_q |= (
+                        (Q(department__iexact=user.department.name) | Q(created_by__department=user.department))
+                        & ~Q(status=ChangeRequestStatus.DRAFT)
+                    )
                 qs = qs.filter(mine_q)
+
+        if not is_admin_or_boss:
+            qs = qs.exclude(Q(status=ChangeRequestStatus.DRAFT) & ~Q(created_by=user))
 
         deadline_param = self.request.query_params.get("deadline")
         if deadline_param:
@@ -328,7 +335,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             order = serializer.save(created_by=user)
             self._save_order_attachments(order)
-            if order.tz_file:
+            if order.tz_file and order.status != ChangeRequestStatus.DRAFT:
                 ChangeRequestVersion.objects.create(
                     order=order,
                     version=1,
@@ -339,40 +346,36 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                     status=order.status,
                     uploaded_by=self.request.user,
                 )
-        try:
-            notify_order_created(order)
-            from apps.notifications.services import send_to_users
-            from .services import get_order_notification_recipients
-            all_users = get_order_notification_recipients(order=order)
-            if order.created_by:
-                all_users.append(order.created_by)
-            send_to_users(all_users, {"event": "order.create", "order_id": order.pk})
-        except Exception:
-            logger.exception("Buyurtma yaratilganda bildirishnoma yuborishda xatolik: %s", order.pk)
+
+        # Agar buyurtma DRAFT bo'lsa, bildirishnoma yuborilmaydi ("junab ketib qolmasin")
+        if order.status != ChangeRequestStatus.DRAFT:
+            try:
+                notify_order_created(order)
+                from apps.notifications.services import send_to_users
+                from .services import get_order_notification_recipients
+                all_users = get_order_notification_recipients(order=order)
+                if order.created_by:
+                    all_users.append(order.created_by)
+                send_to_users(all_users, {"event": "order.create", "order_id": order.pk})
+            except Exception:
+                logger.exception("Buyurtma yaratilganda bildirishnoma yuborishda xatolik: %s", order.pk)
 
     def perform_update(self, serializer):
         instance = serializer.instance
         user = self.request.user
         is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
-        is_sohaviy = bool(getattr(user, "is_sohaviy_boshqarma", False) or getattr(user, "specialty", "") == "SOHAVIY")
 
-        # Agar buyurtma PM tomonidan qabul qilingan bo'lsa, boshqarma tahrirlay olmaydi
-        if is_sohaviy and (instance.status != ChangeRequestStatus.NEW or instance.assigned_pm_id is not None):
+        # Agar buyurtma allaqachon yuborilgan bo'lsa (ya'ni DRAFT emas):
+        # Na boshqarma, na PM buyurtmani to'g'ridan-to'g'ri tahrirlay oladi!
+        if instance.status != ChangeRequestStatus.DRAFT and not is_admin_or_boss:
             raise ValidationError(
-                {"detail": "Ushbu buyurtma loyiha menejeri (PM) tomonidan qabul qilingan. Boshqarma qabul qilingan TZ va buyurtmani tahrirlay olmaydi."}
+                {"detail": "Yuborilgan yoki qabul qilingan buyurtmani tahrirlab bo'lmaydi. Faqat qoralama (draft) holatidagi buyurtmani tahrirlash mumkin."}
             )
 
-        locked_statuses = [
-            ChangeRequestStatus.ACCEPTED,
-            ChangeRequestStatus.ASSIGNED_TO_DEV,
-            ChangeRequestStatus.IN_PROGRESS,
-            ChangeRequestStatus.TESTING,
-            ChangeRequestStatus.COMPLETED,
-        ]
-        if instance.status in locked_statuses and not is_admin_or_boss:
+        # Agar DRAFT bo'lsa, faqat uni yaratgan shaxs tahrirlay oladi
+        if instance.status == ChangeRequestStatus.DRAFT and not is_admin_or_boss and instance.created_by_id != user.id:
             raise ValidationError(
-                {"detail": "Ushbu TZ loyiha menejeri (PM) tomonidan qabul qilingan. "
-                           "Uni to'g'ridan-to'g'ri tahrirlab bo'lmaydi."}
+                {"detail": "Faqat buyurtmani yaratgan foydalanuvchi qoralamani tahrirlashi mumkin."}
             )
 
         old_status = instance.status
@@ -380,7 +383,33 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             order = serializer.save()
             self._save_order_attachments(order)
         new_status = order.status
-        if old_status != new_status:
+
+        # Agar qoralamadan NEW (yuborilgan) holatiga o'tkazilgan bo'lsa:
+        if old_status == ChangeRequestStatus.DRAFT and new_status == ChangeRequestStatus.NEW:
+            order.request_date = timezone.localdate()
+            order.save(update_fields=["request_date", "updated_at"])
+            if order.tz_file and not order.versions.exists():
+                ChangeRequestVersion.objects.create(
+                    order=order,
+                    version=1,
+                    tz_file=order.tz_file,
+                    tz_file_name=order.tz_file_name,
+                    tz_file_size=order.tz_file_size,
+                    change_note="Dastlabki yuborilgan TZ (v1)",
+                    status=order.status,
+                    uploaded_by=user,
+                )
+            try:
+                notify_order_created(order)
+                from apps.notifications.services import send_to_users
+                from .services import get_order_notification_recipients
+                all_users = get_order_notification_recipients(order=order)
+                if order.created_by:
+                    all_users.append(order.created_by)
+                send_to_users(all_users, {"event": "order.create", "order_id": order.pk})
+            except Exception:
+                pass
+        elif old_status != new_status:
             try:
                 notify_order_status(order, self.request.user, old_status, new_status)
             except Exception:
@@ -400,17 +429,16 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
 
-        # Agar PM qabul qilgan yoki jarayonda bo'lsa, boshqarma o'chira olmaydi
-        if instance.status != ChangeRequestStatus.NEW or instance.assigned_pm_id is not None:
-            if not is_admin_or_boss:
-                raise ValidationError(
-                    {"detail": "Loyiha menejeri (PM) tomonidan qabul qilingan yoki ko'rib chiqilgan buyurtmani (TZ) o'chirib bo'lmaydi."}
-                )
+        # Yuborilgan buyurtmani o'chirish taqiqlanadi (PM ga ham, boshqarmaga ham)
+        if instance.status != ChangeRequestStatus.DRAFT and not is_admin_or_boss:
+            raise ValidationError(
+                {"detail": "Yuborilgan buyurtmani o'chirib bo'lmaydi. Faqat qoralama (draft) holatidagi buyurtmani o'chirish mumkin."}
+            )
 
-        # Faqat o'zining NEW buyurtmasini o'chira oladi (yoki admin/boss)
+        # Faqat o'zining DRAFT ini o'chira oladi
         if not is_admin_or_boss and instance.created_by_id != user.id:
             raise ValidationError(
-                {"detail": "Faqat buyurtmani yaratgan boshqarma vakili yoki tizim administratori o'chira oladi."}
+                {"detail": "Faqat qoralamani yaratgan foydalanuvchi yoki tizim administratori o'chira oladi."}
             )
 
         order_pk = instance.pk
@@ -422,6 +450,52 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             send_to_users(all_users, {"event": "order.delete", "order_id": order_pk})
         except Exception:
             pass
+
+    @action(detail=True, methods=["post"], url_path="send")
+    def send_order(self, request, pk=None):
+        """Qoralama holatidagi buyurtmani rasman yuborish."""
+        order = self.get_object()
+        user = request.user
+        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+
+        if not is_admin_or_boss and order.created_by_id != user.id:
+            return Response({"detail": "Faqat buyurtmani yaratgan foydalanuvchi uni yuborishi mumkin."}, status=403)
+
+        if order.status != ChangeRequestStatus.DRAFT:
+            return Response({"detail": "Ushbu buyurtma allaqachon yuborilgan."}, status=400)
+
+        if not (order.system_name and order.system_name.strip()):
+            return Response({"detail": "Tizim nomi ko'rsatilishi shart."}, status=400)
+
+        with transaction.atomic():
+            order.status = ChangeRequestStatus.NEW
+            order.request_date = timezone.localdate()
+            order.save(update_fields=["status", "request_date", "updated_at"])
+
+            if order.tz_file and not order.versions.exists():
+                ChangeRequestVersion.objects.create(
+                    order=order,
+                    version=1,
+                    tz_file=order.tz_file,
+                    tz_file_name=order.tz_file_name,
+                    tz_file_size=order.tz_file_size,
+                    change_note="Dastlabki yuborilgan TZ (v1)",
+                    status=order.status,
+                    uploaded_by=user,
+                )
+
+        try:
+            notify_order_created(order)
+            from apps.notifications.services import send_to_users
+            from .services import get_order_notification_recipients
+            all_users = get_order_notification_recipients(order=order)
+            if order.created_by:
+                all_users.append(order.created_by)
+            send_to_users(all_users, {"event": "order.create", "order_id": order.pk})
+        except Exception:
+            logger.exception("Buyurtma yuborilganda bildirishnomada xatolik: %s", order.pk)
+
+        return Response(ChangeRequestSerializer(order, context={"request": request}).data)
 
     @action(detail=True, methods=["post"], url_path="attachments")
     def add_attachments(self, request, pk=None):

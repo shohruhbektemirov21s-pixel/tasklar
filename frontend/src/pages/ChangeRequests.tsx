@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, listOf, pagesOf, totalOf } from "@/api/client";
-import { claimOrder, uploadVersion, approveVersion, rejectVersion, deleteOrder } from "@/api/orders";
+import { claimOrder, uploadVersion, approveVersion, rejectVersion, deleteOrder, sendOrder } from "@/api/orders";
 import type { ChangeRequestItem, OrderStats, Project, UserBrief } from "@/api/types";
 import { useFetch } from "@/api/useFetch";
 import { useAuth } from "@/auth/AuthContext";
@@ -126,6 +126,16 @@ export const ORDER_STATUS_CONFIG: Record<
     step: number;
   }
 > = {
+  DRAFT: {
+    get label() { return tx("orders.status_draft"); },
+    icon: "📝",
+    bg: "rgba(100, 116, 139, 0.12)",
+    color: "#475569",
+    border: "rgba(100, 116, 139, 0.35)",
+    badgeClass: "badge-ghost",
+    desc: "Talabnoma qoralama sifatida saqlangan, hali yuborilmagan",
+    step: 0,
+  },
   NEW: {
     label: "Yangi (Yuborilgan)",
     icon: "📝",
@@ -853,19 +863,28 @@ export default function ChangeRequests() {
     go(toOrder(item.id));
   };
 
-  const canEditOrder = (item: ChangeRequestItem) => {
+  const canEditOrder = (_item: ChangeRequestItem) => {
+    // Foydalanuvchi talabi: "uchirish taxrirlashni qila olmasin saqlagani keyinchalik ham kirib kurib junata olsin"
     if (user?.is_platform_admin || user?.is_boss) return true;
-    if (isPMOrAdmin) {
-      return !item.assigned_pm || item.assigned_pm === user?.id;
-    }
-    // Boshqarma faqat NEW va PM biriktirilmagan buyurtmani tahrirlay oladi
-    return item.status === "NEW" && !item.assigned_pm;
+    return false;
   };
 
-  const canDeleteOrder = (item: ChangeRequestItem) => {
+  const canDeleteOrder = (_item: ChangeRequestItem) => {
+    // Foydalanuvchi talabi: "uchirish taxrirlashni qila olmasin"
     if (user?.is_platform_admin || user?.is_boss) return true;
-    // Boshqarma faqat o'zining NEW va PM biriktirilmagan buyurtmasini o'chira oladi
-    return item.status === "NEW" && !item.assigned_pm && Boolean(item.can_manage_by_user);
+    return false;
+  };
+
+  const handleSendOrder = async (item: ChangeRequestItem) => {
+    if (!window.confirm(tx("orders.send_order_confirm_desc") || `«${item.request_no}» buyurtmasini yuborishni tasdiqlaysizmi?`)) {
+      return;
+    }
+    try {
+      await sendOrder(item.id);
+      reload();
+    } catch (err: unknown) {
+      alert((err as Error)?.message || "Buyurtmani yuborishda xatolik yuz berdi");
+    }
   };
 
   const handleDeleteOrder = async (item: ChangeRequestItem) => {
@@ -2047,6 +2066,19 @@ export default function ChangeRequests() {
                               >
                                 📄 Word (.docx) yuklash
                               </button>
+
+                              {item.status === "DRAFT" && (
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#2563eb", fontWeight: 600 }}
+                                  onClick={() => {
+                                    setActiveActionMenuId(null);
+                                    handleOpenView(item);
+                                  }}
+                                >
+                                  🚀 Ko'rib chiqish va yuborish
+                                </button>
+                              )}
 
                               {canEditOrder(item) && (
                                 <button

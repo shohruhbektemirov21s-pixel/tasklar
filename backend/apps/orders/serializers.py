@@ -118,6 +118,9 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     dependent_systems = serializers.CharField(required=False, allow_blank=True, default="")
     additional_materials = serializers.CharField(required=False, allow_blank=True, default="")
     module = serializers.CharField(required=False, allow_blank=True, default="")
+    department = serializers.CharField(required=False, allow_blank=True, default="")
+    responsible_person = serializers.CharField(required=False, allow_blank=True, default="")
+    status = serializers.ChoiceField(choices=ChangeRequestStatus.choices, default=ChangeRequestStatus.NEW, required=False)
 
     project = serializers.PrimaryKeyRelatedField(
         queryset=Project.objects.all(), required=False, allow_null=True
@@ -158,6 +161,8 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     stage_index = serializers.SerializerMethodField(read_only=True)
     created_by_department = serializers.CharField(source="created_by.department.name", read_only=True, default="")
     can_manage_by_user = serializers.SerializerMethodField(read_only=True)
+    can_edit = serializers.SerializerMethodField(read_only=True)
+    can_delete = serializers.SerializerMethodField(read_only=True)
     is_assigned_to_other_pm = serializers.SerializerMethodField(read_only=True)
 
     def to_internal_value(self, data):
@@ -235,6 +240,8 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "created_by_name",
             "created_by_department",
             "can_manage_by_user",
+            "can_edit",
+            "can_delete",
             "is_assigned_to_other_pm",
             "created_at",
             "updated_at",
@@ -280,6 +287,24 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             ChangeRequestStatus.COMPLETED,
         ]
 
+    def get_can_edit(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        user = request.user
+        if user.is_platform_admin or getattr(user, "is_boss", False):
+            return True
+        return obj.status == ChangeRequestStatus.DRAFT and obj.created_by_id == user.id
+
+    def get_can_delete(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        user = request.user
+        if user.is_platform_admin or getattr(user, "is_boss", False):
+            return True
+        return obj.status == ChangeRequestStatus.DRAFT and obj.created_by_id == user.id
+
     def get_assigned_developer_detail(self, obj):
         if not obj.assigned_developer:
             return None
@@ -309,6 +334,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
 
     def get_stage_index(self, obj):
         stages = {
+            ChangeRequestStatus.DRAFT: 0,
             ChangeRequestStatus.NEW: 1,
             ChangeRequestStatus.ACCEPTED: 2,
             ChangeRequestStatus.ASSIGNED_TO_DEV: 3,
@@ -317,8 +343,9 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             ChangeRequestStatus.READY_FOR_REVIEW: 6,
             ChangeRequestStatus.COMPLETED: 7,
             ChangeRequestStatus.REJECTED: -1,
+            ChangeRequestStatus.CANCELLED: -2,
         }
-        return stages.get(obj.status, 1)
+        return stages.get(obj.status, 0 if obj.status == ChangeRequestStatus.DRAFT else 1)
 
     def get_versions(self, obj):
         vers = list(obj.versions.all())

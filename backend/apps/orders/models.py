@@ -18,6 +18,7 @@ class ChangeRequestPriority(models.TextChoices):
 
 
 class ChangeRequestStatus(models.TextChoices):
+    DRAFT = "DRAFT", "Qoralama"
     NEW = "NEW", "Yangi (Yuborilgan)"
     ACCEPTED = "ACCEPTED", "Qabul qilindi"
     ASSIGNED_TO_DEV = "ASSIGNED_TO_DEV", "Dasturchiga topshirildi"
@@ -63,8 +64,8 @@ class ChangeRequest(models.Model):
         help_text="Loyiha turi: Yangi loyiha, Davom ettiriladigan yoki Turlash kerak bo'lgan",
     )
     request_date = models.DateField("Sana", default=timezone.localdate)
-    department = models.CharField("Buyurtma qilayotgan bo'linma", max_length=200)
-    responsible_person = models.CharField("Mas'ul shaxs", max_length=200)
+    department = models.CharField("Buyurtma qilayotgan bo'linma", max_length=200, blank=True, default="")
+    responsible_person = models.CharField("Mas'ul shaxs", max_length=200, blank=True, default="")
     priority = models.CharField("Ustuvorligi / Muhimlilik turi", max_length=20,
                                 choices=ChangeRequestPriority.choices,
                                 default=ChangeRequestPriority.HIGH, db_index=True)
