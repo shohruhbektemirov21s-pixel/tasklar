@@ -993,7 +993,7 @@ export default function ChangeRequests() {
       setRejectFeedbackNote("");
       reload();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Qaytarishda xatolik yuz berdi.";
+      const msg = err instanceof Error ? err.message : tx("orders.qaytarishda_xatolik");
       setRejectError(msg);
     } finally {
       setRejectSubmitting(false);
@@ -1004,13 +1004,12 @@ export default function ChangeRequests() {
     return (
       <div className="card" style={{ maxWidth: 640, margin: "60px auto", padding: 36, textAlign: "center" }}>
         <div style={{ fontSize: 52, marginBottom: 16 }}>🏛️</div>
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>Kirish huquqi cheklangan</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>{tx("orders.ruxsat_cheklangan")}</h2>
         <p style={{ color: "var(--muted)", lineHeight: 1.6, marginBottom: 24, fontSize: 14 }}>
-          Axborot tizimiga o'zgartirish kiritish buyurtmalari (TZ / Change Requests) bo'limi faqat{" "}
-          <strong>Sohaviy boshqarmalar</strong>, <strong>Loyiha menejerlari (PM)</strong> hamda tizim rahbariyati uchun ochiq.
+          {tx("orders.ruxsat_cheklangan_izoh")}
         </p>
         <Link to="/panel" className="btn btn-primary" style={{ padding: "8px 20px" }}>
-          Bosh sahifaga qaytish
+          {tx("common.bosh_sahifa")}
         </Link>
       </div>
     );

@@ -5390,5 +5390,77 @@
  "orders.faylni_ochirib_bolmadi": {
   "value": "Faylni o'chirib bo'lmadi",
   "note": "pages/OrderForm.tsx"
+ },
+ "orders.ruxsat_cheklangan": {
+  "value": "Kirish huquqi cheklangan",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.ruxsat_cheklangan_izoh": {
+  "value": "Ushbu bo'lim faqat sohaviy boshqarmalar va loyiha menejerlari uchun mo'ljallangan.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.qaytarishda_xatolik": {
+  "value": "Qaytarishda xatolik yuz berdi.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "projects.talabnoma_berish": {
+  "value": "Loyiha talabnomasi (Buyurtma) berish",
+  "note": "pages/Projects.tsx"
+ },
+ "inquiries.topilmadi": {
+  "value": "So'rovlar topilmadi",
+  "note": "pages/Inquiries.tsx"
+ },
+ "inquiries.topilmadi_matn": {
+  "value": "Hozircha hech qanday so'rov mavjud emas yoki qidiruv bo'yicha natija yo'q.",
+  "note": "pages/Inquiries.tsx"
+ },
+ "inquiries.yangi_sorov": {
+  "value": "Yangi so'rov",
+  "note": "pages/Inquiries.tsx"
+ },
+ "inquiries.ochirish_tasdiq": {
+  "value": "So'rov o'chirilsinmi?",
+  "note": "pages/Inquiries.tsx"
+ },
+ "inquiries.ochirish_matn": {
+  "value": "«{title}» so'rovi butunlay o'chiriladi.",
+  "note": "pages/Inquiries.tsx"
+ },
+ "inquiries.qoshilaman": {
+  "value": "Qo'shilaman",
+  "note": "pages/Inquiries.tsx"
+ },
+ "inquiries.anonim": {
+  "value": "Anonim",
+  "note": "pages/Inquiries.tsx"
+ },
+ "inquiries.yopiq": {
+  "value": "Yopiq",
+  "note": "pages/Inquiries.tsx"
+ },
+ "inquiries.mening_sorovlarim": {
+  "value": "Mening so'rovlarim",
+  "note": "pages/Inquiries.tsx"
+ },
+ "suggestions.qaror_qabul_qilish": {
+  "value": "Qaror qabul qilish",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.qarorni_korish": {
+  "value": "Qarorni ko'rish",
+  "note": "pages/Suggestions.tsx"
+ },
+ "suggestions.qaror_title": {
+  "value": "Taklif bo'yicha qaror qabul qilish yoki o'zgartirish",
+  "note": "pages/Suggestions.tsx"
+ },
+ "dashboard.boshlash_uchun_tavsiya": {
+  "value": "Hozircha sizda faol vazifalar yo'q. Boshlash uchun loyihalarga o'ting yoki yangi loyiha toping.",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.loyihalarga_otish": {
+  "value": "Loyihalarni ko'rish",
+  "note": "pages/Dashboard.tsx"
  }
 }

@@ -152,7 +152,19 @@ export default function Tasks() {
             <Empty icon="☺" title={tx("tasks.dasturchi_topilmadi")}
                    text={dirty
                      ? tx("tasks.tanlangan_filtrga_mos_ijrochi_yoq")
-                     : tx("tasks.boshqaruvingizdagi_loyihalarda_hali_ijrochi_")} />
+                     : tx("tasks.boshqaruvingizdagi_loyihalarda_hali_ijrochi_")}>
+              <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
+                {dirty ? (
+                  <button type="button" className="btn" onClick={clear}>
+                    {tx("common.tozalash")}
+                  </button>
+                ) : (
+                  <Link className="btn btn-primary" to="/loyihalar">
+                    {tx("common.loyihalar")}
+                  </Link>
+                )}
+              </div>
+            </Empty>
           </div>
         ) : (
           <div className="card">

@@ -1531,6 +1531,12 @@ export default function Dashboard() {
     );
   }
 
+  const isFresh =
+    d.periods.every((p) => (p.todo ?? 0) === 0 && (p.overdue ?? 0) === 0 && (p.done ?? 0) === 0) &&
+    (d.deadlines.late_done ?? 0) === 0 &&
+    (d.deadlines.overdue ?? 0) === 0 &&
+    (d.deadlines.waiting ?? 0) === 0;
+
   return (
     <>
       <PageHead title={name} />
@@ -1544,6 +1550,22 @@ export default function Dashboard() {
           ))}
         </div>
         <Deadlines d={d.deadlines} picked={picked} onPick={setPicked} />
+
+        {isFresh && !picked && (
+          <div className="card mt" style={{ padding: "24px 20px", textAlign: "center" }}>
+            <p className="muted" style={{ margin: "0 0 16px", fontSize: 14 }}>
+              {tx("dashboard.boshlash_uchun_tavsiya")}
+            </p>
+            <div className="row" style={{ justifyContent: "center", gap: 10 }}>
+              <Link className="btn btn-primary" to="/loyihalar">
+                {tx("dashboard.loyihalarga_otish")}
+              </Link>
+              <Link className="btn" to="/qoshilish">
+                {tx("projects.loyiha_topish")}
+              </Link>
+            </div>
+          </div>
+        )}
 
         {picked && (
           <div className="mt">

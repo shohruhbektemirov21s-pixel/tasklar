@@ -74,7 +74,15 @@ export default function Workspaces() {
               <div className="card-list">
                 {!mine ? <Loading /> : mine.length ? mine.map((w) => row(w, true)) : (
                   <Empty title={tx("workspaces.siz_hali_ish_maydonida_emassiz")}
-                         text={tx("workspaces.yangi_maydon_yarating_yoki_ochiq")} />
+                         text={tx("workspaces.yangi_maydon_yarating_yoki_ochiq")}>
+                    {user?.can_create_project && (
+                      <div className="row" style={{ justifyContent: "center", marginTop: 12 }}>
+                        <Link className="btn btn-primary" {...toNewWorkspace()}>
+                          {tx("workspaces.yangi_maydon")}
+                        </Link>
+                      </div>
+                    )}
+                  </Empty>
                 )}
               </div>
             </Card>

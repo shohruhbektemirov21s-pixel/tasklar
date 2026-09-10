@@ -26,6 +26,7 @@ import {
   Avatar, Card, Empty, ErrorMsg, Loading, OkMsg, Pager,
   timeAgo,
 } from "@/components/ui";
+import { tx } from "@/i18n";
 
 type Sort = "top" | "new" | "old";
 const PAGE_SIZE = 10;
@@ -122,12 +123,12 @@ function InquiryRow({
           {renderStatusPill(item.status, item.status_display)}
           {item.scope === "CLOSED" && (
             <span className="badge badge-info" style={{ fontSize: 10, padding: "1px 6px" }}>
-              Yopiq
+              {tx("inquiries.yopiq")}
             </span>
           )}
         </div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-          {item.author ? item.author.full_name : "Anonim"} • {timeAgo(item.created_at)}
+          {item.author ? item.author.full_name : tx("inquiries.anonim")} • {timeAgo(item.created_at)}
         </div>
       </div>
 
@@ -140,7 +141,7 @@ function InquiryRow({
             onQuickVote("FOR");
           }}
           style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0 }}
-          title="Qo'shilaman"
+          title={tx("inquiries.qoshilaman")}
         >
           <IconThumbUp size={13} />
           <span>{item.for_count}</span>
@@ -156,7 +157,7 @@ function InquiryRow({
               e.stopPropagation();
               onEdit();
             }}
-            title="Tahrirlash"
+            title={tx("common.tahrirlash")}
           >
             ✏️
           </button>
@@ -167,7 +168,7 @@ function InquiryRow({
               e.stopPropagation();
               onDelete();
             }}
-            title="O'chirish"
+            title={tx("common.ochirish")}
           >
             🗑️
           </button>
@@ -249,9 +250,9 @@ export default function Inquiries() {
 
   async function handleDelete(item: Inquiry) {
     const yes = await confirmDialog({
-      title: "So'rov o'chirilsinmi?",
-      body: `«${item.title}» so'rovi butunlay o'chiriladi.`,
-      confirmText: "O'chirish",
+      title: tx("inquiries.ochirish_tasdiq"),
+      body: tx("inquiries.ochirish_matn", { title: item.title }),
+      confirmText: tx("common.ochirish"),
       danger: true,
     });
     if (!yes) return;
@@ -378,7 +379,7 @@ export default function Inquiries() {
                 setPage(1);
               }}
             >
-              Mening so'rovlarim ({counts.mine})
+              {tx("inquiries.mening_sorovlarim")} ({counts.mine})
             </button>
           </div>
         </div>
@@ -393,9 +394,35 @@ export default function Inquiries() {
             <Card>
               <Empty
                 icon="📋"
-                title="So'rovlar topilmadi"
-                text="Hozircha hech qanday so'rov mavjud emas yoki qidiruv bo'yicha natija yo'q."
-              />
+                title={tx("inquiries.topilmadi")}
+                text={tx("inquiries.topilmadi_matn")}
+              >
+                <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
+                  {Boolean(filters.search || filters.status || filters.scope || filters.mine) ? (
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => {
+                        setFilters(NO_FILTERS);
+                        setPage(1);
+                      }}
+                    >
+                      {tx("common.tozalash")}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setEditingItem(null);
+                        setFormOpen(true);
+                      }}
+                    >
+                      <IconPlus size={14} /> {tx("inquiries.yangi_sorov")}
+                    </button>
+                  )}
+                </div>
+              </Empty>
             </Card>
           ) : (
             <div className="card" style={{ padding: 4 }}>

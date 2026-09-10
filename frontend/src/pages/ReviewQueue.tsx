@@ -225,7 +225,16 @@ export default function ReviewQueue() {
         ) : (
           <Card>
             <Empty icon="✓" title={tx("review_queue.navbat_bosh")}
-                   text={tx("review_queue.hozircha_tekshirishga_yuborilgan_ish_yoq")} />
+                   text={tx("review_queue.hozircha_tekshirishga_yuborilgan_ish_yoq")}>
+              <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
+                <Link className="btn btn-primary" to="/vazifalar">
+                  {tx("common.vazifalar")}
+                </Link>
+                <Link className="btn" to="/loyihalar">
+                  {tx("common.loyihalar")}
+                </Link>
+              </div>
+            </Empty>
           </Card>
         )}
       </div>

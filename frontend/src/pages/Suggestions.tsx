@@ -266,9 +266,9 @@ function SuggestionRow({ item, rank, open, onToggle, onEdit, onDelete, onQuickVo
                 e.stopPropagation();
                 onToggle();
               }}
-              title="Taklif bo'yicha qaror qabul qilish yoki o'zgartirish"
+              title={tx("suggestions.qaror_title")}
             >
-              ⚖️ {item.status === "PENDING" ? "Qaror qabul qilish" : "Qarorni ko'rish"}
+              ⚖️ {item.status === "PENDING" ? tx("suggestions.qaror_qabul_qilish") : tx("suggestions.qarorni_korish")}
             </button>
           )}
 
@@ -498,7 +498,19 @@ export default function Suggestions() {
                        : tx("suggestions.bosh_holat")}
                    text={onlyMine ? tx("suggestions.meniki_bosh_matn")
                      : dirty ? tx("suggestions.topilmadi_matn")
-                       : tx("suggestions.bosh_holat_matn")} />
+                       : tx("suggestions.bosh_holat_matn")}>
+              <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
+                {dirty ? (
+                  <button type="button" className="btn" onClick={clear}>
+                    {tx("common.tozalash")}
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
+                    <IconIdea size={14} /> {tx("suggestions.yangi_taklif")}
+                  </button>
+                )}
+              </div>
+            </Empty>
           </Card>
         ) : (
           <div className={`sg-layout ${selectedItem ? "with-drawer" : ""}`}>

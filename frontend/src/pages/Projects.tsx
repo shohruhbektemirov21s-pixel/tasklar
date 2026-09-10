@@ -118,7 +118,7 @@ function ManagerProjects() {
             </Link>
           ) : (user?.is_sohaviy_boshqarma || user?.can_access_orders) ? (
             <Link className="btn btn-primary" to="/buyurtmalar">
-              <IconPlus size={15} /> Loyiha talabnomasi (Buyurtma) berish
+              <IconPlus size={15} /> {tx("projects.talabnoma_berish")}
             </Link>
           ) : null}
         </>}

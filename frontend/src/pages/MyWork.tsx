@@ -292,7 +292,16 @@ export default function MyWork() {
             ) : (
               <div className="card">
                 <Empty icon="☐" title={tx("my_work.sizga_hali_vazifa_biriktirilmagan")}
-                       text={tx("my_work.loyihaga_qoshiling_menejer_mutaxassisligingi")} />
+                       text={tx("my_work.loyihaga_qoshiling_menejer_mutaxassisligingi")}>
+                  <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
+                    <Link className="btn btn-primary" to="/loyihalar">
+                      {tx("common.loyihalar")}
+                    </Link>
+                    <Link className="btn" to="/qoshilish">
+                      {tx("projects.loyiha_topish")}
+                    </Link>
+                  </div>
+                </Empty>
               </div>
             )}
           </>
