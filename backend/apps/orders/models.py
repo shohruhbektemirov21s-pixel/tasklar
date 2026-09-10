@@ -332,3 +332,60 @@ class ChangeRequestVersion(models.Model):
             except Exception:
                 self.tz_file_size = 0
         super().save(*args, **kwargs)
+
+
+def order_attachment_path(instance, filename):
+    order_id = getattr(instance, "order_id", "new")
+    request_no = instance.order.request_no if instance.order and instance.order.request_no else str(order_id)
+    return f"orders/attachments/{request_no}/{filename}"
+
+
+class OrderAttachment(models.Model):
+    """Buyurtmaga biriktirilgan bir nechta fayllar (TZ hujjatlari, ilovalar, skrinshotlar)."""
+
+    order = models.ForeignKey(
+        ChangeRequest,
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        verbose_name="Buyurtma / TZ",
+    )
+    file = models.FileField("Fayl", upload_to=order_attachment_path)
+    original_name = models.CharField("Fayl nomi", max_length=255, blank=True, default="")
+    size = models.PositiveBigIntegerField("Fayl hajmi (bayt)", default=0)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order_attachments",
+        verbose_name="Yuklagan foydalanuvchi",
+    )
+    created_at = models.DateTimeField("Yuklangan vaqti", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Buyurtma ilovasi / fayli"
+        verbose_name_plural = "Buyurtma ilovalari / fayllari"
+        ordering = ["id"]
+
+    def __str__(self):
+        return self.original_name or str(self.file)
+
+    def save(self, *args, **kwargs):
+        if self.file and not self.original_name:
+            self.original_name = self.file.name.rsplit("/", 1)[-1][:255]
+        if self.file and not self.size:
+            try:
+                self.size = self.file.size
+            except Exception:
+                self.size = 0
+        super().save(*args, **kwargs)
+
+    @property
+    def size_display(self):
+        size = float(self.size or 0)
+        for unit in ("B", "KB", "MB", "GB"):
+            if size < 1024 or unit == "GB":
+                return "{:.0f} {}".format(size, unit) if unit == "B" else "{:.1f} {}".format(size, unit)
+            size /= 1024
+        return "{:.1f} GB".format(size)
+

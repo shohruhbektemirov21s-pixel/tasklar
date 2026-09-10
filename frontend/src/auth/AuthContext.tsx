@@ -3,12 +3,20 @@ import type { ReactNode } from "react";
 import { AUTH_EXPIRED, api, tokens } from "@/api/client";
 import type { MetaData, User } from "@/api/types";
 
+export interface RegisterResult {
+  access?: string;
+  refresh?: string;
+  user?: User;
+  message?: string;
+  is_active?: boolean;
+}
+
 interface AuthState {
   user: User | null;
   meta: MetaData | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (payload: Record<string, unknown>) => Promise<void>;
+  register: (payload: Record<string, unknown>) => Promise<RegisterResult>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -77,13 +85,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(
     async (payload: Record<string, unknown>) => {
-      const data = await api.post<{ access: string; refresh: string; user: User }>(
+      const data = await api.post<{ access?: string; refresh?: string; user?: User; message?: string; is_active?: boolean }>(
         "/auth/register/",
         payload
       );
-      tokens.set(data.access, data.refresh);
-      setUser(data.user);
-      await loadMeta();
+      if (data.access && data.refresh && data.user) {
+        tokens.set(data.access, data.refresh);
+        setUser(data.user);
+        await loadMeta();
+      }
+      return data;
     },
     [loadMeta]
   );

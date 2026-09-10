@@ -48,8 +48,6 @@ const Search = lazy(() => import("@/pages/Search"));
 const PublicProject = lazy(() => import("@/pages/PublicProject"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const Messages = lazy(() => import("@/pages/Messages"));
-const Admin = lazy(() => import("@/pages/Admin"));
-const AdminGate = lazy(() => import("@/pages/AdminGate"));
 const WorkspaceChat = lazy(() => import("@/pages/WorkspaceChat"));
 const Suggestions = lazy(() => import("@/pages/Suggestions"));
 const SuggestionDetail = lazy(() => import("@/pages/SuggestionDetail"));
@@ -57,6 +55,8 @@ const Inquiries = lazy(() => import("@/pages/Inquiries"));
 const ChangeRequests = lazy(() => import("@/pages/ChangeRequests"));
 const OrderDetail = lazy(() => import("@/pages/OrderDetail"));
 const OrderForm = lazy(() => import("@/pages/OrderForm"));
+const Admin = lazy(() => import("@/pages/Admin"));
+const AdminGate = lazy(() => import("@/pages/AdminGate"));
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -129,11 +129,7 @@ export default function App() {
       <Route path="/kirish" element={<GuestOnly><Login /></GuestOnly>} />
       <Route path="/royxatdan-otish" element={<GuestOnly><Register /></GuestOnly>} />
 
-      {/* Admin panel ALOHIDA shoxda: `Protected` ichida bo'lsa, kirmagan
-          odam `/admin` deb yozganda kirish sahifasiga otib yuborilardi va
-          «admin bo'lib kirish» degan yo'l umuman qolmasdi. Qorovul o'zi
-          kirish oynasini ko'rsatadi, huquq bo'lsa esa panel odatdagi
-          qobiq ichida ochiladi. */}
+      {/* Admin panel ALOHIDA shoxda: Qorovul login oynasini ko'rsatadi yoki panelni ochadi */}
       <Route element={<AdminGate />}>
         <Route element={<Layout />}>
           <Route path="/admin" element={<Admin />} />

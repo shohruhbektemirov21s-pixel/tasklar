@@ -274,6 +274,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)
+        user.is_active = False
         user.save()
         return user
 
@@ -296,6 +297,13 @@ class TokenSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        email = (attrs.get("email") or "").strip().lower()
+        password = attrs.get("password") or ""
+        existing_user = User.objects.filter(email__iexact=email).first()
+        if existing_user and existing_user.check_password(password) and not existing_user.is_active:
+            raise serializers.ValidationError({
+                "detail": "Hisobingiz administrator tomonidan tasdiqlanishi kutilmoqda. Tasdiqlangandan so'ng tizimga kirishingiz mumkin."
+            })
         data = super().validate(attrs)
         data["user"] = MeSerializer(self.user, context=self.context).data
         return data

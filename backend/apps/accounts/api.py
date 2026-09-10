@@ -28,10 +28,79 @@ from .serializers import (AdminCreateUserSerializer, ChangePasswordSerializer,
 User = get_user_model()
 
 
-@api_view(["GET"])
+@api_view(["GET", "POST", "DELETE"])
 @permission_classes([AllowAny])
-def specialties(request):
-    """Royxatdan otish sahifasi uchun mutaxassisliklar katalogi."""
+def specialties(request, item_id=None):
+    """Mutaxassisliklar katalogi (GET) va admin tomonidan yangi mutaxassislik qo'shish (POST)."""
+    if request.method == "POST":
+        if not (request.user and request.user.is_authenticated and getattr(request.user, "is_platform_admin", False)):
+            return Response(
+                {"detail": "Yangi mutaxassislik qo'shish faqat administratorga ruxsat etilgan."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        name = (request.data.get("name") or "").strip()
+        if not name:
+            return Response(
+                {"detail": "Mutaxassislik nomi kiritilishi shart."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        code = (request.data.get("code") or "").strip().upper()
+        if not code:
+            import re
+            code = re.sub(r"[^A-Z0-9_]+", "_", name.upper()).strip("_")[:40]
+            if not code:
+                code = f"SPEC_{int(timezone.now().timestamp())}"
+
+        color = (request.data.get("color") or "").strip() or "#2563eb"
+        icon = (request.data.get("icon") or "").strip() or "*"
+        skills = (request.data.get("skills") or "").strip()
+
+        from apps.accounts.models import SpecialtyItem
+        item, created = SpecialtyItem.objects.get_or_create(
+            code=code,
+            defaults={
+                "name": name,
+                "color": color,
+                "icon": icon,
+                "skills": skills,
+                "is_active": True,
+            },
+        )
+        if not created:
+            item.name = name
+            item.color = color
+            item.icon = icon
+            item.skills = skills
+            item.is_active = True
+            item.save()
+
+        return Response(
+            {
+                "message": f"«{name}» mutaxassisligi muvaffaqiyatli qo'shildi.",
+                "specialty": {
+                    "id": item.id,
+                    "value": item.code,
+                    "label": item.name,
+                    "icon": item.icon,
+                    "color": item.color,
+                    "skills": [s.strip() for s in item.skills.split(",") if s.strip()] if item.skills else [],
+                },
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    if request.method == "DELETE" and item_id:
+        if not (request.user and request.user.is_authenticated and getattr(request.user, "is_platform_admin", False)):
+            return Response(
+                {"detail": "Faqat administrator mutaxassislikni o'chira oladi."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        from apps.accounts.models import SpecialtyItem
+        SpecialtyItem.objects.filter(pk=item_id).delete()
+        return Response({"message": "Mutaxassislik o'chirildi."})
+
     return Response({
         "specialties": specialty_catalog(),
         "seniority": [{"value": v, "label": l} for v, l in Seniority.choices],
@@ -73,14 +142,12 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         log(actor=user, verb="user.registered", target=user,
-            summary="{} platformada royxatdan otdi".format(user.full_name))
+            summary="{} platformada ro'yxatdan o'tdi (admin tasdig'i kutilmoqda)".format(user.full_name))
 
-        from rest_framework_simplejwt.tokens import RefreshToken
-
-        refresh = RefreshToken.for_user(user)
         return Response({
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
+            "message": "Ro'yxatdan o'tish muvaffaqiyatli qabul qilindi. Administrator hisobingizni tasdiqlagandan so'ng tizimga kirishingiz mumkin.",
+            "is_active": False,
+            "email": user.email,
             "user": MeSerializer(user, context=self.get_serializer_context()).data,
         }, status=status.HTTP_201_CREATED)
 
@@ -247,9 +314,13 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         )
         # O'chirilgan hisoblar ro'yxatda turmaydi - ular na qidiruvda, na
         # odam tanlash oynasida kerak. Adminga kerak bo'lsa `?inactive=1`.
-        if self.request.query_params.get("inactive") == "1":
+        inactive_param = self.request.query_params.get("inactive")
+        if inactive_param == "1":
             if self.request.user.is_platform_admin:
                 qs = qs.filter(is_active=False)
+        elif inactive_param == "all":
+            if not self.request.user.is_platform_admin:
+                qs = qs.filter(is_active=True)
         else:
             qs = qs.filter(is_active=True)
 

@@ -7,8 +7,9 @@ import { PageHead } from "@/components/Layout";
 import TaskSubmission from "@/components/TaskSubmission";
 import Timeline from "@/components/Timeline";
 import { useRealtime } from "@/realtime/RealtimeContext";
-import { Avatar, AvatarStack, Card, DateField, DateTimeField, Empty, ErrorMsg, fmtDate, fmtDateTime, fromDateTimeInput, Loading, Priority, StatusBadge, timeAgo, toDateTimeInput, todayInTz } from "@/components/ui";
+import { Avatar, AvatarStack, DateField, DateTimeField, Empty, ErrorMsg, fmtDate, fmtDateTime, fromDateTimeInput, Loading, Priority, StatusBadge, timeAgo, toDateTimeInput, todayInTz } from "@/components/ui";
 import { confirmDialog } from "@/components/Confirm";
+import { IconChevron } from "@/components/icons";
 import { toProject, toTask, toTaskEdit, useEntityId, useGo } from "@/nav";
 import { createSubtask, getAvailableSubtasks, linkSubtask, unlinkSubtask } from "@/api/tasks";
 import { tx } from "@/i18n";
@@ -18,6 +19,126 @@ const FILE_ICON: Record<string, string> = {
   zip: "ZIP", rar: "ZIP", md: "MD", txt: "TXT", json: "JSON",
   log: "LOG", sql: "SQL", py: "PY", js: "JS", ts: "TS",
 };
+
+interface AccordionSectionProps {
+  id?: string;
+  icon: React.ReactNode;
+  title: React.ReactNode;
+  badge?: React.ReactNode;
+  statusText?: React.ReactNode;
+  action?: React.ReactNode;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  padded?: boolean;
+}
+
+function AccordionSection({
+  id,
+  icon,
+  title,
+  badge,
+  statusText,
+  action,
+  isOpen,
+  onToggle,
+  children,
+  padded = true,
+}: AccordionSectionProps) {
+  return (
+    <div
+      className={`card accordion-section ${isOpen ? "is-open" : "is-collapsed"}`}
+      id={id}
+      style={{
+        marginBottom: 10,
+        borderRadius: 8,
+        border: isOpen ? "1px solid var(--border)" : "1px solid var(--border-muted)",
+        boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.04)" : "none",
+        transition: "all 0.18s ease",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        className="accordion-head"
+        onClick={onToggle}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isOpen}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        style={{
+          cursor: "pointer",
+          userSelect: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "11px 16px",
+          background: "var(--surface)",
+          borderBottom: isOpen ? "1px solid var(--border-muted)" : "none",
+          transition: "background-color 0.15s ease",
+        }}
+      >
+        <div className="row middle" style={{ gap: 10, minWidth: 0, flex: "1 1 auto" }}>
+          <span style={{ fontSize: 16, display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+            {icon}
+          </span>
+          <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap" }}>
+            {title}
+          </h3>
+          {badge}
+          {!isOpen && statusText && (
+            <span
+              className="muted"
+              style={{
+                fontSize: 12,
+                marginLeft: 6,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: 280,
+                opacity: 0.85,
+              }}
+            >
+              {statusText}
+            </span>
+          )}
+        </div>
+
+        <div className="row middle" style={{ gap: 8, flexShrink: 0 }}>
+          {isOpen && action && (
+            <div onClick={(e) => e.stopPropagation()}>
+              {action}
+            </div>
+          )}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 24,
+              height: 24,
+              color: "var(--muted)",
+              transition: "transform 0.2s ease",
+              transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          >
+            <IconChevron size={15} />
+          </div>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className={padded ? "card-body" : undefined} style={{ padding: padded ? "14px 16px" : 0 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TaskDetail() {
   const fid = useId();
@@ -61,6 +182,19 @@ export default function TaskDetail() {
   const [availLoading, setAvailLoading] = useState(false);
   const [selectedSubtaskId, setSelectedSubtaskId] = useState("");
   const [availSearch, setAvailSearch] = useState("");
+
+  // Accordion yig'iladigan bo'limlar holati:
+  // Sahifa ochilganda faqat eng muhim bo'limlar ochiq bo'ladi.
+  const [openLeft, setOpenLeft] = useState<string | null>("desc");
+  const [openRight, setOpenRight] = useState<string | null>("info");
+
+  const toggleLeft = (section: string) => {
+    setOpenLeft((prev) => (prev === section ? null : section));
+  };
+
+  const toggleRight = (section: string) => {
+    setOpenRight((prev) => (prev === section ? null : section));
+  };
 
   const load = useCallback(async () => {
     try {
@@ -324,22 +458,39 @@ export default function TaskDetail() {
 
         <div className="split">
           <div>
-            <Card title={tx("task_detail.nima_qilish_kerak")}>
+            <AccordionSection
+              id="section-desc"
+              icon="📝"
+              title={tx("task_detail.nima_qilish_kerak")}
+              statusText={
+                task.description
+                  ? task.description.split("\n")[0].slice(0, 50) + (task.description.length > 50 ? "..." : "")
+                  : tx("common.tavsif_kiritilmagan")
+              }
+              isOpen={openLeft === "desc"}
+              onToggle={() => toggleLeft("desc")}
+            >
               {task.description ? (
                 <div className="pre-wrap">{task.description}</div>
-              ) : <p className="muted">{tx("common.tavsif_kiritilmagan")}</p>}
-            </Card>
-
-            {task.acceptance_criteria && (
-              <Card title={tx("common.tayyorlik_mezoni")}>
-                <div className="callout ok pre-wrap">{task.acceptance_criteria}</div>
-              </Card>
-            )}
+              ) : <p className="muted" style={{ margin: 0 }}>{tx("common.tavsif_kiritilmagan")}</p>}
+            </AccordionSection>
 
             {/* ------------------------------------------------ OSTKI VAZIFALAR (SUBTASKS) */}
-            <Card
-              title={tx("task_detail.ostki_vazifalar")}
+            <AccordionSection
+              id="section-subtasks"
+              icon="⚡"
+              title="Subtasklar"
               badge={<span className="badge">{task.subtasks?.length || 0}</span>}
+              statusText={
+                task.subtasks?.length
+                  ? (() => {
+                      const total = task.subtasks.length;
+                      const done = task.subtasks.filter((s) => s.status === "DONE").length;
+                      const pct = Math.round((done / total) * 100);
+                      return `${done}/${total} bajarildi (${pct}%)`;
+                    })()
+                  : "Hozircha subtasklar yo'q"
+              }
               action={canManageSubtasks && (
                 <button
                   type="button"
@@ -347,9 +498,11 @@ export default function TaskDetail() {
                   onClick={() => setSubtaskModalOpen(true)}
                   disabled={busy}
                 >
-                  + {tx("task_detail.ostki_vazifa_qoshish")}
+                  + Subtask qo'shish
                 </button>
               )}
+              isOpen={openLeft === "subtasks"}
+              onToggle={() => toggleLeft("subtasks")}
             >
               {/* Progress bar */}
               {Boolean(task.subtasks && task.subtasks.length > 0) && (() => {
@@ -410,17 +563,22 @@ export default function TaskDetail() {
                   {tx("task_detail.ostki_vazifalar_yoq")}
                 </p>
               )}
-            </Card>
+            </AccordionSection>
 
             {/* ------------------------------------------------ FAYLLAR */}
-            <Card
+            <AccordionSection
+              id="section-files"
+              icon="📎"
               title={tx("task_detail.fayllar")}
               badge={<span className="badge">{attachments.length}</span>}
+              statusText={`${attachments.length} ta fayl`}
               action={acc.can_work && (
-                <button className="btn btn-sm" onClick={() => fileInput.current?.click()} disabled={busy}>
-                  {tx("task_detail.fayl_qoshish")}
+                <button className="btn btn-sm btn-primary" onClick={() => fileInput.current?.click()} disabled={busy}>
+                  + {tx("task_detail.fayl_qoshish")}
                 </button>
               )}
+              isOpen={openLeft === "files"}
+              onToggle={() => toggleLeft("files")}
             >
               <input ref={fileInput} type="file" multiple hidden
                      onChange={(e) => { void uploadFiles(e.target.files || []); e.target.value = ""; }} />
@@ -501,12 +659,27 @@ export default function TaskDetail() {
                 </div>
               )}
               {!attachments.length && !acc.can_work && <p className="muted">{tx("task_detail.fayl_biriktirilmagan")}</p>}
-            </Card>
+            </AccordionSection>
+
+            {/* ------------------------------------------------ TOPSHIRILGAN ISH */}
+            <TaskSubmission
+              task={task}
+              canWork={acc.can_work}
+              onChange={() => void load()}
+              isOpen={openLeft === "submission"}
+              onToggle={() => toggleLeft("submission")}
+            />
 
             {/* ------------------------------------------------ IZOHLAR */}
-            <TaskSubmission task={task} canWork={acc.can_work} onChange={() => void load()} />
-
-            <Card title={tx("task_detail.izohlar")} badge={<span className="badge">{task.comments?.length || 0}</span>}>
+            <AccordionSection
+              id="section-comments"
+              icon="💬"
+              title={tx("task_detail.izohlar")}
+              badge={<span className="badge">{task.comments?.length || 0}</span>}
+              statusText={`${task.comments?.length || 0} ta izoh`}
+              isOpen={openLeft === "comments"}
+              onToggle={() => toggleLeft("comments")}
+            >
               <ul className="list-plain">
                 {(task.comments || []).map((c) => (
                   <li key={c.id}>
@@ -537,11 +710,19 @@ export default function TaskDetail() {
                   </button>
                 </div>
               </form>
-            </Card>
+            </AccordionSection>
 
             {/* ------------------------------------------------ ISH JURNALI */}
             {acc.can_work && (
-              <Card title={tx("task_detail.ish_jurnali")} badge={<span className="badge">{task.logged_hours} {tx("common.soat")}</span>}>
+              <AccordionSection
+                id="section-worklogs"
+                icon="⏱️"
+                title={tx("task_detail.ish_jurnali")}
+                badge={<span className="badge">{task.logged_hours} {tx("common.soat")}</span>}
+                statusText={`${task.logged_hours} ${tx("common.soat")} qayd etilgan`}
+                isOpen={openLeft === "worklogs"}
+                onToggle={() => toggleLeft("worklogs")}
+              >
                 <ul className="list-plain">
                   {(task.worklogs || []).map((w) => (
                     <li key={w.id}>
@@ -585,7 +766,7 @@ export default function TaskDetail() {
                   </div>
                   <button className="btn btn-sm btn-primary" disabled={busy}>{tx("task_detail.jurnalga_yozish")}</button>
                 </form>
-              </Card>
+              </AccordionSection>
             )}
 
             {(() => {
@@ -612,9 +793,14 @@ export default function TaskDetail() {
               const pagedHistory = filteredHistory.slice((histPage - 1) * HIST_PAGE_SIZE, histPage * HIST_PAGE_SIZE);
 
               return (
-                <Card
+                <AccordionSection
+                  id="section-history"
+                  icon="📜"
                   title={tx("task_detail.vazifa_tarixi")}
                   badge={<span className="badge">{filteredHistory.length} {tx("feed.yozuv")}</span>}
+                  statusText={`${filteredHistory.length} ta amal qaydi`}
+                  isOpen={openLeft === "history"}
+                  onToggle={() => toggleLeft("history")}
                 >
                   <div className="filters" style={{ marginBottom: 16 }}>
                     <div className="f grow">
@@ -691,7 +877,7 @@ export default function TaskDetail() {
                       </button>
                     </div>
                   )}
-                </Card>
+                </AccordionSection>
               );
             })()}
           </div>
@@ -699,17 +885,30 @@ export default function TaskDetail() {
           {/* ------------------------------------------------ ONG USTUN */}
           <div>
             {withdraw && (
-              <Card title={tx("task_detail.tekshiruvdan_qaytarib_olish")}>
-                <button className="btn btn-sm" disabled={busy}
+              <AccordionSection
+                id="section-withdraw"
+                icon="↩️"
+                title={tx("task_detail.tekshiruvdan_qaytarib_olish")}
+                isOpen={openRight === "withdraw"}
+                onToggle={() => toggleRight("withdraw")}
+              >
+                <button className="btn btn-sm btn-warning" disabled={busy}
                         onClick={() => void run(() => api.post(`/tasks/${task.id}/status/`,
                                                               { status: withdraw.value }))}>
                   {tx("task_detail.qaytarib_olish")}
                 </button>
-              </Card>
+              </AccordionSection>
             )}
 
             {picks.length > 0 && (
-              <Card title={tx("task_detail.holatni_ozgartirish")}>
+              <AccordionSection
+                id="section-status"
+                icon="🔄"
+                title={tx("task_detail.holatni_ozgartirish")}
+                statusText={task.status_display}
+                isOpen={openRight === "status"}
+                onToggle={() => toggleRight("status")}
+              >
                 {/* Tugmalar yonma-yon: oltita holat ustma-ust turganda panel
                     ekranning yarmini egallab, yonidagi «Tekshiruv» va boshqa
                     bo'limlarni pastga surib yuborardi. */}
@@ -725,21 +924,24 @@ export default function TaskDetail() {
                   ))}
                 </div>
                 {picks.some((t) => t.value === "BLOCKED") && (
-                  /* Sabab «To'xtab qolgan» tugmasidan OLDIN yoziladi - tugma
-                     bosilishi bilanoq holat serverga ketadi. Shuning uchun
-                     maydon ko'rinib turadi, lekin ixcham: yorlig'i yo'q,
-                     tushuntirish o'rniga joy tutuvchi matn. */
                   <div className="status-reason">
                     <label className="sr-only" htmlFor={`${fid}-4`}>{tx("task_detail.toxtash_sababi")}</label>
                     <input id={`${fid}-4`} value={blockReason} onChange={(e) => setBlockReason(e.target.value)}
                            placeholder={tx("task_detail.toxtab_qolgan_uchun_sabab")} />
                   </div>
                 )}
-              </Card>
+              </AccordionSection>
             )}
 
             {acc.can_review && task.status === "IN_REVIEW" && (
-              <Card title={tx("task_detail.tekshiruv")}>
+              <AccordionSection
+                id="section-review"
+                icon="⚖️"
+                title={tx("task_detail.tekshiruv")}
+                statusText="Tekshirish kutilmoqda"
+                isOpen={openRight === "review"}
+                onToggle={() => toggleRight("review")}
+              >
                 <form onSubmit={(e) => {
                   e.preventDefault();
                   void run(() => api.post(`/tasks/${task.id}/review/`, review));
@@ -764,10 +966,17 @@ export default function TaskDetail() {
                   </div>
                   <button className="btn btn-primary btn-block" disabled={busy}>{tx("task_detail.qarorni_saqlash")}</button>
                 </form>
-              </Card>
+              </AccordionSection>
             )}
 
-            <Card title={tx("task_detail.malumotlar")}>
+            <AccordionSection
+              id="section-info"
+              icon="ℹ️"
+              title={tx("task_detail.malumotlar")}
+              statusText={task.assignees?.length ? task.assignees.map((u) => u.full_name).join(", ") : "Ijrochi belgilanmagan"}
+              isOpen={openRight === "info"}
+              onToggle={() => toggleRight("info")}
+            >
               <ul className="list-plain" style={{ fontSize: 13 }}>
                 <li className="row">
                   <span className="muted">{tx("common.ijrochilar")}</span><span className="spacer" />
@@ -792,14 +1001,21 @@ export default function TaskDetail() {
                   </li>
                 )}
               </ul>
-            </Card>
+            </AccordionSection>
 
             {/* Ishni boshqa odamga O'TKAZISH. Vazifa formasida ham ijrochini
                 almashtirsa bo'ladi, lekin u yerda butun topshiriq qaytadan
                 ochiladi; bu yerda bitta amal: kimga va nega. Ish bitta odamga
                 o'tadi, oldingisi xabar oladi (serverda ham shunday). */}
             {canEdit && task.status !== "DONE" && task.status !== "CANCELLED" && (
-              <Card title={tx("task_detail.boshqa_odamga_otkazish")}>
+              <AccordionSection
+                id="section-reassign"
+                icon="👤"
+                title={tx("task_detail.boshqa_odamga_otkazish")}
+                statusText="Ijrochini almashtirish"
+                isOpen={openRight === "reassign"}
+                onToggle={() => toggleRight("reassign")}
+              >
                 <form onSubmit={(e) => {
                   e.preventDefault();
                   if (!handTo) return;
@@ -838,28 +1054,50 @@ export default function TaskDetail() {
                     {tx("task_detail.ish_bitta_odamga_otadi_oldingi")}
                   </small>
                 </form>
-              </Card>
+              </AccordionSection>
             )}
 
             {!!task.quality_checklist?.length && (
-              <Card title={tx("task_detail.topshirishdan_oldin_tekshiring")}>
+              <AccordionSection
+                id="section-checklist"
+                icon="📋"
+                title={tx("task_detail.topshirishdan_oldin_tekshiring")}
+                badge={<span className="badge">{task.quality_checklist.length}</span>}
+                isOpen={openRight === "checklist"}
+                onToggle={() => toggleRight("checklist")}
+              >
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
                   {task.quality_checklist.map((c: string) => <li key={c}>{c}</li>)}
                 </ul>
-              </Card>
+              </AccordionSection>
             )}
 
             {!!task.mismatched_assignees?.length && acc.can_manage && (
-              <Card title={tx("task_detail.diqqat")}>
-                <div className="callout warn">
+              <AccordionSection
+                id="section-mismatch"
+                icon="⚠️"
+                title={tx("task_detail.diqqat")}
+                statusText="Nomutanosiblik"
+                isOpen={openRight === "mismatch"}
+                onToggle={() => toggleRight("mismatch")}
+              >
+                <div className="callout warn" style={{ margin: 0 }}>
                   {tx("task_detail.quyidagi_ijrochilar_mutaxassisligi_vazifa_ta")}{" "}
                   {task.mismatched_assignees.map((u: any) => u.full_name).join(", ")}
                 </div>
-              </Card>
+              </AccordionSection>
             )}
 
             {!!task.reviews?.length && (
-              <Card title={tx("task_detail.tekshiruvlar_tarixi")}>
+              <AccordionSection
+                id="section-reviews-history"
+                icon="📑"
+                title={tx("task_detail.tekshiruvlar_tarixi")}
+                badge={<span className="badge">{task.reviews.length}</span>}
+                statusText={`${task.reviews.length} ta sharh`}
+                isOpen={openRight === "reviews_history"}
+                onToggle={() => toggleRight("reviews_history")}
+              >
                 <ul className="list-plain">
                   {task.reviews.map((r) => (
                     <li key={r.id}>
@@ -876,7 +1114,7 @@ export default function TaskDetail() {
                     </li>
                   ))}
                 </ul>
-              </Card>
+              </AccordionSection>
             )}
           </div>
         </div>

@@ -10,9 +10,35 @@ from .models import (
     ChangeRequestStatus,
     ChangeRequestType,
     ChangeRequestVersion,
+    OrderAttachment,
 )
 
 User = get_user_model()
+
+
+class OrderAttachmentSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField(read_only=True)
+    size_display = serializers.CharField(read_only=True)
+    uploaded_by_name = serializers.CharField(source="uploaded_by.full_name", read_only=True, default="")
+
+    class Meta:
+        model = OrderAttachment
+        fields = [
+            "id",
+            "file",
+            "url",
+            "original_name",
+            "size",
+            "size_display",
+            "uploaded_by",
+            "uploaded_by_name",
+            "created_at",
+        ]
+        read_only_fields = ["id", "size", "created_at"]
+
+    def get_url(self, obj):
+        from apps.core.media import media_url
+        return media_url(obj.file)
 
 
 class SafeDateField(serializers.DateField):
@@ -107,6 +133,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     tz_file = serializers.FileField(required=False, allow_null=True)
     tz_file_url = serializers.SerializerMethodField(read_only=True)
     tz_file_size_display = serializers.SerializerMethodField(read_only=True)
+    attachments = OrderAttachmentSerializer(many=True, read_only=True)
 
     completion_file = serializers.FileField(required=False, allow_null=True)
     completion_file_url = serializers.SerializerMethodField(read_only=True)
@@ -168,6 +195,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "tz_file_name",
             "tz_file_size",
             "tz_file_size_display",
+            "attachments",
             "current_state",
             "requested_change",
             "reason",

@@ -45,9 +45,8 @@ class RegistrationAndAuthSeniorQATest(ApiTestCase):
         }
         r = self.anon.post(self.REGISTER_URL, payload, format="json")
         self.assertEqual(r.status_code, 201, r.data)
-        self.assertIn("access", r.data)
-        self.assertIn("refresh", r.data)
         self.assertIn("user", r.data)
+        self.assertFalse(r.data.get("is_active", True))
 
         user_data = r.data["user"]
         self.assertEqual(user_data["email"], "yangi.backendchi@teamflow.uz")
@@ -58,6 +57,7 @@ class RegistrationAndAuthSeniorQATest(ApiTestCase):
         # Bazadagi foydalanuvchi holatini tekshirish
         user = User.objects.get(email="yangi.backendchi@teamflow.uz")
         self.assertTrue(user.check_password("murakkab-parol-2026"))
+        self.assertFalse(user.is_active)
 
     def test_pm_royxatdan_otganda_menejer_rolini_oladi(self):
         """Loyiha menejeri (PM) mutaxassisligi tanlanganda global_role avtomatik MANAGER bo'ladi."""

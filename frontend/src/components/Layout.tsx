@@ -102,16 +102,33 @@ export default function Layout() {
     user?.can_create_project ||
     user?.manages_projects
   );
-  const { subscribe } = useRealtime();
+  const { subscribe, connected, reload: reloadRealtime } = useRealtime();
   const go = useGo();
   const loc = useLocation();
   const [counts, setCounts] = useState({ open: 0, reviews: 0, joins: 0, orders: 0, suggestions: 0 });
   const [q, setQ] = useState("");
-  // Sahifa nomi shu tugunga chiziladi - `PageHead` uni portal orqali
-  // to'ldiradi. `useRef` emas, HOLAT: tugun paydo bo'lganda sahifa
-  // qayta chizilishi kerak, aks holda portal hech qachon ochilmasdi.
   const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null);
   const [tick, setTick] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const triggerRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTick((t) => t + 1);
+    void reloadRealtime();
+    window.dispatchEvent(new CustomEvent("teamflow:refresh"));
+    window.setTimeout(() => setRefreshing(false), 600);
+  }, [reloadRealtime]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        triggerRefresh();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [triggerRefresh]);
   // Tepadagi qidiruv odamni ham topadi: ism, familiya yoki email bo'yicha.
   const [people, setPeople] = useState<UserBrief[]>([]);
   const [openHits, setOpenHits] = useState(false);
@@ -400,11 +417,9 @@ export default function Layout() {
             {!user?.is_sohaviy_boshqarma &&
               (user?.can_access_orders || user?.is_platform_admin || user?.is_manager || user?.is_boss) &&
               item("/buyurtmalar", <IconOrder />, "Buyurtmalar", counts.orders, true)}
+            {user?.is_platform_admin &&
+              item("/admin", <IconSettings />, tx("common.admin_panel") || "Admin panel")}
             {item("/tarix", <IconHistory />, tx("layout.umumiy_tarix"))}
-            {/* Admin panel - faqat platforma adminida ko'rinadi. Marshrut
-                ham himoyalangan (`AdminOnly`), serverdagi amallar ham
-                (`IsPlatformAdmin`) - bu shunchaki qulay havola. */}
-            {user?.is_platform_admin && item("/admin", <IconSettings />, tx("common.admin_panel"))}
           </div>
 
           <div className="sidebar-footer">

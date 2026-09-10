@@ -2,7 +2,7 @@
  * Axborot tizimiga o'zgartirish kiritish buyurtmalari (TZ / Change Requests) API xizmati.
  */
 import { api } from "./client";
-import type { ChangeRequestItem, OrderStats } from "./types";
+import type { ChangeRequestItem, OrderAttachmentItem, OrderStats } from "./types";
 import { tx } from "@/i18n";
 
 export const ORDER_TYPE_CONFIG: Record<
@@ -255,6 +255,26 @@ export async function clientReject(id: number | string, feedbackNote: string): P
   return api.post<ChangeRequestItem>(`/orders/${id}/client-reject-completion/`, {
     feedback_note: feedbackNote.trim(),
   });
+}
+
+/**
+ * Buyurtmaga qo'shimcha fayllar biriktirish.
+ */
+export async function addOrderAttachments(
+  id: number | string,
+  formData: FormData
+): Promise<OrderAttachmentItem[]> {
+  return api.post<OrderAttachmentItem[]>(`/orders/${id}/attachments/`, formData);
+}
+
+/**
+ * Buyurtmaga biriktirilgan faylni o'chirish.
+ */
+export async function deleteOrderAttachment(
+  orderId: number | string,
+  attachmentId: number | string
+): Promise<void> {
+  return api.delete<void>(`/orders/${orderId}/attachments/${attachmentId}/`);
 }
 
 /**

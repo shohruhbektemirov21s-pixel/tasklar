@@ -18,36 +18,20 @@ BEKOR QILISH. `invalidate_panel` chaqirilganda kesh ANIQ O'SHA odam
 uchun tozalanadi — masalan, vazifa holati o'zgartirilganda. Shunda odam
 harakati darrov ko'rinadi: men topshirdim -> navbat raqami oshdi.
 """
-from django.core.cache import cache
+from apps.core.cache import (
+    DASHBOARD_TTL,
+    SIDEBAR_TTL,
+    dashboard_key,
+    sidebar_key,
+    invalidate_panel,
+    invalidate_panel_many,
+)
 
-# Soniya. Qisqa tutar, lekin eng og'ir endpointni 4x yengillashtiradi.
-DASHBOARD_TTL = 15
-SIDEBAR_TTL = 10
-
-
-def dashboard_key(user_id):
-    return "panel:dash:{}".format(user_id)
-
-
-def sidebar_key(user_id):
-    return "panel:side:{}".format(user_id)
-
-
-def invalidate_panel(user_id):
-    """Foydalanuvchining panel keshini tozalash.
-
-    Chaqiriladigan joylar: vazifa holati o'zgarsa, yangi vazifa yaratilsa,
-    a'zo qo'shilsa, so'rov kelib tushsa.
-    """
-    cache.delete_many([dashboard_key(user_id), sidebar_key(user_id)])
-
-
-def invalidate_panel_many(user_ids):
-    """Bir nechta odamning keshini tozalash — bulk amallardan keyin."""
-    if not user_ids:
-        return
-    keys = []
-    for uid in user_ids:
-        keys.append(dashboard_key(uid))
-        keys.append(sidebar_key(uid))
-    cache.delete_many(keys)
+__all__ = [
+    "DASHBOARD_TTL",
+    "SIDEBAR_TTL",
+    "dashboard_key",
+    "sidebar_key",
+    "invalidate_panel",
+    "invalidate_panel_many",
+]

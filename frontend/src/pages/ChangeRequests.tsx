@@ -500,7 +500,7 @@ export default function ChangeRequests() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [priorityFilter, setPriorityFilter] = useState<string>("");
-  const [projectFilter, setProjectFilter] = useState<string>("");
+  const [periodFilter, setPeriodFilter] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [deadlineFilter, setDeadlineFilter] = useState<string>("");
   const [activeActionMenuId, setActiveActionMenuId] = useState<number | null>(null);
@@ -563,7 +563,7 @@ export default function ChangeRequests() {
       search: debouncedSearch || undefined,
       status: statusFilter || undefined,
       priority: priorityFilter || undefined,
-      project: projectFilter || undefined,
+      period: periodFilter || undefined,
       order_type: typeFilter || undefined,
       deadline: deadlineFilter || undefined,
     }
@@ -1392,12 +1392,12 @@ export default function ChangeRequests() {
             )}
           </div>
 
-          {/* Barcha loyihalar */}
+          {/* Davr filtri (Barcha davrlar, Shu oy, O'tgan oy, 6 oylik, 1 yillik) */}
           <div style={{ position: "relative", minWidth: 160 }}>
             <select
-              value={projectFilter}
+              value={periodFilter}
               onChange={(e) => {
-                setProjectFilter(e.target.value);
+                setPeriodFilter(e.target.value);
                 setPage(1);
               }}
               style={{
@@ -1414,12 +1414,11 @@ export default function ChangeRequests() {
                 fontWeight: 500,
               }}
             >
-              <option value="">{tx("orders.barcha_loyihalar")}</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.key})
-                </option>
-              ))}
+              <option value="">{tx("orders.barcha_davrlar")}</option>
+              <option value="this_month">{tx("orders.shu_oy")}</option>
+              <option value="last_month">{tx("orders.otgan_oy")}</option>
+              <option value="6_months">{tx("orders.olti_oylik")}</option>
+              <option value="1_year">{tx("orders.bir_yillik")}</option>
             </select>
             <span
               style={{
@@ -1543,7 +1542,7 @@ export default function ChangeRequests() {
             onClick={() => {
               setSearch("");
               setStatusFilter("");
-              setProjectFilter("");
+              setPeriodFilter("");
               setDeadlineFilter("");
               setTypeFilter("");
               setPriorityFilter("");
@@ -2187,7 +2186,7 @@ export default function ChangeRequests() {
               boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
             }}
           >
-            {search || statusFilter || projectFilter || deadlineFilter ? (
+            {search || statusFilter || periodFilter || deadlineFilter ? (
               <>
                 <div style={{ fontSize: 44, marginBottom: 12 }}>🔍</div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>
@@ -2203,7 +2202,7 @@ export default function ChangeRequests() {
                   onClick={() => {
                     setSearch("");
                     setStatusFilter("");
-                    setProjectFilter("");
+                    setPeriodFilter("");
                     setDeadlineFilter("");
                     setTypeFilter("");
                     setPriorityFilter("");

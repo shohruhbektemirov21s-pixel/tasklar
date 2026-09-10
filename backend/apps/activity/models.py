@@ -6,6 +6,8 @@ from apps.core.fields import JSONTextField
 # verb -> (belgi, matn shabloni uchun kategoriya)
 VERB_META = {
     "user.registered": ("+", "user"),
+    "user.approved": ("+", "user"),
+    "user.deactivated": ("-", "user"),
     "user.role_changed": ("*", "user"),
     # Admin panelidagi ikkita amal - ular ham tarixda qolsin: kim kimga
     # hisob ochgani va kimning parolini almashtirgani izsiz ketmasin.

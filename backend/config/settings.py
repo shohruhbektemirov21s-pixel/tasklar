@@ -255,7 +255,10 @@ REST_FRAMEWORK = {
 
 # ---------------------------------------------------------------- Rate Limiting & Anti-Abuse
 # Tajovuzkor va haddan tashqari ko'p so'rov yuboruvchilarni avtomatik bloklash.
-RATE_LIMIT_ENABLED = env_bool("RATE_LIMIT_ENABLED", True)
+# Testlarda daqiqasiga yuzlab so'rov yuboriladi - test muhitida soxta 429
+# xatoliklarining oldini olish uchun standartda o'chiriladi.
+TESTING = "test" in sys.argv or any(arg.endswith("test") for arg in sys.argv)
+RATE_LIMIT_ENABLED = env_bool("RATE_LIMIT_ENABLED", not TESTING)
 RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "120"))
 RATE_LIMIT_BAN_THRESHOLD = int(os.getenv("RATE_LIMIT_BAN_THRESHOLD", "300"))
 RATE_LIMIT_BAN_SECONDS = int(os.getenv("RATE_LIMIT_BAN_SECONDS", "600"))
@@ -363,15 +366,15 @@ LOGGING = {
 # ---------------------------------------------------------------- Jazzmin Admin Sozlamalari
 JAZZMIN_SETTINGS = {
     "site_title": "TeamFlow Admin",
-    "site_header": "⚡ TeamFlow",
+    "site_header": "⚡ TeamFlow Boshqaruv",
     "site_brand": "TeamFlow",
     "site_logo": None,
-    "welcome_sign": "TeamFlow Boshqaruv Markaziga xush kelibsiz!",
+    "welcome_sign": "TeamFlow Boshqaruv Paneliga xush kelibsiz!",
     "copyright": "TeamFlow",
     "search_model": "accounts.User",
     "topmenu_links": [
         {"name": "Boshqaruv", "url": "admin:index"},
-        {"name": "Asosiy Sayt", "url": "http://localhost:5183", "new_window": True},
+        {"name": "Ilovaga qaytish", "url": "http://localhost:5183/panel", "new_window": False},
     ],
     "show_sidebar": True,
     "navigation_expanded": True,
@@ -380,48 +383,46 @@ JAZZMIN_SETTINGS = {
         "projects",
         "tasks",
         "workspaces",
-        "suggestions",
+        "orders",
         "inquiries",
-        "chat",
-        "activity",
-        "uitexts",
+        "suggestions",
+    ],
+    "hide_models": [
+        "auth.Group",
+        "accounts.SpecialtyAnalytics",
+        "tasks.Comment",
+        "tasks.Attachment",
+        "tasks.Label",
+        "tasks.Review",
+        "tasks.WorkLog",
+        "projects.ProjectMember",
+        "projects.JoinRequest",
+        "projects.ProjectBrief",
+        "workspaces.WorkspaceMember",
+        "inquiries.InquiryFile",
+        "chat.ChatRoom",
+        "chat.ChatMessage",
+        "activity.ActivityLog",
+        "notifications.Notification",
+        "uitexts.UiText",
     ],
     "icons": {
-        "auth": "fas fa-users-cog",
-        "auth.Group": "fas fa-users",
         "accounts": "fas fa-user-shield",
         "accounts.User": "fas fa-user",
+        "accounts.SpecialtyItem": "fas fa-id-badge",
         "accounts.Department": "fas fa-building",
-
         "projects": "fas fa-project-diagram",
         "projects.Project": "fas fa-layer-group",
-        "projects.ProjectMember": "fas fa-user-plus",
-        "projects.JoinRequest": "fas fa-envelope-open-text",
-        "projects.ProjectBrief": "fas fa-file-alt",
         "tasks": "fas fa-tasks",
         "tasks.Task": "fas fa-clipboard-check",
-        "tasks.Comment": "fas fa-comments",
-        "tasks.Attachment": "fas fa-paperclip",
-        "tasks.Label": "fas fa-tags",
-        "tasks.Review": "fas fa-user-check",
-        "tasks.WorkLog": "fas fa-stopwatch",
         "workspaces": "fas fa-cubes",
         "workspaces.Workspace": "fas fa-cube",
-        "workspaces.WorkspaceMember": "fas fa-id-card",
+        "orders": "fas fa-file-invoice",
+        "orders.Order": "fas fa-file-contract",
         "suggestions": "fas fa-lightbulb",
         "suggestions.Suggestion": "fas fa-lightbulb",
         "inquiries": "fas fa-question-circle",
         "inquiries.Inquiry": "fas fa-question-circle",
-        "inquiries.InquiryFile": "fas fa-paperclip",
-        "activity": "fas fa-history",
-        "activity.ActivityLog": "fas fa-stream",
-        "chat": "fas fa-comment-alt",
-        "chat.ChatRoom": "fas fa-comments",
-        "chat.ChatMessage": "fas fa-comment-dots",
-        "uitexts": "fas fa-language",
-        "uitexts.UIText": "fas fa-font",
-        "notifications": "fas fa-bell",
-        "notifications.Notification": "fas fa-bell",
     },
     "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",

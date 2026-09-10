@@ -81,6 +81,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         }
 
         listeners.current.forEach((fn) => fn(data));
+        // Real-time yangilanish: barcha sahifalar ma'lumotlarni avtomatik yangilasin
+        window.dispatchEvent(new CustomEvent("teamflow:refresh", { detail: data }));
       },
     });
 

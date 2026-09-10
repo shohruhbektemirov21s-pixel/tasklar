@@ -10,8 +10,8 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api } from "@/api/client";
 import type { Submission, Task } from "@/api/types";
-import { IconCheck, IconClose, IconFile, IconHistory } from "./icons";
-import { Avatar, Card, DiffView, ErrorMsg, OkMsg, fmtDateTime, timeAgo } from "./ui";
+import { IconCheck, IconChevron, IconClose, IconFile, IconHistory } from "./icons";
+import { Avatar, DiffView, ErrorMsg, OkMsg, fmtDateTime, timeAgo } from "./ui";
 import { toTask } from "@/nav";
 import { tx } from "@/i18n";
 
@@ -19,9 +19,11 @@ interface Props {
   task: Task;
   canWork: boolean;
   onChange: () => void;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
-export default function TaskSubmission({ task, canWork, onChange }: Props) {
+export default function TaskSubmission({ task, canWork, onChange, isOpen, onToggle }: Props) {
   const fid = useId();
   const [items, setItems] = useState<Submission[]>([]);
   const [text, setText] = useState("");
@@ -102,13 +104,96 @@ export default function TaskSubmission({ task, canWork, onChange }: Props) {
     }
   }
 
+  const isControlled = isOpen !== undefined;
+  const open = isControlled ? isOpen : true;
+
   return (
-    <Card
-      title={tx("task_submission.topshirilgan_ish")}
-      badge={<span className="badge">{items.length}</span>}
+    <div
+      className={`card accordion-section ${open ? "is-open" : "is-collapsed"}`}
+      style={{
+        marginBottom: 10,
+        borderRadius: 8,
+        border: open ? "1px solid var(--border)" : "1px solid var(--border-muted)",
+        boxShadow: open ? "0 2px 8px rgba(0,0,0,0.04)" : "none",
+        transition: "all 0.18s ease",
+        overflow: "hidden",
+      }}
     >
-      <ErrorMsg error={error} />
-      <OkMsg text={ok} />
+      <div
+        className="accordion-head"
+        onClick={onToggle}
+        role={isControlled ? "button" : undefined}
+        tabIndex={isControlled ? 0 : undefined}
+        aria-expanded={open}
+        onKeyDown={(e) => {
+          if (isControlled && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            onToggle?.();
+          }
+        }}
+        style={{
+          cursor: isControlled ? "pointer" : "default",
+          userSelect: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "11px 16px",
+          background: "var(--surface)",
+          borderBottom: open ? "1px solid var(--border-muted)" : "none",
+          transition: "background-color 0.15s ease",
+        }}
+      >
+        <div className="row middle" style={{ gap: 10, minWidth: 0, flex: "1 1 auto" }}>
+          <span style={{ fontSize: 16, display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+            🚀
+          </span>
+          <h3 style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap" }}>
+            {tx("task_submission.topshirilgan_ish")}
+          </h3>
+          <span className="badge">{items.length}</span>
+          {!open && (
+            <span
+              className="muted"
+              style={{
+                fontSize: 12,
+                marginLeft: 6,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                opacity: 0.85,
+              }}
+            >
+              {task.status === "IN_REVIEW"
+                ? "Tekshiruvda"
+                : items.length
+                ? `${items.length} ta topshirilgan`
+                : "Hali topshirilmagan"}
+            </span>
+          )}
+        </div>
+
+        {isControlled && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 24,
+              height: 24,
+              color: "var(--muted)",
+              transition: "transform 0.2s ease",
+              transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          >
+            <IconChevron size={15} />
+          </div>
+        )}
+      </div>
+
+      {open && (
+        <div className="card-body" style={{ padding: "14px 16px" }}>
+          <ErrorMsg error={error} />
+          <OkMsg text={ok} />
 
       {canWork && (
         <form onSubmit={submit} className="mb">
@@ -239,6 +324,8 @@ export default function TaskSubmission({ task, canWork, onChange }: Props) {
       <p className="muted" style={{ fontSize: 12.5, marginTop: 12, marginBottom: 0 }}>
         {tx("task_submission.vazifa")} <Link {...toTask(task.id)}>{task.code}</Link> {tx("task_submission.holat")} {task.status_display}
       </p>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 }

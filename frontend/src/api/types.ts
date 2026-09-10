@@ -884,6 +884,7 @@ export interface OrderPeriodRow {
   key: DashboardPeriod;
   since: string;
   submitted: number;
+  in_progress?: number;
   approved: number;
   completed: number;
   rejected: number;
@@ -959,6 +960,18 @@ export interface ChangeRequestVersionItem {
   decision_note?: string;
 }
 
+export interface OrderAttachmentItem {
+  id: number;
+  file?: string;
+  url: string;
+  original_name: string;
+  size: number;
+  size_display: string;
+  uploaded_by?: number | null;
+  uploaded_by_name?: string;
+  created_at: string;
+}
+
 /** Axborot tizimiga o'zgartirish kiritish so'rovi (TZ) */
 export interface ChangeRequestItem {
   id: number;
@@ -987,6 +1000,7 @@ export interface ChangeRequestItem {
   tz_file_name?: string;
   tz_file_size?: number;
   tz_file_size_display?: string;
+  attachments?: OrderAttachmentItem[];
   current_state: string;
   requested_change: string;
   reason: string;

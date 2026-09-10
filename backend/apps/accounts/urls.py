@@ -7,6 +7,7 @@ app_name = "accounts"
 
 urlpatterns = [
     path("specialties/", api.specialties, name="specialties"),
+    path("specialties/<int:item_id>/", api.specialties, name="specialties_detail"),
     path("login/", api.LoginView.as_view(), name="login"),
     path("refresh/", api.RefreshView.as_view(), name="refresh"),
     path("verify/", TokenVerifyView.as_view(), name="verify"),

@@ -24,7 +24,7 @@ import { Avatar, Card, confirmDelete, Empty, ErrorMsg, fmtDate, Loading, Pager }
 import { toProject, toUser } from "@/nav";
 import { tx } from "@/i18n";
 
-type Tab = "users" | "projects";
+type Tab = "users" | "specialties" | "projects";
 
 const ROLE_TONE: Record<string, string> = {
   ADMIN: "badge-danger", MANAGER: "badge-info", DEVELOPER: "", QA: "",
@@ -39,6 +39,10 @@ const EMPTY_FORM = {
   global_role: "DEVELOPER", specialty: "", seniority: "JUNIOR", job_title: "",
 };
 
+const EMPTY_SPEC_FORM = {
+  name: "", code: "", color: "#2563eb", icon: "*", skills: "",
+};
+
 export default function Admin() {
   const { user: me, meta } = useAuth();
   const [tab, setTab] = useState<Tab>("users");
@@ -46,12 +50,14 @@ export default function Admin() {
   // Ro'yxat filtrlari
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"active" | "pending" | "all">("all");
   const [userPage, setUserPage] = useState(1);
   const [projectPage, setProjectPage] = useState(1);
 
   const [form, setForm] = useState(EMPTY_FORM);
+  const [specForm, setSpecForm] = useState(EMPTY_SPEC_FORM);
   const [creating, setCreating] = useState(false);
+  const [creatingSpec, setCreatingSpec] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
@@ -63,7 +69,7 @@ export default function Admin() {
   // ko'ryapman» deb ishonadi.
   const { data: userData, loading, reload } = useFetch<any>(
     tab === "users" ? "/users/" : null,
-    { search: q, role, inactive: showInactive ? "1" : "",
+    { search: q, role, inactive: statusFilter === "pending" ? "1" : statusFilter === "all" ? "all" : "",
       page: userPage, page_size: PER_PAGE },
     { debounceMs: 300 },
   );
@@ -77,16 +83,55 @@ export default function Admin() {
     () => (projectData ? listOf<Project>(projectData) : null), [projectData]);
   const projectPages = pagesOf(projectData, PER_PAGE);
 
+  const { data: specData, reload: reloadSpecs, loading: specsLoading } = useFetch<any>(
+    tab === "specialties" ? "/auth/specialties/" : null);
+  const specialties = useMemo(
+    () => (specData?.specialties || []) as any[], [specData]);
+
   function done(message: string) {
     setError(null);
     setOkMsg(message);
     reload();
     reloadProjects();
+    reloadSpecs();
   }
 
   function failed(err: unknown, fallback: string) {
     setOkMsg(null);
     setError(err instanceof ApiError ? err.message : fallback);
+  }
+
+  async function createSpecialty(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await api.post("/auth/specialties/", specForm);
+      done(`«${specForm.name}» mutaxassisligi muvaffaqiyatli qo'shildi.`);
+      setSpecForm(EMPTY_SPEC_FORM);
+      setCreatingSpec(false);
+    } catch (err) {
+      failed(err, "Mutaxassislikni qo'shib bo'lmadi");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteSpecialty(specItem: any) {
+    if (!(await confirmDelete(`«${specItem.label}» mutaxassisligini o'chirish`))) return;
+    setBusy(true);
+    try {
+      if (specItem.id) {
+        await api.delete(`/auth/specialties/${specItem.id}/`);
+      } else {
+        // Standart mutaxassislik kodi bo'yicha
+        await api.post("/auth/specialties/", { code: specItem.value, is_active: false });
+      }
+      done(`«${specItem.label}» mutaxassisligi o'chirildi.`);
+    } catch (err) {
+      failed(err, "Mutaxassislikni o'chirib bo'lmadi");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function createUser(e: React.FormEvent) {
@@ -153,6 +198,9 @@ export default function Admin() {
           ["users", counts.users
             ? `${tx("people.foydalanuvchilar")} (${counts.users})`
             : tx("people.foydalanuvchilar")],
+          ["specialties", specialties.length
+            ? `Mutaxassisliklar (${specialties.length})`
+            : "Mutaxassisliklar"],
           ["projects", counts.projects
             ? `${tx("common.loyihalar")} (${counts.projects})`
             : tx("common.loyihalar")],
@@ -184,11 +232,14 @@ export default function Admin() {
                   ))}
                 </select>
               </div>
-              <label className="cal-check" title={tx("admin.ochirilgan_hisoblarni_korsatish")}>
-                <input type="checkbox" checked={showInactive}
-                       onChange={() => setShowInactive((v) => !v)} />
-                {tx("admin.ochirilganlar")}
-              </label>
+              <div className="f">
+                <label htmlFor="adm-status">{tx("common.holat")}</label>
+                <select id="adm-status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as any); setUserPage(1); }}>
+                  <option value="all">{tx("admin.barcha_hisoblar") || "Barcha hisoblar"}</option>
+                  <option value="active">{tx("admin.faol_hisoblar") || "Faol hisoblar"}</option>
+                  <option value="pending">{tx("admin.tasdiqlash_kutilayotganlar") || "Tasdiqlash kutilmoqda (Nofaol)"}</option>
+                </select>
+              </div>
               <button type="button" className="btn btn-primary"
                       onClick={() => { setCreating((v) => !v); setOkMsg(null); }}>
                 {creating ? tx("common.bekor_qilish") : tx("admin.yangi_hisob")}
@@ -280,13 +331,17 @@ export default function Admin() {
                   </thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u.id} className={u.is_active ? "" : "muted"}>
+                      <tr key={u.id} className={u.is_active ? "" : "muted"} style={!u.is_active ? { background: "rgba(234, 179, 8, 0.05)" } : undefined}>
                         <td>
                           <div className="row">
                             <Avatar user={u} size="sm" />
                             <div style={{ minWidth: 0 }}>
                               <Link {...toUser(u.id)}>{u.full_name}</Link>
-                              {!u.is_active && <span className="badge"> {tx("admin.ochirilgan")}</span>}
+                              {!u.is_active && (
+                                <span className="badge badge-warning" style={{ marginLeft: 6, fontSize: 10 }}>
+                                  {tx("admin.tasdiqlanmagan") || "Tasdiqlanmagan"}
+                                </span>
+                              )}
                               <br />
                               <small className="muted">{u.specialty_display || "—"}</small>
                             </div>
@@ -294,10 +349,6 @@ export default function Admin() {
                         </td>
                         <td className="mono">{u.email}</td>
                         <td>
-                          {/* Rolni shu yerdan almashtirish - alohida sahifaga
-                              o'tmasdan. Serverda uchta himoya bor: oxirgi
-                              adminni, bosh hisobni va o'zini tushirib
-                              bo'lmaydi. */}
                           <select className="admin-role"
                                   value={u.global_role} disabled={busy || u.id === me?.id}
                                   title={u.id === me?.id
@@ -318,12 +369,25 @@ export default function Admin() {
                         <td className="right">{(u as any).open_tasks ?? 0}</td>
                         <td className="nowrap muted">{fmtDate(u.date_joined)}</td>
                         <td className="right nowrap">
-                          <button type="button" className="btn btn-sm" disabled={busy}
-                                  onClick={() => void resetPassword(u)}>{tx("common.parol")}</button>{" "}
-                          <button type="button" className="btn btn-sm" disabled={busy || u.id === me?.id}
-                                  onClick={() => void toggleActive(u)}>
-                            {u.is_active ? tx("common.ochirish") : tx("admin.yoqish")}
-                          </button>
+                          {!u.is_active ? (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-ok"
+                              disabled={busy}
+                              onClick={() => void patchUser(u, { is_active: true }, `«${u.full_name}» hisobi tasdiqlandi va faollashtirildi.`)}
+                            >
+                              ✓ {tx("admin.tasdiqlash") || "Tasdiqlash"}
+                            </button>
+                          ) : (
+                            <>
+                              <button type="button" className="btn btn-sm" disabled={busy}
+                                      onClick={() => void resetPassword(u)}>{tx("common.parol")}</button>{" "}
+                              <button type="button" className="btn btn-sm" disabled={busy || u.id === me?.id}
+                                      onClick={() => void toggleActive(u)}>
+                                {tx("common.ochirish")}
+                              </button>
+                            </>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -334,6 +398,173 @@ export default function Admin() {
                     <Pager page={userPage} pages={userPages} onPick={setUserPage} />
                   </div>
                 )}
+              </Card>
+            )}
+          </>
+        ) : tab === "specialties" ? (
+          <>
+            <div className="filters">
+              <div className="f grow">
+                <span className="muted" style={{ fontSize: 13 }}>
+                  Tizimdagi mutaxassisliklar va yo'nalishlar. Yangi qo'shilgan mutaxassislik ro'yxatdan o'tishda, profilda va vazifalarda avtomatik chiqadi.
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => { setCreatingSpec((v) => !v); setOkMsg(null); }}
+              >
+                {creatingSpec ? tx("common.bekor_qilish") : "+ Yangi mutaxassislik"}
+              </button>
+            </div>
+
+            {creatingSpec && (
+              <Card title="Yangi mutaxassislik qo'shish">
+                <form onSubmit={createSpecialty}>
+                  <div className="row wrap" style={{ gap: 12 }}>
+                    <div className="field" style={{ flex: "2 1 240px" }}>
+                      <label htmlFor="ns-name">Mutaxassislik nomi *</label>
+                      <input
+                        id="ns-name"
+                        required
+                        value={specForm.name}
+                        onChange={(e) => setSpecForm({ ...specForm, name: e.target.value })}
+                        placeholder="Masalan: Sun'iy intellekt muhandisi"
+                      />
+                    </div>
+                    <div className="field" style={{ flex: "1 1 160px" }}>
+                      <label htmlFor="ns-code">Kodi (ixtiyoriy)</label>
+                      <input
+                        id="ns-code"
+                        value={specForm.code}
+                        onChange={(e) => setSpecForm({ ...specForm, code: e.target.value.toUpperCase() })}
+                        placeholder="AI"
+                      />
+                    </div>
+                    <div className="field" style={{ flex: "0 0 110px" }}>
+                      <label htmlFor="ns-color">Rangi</label>
+                      <input
+                        id="ns-color"
+                        type="color"
+                        value={specForm.color}
+                        onChange={(e) => setSpecForm({ ...specForm, color: e.target.value })}
+                        style={{ height: 38, padding: 2, cursor: "pointer", width: "100%" }}
+                      />
+                    </div>
+                    <div className="field" style={{ flex: "0 0 100px" }}>
+                      <label htmlFor="ns-icon">Belgi</label>
+                      <input
+                        id="ns-icon"
+                        value={specForm.icon}
+                        onChange={(e) => setSpecForm({ ...specForm, icon: e.target.value })}
+                        placeholder="*"
+                        maxLength={6}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="field" style={{ marginTop: 8 }}>
+                    <label htmlFor="ns-skills">Asosiy ko'nikmalar (vergul bilan)</label>
+                    <input
+                      id="ns-skills"
+                      value={specForm.skills}
+                      onChange={(e) => setSpecForm({ ...specForm, skills: e.target.value })}
+                      placeholder="Python, PyTorch, LLM, Docker"
+                    />
+                  </div>
+
+                  <div className="row" style={{ marginTop: 12, gap: 8 }}>
+                    <button className="btn btn-primary" disabled={busy}>
+                      {busy ? "Saqlanmoqda..." : "Mutaxassislikni saqlash"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setCreatingSpec(false)}
+                    >
+                      {tx("common.bekor_qilish")}
+                    </button>
+                  </div>
+                </form>
+              </Card>
+            )}
+
+            {specsLoading ? (
+              <Loading />
+            ) : !specialties.length ? (
+              <Card>
+                <Empty title="Mutaxassisliklar topilmadi" text="Hozircha birorta ham mutaxassislik mavjud emas." />
+              </Card>
+            ) : (
+              <Card padded={false} title={`Barcha mutaxassisliklar (${specialties.length})`}>
+                <div className="table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Belgi va Nom</th>
+                        <th>Kodi</th>
+                        <th>Asosiy ko'nikmalar</th>
+                        <th className="right">Rangi</th>
+                        <th className="right">{tx("common.amallar")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {specialties.map((s: any) => (
+                        <tr key={s.value}>
+                          <td>
+                            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: 26,
+                                  height: 26,
+                                  borderRadius: 6,
+                                  background: s.color || "#2563eb",
+                                  color: "#fff",
+                                  fontWeight: "bold",
+                                  fontSize: 11,
+                                }}
+                              >
+                                {s.icon || "*"}
+                              </span>
+                              <strong>{s.label}</strong>
+                            </div>
+                          </td>
+                          <td className="mono">{s.value}</td>
+                          <td className="muted" style={{ fontSize: 12.5 }}>
+                            {Array.isArray(s.skills) ? s.skills.join(", ") : s.skills || "—"}
+                          </td>
+                          <td className="right">
+                            <span
+                              style={{
+                                display: "inline-block",
+                                width: 16,
+                                height: 16,
+                                borderRadius: 4,
+                                backgroundColor: s.color || "#2563eb",
+                                border: "1px solid rgba(0,0,0,0.15)",
+                                verticalAlign: "middle",
+                              }}
+                              title={s.color}
+                            />
+                          </td>
+                          <td className="right nowrap">
+                            <button
+                              type="button"
+                              className="btn btn-sm"
+                              disabled={busy}
+                              onClick={() => void deleteSpecialty(s)}
+                            >
+                              {tx("common.ochirish")}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </Card>
             )}
           </>

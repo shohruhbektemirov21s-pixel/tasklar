@@ -2,8 +2,25 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 
-from .models import Department, GlobalRole, User, SpecialtyAnalytics
-from .specialties import Specialty, Seniority, profile_for
+from .models import Department, GlobalRole, SpecialtyAnalytics, SpecialtyItem, User
+from .specialties import Seniority, Specialty, profile_for
+
+
+@admin.register(SpecialtyItem)
+class SpecialtyItemAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "icon", "color_preview", "skills", "is_active", "order")
+    list_editable = ("is_active", "order")
+    search_fields = ("name", "code", "skills")
+    ordering = ("order", "name")
+
+    @admin.display(description="Rang")
+    def color_preview(self, obj):
+        return format_html(
+            '<span style="display:inline-block; width:16px; height:16px; border-radius:4px; '
+            'background-color:{}; border:1px solid rgba(0,0,0,0.15); vertical-align:middle; margin-right:6px;"></span>'
+            '<code>{}</code>',
+            obj.color, obj.color
+        )
 
 
 @admin.register(Department)
@@ -22,23 +39,60 @@ class DepartmentAdmin(admin.ModelAdmin):
         )
 
 
+class UserApprovalStatusFilter(admin.SimpleListFilter):
+    title = "Tasdiqlash holati"
+    parameter_name = "approval_status"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("pending", "⏳ Tasdiq kutilmoqda (Nofaol)"),
+            ("active", "✅ Tasdiqlangan va Faol"),
+            ("inquiries", "📨 So'rovlar ruxsati borlar"),
+            ("staff", "👑 Tizim adminlari"),
+        )
+
+    def queryset(self, request, queryset):
+        from django.db.models import Q
+        if self.value() == "pending":
+            return queryset.filter(is_active=False)
+        if self.value() == "active":
+            return queryset.filter(is_active=True)
+        if self.value() == "inquiries":
+            return queryset.filter(can_access_inquiries=True)
+        if self.value() == "staff":
+            return queryset.filter(Q(is_staff=True) | Q(global_role=GlobalRole.ADMIN))
+        return queryset
+
+
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     list_display = (
-        "email",
         "full_name",
-        "department_badge",
+        "email",
         "role_badge",
         "specialty_badge",
-        "job_title",
-        "inquiries_badge",
+        "department_badge",
         "active_badge",
-        "password_action",
-        "date_joined",
+        "approval_action",
     )
-    list_filter = ("can_access_inquiries", "department", "global_role", "is_active", "is_staff", "specialty", "seniority")
+    list_filter = (
+        UserApprovalStatusFilter,
+        "can_access_inquiries",
+        "department",
+        "global_role",
+        "is_active",
+        "is_staff",
+        "specialty",
+        "seniority",
+    )
     search_fields = ("email", "full_name", "department__name", "department__code", "skills", "job_title", "telegram")
     ordering = ("-date_joined",)
+    actions = [
+        "approve_selected_users",
+        "deactivate_selected_users",
+        "grant_inquiries_selected",
+        "revoke_inquiries_selected",
+    ]
 
     fieldsets = (
         ("Kirish ma'lumotlari (Login & Parol)", {
@@ -127,12 +181,32 @@ class UserAdmin(BaseUserAdmin):
     def active_badge(self, obj):
         if obj.is_active:
             return format_html(
-                '<span style="color: #10b981; font-weight: 600; font-size: 12px;">'
-                '<i class="fas fa-circle" style="font-size: 8px; vertical-align: middle; margin-right: 4px;"></i>Faol</span>'
+                '<span style="background-color: #10b981; color: #fff; padding: 4px 8px; border-radius: 8px; font-weight: 600; font-size: 11px; display: inline-flex; align-items: center;">'
+                '<i class="fas fa-check-circle mr-1" style="font-size: 9px;"></i>Faol</span>'
             )
         return format_html(
-            '<span style="color: #ef4444; font-weight: 600; font-size: 12px;">'
-            '<i class="fas fa-circle" style="font-size: 8px; vertical-align: middle; margin-right: 4px;"></i>Nofaol</span>'
+            '<span style="background-color: #f59e0b; color: #fff; padding: 4px 8px; border-radius: 8px; font-weight: 600; font-size: 11px; display: inline-flex; align-items: center;">'
+            '<i class="fas fa-clock mr-1" style="font-size: 9px;"></i>Tasdiq kutilmoqda</span>'
+        )
+
+    @admin.display(description="Tasdiqlash / Bloklash")
+    def approval_action(self, obj):
+        from django.urls import reverse
+        if not obj.is_active:
+            approve_url = reverse("admin:accounts_user_approve", args=[obj.pk])
+            return format_html(
+                '<a class="btn btn-xs btn-success" href="{}" style="padding: 4px 10px; font-size: 11px; border-radius: 6px; font-weight: 600; background-color: #10b981; border: none; color: #fff; text-decoration: none; display: inline-flex; align-items: center; box-shadow: 0 1px 2px rgba(16,185,129,0.3);">'
+                '<i class="fas fa-check mr-1" style="font-size: 9px;"></i>Tasdiqlash</a>',
+                approve_url,
+            )
+        if obj.is_superuser:
+            return format_html('<span style="color: #94a3b8; font-size: 11px; font-style: italic;">Superuser</span>')
+        deactivate_url = reverse("admin:accounts_user_deactivate", args=[obj.pk])
+        return format_html(
+            '<a class="btn btn-xs btn-outline-danger" href="{}" style="padding: 3px 8px; font-size: 11px; border-radius: 6px; font-weight: 500; color: #ef4444; border: 1px solid #fca5a5; background-color: #fef2f2; text-decoration: none; display: inline-flex; align-items: center;" onclick="return confirm(\'Rostdan ham {} hisobini nofaol qilmoqchimisiz?\');">'
+            '<i class="fas fa-ban mr-1" style="font-size: 9px;"></i>Bloklash</a>',
+            deactivate_url,
+            obj.full_name or obj.email,
         )
 
     @admin.display(description="So'rovlar ruxsati")
@@ -155,6 +229,74 @@ class UserAdmin(BaseUserAdmin):
             obj.pk,
         )
 
+    # ---------------- Guruhli amallar (Actions) ----------------
+    @admin.action(description="⚡ Tanlangan foydalanuvchilarni tasdiqlash (faollashtirish)")
+    def approve_selected_users(self, request, queryset):
+        from django.contrib import messages
+        from apps.activity.services import log
+
+        count = 0
+        for u in queryset:
+            if not u.is_active:
+                u.is_active = True
+                u.save(update_fields=["is_active"])
+                count += 1
+                try:
+                    log(actor=request.user, verb="user.approved", target=u,
+                        summary=f"{u.full_name} administrator tomonidan guruhli tasdiqlandi.")
+                except Exception:
+                    pass
+
+        self.message_user(
+            request,
+            f"{count} ta foydalanuvchi muvaffaqiyatli tasdiqlandi va faollashtirildi.",
+            level=messages.SUCCESS,
+        )
+
+    @admin.action(description="🚫 Tanlangan foydalanuvchilarni nofaol qilish (bloklash)")
+    def deactivate_selected_users(self, request, queryset):
+        from django.contrib import messages
+        from apps.activity.services import log
+
+        queryset = queryset.exclude(pk=request.user.pk)
+        count = 0
+        for u in queryset:
+            if u.is_active:
+                u.is_active = False
+                u.save(update_fields=["is_active"])
+                count += 1
+                try:
+                    log(actor=request.user, verb="user.deactivated", target=u,
+                        summary=f"{u.full_name} administrator tomonidan bloklandi.")
+                except Exception:
+                    pass
+
+        self.message_user(
+            request,
+            f"{count} ta foydalanuvchi nofaol holatga o'tkazildi.",
+            level=messages.WARNING,
+        )
+
+    @admin.action(description="📩 Tanlangan foydalanuvchilarga So'rovlar ruxsatini berish")
+    def grant_inquiries_selected(self, request, queryset):
+        from django.contrib import messages
+        updated = queryset.update(can_access_inquiries=True)
+        self.message_user(
+            request,
+            f"{updated} ta foydalanuvchiga So'rovlar bo'limiga kirish ruxsati berildi.",
+            level=messages.SUCCESS,
+        )
+
+    @admin.action(description="❌ Tanlangan foydalanuvchilardan So'rovlar ruxsatini olish")
+    def revoke_inquiries_selected(self, request, queryset):
+        from django.contrib import messages
+        updated = queryset.update(can_access_inquiries=False)
+        self.message_user(
+            request,
+            f"{updated} ta foydalanuvchidan So'rovlar ruxsati olindi.",
+            level=messages.INFO,
+        )
+
     # ---------------- Rollar asosida ruxsatlar ----------------
     def has_delete_permission(self, request, obj=None):
         if not (request and (request.user.is_superuser or request.user.global_role == GlobalRole.ADMIN)):
@@ -172,12 +314,118 @@ class UserAdmin(BaseUserAdmin):
                 self.admin_site.admin_view(self.specialties_analytics_view),
                 name="accounts_user_analytics",
             ),
+            path(
+                "<int:user_id>/approve/",
+                self.admin_site.admin_view(self.approve_user_view),
+                name="accounts_user_approve",
+            ),
+            path(
+                "<int:user_id>/deactivate/",
+                self.admin_site.admin_view(self.deactivate_user_view),
+                name="accounts_user_deactivate",
+            ),
         ]
         return custom_urls + urls
 
+    def approve_user_view(self, request, user_id):
+        from django.contrib import messages
+        from django.shortcuts import get_object_or_404, redirect
+        from django.urls import reverse
+        from apps.activity.services import log
+
+        if not (request.user.is_superuser or getattr(request.user, "global_role", None) == GlobalRole.ADMIN):
+            messages.error(request, "Foydalanuvchilarni tasdiqlash uchun administrator huquqi talab qilinadi.")
+            return redirect("admin:accounts_user_changelist")
+
+        target_user = get_object_or_404(User, pk=user_id)
+        target_user.is_active = True
+        target_user.save(update_fields=["is_active"])
+
+        try:
+            log(
+                actor=request.user,
+                verb="user.approved",
+                target=target_user,
+                summary=f"{target_user.full_name} ({target_user.email}) administrator tomonidan tasdiqlandi va hisobi faollashtirildi."
+            )
+        except Exception:
+            pass
+
+        messages.success(
+            request,
+            format_html(
+                '<strong>{}</strong> muvaffaqiyatli tasdiqlandi va hisobi faollashtirildi! Endi foydalanuvchi tizimga kira oladi.',
+                target_user.full_name or target_user.email
+            )
+        )
+        referer = request.META.get("HTTP_REFERER")
+        if referer and "accounts/user" in referer:
+            return redirect(referer)
+        return redirect(reverse("admin:accounts_user_changelist"))
+
+    def deactivate_user_view(self, request, user_id):
+        from django.contrib import messages
+        from django.shortcuts import get_object_or_404, redirect
+        from django.urls import reverse
+        from apps.activity.services import log
+
+        if not (request.user.is_superuser or getattr(request.user, "global_role", None) == GlobalRole.ADMIN):
+            messages.error(request, "Ushbu amal uchun administrator huquqi talab qilinadi.")
+            return redirect("admin:accounts_user_changelist")
+
+        target_user = get_object_or_404(User, pk=user_id)
+        if target_user.pk == request.user.pk:
+            messages.error(request, "O'z hisobingizni nofaol qila olmaysiz!")
+            return redirect("admin:accounts_user_changelist")
+
+        target_user.is_active = False
+        target_user.save(update_fields=["is_active"])
+
+        try:
+            log(
+                actor=request.user,
+                verb="user.deactivated",
+                target=target_user,
+                summary=f"{target_user.full_name} ({target_user.email}) administrator tomonidan nofaol qilindi / bloklandi."
+            )
+        except Exception:
+            pass
+
+        messages.warning(
+            request,
+            format_html(
+                '<strong>{}</strong> hisobi nofaol holatga o\'tkazildi (bloklandi).',
+                target_user.full_name or target_user.email
+            )
+        )
+        referer = request.META.get("HTTP_REFERER")
+        if referer and "accounts/user" in referer:
+            return redirect(referer)
+        return redirect(reverse("admin:accounts_user_changelist"))
+
     def changelist_view(self, request, extra_context=None):
+        from django.contrib import messages
+        from django.urls import reverse
+
         extra_context = extra_context or {}
         extra_context["show_analytics_button"] = True
+
+        # Agar filtr belgilanmagan bo'lsa va tasdiqlanmaganlar bo'lsa, ogohlantirish
+        if not request.GET.get("approval_status"):
+            pending_count = User.objects.filter(is_active=False).count()
+            if pending_count > 0:
+                filter_url = f"{reverse('admin:accounts_user_changelist')}?approval_status=pending"
+                messages.warning(
+                    request,
+                    format_html(
+                        'Diqqat: <strong>{} ta yangi foydalanuvchi</strong> administrator tasdig\'ini kutmoqda! '
+                        '<a href="{}" style="text-decoration: underline; font-weight: bold; margin-left: 6px;">'
+                        '<i class="fas fa-filter mr-1"></i>Ularni ko\'rish va tasdiqlash &rarr;</a>',
+                        pending_count,
+                        filter_url,
+                    )
+                )
+
         return super().changelist_view(request, extra_context=extra_context)
 
     def specialties_analytics_view(self, request):

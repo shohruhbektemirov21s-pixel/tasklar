@@ -54,6 +54,7 @@ class RegistrationSuite(TestCase):
         self.assertEqual(user.specialty, Specialty.SOHAVIY)
         self.assertTrue(user.is_sohaviy_boshqarma)
         self.assertTrue(user.can_access_orders)
+        self.assertFalse(user.is_active)
 
     def test_register_standard_developer_profile(self):
         """Oddiy dasturchi ro'yxatdan o'tganda unga buyurtmalar ruxsati berilmasligi shart."""

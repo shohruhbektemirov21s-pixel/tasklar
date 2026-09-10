@@ -18,8 +18,9 @@ from .models import (
     ChangeRequestStatus,
     ChangeRequestType,
     ChangeRequestVersion,
+    OrderAttachment,
 )
-from .serializers import ChangeRequestSerializer, PMDecisionSerializer
+from .serializers import ChangeRequestSerializer, PMDecisionSerializer, OrderAttachmentSerializer
 from .services import (
     notify_order_created,
     notify_order_new_version,
@@ -79,7 +80,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     queryset = (
         ChangeRequest.objects.all()
         .select_related("created_by", "project", "project__manager", "assigned_pm", "assigned_developer", "linked_task")
-        .prefetch_related("versions__uploaded_by", "versions__decided_by")
+        .prefetch_related("versions__uploaded_by", "versions__decided_by", "attachments__uploaded_by")
     )
     serializer_class = ChangeRequestSerializer
     permission_classes = [permissions.IsAuthenticated, CanAccessOrders]
@@ -178,44 +179,141 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
         period_param = self.request.query_params.get("period")
         metric_param = self.request.query_params.get("metric")
-        if period_param in ("year", "month", "week"):
-            from apps.core.periods import _period_start
-            start = _period_start(period_param)
+        if period_param:
+            import datetime
+            now_dt = timezone.localtime()
+            today = now_dt.date()
+            start = None
+            end = None
+
+            if period_param in ("month", "this_month"):
+                first_day = today.replace(day=1)
+                start = timezone.make_aware(datetime.datetime.combine(first_day, datetime.time.min))
+            elif period_param == "last_month":
+                first_of_this_month = today.replace(day=1)
+                last_day_of_last_month = first_of_this_month - datetime.timedelta(days=1)
+                first_of_last_month = last_day_of_last_month.replace(day=1)
+                start = timezone.make_aware(datetime.datetime.combine(first_of_last_month, datetime.time.min))
+                end = timezone.make_aware(datetime.datetime.combine(first_of_this_month, datetime.time.min))
+            elif period_param in ("6_months", "6months", "half_year"):
+                start_date = today - datetime.timedelta(days=180)
+                start = timezone.make_aware(datetime.datetime.combine(start_date, datetime.time.min))
+            elif period_param in ("year", "1_year", "1year"):
+                start_date = today - datetime.timedelta(days=365)
+                start = timezone.make_aware(datetime.datetime.combine(start_date, datetime.time.min))
+            elif period_param == "week":
+                from apps.core.periods import _period_start
+                start = _period_start("week")
+
+            if start:
+                if end:
+                    qs = qs.filter(created_at__gte=start, created_at__lt=end)
+                else:
+                    qs = qs.filter(created_at__gte=start)
+
             if metric_param == "submitted":
-                qs = qs.filter(created_at__gte=start)
-            elif metric_param == "approved":
+                pass
+            elif metric_param in ("approved", "in_progress"):
                 qs = qs.filter(
-                    created_at__gte=start,
                     status__in=[
                         ChangeRequestStatus.ACCEPTED,
                         ChangeRequestStatus.ASSIGNED_TO_DEV,
                         ChangeRequestStatus.IN_PROGRESS,
                         ChangeRequestStatus.TESTING,
                         ChangeRequestStatus.READY_FOR_REVIEW,
-                        ChangeRequestStatus.COMPLETED,
                     ],
                 )
             elif metric_param == "completed":
                 qs = qs.filter(
                     Q(completed_at__gte=start)
                     | Q(client_approved_at__gte=start)
-                    | Q(created_at__gte=start, status=ChangeRequestStatus.COMPLETED)
+                    | Q(status=ChangeRequestStatus.COMPLETED)
                 )
             elif metric_param == "rejected":
-                qs = qs.filter(created_at__gte=start, status=ChangeRequestStatus.REJECTED)
-            else:
-                qs = qs.filter(created_at__gte=start)
+                qs = qs.filter(status=ChangeRequestStatus.REJECTED)
         elif metric_param:
             if metric_param == "rejected":
                 qs = qs.filter(status=ChangeRequestStatus.REJECTED)
             elif metric_param in ("pending", "waiting", "new"):
                 qs = qs.filter(status=ChangeRequestStatus.NEW)
+            elif metric_param in ("in_progress", "progress"):
+                qs = qs.filter(
+                    status__in=[
+                        ChangeRequestStatus.ACCEPTED,
+                        ChangeRequestStatus.ASSIGNED_TO_DEV,
+                        ChangeRequestStatus.IN_PROGRESS,
+                        ChangeRequestStatus.TESTING,
+                        ChangeRequestStatus.READY_FOR_REVIEW,
+                    ]
+                )
             elif metric_param == "ready_for_review":
                 qs = qs.filter(status=ChangeRequestStatus.READY_FOR_REVIEW)
             elif metric_param == "completed":
                 qs = qs.filter(status=ChangeRequestStatus.COMPLETED)
 
         return qs
+
+# Ruxsat etilgan xavfsiz fayl turlari (whitelist)
+ALLOWED_ORDER_EXTENSIONS = {
+    "pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "rtf",
+    "zip", "rar", "7z",
+    "png", "jpg", "jpeg", "webp",
+}
+MAX_ORDER_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
+
+
+def validate_order_file(file_obj):
+    """Buyurtma ilovasi / TZ faylini xavfsizlik va hajm bo'yicha tekshirish."""
+    name = getattr(file_obj, "name", "") or ""
+    size = getattr(file_obj, "size", 0) or 0
+    if not name or size == 0:
+        raise ValidationError({"detail": "Yuklangan fayl bo'sh yoki uning nomi mavjud emas."})
+    if size > MAX_ORDER_UPLOAD_BYTES:
+        raise ValidationError({"detail": f"Fayl hajmi juda katta: {MAX_ORDER_UPLOAD_BYTES // (1024 * 1024)} MB dan oshmasin ({name})."})
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    if not ext or ext not in ALLOWED_ORDER_EXTENSIONS:
+        raise ValidationError({
+            "detail": f"«.{ext}» formatidagi fayllarni yuklash taqiqlangan. "
+                      "Faqat PDF, Word, Excel, ZIP va rasmlar (PNG, JPG) qabul qilinadi."
+        })
+    return file_obj
+
+
+def validate_order_files(file_list):
+    for f in file_list:
+        validate_order_file(f)
+
+
+    def _save_order_attachments(self, order):
+        user = self.request.user if self.request.user.is_authenticated else None
+        uploaded_files = []
+        for key in ("files", "attachments"):
+            for f in self.request.FILES.getlist(key):
+                if f not in uploaded_files:
+                    uploaded_files.append(f)
+
+        single_tz = self.request.FILES.get("tz_file")
+        if single_tz and single_tz not in uploaded_files:
+            uploaded_files.append(single_tz)
+
+        if uploaded_files:
+            validate_order_files(uploaded_files)
+
+        for f in uploaded_files:
+            OrderAttachment.objects.create(
+                order=order,
+                file=f,
+                original_name=getattr(f, "name", "")[:255],
+                size=getattr(f, "size", 0),
+                uploaded_by=user,
+            )
+
+        if not order.tz_file and uploaded_files:
+            first_f = uploaded_files[0]
+            order.tz_file = first_f
+            order.tz_file_name = getattr(first_f, "name", "")[:255]
+            order.tz_file_size = getattr(first_f, "size", 0)
+            order.save(update_fields=["tz_file", "tz_file_name", "tz_file_size"])
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -229,6 +327,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
         with transaction.atomic():
             order = serializer.save(created_by=user)
+            self._save_order_attachments(order)
             if order.tz_file:
                 ChangeRequestVersion.objects.create(
                     order=order,
@@ -277,7 +376,9 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             )
 
         old_status = instance.status
-        order = serializer.save()
+        with transaction.atomic():
+            order = serializer.save()
+            self._save_order_attachments(order)
         new_status = order.status
         if old_status != new_status:
             try:
@@ -321,6 +422,69 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             send_to_users(all_users, {"event": "order.delete", "order_id": order_pk})
         except Exception:
             pass
+
+    @action(detail=True, methods=["post"], url_path="attachments")
+    def add_attachments(self, request, pk=None):
+        order = self.get_object()
+        user = request.user
+        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        if not is_admin_or_boss and order.created_by_id != user.id:
+            return Response({"detail": "Fayl biriktirish huquqi yo'q."}, status=403)
+        if order.status not in (ChangeRequestStatus.NEW, ChangeRequestStatus.REJECTED) and not is_admin_or_boss:
+            return Response({"detail": "Qabul qilingan buyurtmaga fayl qo'shib bo'lmaydi."}, status=400)
+
+        uploaded_files = []
+        for key in ("files", "attachments"):
+            for f in request.FILES.getlist(key):
+                if f not in uploaded_files:
+                    uploaded_files.append(f)
+        single_tz = request.FILES.get("tz_file") or request.FILES.get("file")
+        if single_tz and single_tz not in uploaded_files:
+            uploaded_files.append(single_tz)
+
+        if not uploaded_files:
+            return Response({"detail": "Fayl tanlanmagan."}, status=400)
+
+        validate_order_files(uploaded_files)
+
+        created = []
+        with transaction.atomic():
+            for f in uploaded_files:
+                att = OrderAttachment.objects.create(
+                    order=order,
+                    file=f,
+                    original_name=getattr(f, "name", "")[:255],
+                    size=getattr(f, "size", 0),
+                    uploaded_by=user,
+                )
+                created.append(att)
+
+            if not order.tz_file and uploaded_files:
+                first_f = uploaded_files[0]
+                order.tz_file = first_f
+                order.tz_file_name = getattr(first_f, "name", "")[:255]
+                order.tz_file_size = getattr(first_f, "size", 0)
+                order.save(update_fields=["tz_file", "tz_file_name", "tz_file_size"])
+
+        return Response(OrderAttachmentSerializer(created, many=True).data, status=201)
+
+    @action(detail=True, methods=["delete"], url_path=r"attachments/(?P<attachment_id>\d+)")
+    def delete_attachment(self, request, pk=None, attachment_id=None):
+        order = self.get_object()
+        user = request.user
+        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        if not is_admin_or_boss and order.created_by_id != user.id:
+            return Response({"detail": "Faylni o'chirish huquqi yo'q."}, status=403)
+        if order.status not in (ChangeRequestStatus.NEW, ChangeRequestStatus.REJECTED) and not is_admin_or_boss:
+            return Response({"detail": "Qabul qilingan buyurtma faylini o'chirib bo'lmaydi."}, status=400)
+
+        try:
+            att = order.attachments.get(pk=attachment_id)
+            att.file.delete(save=False)
+            att.delete()
+            return Response(status=204)
+        except OrderAttachment.DoesNotExist:
+            return Response({"detail": "Fayl topilmadi."}, status=404)
 
     @action(detail=True, methods=["post"], url_path="claim-order")
     def claim_order(self, request, pk=None):
@@ -873,20 +1037,19 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
         from apps.core.periods import PERIODS, _period_start
         period_starts = {key: _period_start(key) for key in PERIODS}
-        approved_statuses = [
+        in_progress_statuses = [
             ChangeRequestStatus.ACCEPTED,
             ChangeRequestStatus.ASSIGNED_TO_DEV,
             ChangeRequestStatus.IN_PROGRESS,
             ChangeRequestStatus.TESTING,
             ChangeRequestStatus.READY_FOR_REVIEW,
-            ChangeRequestStatus.COMPLETED,
         ]
 
         periods = []
         for key in PERIODS:
             start = period_starts[key]
             p_submitted = qs.filter(created_at__gte=start).count()
-            p_approved = qs.filter(created_at__gte=start, status__in=approved_statuses).count()
+            p_in_progress = qs.filter(created_at__gte=start, status__in=in_progress_statuses).count()
             p_completed = qs.filter(
                 Q(completed_at__gte=start)
                 | Q(client_approved_at__gte=start)
@@ -898,7 +1061,8 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 "key": key,
                 "since": period_starts[key].isoformat(),
                 "submitted": p_submitted,
-                "approved": p_approved,
+                "in_progress": p_in_progress,
+                "approved": p_in_progress,
                 "completed": p_completed,
                 "rejected": p_rejected,
             })

@@ -287,3 +287,39 @@ class SpecialtyAnalytics(User):
         proxy = True
         verbose_name = "Mutaxassisliklar tahlili"
         verbose_name_plural = "Mutaxassisliklar tahlili"
+
+
+class SpecialtyItem(models.Model):
+    """Admin panel orqali boshqariladigan va yangi qo'shiladigan mutaxassisliklar."""
+    code = models.CharField(
+        "Kod / Identifikator",
+        max_length=50,
+        unique=True,
+        help_text="Masalan: DEVOPS, AI, SYSADMIN (Lotin harflarida)",
+    )
+    name = models.CharField(
+        "Mutaxassislik nomi",
+        max_length=100,
+        help_text="Masalan: DevOps muhandisi, Sun'iy intellekt mutaxassisi",
+    )
+    icon = models.CharField("Belgi / Icon", max_length=30, default="*", blank=True)
+    color = models.CharField("Rang (HEX)", max_length=30, default="#2563eb", blank=True)
+    skills = models.CharField(
+        "Asosiy ko'nikmalar",
+        max_length=255,
+        blank=True,
+        help_text="Vergul bilan: Docker, Kubernetes, Linux",
+    )
+    is_active = models.BooleanField("Faol", default=True)
+    order = models.PositiveIntegerField("Tartib raqami", default=0)
+    created_at = models.DateTimeField("Yaratilgan vaqti", auto_now_add=True)
+    updated_at = models.DateTimeField("Yangilangan vaqti", auto_now=True)
+
+    class Meta:
+        verbose_name = "Mutaxassislik"
+        verbose_name_plural = "Mutaxassisliklar"
+        ordering = ["order", "name"]
+
+    def __str__(self):
+        return self.name
+

@@ -32,38 +32,73 @@ interface Options {
    * to'xtagach esa sezilarli kutish bo'lmaydi.
    */
   debounceMs?: number;
+  /**
+   * Real-time fon yangilanishi davri (ms). Standart: 10 000 ms (10 soniya).
+   * 0 bo'lsa fonda avtomatik interval bo'lmaydi.
+   */
+  pollIntervalMs?: number;
+  /**
+   * Foydalanuvchi sahifaga / tabga qaytganida avtomatik yangilash. Standart: true.
+   */
+  refreshOnFocus?: boolean;
 }
 
 interface Result<T> {
   data: T | null;
   error: string | null;
-  /**
-   * Birinchi yuklanish: ma'lumot hali yo'q va so'rov yo'lda.
-   *
-   * Filtr almashganda `false` bo'ladi - ekrandagi ro'yxat joyida qoladi va
-   * sahifa "sakramaydi". Ilgari bu `data === null && error === null` deb
-   * hisoblanardi: server qonuniy ravishda `null` qaytarsa sahifa abadiy
-   * yuklanayotgandek ko'rinardi.
-   */
   loading: boolean;
-  /** So'rov yo'ldami - filtr almashganda ham `true`. Nozik ko'rsatkich uchun. */
   pending: boolean;
-  /** So'rovni qaytadan yuborish - masalan yozuv qo'shilgandan keyin. */
   reload: () => void;
 }
 
 export function useFetch<T>(path: string | null, params?: Params, opts: Options = {}): Result<T> {
-  const { debounceMs = 0 } = opts;
+  const { debounceMs = 0, pollIntervalMs = 10_000, refreshOnFocus = true } = opts;
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(Boolean(path));
   const [tick, setTick] = useState(0);
 
-  // Parametrlar obyekti har renderda yangi bo'ladi, shuning uchun uni
-  // bog'liqlik ro'yxatiga o'z holicha qo'yib bo'lmaydi - cheksiz sikl
-  // bo'lardi. Matnga aylantirib solishtiramiz.
   const key = JSON.stringify(params ?? null);
   const lastPath = useRef<string | null>(null);
+
+  // Global refresh hodisasi (WebSocket orqali yoki Ctrl+R tugmasidan)
+  useEffect(() => {
+    if (!path) return;
+    const onRefresh = () => {
+      setTick((t) => t + 1);
+    };
+    window.addEventListener("teamflow:refresh", onRefresh);
+    return () => window.removeEventListener("teamflow:refresh", onRefresh);
+  }, [path]);
+
+  // Tabga yoki oynaga qaytganda avtomatik yangilanish
+  useEffect(() => {
+    if (!path || refreshOnFocus === false) return;
+    const onFocus = () => {
+      if (document.visibilityState === "visible") {
+        setTick((t) => t + 1);
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [path, refreshOnFocus]);
+
+  // Real-time davriy fon yangilanishi (avtomatik Ctrl+R kabi yangilanib turish)
+  useEffect(() => {
+    if (!path) return;
+    const interval = pollIntervalMs ?? 10_000;
+    if (interval <= 0) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        setTick((t) => t + 1);
+      }
+    }, interval);
+    return () => window.clearInterval(timer);
+  }, [path, pollIntervalMs]);
 
   useEffect(() => {
     if (!path) {
@@ -73,9 +108,6 @@ export function useFetch<T>(path: string | null, params?: Params, opts: Options 
     const ctl = new AbortController();
     let alive = true;
 
-    // Manzil o'zgarganda eski ma'lumot tozalanadi - u boshqa narsaga tegishli.
-    // Faqat filtr o'zgargan bo'lsa esa ekranda qoladi: aks holda har filtr
-    // almashganda jadval ham, filtr paneli ham yo'qolib, sahifa sakrardi.
     if (lastPath.current !== path) {
       lastPath.current = path;
       setData(null);
@@ -91,8 +123,6 @@ export function useFetch<T>(path: string | null, params?: Params, opts: Options 
           setPending(false);
         })
         .catch((e) => {
-          // Bekor qilingan so'rov xato emas - shunchaki kerak bo'lmay qoldi.
-          // Bunda `pending` ni ham o'chirmaymiz: o'rniga yangi so'rov ketgan.
           if (!alive || (e instanceof DOMException && e.name === "AbortError")) return;
           setError(e instanceof ApiError ? e.message : tx("api_use_fetch.malumotni_yuklab_bolmadi"));
           setPending(false);

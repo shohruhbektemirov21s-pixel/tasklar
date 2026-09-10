@@ -44,7 +44,7 @@ import {
   IconDownload,
 } from "@/components/icons";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
-import { Card, Empty, ErrorMsg, Loading, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
+import { Card, Empty, ErrorMsg, Loading, OkMsg, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
 import { toEditOrder, toOrders, toProject, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge, OrderTypeBadge } from "./ChangeRequests";
 
@@ -56,6 +56,13 @@ export default function OrderDetail() {
   const [item, setItem] = useState<ChangeRequestItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionOk, setActionOk] = useState<string | null>(null);
+
+  // Kamchilik bilan qaytarish modali
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
 
   // Tavsifni to'liq ochish / qisqartirish holati
   const [expandDesc, setExpandDesc] = useState(false);
@@ -159,10 +166,11 @@ export default function OrderDetail() {
     if (!ok) return;
 
     try {
+      setActionError(null);
       await deleteOrder(item.id);
       go(toOrders());
     } catch (err: any) {
-      alert(err?.message || "O'chirishda xatolik yuz berdi.");
+      setActionError(err?.message || "O'chirishda xatolik yuz berdi.");
     }
   }
 
@@ -180,6 +188,7 @@ export default function OrderDetail() {
     e.preventDefault();
     if (!item) return;
     setClaimSubmitting(true);
+    setActionError(null);
     try {
       const updated = await claimOrder(item.id, {
         pm_estimated_duration: claimDuration.trim() || undefined,
@@ -192,8 +201,9 @@ export default function OrderDetail() {
       setPmDeadline(updated.pm_deadline || "");
       setPmNotes(updated.pm_notes || "");
       setClaimModalOpen(false);
+      setActionOk("Buyurtma muvaffaqiyatli qabul qilindi.");
     } catch (err: any) {
-      alert(err?.message || "Qabul qilishda xatolik yuz berdi.");
+      setActionError(err?.message || "Qabul qilishda xatolik yuz berdi.");
     } finally {
       setClaimSubmitting(false);
     }
@@ -204,6 +214,7 @@ export default function OrderDetail() {
     e.preventDefault();
     if (!item) return;
     setPmSaving(true);
+    setActionError(null);
     try {
       const updated = await setPmDecision(item.id, {
         status: pmStatus,
@@ -212,8 +223,9 @@ export default function OrderDetail() {
       });
       setItem(updated);
       setPmPanelOpen(false);
+      setActionOk("PM qarori va muddatlar muvaffaqiyatli saqlandi.");
     } catch (err: any) {
-      alert(err?.message || "Qarorni saqlashda xatolik yuz berdi.");
+      setActionError(err?.message || "Qarorni saqlashda xatolik yuz berdi.");
     } finally {
       setPmSaving(false);
     }
@@ -228,24 +240,37 @@ export default function OrderDetail() {
       confirmText: "Tasdiqlash",
     });
     if (!ok) return;
+    setActionError(null);
     try {
       const updated = await clientApprove(item.id);
       setItem(updated);
+      setActionOk("Buyurtma muvaffaqiyatli tasdiqlandi va yakunlandi.");
     } catch (err: any) {
-      alert(err?.message || "Tasdiqlashda xatolik yuz berdi.");
+      setActionError(err?.message || "Tasdiqlashda xatolik yuz berdi.");
     }
   }
 
-  // Boshqarma qaytarishi
-  async function handleClientReject() {
-    if (!item) return;
-    const reason = window.prompt("Aniqlangan kamchilik yoki e'tiroz sababini kiriting:");
-    if (!reason || !reason.trim()) return;
+  // Boshqarma qaytarishi (modal ochish)
+  function handleOpenReject() {
+    setRejectReason("");
+    setRejectModalOpen(true);
+  }
+
+  async function handleRejectSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!item || !rejectReason.trim()) return;
+    setRejectSubmitting(true);
+    setActionError(null);
     try {
-      const updated = await clientReject(item.id, reason.trim());
+      const updated = await clientReject(item.id, rejectReason.trim());
       setItem(updated);
+      setRejectModalOpen(false);
+      setRejectReason("");
+      setActionOk("Buyurtma kamchiliklar bilan qaytarildi.");
     } catch (err: any) {
-      alert(err?.message || "Qaytarishda xatolik yuz berdi.");
+      setActionError(err?.message || "Qaytarishda xatolik yuz berdi.");
+    } finally {
+      setRejectSubmitting(false);
     }
   }
 
@@ -254,6 +279,7 @@ export default function OrderDetail() {
     e.preventDefault();
     if (!item || !versionFile || !versionNote.trim()) return;
     setVersionSubmitting(true);
+    setActionError(null);
     try {
       const fd = new FormData();
       fd.append("tz_file", versionFile);
@@ -263,9 +289,9 @@ export default function OrderDetail() {
       setVersionModal(false);
       setVersionFile(null);
       setVersionNote("");
-      alert("Yangi versiya muvaffaqiyatli yuklandi!");
+      setActionOk("Yangi versiya muvaffaqiyatli yuklandi!");
     } catch (err: any) {
-      alert(err?.message || "Yuklashda xatolik yuz berdi.");
+      setActionError(err?.message || "Yuklashda xatolik yuz berdi.");
     } finally {
       setVersionSubmitting(false);
     }
@@ -342,6 +368,9 @@ export default function OrderDetail() {
           gap: 14,
         }}
       >
+        <ErrorMsg error={actionError} />
+        <OkMsg text={actionOk} />
+
         {/* 1. YUQORI QISM: Navigatsiya, Raqam, Status va Amallar */}
         <div
           className="row between middle"
@@ -351,24 +380,24 @@ export default function OrderDetail() {
             padding: "4px 0",
           }}
         >
-          <div className="row middle" style={{ gap: 10, flexWrap: "wrap" }}>
+          <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
             <button
               type="button"
               className="btn btn-sm btn-ghost row middle"
-              style={{ gap: 6, padding: "6px 10px", fontWeight: 600, color: "var(--brand)" }}
+              style={{ gap: 6, padding: "5px 10px", fontWeight: 600, color: "var(--brand)" }}
               onClick={() => go(toOrders())}
             >
-              <IconBack size={15} /> Buyurtmalarga qaytish
+              <IconBack size={14} /> {tx("orders.buyurtmalarga_qaytish")}
             </button>
 
-            <span className="badge badge-brand" style={{ fontSize: 12.5, fontWeight: 700 }}>
+            <span className="badge badge-brand" style={{ fontSize: 12, fontWeight: 700 }}>
               {item.request_no}
             </span>
 
             {(item.version || 1) > 1 && (
               <span
                 className="badge"
-                style={{ background: "#4f46e5", color: "#fff", fontWeight: 700, fontSize: 11 }}
+                style={{ fontSize: 11, fontWeight: 700 }}
               >
                 v{item.version}
               </span>
@@ -379,23 +408,17 @@ export default function OrderDetail() {
           </div>
 
           <div className="row middle" style={{ gap: 8 }}>
-            {item.tz_file_url && (
+            {(item.tz_file_url || (item.attachments && item.attachments.length > 0)) && (
               <a
-                href={item.tz_file_url}
+                href={item.attachments?.[0]?.url || item.tz_file_url || "#"}
                 target="_blank"
                 rel="noreferrer"
-                className="btn btn-sm btn-primary row middle"
-                style={{
-                  gap: 6,
-                  textDecoration: "none",
-                  fontWeight: 600,
-                  background: "#0284c7",
-                  borderColor: "#0284c7",
-                }}
+                className="btn btn-sm btn-outline row middle"
+                style={{ gap: 6 }}
                 download
-                title={item.tz_file_name || "Biriktirilgan fayl"}
+                title={item.attachments?.[0]?.original_name || item.tz_file_name || tx("orders.faylni_yuklab_olish")}
               >
-                <IconDownload size={14} /> Faylni yuklab olish
+                <IconDownload size={13} /> {tx("orders.faylni_yuklab_olish")}
               </a>
             )}
 
@@ -405,7 +428,7 @@ export default function OrderDetail() {
                 className="btn btn-sm btn-outline"
                 onClick={() => go(toEditOrder(item.id))}
               >
-                Tahrirlash
+                {tx("common.tahrirlash")}
               </button>
             )}
 
@@ -413,11 +436,11 @@ export default function OrderDetail() {
               <button
                 type="button"
                 className="btn btn-sm btn-ghost"
-                style={{ color: "#dc2626", padding: "6px 8px" }}
+                style={{ color: "var(--danger, #dc2626)", padding: "5px 8px" }}
                 onClick={() => void handleDelete()}
-                title="Buyurtmani o'chirish"
+                title={tx("common.ochirish")}
               >
-                🗑️
+                {tx("common.ochirish")}
               </button>
             )}
           </div>
@@ -427,9 +450,9 @@ export default function OrderDetail() {
         {!item.assigned_pm && isPMOrAdmin && (
           <div
             style={{
-              background: "#fffbeb",
-              border: "1px solid #fde68a",
-              borderRadius: 10,
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: 8,
               padding: "10px 14px",
               display: "flex",
               alignItems: "center",
@@ -438,16 +461,15 @@ export default function OrderDetail() {
               flexWrap: "wrap",
             }}
           >
-            <div style={{ fontSize: 13, color: "#92400e" }}>
-              ⏳ <strong>Mas'ul loyiha menejeri yo'q.</strong> Ushbu buyurtmani o'z zimmangizga olasizmi?
+            <div style={{ fontSize: 13, color: "var(--text)" }}>
+              {tx("orders.masul_pm_yoq_qabul_qilasizmi")}
             </div>
             <button
               type="button"
               className="btn btn-xs btn-primary"
-              style={{ background: "#059669", borderColor: "#059669" }}
               onClick={handleOpenClaim}
             >
-              📌 Ishni qabul qilish
+              {tx("orders.ishni_qabul_qilish")}
             </button>
           </div>
         )}
@@ -456,9 +478,9 @@ export default function OrderDetail() {
         {item.status === "READY_FOR_REVIEW" && (
           <div
             style={{
-              background: "rgba(168, 85, 247, 0.08)",
-              border: "1.5px solid #a855f7",
-              borderRadius: 10,
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: 8,
               padding: "12px 14px",
               display: "flex",
               alignItems: "center",
@@ -468,45 +490,62 @@ export default function OrderDetail() {
             }}
           >
             <div>
-              <div style={{ fontWeight: 700, fontSize: 13.5, color: "#6b21a8" }}>
-                📑 Ish bajarildi — Boshqarma tasdig'i kutilmoqda
+              <div style={{ fontWeight: 600, fontSize: 13.5, color: "var(--text)" }}>
+                {tx("orders.boshqarma_tasdigi_kutilmoqda")}
               </div>
               {item.completion_note && (
-                <div style={{ fontSize: 12, color: "#581c87", marginTop: 2 }}>
-                  PM xulosasi: {item.completion_note}
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                  {tx("orders.pm_izohi")}: {item.completion_note}
                 </div>
               )}
             </div>
             {isSohaviyOrAdmin && (
               <div className="row middle" style={{ gap: 8 }}>
                 <button type="button" className="btn btn-xs btn-ok" onClick={handleClientApprove}>
-                  ✓ Qabul qilish
+                  {tx("common.tasdiqlash")}
                 </button>
-                <button type="button" className="btn btn-xs btn-warning" onClick={handleClientReject}>
-                  ⚠️ Qaytarish
+                <button type="button" className="btn btn-xs btn-warning" onClick={handleOpenReject}>
+                  {tx("common.qaytarish")}
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {/* 2. ASOSIY MA'LUMOTLAR KARTASI */}
+        {/* Rad etilgan buyurtma sababi banneri */}
+        {item.status === "REJECTED" && (item.pm_notes || item.client_feedback_note) && (
+          <div
+            style={{
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid #fecaca",
+              borderRadius: 8,
+              padding: "10px 14px",
+              fontSize: 13,
+              color: "var(--danger, #dc2626)",
+            }}
+          >
+            <strong>{tx("orders.rad_etish_sababi")}: </strong>
+            <span>{item.pm_notes || item.client_feedback_note}</span>
+          </div>
+        )}
+
+        {/* YAGONA ASOSIY KARTA (Barcha ma'lumotlar bitta ixcham, toza blokda) */}
         <section
           className="card padded"
           style={{
-            borderRadius: 12,
+            borderRadius: 10,
             border: "1px solid var(--border-color, #e2e8f0)",
             padding: "16px 18px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
           }}
         >
-          <div style={{ marginBottom: 14 }}>
+          {/* Sarlavha va Loyiha */}
+          <div style={{ borderBottom: "1px solid var(--border-color, #e2e8f0)", paddingBottom: 12, marginBottom: 12 }}>
             <span className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Buyurtma nomi
+              {tx("orders.buyurtma_nomi")}
             </span>
             <h1
               style={{
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: 700,
                 color: "var(--text)",
                 margin: "3px 0 0 0",
@@ -515,56 +554,43 @@ export default function OrderDetail() {
             >
               {item.system_name} {item.module ? `— ${item.module}` : ""}
             </h1>
+            {item.project_detail && (
+              <div style={{ marginTop: 4, fontSize: 12.5 }}>
+                <span className="muted">{tx("orders.loyiha")}: </span>
+                <Link
+                  {...toProject(item.project_detail.id)}
+                  style={{
+                    fontWeight: 600,
+                    color: "var(--brand)",
+                    textDecoration: "none",
+                  }}
+                >
+                  {item.project_detail.name}
+                </Link>
+                <span className="badge badge-brand" style={{ fontSize: 10, padding: "1px 5px", marginLeft: 6 }}>
+                  {item.project_detail.key}
+                </span>
+              </div>
+            )}
           </div>
 
+          {/* Parametrlar to'plami (Ixcham Grid) */}
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-              gap: "12px 18px",
-              fontSize: 13,
+              gap: "10px 16px",
+              fontSize: 12.5,
+              paddingBottom: 12,
+              borderBottom: "1px solid var(--border-color, #e2e8f0)",
             }}
           >
             <div>
-              <span className="muted" style={{ fontSize: 11.5 }}>Loyiha:</span>
-              <div style={{ marginTop: 2 }}>
-                {item.project_detail ? (
-                  <Link
-                    {...toProject(item.project_detail.id)}
-                    className="row middle"
-                    style={{
-                      gap: 6,
-                      fontWeight: 600,
-                      color: "var(--brand)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 9,
-                        height: 9,
-                        borderRadius: "50%",
-                        background: item.project_detail.color || "var(--brand)",
-                        display: "inline-block",
-                      }}
-                    />
-                    <span>{item.project_detail.name}</span>
-                    <span className="badge badge-brand" style={{ fontSize: 10, padding: "1px 5px" }}>
-                      {item.project_detail.key}
-                    </span>
-                  </Link>
-                ) : (
-                  <span className="muted">Bog'lanmagan</span>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <span className="muted" style={{ fontSize: 11.5 }}>Mijoz / Buyurtmachi:</span>
+              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.soha_mijoz")}:</span>
               <div style={{ fontWeight: 600, color: "var(--text)", marginTop: 2 }}>
-                {item.responsible_person || "Noma'lum"}{" "}
+                {item.responsible_person || "—"}
                 {item.department && (
-                  <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}>
+                  <span className="muted" style={{ fontWeight: 400, marginLeft: 4 }}>
                     ({item.department})
                   </span>
                 )}
@@ -572,33 +598,21 @@ export default function OrderDetail() {
             </div>
 
             <div>
-              <span className="muted" style={{ fontSize: 11.5 }}>Muddat (so'ralgan):</span>
+              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.masul_pm")}:</span>
               <div style={{ fontWeight: 600, color: "var(--text)", marginTop: 2 }}>
-                {item.due_date ? fmtDate(item.due_date) : "-"}
+                {item.assigned_pm_name || <span className="muted">{tx("orders.biriktirilmagan")}</span>}
               </div>
             </div>
 
             <div>
-              <span className="muted" style={{ fontSize: 11.5 }}>{tx("orders.yaratilgan_sana_vaqti")}:</span>
+              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.masul_dasturchi")}:</span>
               <div style={{ fontWeight: 600, color: "var(--text)", marginTop: 2 }}>
-                📅 {fmtDateTime(item.created_at || item.request_date)}
-                {item.created_at && (
-                  <span className="muted" style={{ fontSize: 11, marginLeft: 6, fontWeight: 400 }}>
-                    ({timeAgo(item.created_at)})
-                  </span>
-                )}
+                {item.assigned_developer_name || <span className="muted">{tx("orders.biriktirilmagan")}</span>}
               </div>
             </div>
 
             <div>
-              <span className="muted" style={{ fontSize: 11.5 }}>Mas'ul shaxs (PM):</span>
-              <div style={{ fontWeight: 600, color: "var(--text)", marginTop: 2 }}>
-                {item.assigned_pm_name ? `👤 ${item.assigned_pm_name}` : <span className="muted">Biriktirilmagan</span>}
-              </div>
-            </div>
-
-            <div>
-              <span className="muted" style={{ fontSize: 11.5 }}>Muhimlik turi:</span>
+              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.muhimlik_turi")}:</span>
               <div style={{ marginTop: 2 }}>
                 <span
                   className={`badge ${
@@ -616,178 +630,203 @@ export default function OrderDetail() {
                 </span>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* 3. “TAVSIF” KICHIK BLOK */}
-        <section
-          className="card padded"
-          style={{
-            borderRadius: 12,
-            border: "1px solid var(--border-color, #e2e8f0)",
-            padding: "14px 18px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
-          }}
-        >
-          <div className="row between middle" style={{ marginBottom: 6 }}>
-            <span style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)" }}>
-              📝 Tavsif va talab qilinayotgan o'zgartirish
-            </span>
-            {isLongText && (
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
-                style={{ fontSize: 11.5, color: "var(--brand)", padding: "2px 6px" }}
-                onClick={() => setExpandDesc((v) => !v)}
+            <div>
+              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.soralgan_muddat")}:</span>
+              <div style={{ fontWeight: 600, color: "var(--text)", marginTop: 2 }}>
+                {item.due_date ? fmtDate(item.due_date) : "—"}
+              </div>
+            </div>
+
+            <div>
+              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.pm_belgilagan_muddat")}:</span>
+              <div style={{ fontWeight: 600, color: item.pm_deadline ? "var(--brand)" : "var(--text)", marginTop: 2 }}>
+                {item.pm_deadline ? fmtDate(item.pm_deadline) : item.pm_estimated_duration || <span className="muted">{tx("orders.kutilmoqda")}</span>}
+              </div>
+            </div>
+
+            <div>
+              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.yaratilgan_sana_vaqti")}:</span>
+              <div style={{ fontWeight: 500, color: "var(--text)", marginTop: 2 }}>
+                {fmtDateTime(item.created_at || item.request_date)}
+              </div>
+            </div>
+
+            <div>
+              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.oxirgi_yangilanish")}:</span>
+              <div style={{ color: "var(--muted)", marginTop: 2 }}>
+                {timeAgo(item.updated_at || item.created_at)}
+              </div>
+            </div>
+          </div>
+
+          {/* Tavsif va Talablar */}
+          <div style={{ paddingTop: 12, paddingBottom: 12, borderBottom: "1px solid var(--border-color, #e2e8f0)" }}>
+            <div className="row between middle" style={{ marginBottom: 4 }}>
+              <span className="muted" style={{ fontSize: 11 }}>
+                {tx("orders.tavsif_va_talablar")}:
+              </span>
+              {isLongText && (
+                <button
+                  type="button"
+                  className="btn btn-xs btn-ghost"
+                  style={{ fontSize: 11, padding: "2px 6px" }}
+                  onClick={() => setExpandDesc((v) => !v)}
+                >
+                  {expandDesc ? "Qisqartirish" : "Batafsil ko'rish"}
+                </button>
+              )}
+            </div>
+
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--text)",
+                lineHeight: 1.5,
+                whiteSpace: "pre-wrap",
+                display: !expandDesc && isLongText ? "-webkit-box" : "block",
+                WebkitLineClamp: !expandDesc && isLongText ? 3 : undefined,
+                WebkitBoxOrient: !expandDesc && isLongText ? "vertical" : undefined,
+                overflow: !expandDesc && isLongText ? "hidden" : "visible",
+              }}
+            >
+              {descText}
+            </div>
+
+            {item.reason && (
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 12,
+                  color: "var(--muted)",
+                }}
               >
-                {expandDesc ? "Qisqartirish ▲" : "Batafsil ko'rish ▼"}
-              </button>
+                <strong>{tx("orders.asos_sabab")}:</strong> {item.reason}
+              </div>
             )}
           </div>
 
-          <div
-            style={{
-              fontSize: 13,
-              color: "var(--text)",
-              lineHeight: 1.5,
-              whiteSpace: "pre-wrap",
-              display: !expandDesc && isLongText ? "-webkit-box" : "block",
-              WebkitLineClamp: !expandDesc && isLongText ? 3 : undefined,
-              WebkitBoxOrient: !expandDesc && isLongText ? "vertical" : undefined,
-              overflow: !expandDesc && isLongText ? "hidden" : "visible",
-            }}
-          >
-            {descText}
-          </div>
-
-          {item.reason && (
-            <div
-              style={{
-                marginTop: 10,
-                paddingTop: 8,
-                borderTop: "1px dashed var(--border-color, #e2e8f0)",
-                fontSize: 12,
-                color: "var(--muted)",
-              }}
-            >
-              <strong>Sabab / Asos:</strong> {item.reason}
+          {/* Izohlar / Ko'rsatmalar (agar mavjud bo'lsa) */}
+          {(item.pm_notes || item.client_feedback_note || item.completion_note) && (
+            <div style={{ paddingTop: 12, paddingBottom: 12, borderBottom: "1px solid var(--border-color, #e2e8f0)", display: "flex", flexDirection: "column", gap: 8 }}>
+              {item.pm_notes && (
+                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 6 }}>
+                  <strong>{tx("orders.pm_izohi")}:</strong> {item.pm_notes}
+                </div>
+              )}
+              {item.client_feedback_note && (
+                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 6 }}>
+                  <strong>{tx("orders.boshqarma_etirozi")}:</strong> {item.client_feedback_note}
+                </div>
+              )}
+              {item.completion_note && (
+                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 6 }}>
+                  <strong>{tx("orders.hisobot_izohi")}:</strong> {item.completion_note}
+                </div>
+              )}
             </div>
           )}
-        </section>
 
-        {/* 4. PASTKI QISM: Holat, Ijrochi, Fayllar va PM paneli */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 14,
-          }}
-        >
-          {/* 4.1 Buyurtma holati va ijrosi */}
-          <section
-            className="card padded"
-            style={{
-              borderRadius: 12,
-              border: "1px solid var(--border-color, #e2e8f0)",
-              padding: "14px 18px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
-          >
-            <div>
-              <div
-                className="row between middle"
-                style={{
-                  borderBottom: "1px solid var(--border-color, #e2e8f0)",
-                  paddingBottom: 8,
-                  marginBottom: 10,
-                }}
-              >
-                <span style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)" }}>
-                  ⚙️ Holat va Ijro tafsilotlari
-                </span>
-                {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-outline"
-                    style={{ fontSize: 11 }}
-                    onClick={() => setPmPanelOpen((v) => !v)}
-                  >
-                    {pmPanelOpen ? "Yopish" : "O'zgartirish"}
-                  </button>
-                )}
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5 }}>
-                <div className="row between middle">
-                  <span className="muted">Buyurtma holati:</span>
-                  <OrderStatusBadge status={item.status} label={item.status_display} />
-                </div>
-
-                <div className="row between middle">
-                  <span className="muted">Mas'ul xodim (Dasturchi):</span>
-                  <span style={{ fontWeight: 600, color: "var(--text)" }}>
-                    {item.assigned_developer_name ? `👨‍💻 ${item.assigned_developer_name}` : "Biriktirilmagan"}
-                  </span>
-                </div>
-
-                <div className="row between middle">
-                  <span className="muted">PM belgilagan muddat:</span>
-                  <span style={{ fontWeight: 600, color: item.pm_deadline ? "var(--brand)" : "var(--text)" }}>
-                    {item.pm_deadline ? fmtDate(item.pm_deadline) : item.pm_estimated_duration || "Kutilmoqda"}
-                  </span>
-                </div>
-
-                <div className="row between middle">
-                  <span className="muted">Oxirgi yangilanish:</span>
-                  <span style={{ color: "var(--muted)", fontSize: 12 }}>
-                    {timeAgo(item.updated_at || item.created_at)}
-                  </span>
-                </div>
-
-                {item.pm_notes && (
-                  <div
-                    style={{
-                      marginTop: 4,
-                      background: "var(--surface-2, #f8fafc)",
-                      padding: "6px 10px",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      color: "var(--text)",
-                    }}
-                  >
-                    <strong>PM izohi:</strong> {item.pm_notes}
+          {/* Hujjatlar va Qo'shimcha Amallar */}
+          <div className="row between middle" style={{ paddingTop: 12, flexWrap: "wrap", gap: 10 }}>
+            <div className="row middle" style={{ gap: 12, flexWrap: "wrap" }}>
+              <div>
+                <span className="muted" style={{ fontSize: 11.5, marginRight: 6 }}>{tx("orders.biriktirilgan_fayllar")}:</span>
+                {item.attachments && item.attachments.length > 0 ? (
+                  <div style={{ display: "inline-flex", flexWrap: "wrap", gap: 6 }}>
+                    {item.attachments.map((att) => (
+                      <a
+                        key={att.id}
+                        href={att.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-xs btn-outline"
+                        download
+                        title={att.original_name}
+                      >
+                        <IconDownload size={12} /> {att.original_name} {att.size_display ? `(${att.size_display})` : ""}
+                      </a>
+                    ))}
                   </div>
+                ) : item.tz_file_url ? (
+                  <a
+                    href={item.tz_file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-xs btn-outline"
+                    download
+                  >
+                    <IconDownload size={12} /> {item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}
+                  </a>
+                ) : (
+                  <span className="muted" style={{ fontSize: 12 }}>{tx("orders.fayl_biriktirilmagan")}</span>
                 )}
               </div>
+
+              {item.completion_file_url && (
+                <div>
+                  <span className="muted" style={{ fontSize: 11.5, marginRight: 6 }}>{tx("orders.hisobot_fayli")}:</span>
+                  <a
+                    href={item.completion_file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-xs btn-outline"
+                    download
+                  >
+                    <IconDownload size={12} /> {item.completion_file_name || tx("orders.faylni_yuklab_olish")}
+                  </a>
+                </div>
+              )}
             </div>
 
-            {/* PM tezkor tahrir paneli (ochilganda) */}
-            {pmPanelOpen && (
-              <form
-                onSubmit={handleSavePM}
-                style={{
-                  marginTop: 12,
-                  paddingTop: 10,
-                  borderTop: "1px dashed var(--border-color, #e2e8f0)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
+            <div className="row middle" style={{ gap: 8 }}>
+              {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && (
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline"
+                  onClick={() => setVersionModal(true)}
+                >
+                  + {tx("orders.yangi_tz_versiyasi")}
+                </button>
+              )}
+
+              {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline"
+                  onClick={() => setPmPanelOpen((v) => !v)}
+                >
+                  {pmPanelOpen ? tx("orders.pm_panelni_yopish") : tx("orders.pm_holat_muddatni_ozgartirish")}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* PM tahrir paneli (ochilganda) */}
+          {pmPanelOpen && (
+            <form
+              onSubmit={handleSavePM}
+              style={{
+                marginTop: 12,
+                paddingTop: 12,
+                borderTop: "1px dashed var(--border-color, #e2e8f0)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field">
                   <label style={{ fontSize: 11, fontWeight: 600 }}>Yangi holat</label>
                   <select
                     value={pmStatus}
                     onChange={(e) => setPmStatus(e.target.value as ChangeRequestItem["status"])}
                   >
-                    <option value="ACCEPTED">📋 Qabul qilindi</option>
-                    <option value="ASSIGNED_TO_DEV">💻 Dasturchiga topshirildi</option>
-                    <option value="IN_PROGRESS">⚙️ Jarayonda</option>
-                    <option value="TESTING">🧪 Testda</option>
-                    <option value="REJECTED">❌ Rad etildi</option>
+                    <option value="ACCEPTED">Qabul qilindi</option>
+                    <option value="ASSIGNED_TO_DEV">Dasturchiga topshirildi</option>
+                    <option value="IN_PROGRESS">Jarayonda</option>
+                    <option value="TESTING">Testda</option>
+                    <option value="REJECTED">Rad etildi</option>
                   </select>
                 </div>
                 <div className="field">
@@ -798,148 +837,31 @@ export default function OrderDetail() {
                     onChange={(e) => setPmDeadline(e.target.value)}
                   />
                 </div>
-                <div className="field">
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>Izoh / Ko'rsatma</label>
-                  <input
-                    type="text"
-                    placeholder="Qisqa ko'rsatma..."
-                    value={pmNotes}
-                    onChange={(e) => setPmNotes(e.target.value)}
-                  />
-                </div>
-                <div className="row end" style={{ gap: 6 }}>
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-ghost"
-                    onClick={() => setPmPanelOpen(false)}
-                  >
-                    Bekor qilish
-                  </button>
-                  <button type="submit" className="btn btn-xs btn-primary" disabled={pmSaving}>
-                    {pmSaving ? "Saqlanmoqda..." : "Saqlash"}
-                  </button>
-                </div>
-              </form>
-            )}
-          </section>
-
-          {/* 4.2 Hujjatlar va TZ fayllari */}
-          <section
-            className="card padded"
-            style={{
-              borderRadius: 12,
-              border: "1px solid var(--border-color, #e2e8f0)",
-              padding: "14px 18px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontWeight: 600,
-                  fontSize: 12.5,
-                  color: "var(--text)",
-                  borderBottom: "1px solid var(--border-color, #e2e8f0)",
-                  paddingBottom: 8,
-                  marginBottom: 10,
-                }}
-              >
-                📁 Biriktirilgan fayl
               </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {/* TZ Fayli */}
-                {item.tz_file_url ? (
-                  <div
-                    className="row between middle"
-                    style={{
-                      background: "#f0fdf4",
-                      border: "1px solid #bbf7d0",
-                      borderRadius: 8,
-                      padding: "8px 12px",
-                    }}
-                  >
-                    <div className="row middle" style={{ gap: 8 }}>
-                      <span style={{ fontSize: 18 }}>📄</span>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 12, color: "#166534" }}>
-                          {item.tz_file_name || "Texnik topshiriq (TZ)"}
-                        </div>
-                        <div style={{ fontSize: 11, color: "#15803d" }}>
-                          v{item.version || 1} {item.tz_file_size_display ? `• ${item.tz_file_size_display}` : ""}
-                        </div>
-                      </div>
-                    </div>
-                    <a
-                      href={item.tz_file_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-xs btn-primary"
-                      style={{ background: "#16a34a", borderColor: "#16a34a" }}
-                      download
-                    >
-                      <IconDownload size={12} /> Yuklab olish
-                    </a>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 12.5, color: "var(--muted)", fontStyle: "italic", padding: "6px 0" }}>
-                    Fayl biriktirilmagan
-                  </div>
-                )}
-
-                {/* Tugatilgan ish hisoboti (agar mavjud bo'lsa) */}
-                {item.completion_file_url && (
-                  <div
-                    className="row between middle"
-                    style={{
-                      background: "#eff6ff",
-                      border: "1px solid #bfdbfe",
-                      borderRadius: 8,
-                      padding: "8px 12px",
-                    }}
-                  >
-                    <div className="row middle" style={{ gap: 8 }}>
-                      <span style={{ fontSize: 18 }}>📁</span>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 12, color: "#1e40af" }}>
-                          Hisobot hujjati
-                        </div>
-                        <div style={{ fontSize: 11, color: "#2563eb" }}>
-                          {item.completion_file_name || "Hisobot"}
-                        </div>
-                      </div>
-                    </div>
-                    <a
-                      href={item.completion_file_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-xs btn-primary"
-                    >
-                      <IconDownload size={12} /> Yuklab olish
-                    </a>
-                  </div>
-                )}
+              <div className="field">
+                <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.pm_izohi")}</label>
+                <input
+                  type="text"
+                  placeholder="Qisqa ko'rsatma..."
+                  value={pmNotes}
+                  onChange={(e) => setPmNotes(e.target.value)}
+                />
               </div>
-            </div>
-
-            {/* Boshqarma uchun yangi versiya yuborish tugmasi */}
-            {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && (
-              <div style={{ marginTop: 10, paddingTop: 8, textAlign: "right" }}>
+              <div className="row end" style={{ gap: 6 }}>
                 <button
                   type="button"
                   className="btn btn-xs btn-ghost"
-                  style={{ color: "var(--brand)" }}
-                  onClick={() => setVersionModal(true)}
+                  onClick={() => setPmPanelOpen(false)}
                 >
-                  + Yangi TZ versiyasi yuklash
+                  Bekor qilish
+                </button>
+                <button type="submit" className="btn btn-xs btn-primary" disabled={pmSaving}>
+                  {pmSaving ? "Saqlanmoqda..." : "Saqlash"}
                 </button>
               </div>
-            )}
-          </section>
-        </div>
+            </form>
+          )}
+        </section>
       </div>
 
       {/* Yangi versiya yuborish modali */}
@@ -1011,13 +933,10 @@ export default function OrderDetail() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-header row between middle" style={{ padding: "14px 18px" }}>
-              <div className="row middle" style={{ gap: 8 }}>
-                <span style={{ fontSize: 18 }}>📌</span>
-                <div>
-                  <strong style={{ fontSize: 14 }}>{tx("orders.claim_modal_title")}</strong>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                    {item.request_no} — {item.project_detail?.name || item.system_name}
-                  </div>
+              <div>
+                <strong style={{ fontSize: 14 }}>{tx("orders.claim_modal_title")}</strong>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                  {item.request_no} — {item.project_detail?.name || item.system_name}
                 </div>
               </div>
               <button
@@ -1034,12 +953,12 @@ export default function OrderDetail() {
               <div className="modal-body" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
                 <div
                   style={{
-                    background: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
+                    background: "var(--surface-2, #f8fafc)",
+                    border: "1px solid var(--border-color, #e2e8f0)",
                     borderRadius: 8,
                     padding: "8px 12px",
                     fontSize: 12,
-                    color: "#166534",
+                    color: "var(--text)",
                     lineHeight: 1.4,
                   }}
                 >
@@ -1047,8 +966,8 @@ export default function OrderDetail() {
                 </div>
 
                 {item.due_date && (
-                  <div style={{ fontSize: 12, color: "#475569", background: "#f8fafc", padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0" }}>
-                    📅 <strong>Mijoz so'ragan muddat:</strong> {fmtDate(item.due_date)}
+                  <div style={{ fontSize: 12, color: "var(--text)", background: "var(--surface-2, #f8fafc)", padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border-color, #e2e8f0)" }}>
+                    <strong>{tx("orders.soralgan_muddat")}:</strong> {fmtDate(item.due_date)}
                   </div>
                 )}
 
@@ -1130,6 +1049,85 @@ export default function OrderDetail() {
                   disabled={claimSubmitting || !claimDeadlineInput}
                 >
                   {claimSubmitting ? tx("orders.claim_submitting") : tx("orders.claim_submit_btn")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* KAMCHILIK BILAN QAYTARISH MODALI */}
+      {rejectModalOpen && item && (
+        <div className="modal-overlay" onClick={() => !rejectSubmitting && setRejectModalOpen(false)}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: 500, width: "95%", borderRadius: 12 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header row between middle" style={{ padding: "14px 18px" }}>
+              <div>
+                <strong style={{ fontSize: 14 }}>Kamchilik yoki e'tiroz sababini kiriting</strong>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                  {item.request_no} — {item.project_detail?.name || item.system_name}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost"
+                onClick={() => setRejectModalOpen(false)}
+                disabled={rejectSubmitting}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleRejectSubmit}>
+              <div className="modal-body" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+                <div
+                  style={{
+                    background: "rgba(239, 68, 68, 0.08)",
+                    border: "1px solid rgba(239, 68, 68, 0.25)",
+                    borderRadius: 8,
+                    padding: "8px 12px",
+                    fontSize: 12,
+                    color: "#b91c1c",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Buyurtmachi tomonidan aniqlangan kamchiliklar qayd etiladi va vazifa qayta ishlash uchun qaytariladi.
+                </div>
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12, display: "block", marginBottom: 4 }}>
+                    E'tiroz va kamchilik tavsifi *
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    className="textarea"
+                    placeholder="Qaysi qismda kamchilik yoki xatolik aniqlandi..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer row end" style={{ padding: "12px 18px", gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost"
+                  onClick={() => setRejectModalOpen(false)}
+                  disabled={rejectSubmitting}
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-sm btn-danger"
+                  disabled={rejectSubmitting || !rejectReason.trim()}
+                >
+                  {rejectSubmitting ? "Yuborilmoqda..." : "Kamchilik bilan qaytarish"}
                 </button>
               </div>
             </form>

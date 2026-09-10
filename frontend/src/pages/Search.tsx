@@ -7,7 +7,7 @@
  */
 import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "@/api/client";
+import { api, totalOf } from "@/api/client";
 import type { PublicProject } from "@/api/types";
 import PublicShell from "@/components/PublicShell";
 import { Empty, Loading, Progress } from "@/components/ui";
@@ -23,15 +23,19 @@ export default function Search() {
   const specialty = params.get("specialty") || "";
 
   const [items, setItems] = useState<PublicProject[] | null>(null);
+  const [total, setTotal] = useState<number | null>(null);
   const [specialties, setSpecialties] = useState<{ value: string; label: string }[]>([]);
 
   const load = useCallback(async () => {
     setItems(null);
+    setTotal(null);
     try {
-      const data = await api.get<{ results: PublicProject[] }>("/public/projects/", { q, specialty });
+      const data = await api.get<{ count?: number; results: PublicProject[] }>("/public/projects/", { q, specialty });
       setItems(data.results);
+      setTotal(totalOf(data));
     } catch {
       setItems([]);
+      setTotal(0);
     }
   }, [q, specialty]);
 
@@ -82,7 +86,9 @@ export default function Search() {
           </div>
           <span className="spacer" />
           {items !== null && (
-            <span className="muted" style={{ fontSize: 13 }}>{items.length} {tx("search.ta_loyiha")}</span>
+            <span className="muted" style={{ fontSize: 13 }}>
+              {total !== null ? total : items.length} {tx("search.ta_loyiha")}
+            </span>
           )}
         </div>
 

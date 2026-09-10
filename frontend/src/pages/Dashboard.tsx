@@ -634,7 +634,7 @@ const PERIOD_THEMES: Record<
 function DepartmentDashboard({ user }: { user: any }) {
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod | null>(null);
-  const [selectedMetric, setSelectedMetric] = useState<"submitted" | "approved" | "completed" | null>(null);
+  const [selectedMetric, setSelectedMetric] = useState<"submitted" | "approved" | "in_progress" | "completed" | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -689,7 +689,8 @@ function DepartmentDashboard({ user }: { user: any }) {
       key: "year",
       since: defaultSince,
       submitted: total,
-      approved: inProgressCount + completed,
+      in_progress: inProgressCount,
+      approved: inProgressCount,
       completed: completed,
       rejected: stats?.rejected ?? 0,
     },
@@ -697,7 +698,8 @@ function DepartmentDashboard({ user }: { user: any }) {
       key: "month",
       since: defaultSince,
       submitted: total,
-      approved: inProgressCount + completed,
+      in_progress: inProgressCount,
+      approved: inProgressCount,
       completed: completed,
       rejected: stats?.rejected ?? 0,
     },
@@ -705,7 +707,8 @@ function DepartmentDashboard({ user }: { user: any }) {
       key: "week",
       since: defaultSince,
       submitted: total,
-      approved: inProgressCount + completed,
+      in_progress: inProgressCount,
+      approved: inProgressCount,
       completed: completed,
       rejected: stats?.rejected ?? 0,
     },
@@ -948,16 +951,16 @@ function DepartmentDashboard({ user }: { user: any }) {
                   </div>
                 </div>
 
-                {/* 2. Tasdiqlangan */}
+                {/* 2. Jarayonda */}
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (selectedPeriod === p.key && selectedMetric === "approved") {
+                    if (selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")) {
                       setSelectedPeriod(null);
                       setSelectedMetric(null);
                     } else {
                       setSelectedPeriod(p.key);
-                      setSelectedMetric("approved");
+                      setSelectedMetric("in_progress");
                       setStatusFilter("");
                       scrollToOrders();
                     }
@@ -968,37 +971,37 @@ function DepartmentDashboard({ user }: { user: any }) {
                     cursor: "pointer",
                     transition: "all 0.15s ease",
                     background:
-                      selectedPeriod === p.key && selectedMetric === "approved"
+                      selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
                         ? "#18181b"
                         : "#ffffff",
                     border:
-                      selectedPeriod === p.key && selectedMetric === "approved"
+                      selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
                         ? "1px solid #18181b"
                         : "1px solid #e4e4e7",
                     boxShadow:
-                      selectedPeriod === p.key && selectedMetric === "approved"
+                      selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
                         ? "0 2px 8px rgba(0,0,0,0.15)"
                         : "none",
                   }}
                   onMouseEnter={(e) => {
-                    if (!(selectedPeriod === p.key && selectedMetric === "approved")) {
+                    if (!(selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved"))) {
                       e.currentTarget.style.background = "#f4f4f5";
                       e.currentTarget.style.borderColor = "#d4d4d8";
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!(selectedPeriod === p.key && selectedMetric === "approved")) {
+                    if (!(selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved"))) {
                       e.currentTarget.style.background = "#ffffff";
                       e.currentTarget.style.borderColor = "#e4e4e7";
                     }
                   }}
-                  title={`${theme.title} — ${tx("dashboard.tasdiqlangan")} (${p.approved ?? 0})`}
+                  title={`${theme.title} — ${tx("dashboard.tasdiqlangan_buyurtmalar")} (${p.in_progress ?? p.approved ?? 0})`}
                 >
                   <div
                     style={{
                       fontSize: 11.5,
                       color:
-                        selectedPeriod === p.key && selectedMetric === "approved"
+                        selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
                           ? "#a1a1aa"
                           : "#71717a",
                       fontWeight: 600,
@@ -1012,13 +1015,13 @@ function DepartmentDashboard({ user }: { user: any }) {
                       fontSize: 24,
                       fontWeight: 800,
                       color:
-                        selectedPeriod === p.key && selectedMetric === "approved"
+                        selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
                           ? "#ffffff"
                           : "#18181b",
                       lineHeight: 1.1,
                     }}
                   >
-                    {p.approved ?? 0}
+                    {p.in_progress ?? p.approved ?? 0}
                   </div>
                 </div>
 

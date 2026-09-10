@@ -22,7 +22,7 @@ class Specialty(models.TextChoices):
     ANALYST = "ANALYST", "Biznes tahlilchi"
     SECURITY = "SECURITY", "Xavfsizlik mutaxassisi"
     PM = "PM", "Loyiha menejeri"
-    SOHAVIY = "SOHAVIY", "Boshqarma"
+    SOHAVIY = "SOHAVIY", "Sohaviy boshqarmalar"
 
 
 class Seniority(models.TextChoices):
@@ -199,16 +199,61 @@ SPECIALTY_PROFILE = {
 
 def profile_for(specialty):
     """Mutaxassislik uchun xususiyatlar to'plami."""
-    return SPECIALTY_PROFILE.get(specialty, {
+    if specialty in SPECIALTY_PROFILE:
+        return SPECIALTY_PROFILE[specialty]
+    try:
+        from apps.accounts.models import SpecialtyItem
+        item = SpecialtyItem.objects.filter(code=specialty).first()
+        if item:
+            skills = [s.strip() for s in item.skills.split(",") if s.strip()] if item.skills else []
+            return {
+                "icon": item.icon or "*",
+                "color": item.color or "#2563eb",
+                "skills": skills,
+                "task_types": ["FEATURE", "BUG", "CHORE"],
+                "default_project_role": "DEVELOPER",
+                "focus": item.name,
+                "checklist": [],
+            }
+    except Exception:
+        pass
+    return {
         "icon": "*", "color": "#8b949e", "skills": [], "task_types": [],
         "default_project_role": "DEVELOPER", "focus": "", "checklist": [],
-    })
+    }
 
 
 def specialty_catalog():
-    """Frontend uchun to'liq katalog."""
+    """Frontend va tizim uchun to'liq katalog - standart va yangi qo'shilgan mutaxassisliklar."""
+    from apps.accounts.models import SpecialtyItem
     out = []
+    seen = set()
+
+    # 1. Bazadagi barcha faol mutaxassisliklar (Admin qo'shganlar birinchi navbatda)
+    try:
+        items = list(SpecialtyItem.objects.filter(is_active=True).order_by("order", "id"))
+        for item in items:
+            p = profile_for(item.code)
+            skills = [s.strip() for s in item.skills.split(",") if s.strip()] if item.skills else p.get("skills", [])
+            out.append({
+                "value": item.code,
+                "label": item.name,
+                "icon": item.icon or p.get("icon", "*"),
+                "color": item.color or p.get("color", "#2563eb"),
+                "skills": skills,
+                "task_types": p.get("task_types", ["FEATURE", "BUG", "CHORE"]),
+                "default_project_role": p.get("default_project_role", "DEVELOPER"),
+                "focus": p.get("focus", ""),
+                "checklist": p.get("checklist", []),
+            })
+            seen.add(item.code)
+    except Exception:
+        pass
+
+    # 2. Standart tanlovlardan bazada hali kiritilmaganlari
     for value, label in Specialty.choices:
+        if value in seen:
+            continue
         p = profile_for(value)
         out.append({
             "value": value,
@@ -221,4 +266,7 @@ def specialty_catalog():
             "focus": p["focus"],
             "checklist": p["checklist"],
         })
+        seen.add(value)
+
     return out
+

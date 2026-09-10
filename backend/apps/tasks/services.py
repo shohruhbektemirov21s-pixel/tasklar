@@ -104,7 +104,7 @@ def move_status(task, new_status, access, actor, blocked_reason=""):
         previous=old_label,
     )
 
-    from apps.panel.cache import invalidate_panel_many
+    from apps.core.cache import invalidate_panel_many
 
     uids = [u.id for u in task.assignee_list]
     if task.project.manager_id:
@@ -156,7 +156,7 @@ def apply_review(task, review, actor):
         status_display=task.get_status_display(),
     )
 
-    from apps.panel.cache import invalidate_panel_many
+    from apps.core.cache import invalidate_panel_many
 
     uids = [u.id for u in task.assignee_list]
     if task.project.manager_id:

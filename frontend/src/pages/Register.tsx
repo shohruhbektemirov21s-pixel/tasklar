@@ -73,6 +73,8 @@ export default function Register() {
     }
   };
 
+  const [registeredSuccess, setRegisteredSuccess] = useState(false);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.specialty) {
@@ -91,8 +93,12 @@ export default function Register() {
     setError(null);
     setErrors({});
     try {
-      await register(form);
-      nav("/qoshilish");
+      const res = await register(form);
+      if (res && (res.is_active === false || !res.access)) {
+        setRegisteredSuccess(true);
+      } else {
+        nav("/qoshilish");
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         setErrors(err.fields);
@@ -101,6 +107,29 @@ export default function Register() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (registeredSuccess) {
+    return (
+      <div className="auth-wrap">
+        <div className="auth-back">
+          <Link to="/">{tx("register.bosh_sahifa")}</Link>
+        </div>
+        <ThemeToggle className="top-icon theme-float" />
+        <div className="auth-card" style={{ textAlign: "center", padding: "32px 24px" }}>
+          <Logo size={46} />
+          <h2 style={{ marginTop: 16, fontSize: 18, fontWeight: 700 }}>
+            {tx("register.ariza_qabul_qilindi") || "Arizangiz qabul qilindi"}
+          </h2>
+          <p style={{ color: "var(--muted)", fontSize: 13.5, lineHeight: 1.5, marginTop: 8, marginBottom: 24 }}>
+            {tx("register.admin_tasdiqlashi_kutilmoqda") || "Ro'yxatdan o'tish arizangiz muvaffaqiyatli yuborildi. Administrator hisobingizni tasdiqlagandan so'ng tizimga kirishingiz mumkin bo'ladi."}
+          </p>
+          <Link to="/kirish" className="btn btn-primary btn-block">
+            {tx("register.kirish_sahifasiga_otish") || "Kirish sahifasiga o'tish"}
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
