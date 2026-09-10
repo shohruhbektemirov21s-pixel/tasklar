@@ -7,7 +7,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { api, listOf } from "@/api/client";
+import { api, listOf, scheduleRefreshAfterChange } from "@/api/client";
 import type { AppNotification } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { openSocket } from "./socket";
@@ -81,8 +81,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         }
 
         listeners.current.forEach((fn) => fn(data));
-        // Real-time yangilanish: barcha sahifalar ma'lumotlarni avtomatik yangilasin
-        window.dispatchEvent(new CustomEvent("teamflow:refresh", { detail: data }));
+        // O'zgarish bo'lganda 5 sekunddan keyin Ctrl+R funksiyasi ishlasin
+        scheduleRefreshAfterChange(5000);
       },
     });
 

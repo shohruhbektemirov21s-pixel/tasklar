@@ -110,13 +110,52 @@ export default function Layout() {
   const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null);
   const [tick, setTick] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   const triggerRefresh = useCallback(() => {
-    setRefreshing(true);
-    setTick((t) => t + 1);
-    void reloadRealtime();
     window.dispatchEvent(new CustomEvent("teamflow:refresh"));
-    window.setTimeout(() => setRefreshing(false), 600);
+  }, []);
+
+  useEffect(() => {
+    let intervalId: number | null = null;
+
+    const onScheduled = (e: Event) => {
+      const customEvent = e as CustomEvent<{ delayMs?: number }>;
+      let remaining = Math.round((customEvent.detail?.delayMs ?? 5000) / 1000);
+      setCountdown(remaining);
+
+      if (intervalId) window.clearInterval(intervalId);
+      intervalId = window.setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          if (intervalId) window.clearInterval(intervalId);
+          intervalId = null;
+          setCountdown(null);
+        } else {
+          setCountdown(remaining);
+        }
+      }, 1000);
+    };
+
+    const onRefresh = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+      setCountdown(null);
+      setTick((t) => t + 1);
+      void reloadRealtime();
+      setRefreshing(true);
+      window.setTimeout(() => setRefreshing(false), 600);
+    };
+
+    window.addEventListener("teamflow:change-scheduled", onScheduled);
+    window.addEventListener("teamflow:refresh", onRefresh);
+    return () => {
+      window.removeEventListener("teamflow:change-scheduled", onScheduled);
+      window.removeEventListener("teamflow:refresh", onRefresh);
+      if (intervalId) window.clearInterval(intervalId);
+    };
   }, [reloadRealtime]);
 
   useEffect(() => {
@@ -340,12 +379,18 @@ export default function Layout() {
           )}
         </div>
 
-        {/* Real-time yangilash (Ctrl+R) va jonli ulanish nishoni */}
+        {/* Real-time yangilash (Ctrl+R) va 5 soniyalik avto-yangilanish nishoni */}
         <button
           type="button"
           className="top-icon"
           onClick={triggerRefresh}
-          title={connected ? "Jonli ulanish faol · Sahifani yangilash (Ctrl+R)" : "Sahifani yangilash (Ctrl+R)"}
+          title={
+            countdown !== null
+              ? `O'zgarish saqlandi · ${countdown} soniyadan so'ng yangilanadi (yoki hoziroq bosing / Ctrl+R)`
+              : connected
+              ? "Jonli ulanish faol · Sahifani yangilash (Ctrl+R)"
+              : "Sahifani yangilash (Ctrl+R)"
+          }
           aria-label="Sahifani yangilash"
           style={{ position: "relative" }}
         >
@@ -359,13 +404,28 @@ export default function Layout() {
             strokeLinecap="round"
             strokeLinejoin="round"
             style={{
-              transition: "transform 0.5s ease",
+              transition: "transform 0.5s ease, color 0.3s ease",
               transform: refreshing ? "rotate(360deg)" : "none",
+              color: countdown !== null ? "#f59e0b" : "currentColor",
             }}
           >
             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
           </svg>
-          {connected && (
+          {countdown !== null ? (
+            <span
+              style={{
+                position: "absolute",
+                top: 4,
+                right: 3,
+                fontSize: 9,
+                fontWeight: 700,
+                color: "#f59e0b",
+                lineHeight: 1,
+              }}
+            >
+              {countdown}s
+            </span>
+          ) : connected ? (
             <span
               style={{
                 position: "absolute",
@@ -378,7 +438,7 @@ export default function Layout() {
                 boxShadow: "0 0 4px #10b981",
               }}
             />
-          )}
+          ) : null}
         </button>
 
         <ThemeToggle />
@@ -434,7 +494,7 @@ export default function Layout() {
               : item("/loyihalar", <IconLayers />, tx("common.vazifalar"))}
             {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Buyurtmalar / TZ) - sohaviy boshqarmada eng asosiy bo'lim */}
             {user?.is_sohaviy_boshqarma &&
-              item("/buyurtmalar", <IconOrder />, "Buyurtmalar", counts.orders, true)}
+              item("/buyurtmalar", <IconOrder />, tx("orders.sarlavha"), counts.orders, true)}
             {/* Jamoaning ishi - kim nima qilayapti. */}
             {manages && item("/vazifalar", <IconLayers />, tx("common.vazifalar"))}
             {/* Tashkilot jamoasi / xodimlar - faqat Boshliq akkauntida ko'rinadi */}
@@ -457,7 +517,7 @@ export default function Layout() {
             {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Buyurtmalar / TZ) - PM, boshliq va adminga */}
             {!user?.is_sohaviy_boshqarma &&
               (user?.can_access_orders || user?.is_platform_admin || user?.is_manager || user?.is_boss) &&
-              item("/buyurtmalar", <IconOrder />, "Buyurtmalar", counts.orders, true)}
+              item("/buyurtmalar", <IconOrder />, tx("orders.sarlavha"), counts.orders, true)}
             {user?.is_platform_admin &&
               item("/admin", <IconSettings />, tx("common.admin_panel") || "Admin panel")}
             {item("/tarix", <IconHistory />, tx("layout.umumiy_tarix"))}

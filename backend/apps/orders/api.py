@@ -74,6 +74,37 @@ class CanAccessOrders(permissions.BasePermission):
         return True
 
 
+# Ruxsat etilgan xavfsiz fayl turlari (whitelist)
+ALLOWED_ORDER_EXTENSIONS = {
+    "pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "rtf",
+    "zip", "rar", "7z",
+    "png", "jpg", "jpeg", "webp",
+}
+MAX_ORDER_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
+
+
+def validate_order_file(file_obj):
+    """Buyurtma ilovasi / TZ faylini xavfsizlik va hajm bo'yicha tekshirish."""
+    name = getattr(file_obj, "name", "") or ""
+    size = getattr(file_obj, "size", 0) or 0
+    if not name or size == 0:
+        raise ValidationError({"detail": "Yuklangan fayl bo'sh yoki uning nomi mavjud emas."})
+    if size > MAX_ORDER_UPLOAD_BYTES:
+        raise ValidationError({"detail": f"Fayl hajmi juda katta: {MAX_ORDER_UPLOAD_BYTES // (1024 * 1024)} MB dan oshmasin ({name})."})
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    if not ext or ext not in ALLOWED_ORDER_EXTENSIONS:
+        raise ValidationError({
+            "detail": f"«.{ext}» formatidagi fayllarni yuklash taqiqlangan. "
+                      "Faqat PDF, Word, Excel, ZIP va rasmlar (PNG, JPG) qabul qilinadi."
+        })
+    return file_obj
+
+
+def validate_order_files(file_list):
+    for f in file_list:
+        validate_order_file(f)
+
+
 class ChangeRequestViewSet(viewsets.ModelViewSet):
     """Axborot tizimiga o'zgartirish kiritish buyurtmalari (TZ) API-si."""
 
@@ -252,37 +283,6 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 qs = qs.filter(status=ChangeRequestStatus.COMPLETED)
 
         return qs
-
-# Ruxsat etilgan xavfsiz fayl turlari (whitelist)
-ALLOWED_ORDER_EXTENSIONS = {
-    "pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "rtf",
-    "zip", "rar", "7z",
-    "png", "jpg", "jpeg", "webp",
-}
-MAX_ORDER_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
-
-
-def validate_order_file(file_obj):
-    """Buyurtma ilovasi / TZ faylini xavfsizlik va hajm bo'yicha tekshirish."""
-    name = getattr(file_obj, "name", "") or ""
-    size = getattr(file_obj, "size", 0) or 0
-    if not name or size == 0:
-        raise ValidationError({"detail": "Yuklangan fayl bo'sh yoki uning nomi mavjud emas."})
-    if size > MAX_ORDER_UPLOAD_BYTES:
-        raise ValidationError({"detail": f"Fayl hajmi juda katta: {MAX_ORDER_UPLOAD_BYTES // (1024 * 1024)} MB dan oshmasin ({name})."})
-    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
-    if not ext or ext not in ALLOWED_ORDER_EXTENSIONS:
-        raise ValidationError({
-            "detail": f"«.{ext}» formatidagi fayllarni yuklash taqiqlangan. "
-                      "Faqat PDF, Word, Excel, ZIP va rasmlar (PNG, JPG) qabul qilinadi."
-        })
-    return file_obj
-
-
-def validate_order_files(file_list):
-    for f in file_list:
-        validate_order_file(f)
-
 
     def _save_order_attachments(self, order):
         user = self.request.user if self.request.user.is_authenticated else None

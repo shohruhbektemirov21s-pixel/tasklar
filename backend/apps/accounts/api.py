@@ -76,6 +76,9 @@ def specialties(request, item_id=None):
             item.is_active = True
             item.save()
 
+        from django.core.cache import cache
+        cache.delete("meta:choices")
+
         return Response(
             {
                 "message": f"«{name}» mutaxassisligi muvaffaqiyatli qo'shildi.",
@@ -99,6 +102,8 @@ def specialties(request, item_id=None):
             )
         from apps.accounts.models import SpecialtyItem
         SpecialtyItem.objects.filter(pk=item_id).delete()
+        from django.core.cache import cache
+        cache.delete("meta:choices")
         return Response({"message": "Mutaxassislik o'chirildi."})
 
     return Response({

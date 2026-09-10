@@ -434,6 +434,9 @@ class FileTest(SuggestionTestCase):
             self.client_for(self.admin).post("%s%d/vote/" % (URL, item.id),
                                              {"choice": "FOR"}, format="json")
 
+        # Isitish: birinchi so'rovda last_seen yangilanadi, u N+1 ga kirmaydi.
+        self.boss_api.get(URL, {"scope": "OPEN"})
+
         with self.assertNumQueries(4):
             # 1 - foydalanuvchi, 2 - sanoq, 3 - takliflar, 4 - fayllar.
             self.assertEqual(len(self.ids(self.boss_api.get(URL, {"scope": "OPEN"}))), 3)

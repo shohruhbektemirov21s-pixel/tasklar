@@ -1,4 +1,12 @@
 {
+ "admin.bolim": {
+  "value": "Bo'lim",
+  "note": "pages/Admin.tsx"
+ },
+ "admin.bolim_tanlanmagan": {
+  "value": "Bo'lim tanlanmagan",
+  "note": "pages/Admin.tsx"
+ },
  "dashboard.berilgan_buyurtmalar": {
   "value": "Berilgan buyurtmalar",
   "note": "pages/Dashboard.tsx"
@@ -2133,6 +2141,18 @@
  },
  "orders.search_placeholder": {
   "value": "Loyiha, mijoz yoki xizmat bo'yicha qidirish...",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.mos_topilmadi": {
+  "value": "Mos keluvchi buyurtmalar topilmadi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.mos_topilmadi_matn": {
+  "value": "Tanlangan parametrlar yoki qidiruv so'zi bo'yicha hech qanday buyurtma topilmadi.",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.bosh_holat": {
+  "value": "Hozircha buyurtmalar mavjud emas",
   "note": "pages/ChangeRequests.tsx"
  },
  "orders.sizga_biriktirilgan": {

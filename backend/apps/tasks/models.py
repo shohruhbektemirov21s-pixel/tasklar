@@ -111,6 +111,8 @@ class TaskQuerySet(SoftDeleteQuerySet):
                 .annotate(
                     logged_hours_sum=related_sum(WorkLog, "hours", group_by="task"),
                     attachments_total=related_count(Attachment, group_by="task"),
+                    subtasks_total=related_count(self.model, group_by="parent", deleted_at__isnull=True),
+                    subtasks_done_total=related_count(self.model, group_by="parent", deleted_at__isnull=True, status=TaskStatus.DONE),
                 ))
 
 

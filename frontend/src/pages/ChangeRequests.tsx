@@ -493,7 +493,7 @@ function TableRowSkeleton({ rowNum }: { rowNum: number }) {
 }
 
 export default function ChangeRequests() {
-  const { user } = useAuth();
+  const { user, meta } = useAuth();
   const go = useGo();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -1461,14 +1461,18 @@ export default function ChangeRequests() {
               }}
             >
               <option value="">{tx("orders.barcha_holatlar")}</option>
-              <option value="NEW">{tx("orders.yangi")}</option>
-              <option value="ACCEPTED">Qabul qilindi</option>
-              <option value="ASSIGNED_TO_DEV">Dasturchiga topshirildi</option>
-              <option value="IN_PROGRESS">{tx("orders.jarayonda")}</option>
-              <option value="TESTING">Testda</option>
-              <option value="READY_FOR_REVIEW">Boshqarma tasdig'ida</option>
-              <option value="COMPLETED">{tx("orders.tugallangan")}</option>
-              <option value="REJECTED">{tx("orders.bekor_qilingan")}</option>
+              {(meta?.order_status || [
+                { value: "NEW", label: tx("orders.yangi") },
+                { value: "ACCEPTED", label: "Qabul qilindi" },
+                { value: "ASSIGNED_TO_DEV", label: "Dasturchiga topshirildi" },
+                { value: "IN_PROGRESS", label: tx("orders.jarayonda") },
+                { value: "TESTING", label: "Testda" },
+                { value: "READY_FOR_REVIEW", label: "Boshqarma tasdig'ida" },
+                { value: "COMPLETED", label: tx("orders.tugallangan") },
+                { value: "REJECTED", label: tx("orders.bekor_qilingan") },
+              ]).map((s) => (
+                <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
+              ))}
             </select>
             <span
               style={{
@@ -2190,10 +2194,10 @@ export default function ChangeRequests() {
               <>
                 <div style={{ fontSize: 44, marginBottom: 12 }}>🔍</div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>
-                  Mos keluvchi buyurtmalar topilmadi
+                  {tx("orders.mos_topilmadi")}
                 </div>
                 <p style={{ color: "#64748b", fontSize: 13.5, maxWidth: 460, margin: "0 auto 20px" }}>
-                  Tanlangan parametrlar yoki qidiruv so'zi bo'yicha hech qanday buyurtma topilmadi.
+                  {tx("orders.mos_topilmadi_matn")}
                 </p>
                 <button
                   type="button"
@@ -2209,18 +2213,15 @@ export default function ChangeRequests() {
                     setPage(1);
                   }}
                 >
-                  Filtrlarni tozalash
+                  {tx("common.tozalash")}
                 </button>
               </>
             ) : (
               <>
                 <div style={{ fontSize: 44, marginBottom: 12 }}>📋</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>
-                  Hozircha buyurtmalar (TZ) mavjud emas
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>
+                  {tx("orders.bosh_holat")}
                 </div>
-                <p style={{ color: "#64748b", fontSize: 13.5, maxWidth: 460, margin: "0 auto 20px" }}>
-                  Axborot tizimiga yangi o'zgartirish yoki funksiya kiritish bo'yicha talabnoma va TZ fayli yarating.
-                </p>
                 {canCreateOrder && (
                   <button
                     type="button"
@@ -3127,12 +3128,16 @@ export default function ChangeRequests() {
                           }
                           required
                         >
-                          <option value="NEW">📝 Yangi (Yuborilgan)</option>
-                          <option value="ACCEPTED">📋 Qabul qilindi (Tasdiqlandi)</option>
-                          <option value="ASSIGNED_TO_DEV">💻 Dasturchiga topshirildi</option>
-                          <option value="IN_PROGRESS">⚙️ Jarayonda (Ishlanmoqda)</option>
-                          <option value="TESTING">🧪 Test qilinmoqda</option>
-                          <option value="REJECTED">❌ Rad etildi</option>
+                          {(meta?.order_status || [
+                            { value: "NEW", label: "Yangi (Yuborilgan)" },
+                            { value: "ACCEPTED", label: "Qabul qilindi (Tasdiqlandi)" },
+                            { value: "ASSIGNED_TO_DEV", label: "Dasturchiga topshirildi" },
+                            { value: "IN_PROGRESS", label: "Jarayonda (Ishlanmoqda)" },
+                            { value: "TESTING", label: "Test qilinmoqda" },
+                            { value: "REJECTED", label: "Rad etildi" },
+                          ]).filter((s) => s.value !== "COMPLETED" && s.value !== "READY_FOR_REVIEW").map((s) => (
+                            <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
+                          ))}
                         </select>
                       </div>
                       <div className="field">

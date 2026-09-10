@@ -582,6 +582,12 @@ export interface MetaData {
   project_status: Choice[];
   workspace_role: Choice[];
   global_role: Choice[];
+  departments?: { id: number; name: string; code?: string }[];
+  project_type?: Choice[];
+  order_type?: Choice[];
+  order_status?: Choice[];
+  order_priority?: Choice[];
+  change_nature?: Choice[];
   /** Tarix filtri turkumlari - backenddagi `VERB_META` dan */
   activity_category: Choice[];
 }

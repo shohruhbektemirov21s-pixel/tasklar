@@ -20,7 +20,7 @@ export default function OrderForm() {
   const stored = useEntityId("order");
   const id = creating ? null : stored;
   const go = useGo();
-  const { user } = useAuth();
+  const { user, meta } = useAuth();
   const editing = Boolean(id);
 
   const isPM = Boolean(
@@ -245,10 +245,14 @@ export default function OrderForm() {
               style={{ width: "auto", minWidth: 150 }}
               onChange={(e) => set("priority", e.target.value)}
             >
-              <option value="URGENT">Shoshilinch</option>
-              <option value="HIGH">Yuqori</option>
-              <option value="MEDIUM">O'rta</option>
-              <option value="LOW">Past</option>
+              {(meta?.order_priority || [
+                { value: "URGENT", label: "Shoshilinch" },
+                { value: "HIGH", label: "Yuqori" },
+                { value: "MEDIUM", label: "O'rta" },
+                { value: "LOW", label: "Past" },
+              ]).map((p) => (
+                <option key={String(p.value)} value={String(p.value)}>{p.label}</option>
+              ))}
             </select>
             <button className="btn btn-primary" form={formId} disabled={busy}>
               {busy ? "Yuborilmoqda..." : editing ? "O'zgarishlarni saqlash" : "Buyurtma yuborish"}
@@ -291,11 +295,15 @@ export default function OrderForm() {
                     }));
                   }}
                 >
-                  <option value="NEW">Yangi loyiha</option>
-                  <option value="CONTINUATION">Davom ettiriladigan</option>
-                  <option value="NEEDS_CLASSIFICATION">Turlash kerak bo'lgan</option>
-                  <option value="MODERNIZATION">Modernizatsiya</option>
-                  <option value="MAINTENANCE">Texnik xizmat</option>
+                  {(meta?.order_type || meta?.project_type || [
+                    { value: "NEW", label: "Yangi loyiha" },
+                    { value: "CONTINUATION", label: "Davom ettiriladigan" },
+                    { value: "NEEDS_CLASSIFICATION", label: "Turlash kerak bo'lgan" },
+                    { value: "MODERNIZATION", label: "Modernizatsiya" },
+                    { value: "MAINTENANCE", label: "Texnik xizmat" },
+                  ]).map((t) => (
+                    <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
+                  ))}
                 </select>
               </div>
 

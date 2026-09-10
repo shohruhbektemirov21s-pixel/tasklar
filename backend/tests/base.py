@@ -45,5 +45,7 @@ class ApiTestCase(TestCase):
         return c
 
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
         self.api = self.client_for(self.manager)
         self.anon = APIClient()

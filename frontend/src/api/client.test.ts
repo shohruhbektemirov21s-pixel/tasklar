@@ -127,3 +127,35 @@ describe("401 - token yangilash BIR MARTA yuboriladi", () => {
     expect(tokens.access).toBe("yangi");
   });
 });
+
+describe("scheduleRefreshAfterChange — foydalanuvchi o'zgarishidan 5s keyin Ctrl+R", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  it("o'zgarishdan keyin teamflow:change-scheduled va 5 soniyadan keyin teamflow:refresh yuboriladi", async () => {
+    const { scheduleRefreshAfterChange } = await import("./client");
+    const scheduledSpy = vi.fn();
+    const refreshSpy = vi.fn();
+
+    window.addEventListener("teamflow:change-scheduled", scheduledSpy);
+    window.addEventListener("teamflow:refresh", refreshSpy);
+
+    scheduleRefreshAfterChange(5000);
+
+    expect(scheduledSpy).toHaveBeenCalledTimes(1);
+    expect(refreshSpy).not.toHaveBeenCalled();
+
+    // 4 soniyada hali chaqirilmaydi
+    vi.advanceTimersByTime(4000);
+    expect(refreshSpy).not.toHaveBeenCalled();
+
+    // 5 soniya to'lgach chaqiriladi
+    vi.advanceTimersByTime(1000);
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+
+    window.removeEventListener("teamflow:change-scheduled", scheduledSpy);
+    window.removeEventListener("teamflow:refresh", refreshSpy);
+    vi.useRealTimers();
+  });
+});

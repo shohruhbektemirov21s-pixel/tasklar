@@ -737,11 +737,12 @@ class TaskViewSet(viewsets.ModelViewSet):
         qs = (qs.select_related("project", "created_by")
               .prefetch_related("assignments__user", "labels").order_by("submitted_at", "id"))
 
-        page = self.paginate_queryset(qs)
-        if page is not None:
-            serializer = TaskSerializer(page, many=True,
-                                        context=self.get_serializer_context())
-            return self.get_paginated_response(serializer.data)
+        if "page" in request.query_params or "page_size" in request.query_params:
+            page = self.paginate_queryset(qs)
+            if page is not None:
+                serializer = TaskSerializer(page, many=True,
+                                            context=self.get_serializer_context())
+                return self.get_paginated_response(serializer.data)
 
         return Response(TaskSerializer(qs, many=True,
                                        context=self.get_serializer_context()).data)

@@ -838,10 +838,10 @@ def meta(request):
     if cached is not None:
         return Response(cached)
 
-    from apps.accounts.models import GlobalRole
+    from apps.accounts.models import GlobalRole, Department
     from apps.activity.models import category_choices
     from apps.accounts.specialties import Seniority, specialty_catalog
-    from apps.projects.models import ProjectStatus
+    from apps.projects.models import ProjectStatus, ProjectType
     from apps.workspaces.models import WorkspaceRole
     from apps.tasks.models import BOARD_COLUMNS, TaskPriority, TaskType
     from apps.tasks.models import ReviewVerdict
@@ -857,13 +857,30 @@ def meta(request):
         "review_verdict": pack(ReviewVerdict.choices),
         "project_role": pack(ProjectRole.choices),
         "project_status": pack(ProjectStatus.choices),
+        "project_type": pack(ProjectType.choices),
         "workspace_role": pack(WorkspaceRole.choices),
         "global_role": pack(GlobalRole.choices),
+        "departments": list(Department.objects.values("id", "name", "code").order_by("name")),
         "specialties": specialty_catalog(),
         "seniority": pack(Seniority.choices),
         # Tarix filtri - ro'yxat `VERB_META` dan chiqadi, frontendda
         # qattiq yozilmaydi (aks holda yangi turkum filtrga tushmay qolardi).
         "activity_category": category_choices(),
     }
+
+    try:
+        from apps.orders.models import ChangeRequest
+        order_fields = {f.name: f for f in ChangeRequest._meta.fields if f.choices}
+        if "order_type" in order_fields:
+            data["order_type"] = pack(order_fields["order_type"].choices)
+        if "status" in order_fields:
+            data["order_status"] = pack(order_fields["status"].choices)
+        if "priority" in order_fields:
+            data["order_priority"] = pack(order_fields["priority"].choices)
+        if "change_nature" in order_fields:
+            data["change_nature"] = pack(order_fields["change_nature"].choices)
+    except Exception:
+        pass
+
     cache.set("meta:choices", data, 600)
     return Response(data)

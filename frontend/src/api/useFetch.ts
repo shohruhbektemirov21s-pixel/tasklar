@@ -52,7 +52,7 @@ interface Result<T> {
 }
 
 export function useFetch<T>(path: string | null, params?: Params, opts: Options = {}): Result<T> {
-  const { debounceMs = 0, pollIntervalMs = 10_000, refreshOnFocus = true } = opts;
+  const { debounceMs = 0, pollIntervalMs = 0, refreshOnFocus = true } = opts;
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(Boolean(path));
@@ -61,7 +61,7 @@ export function useFetch<T>(path: string | null, params?: Params, opts: Options 
   const key = JSON.stringify(params ?? null);
   const lastPath = useRef<string | null>(null);
 
-  // Global refresh hodisasi (WebSocket orqali yoki Ctrl+R tugmasidan)
+  // Global refresh hodisasi (WebSocket orqali yoki Ctrl+R tugmasidan, yoki o'zgarishdan 5s keyin)
   useEffect(() => {
     if (!path) return;
     const onRefresh = () => {
@@ -87,10 +87,10 @@ export function useFetch<T>(path: string | null, params?: Params, opts: Options 
     };
   }, [path, refreshOnFocus]);
 
-  // Real-time davriy fon yangilanishi (avtomatik Ctrl+R kabi yangilanib turish)
+  // Davriy fon yangilanishi (agar sahifa alohida pollIntervalMs ko'rsatsa)
   useEffect(() => {
     if (!path) return;
-    const interval = pollIntervalMs ?? 10_000;
+    const interval = pollIntervalMs ?? 0;
     if (interval <= 0) return;
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") {

@@ -58,6 +58,14 @@ class DepartmentAdmin(admin.ModelAdmin):
         )
 
 
+@admin.register(SpecialtyAnalytics)
+class SpecialtyAnalyticsAdmin(admin.ModelAdmin):
+    def changelist_view(self, request, extra_context=None):
+        from django.shortcuts import redirect
+        from django.urls import reverse
+        return redirect(reverse("admin:accounts_user_analytics"))
+
+
 class UserApprovalStatusFilter(admin.SimpleListFilter):
     title = "Tasdiqlash holati"
     parameter_name = "approval_status"

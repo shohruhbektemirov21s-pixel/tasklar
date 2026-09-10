@@ -16,27 +16,13 @@ interface SpecialtyItem {
   focus: string;
 }
 
-const DEFAULT_SPECIALTIES: SpecialtyItem[] = [
-  { value: "BACKEND", label: "Backend dasturchi", icon: "{ }", color: "#3fb950", skills: [], focus: "" },
-  { value: "FRONTEND", label: "Frontend dasturchi", icon: "</>", color: "#2f81f7", skills: [], focus: "" },
-  { value: "FULLSTACK", label: "Fullstack dasturchi", icon: "</>", color: "#a371f7", skills: [], focus: "" },
-  { value: "MOBILE", label: "Mobil dasturchi", icon: "📱", color: "#db61a2", skills: [], focus: "" },
-  { value: "DEVOPS", label: "DevOps muhandisi", icon: "⚙️", color: "#f0883e", skills: [], focus: "" },
-  { value: "QA", label: "Tester (QA)", icon: "✓", color: "#56d364", skills: [], focus: "" },
-  { value: "DESIGNER", label: "UI/UX dizayner", icon: "🎨", color: "#bc8cff", skills: [], focus: "" },
-  { value: "DATA", label: "Data / ML muhandisi", icon: "📊", color: "#79c0ff", skills: [], focus: "" },
-  { value: "ANALYST", label: "Biznes tahlilchi", icon: "📈", color: "#d29922", skills: [], focus: "" },
-  { value: "SECURITY", label: "Xavfsizlik mutaxassisi", icon: "🔒", color: "#f85149", skills: [], focus: "" },
-  { value: "PM", label: "Loyiha menejeri", icon: "📋", color: "#8b949e", skills: [], focus: "" },
-  { value: "SOHAVIY", label: "Boshqarma", icon: "🏛️", color: "#0284c7", skills: [], focus: "" },
-];
-
 export default function Register() {
   const fid = useId();
   const { register } = useAuth();
   const nav = useNavigate();
 
-  const [specialties, setSpecialties] = useState<SpecialtyItem[]>(DEFAULT_SPECIALTIES);
+  const [specialties, setSpecialties] = useState<SpecialtyItem[]>([]);
+  const [loadingSpecialties, setLoadingSpecialties] = useState(true);
   const [form, setForm] = useState({
     full_name: "", email: "", specialty: "", department_name: "", password: "", password_confirm: "",
   });
@@ -54,6 +40,8 @@ export default function Register() {
         }
       } catch {
         // Sahifa ochilganda qizil xatolik ko'rsatilmaydi
+      } finally {
+        if (alive) setLoadingSpecialties(false);
       }
     })();
     return () => { alive = false; };
@@ -172,8 +160,9 @@ export default function Register() {
             <div className="field">
               <label htmlFor={`${fid}-2`}>{tx("common.mutaxassislik")}</label>
               <select id={`${fid}-2`} value={form.specialty}
-                      onChange={(e) => set("specialty", e.target.value)}>
-                <option value="">{tx("register.tanlang")}</option>
+                      onChange={(e) => set("specialty", e.target.value)}
+                      disabled={loadingSpecialties}>
+                <option value="">{loadingSpecialties ? tx("common.yuklanmoqda") || "Yuklanmoqda..." : tx("register.tanlang")}</option>
                 {specialties.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}

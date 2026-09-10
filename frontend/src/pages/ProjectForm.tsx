@@ -346,15 +346,19 @@ export default function ProjectForm() {
               <div className="field">
                 <label htmlFor={`${fid}-type`}>Loyiha turi</label>
                 <select
-                  id={`${fid}-type`}
+                  id={`${fid}-ptype`}
                   value={f.project_type}
                   onChange={(e) => set("project_type", e.target.value)}
                 >
-                  <option value="NEW">🚀 Yangi loyiha</option>
-                  <option value="CONTINUATION">🔄 Davom ettiriladigan</option>
-                  <option value="NEEDS_CLASSIFICATION">🏷️ Turlash kerak bo'lgan</option>
-                  <option value="MODERNIZATION">⚡ Modernizatsiya va takomillashtirish</option>
-                  <option value="MAINTENANCE">🛠️ Texnik qo'llab-quvvatlash</option>
+                  {(meta?.project_type || [
+                    { value: "NEW", label: "Yangi loyiha" },
+                    { value: "CONTINUATION", label: "Davom ettiriladigan" },
+                    { value: "NEEDS_CLASSIFICATION", label: "Turlash kerak bo'lgan" },
+                    { value: "MODERNIZATION", label: "Modernizatsiya va takomillashtirish" },
+                    { value: "MAINTENANCE", label: "Texnik qo'llab-quvvatlash" },
+                  ]).map((t) => (
+                    <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
+                  ))}
                 </select>
               </div>
               <div className="field">

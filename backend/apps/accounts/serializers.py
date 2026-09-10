@@ -177,17 +177,19 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
     # `validate_email` da - u loginga mos qoidalarni qo'llaydi.
     email = serializers.CharField(max_length=254)
     password = serializers.CharField(write_only=True, min_length=8)
-    specialty = serializers.ChoiceField(choices=Specialty.choices, required=False,
-                                        default=Specialty.BACKEND)
+    specialty = serializers.CharField(required=False, default="BACKEND")
     seniority = serializers.ChoiceField(choices=Seniority.choices, required=False,
                                         default=Seniority.JUNIOR)
     global_role = serializers.ChoiceField(choices=GlobalRole.choices, required=False,
                                           default=GlobalRole.DEVELOPER)
+    department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(), required=False, allow_null=True
+    )
 
     class Meta:
         model = User
         fields = ["email", "full_name", "specialty", "seniority", "global_role",
-                  "job_title", "password"]
+                  "job_title", "password", "department"]
 
     def validate_email(self, value):
         login = (value or "").strip().lower()
@@ -198,6 +200,13 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
         if User.objects.filter(email__iexact=login).exists():
             raise serializers.ValidationError("Bu login band.")
         return login
+
+    def validate_specialty(self, value):
+        from apps.accounts.specialties import specialty_catalog
+        valid_codes = {s["value"] for s in specialty_catalog()}
+        if value and value not in valid_codes:
+            raise serializers.ValidationError("Tanlangan mutaxassislik tizimda mavjud emas.")
+        return value
 
     def validate_password(self, value):
         validate_password(value)
@@ -219,7 +228,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True)
-    specialty = serializers.ChoiceField(choices=Specialty.choices, required=True)
+    specialty = serializers.CharField(required=True)
     department_name = serializers.CharField(required=False, allow_blank=True, write_only=True)
     seniority = serializers.ChoiceField(choices=Seniority.choices, required=False,
                                         default=Seniority.JUNIOR)
@@ -230,6 +239,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ["email", "full_name", "specialty", "seniority", "years_experience",
                   "job_title", "skills", "password", "password_confirm", "department_name"]
+
+    def validate_specialty(self, value):
+        from apps.accounts.specialties import specialty_catalog
+        valid_codes = {s["value"] for s in specialty_catalog()}
+        if value and value not in valid_codes:
+            raise serializers.ValidationError("Tanlangan mutaxassislik tizimda mavjud emas.")
+        return value
 
     def validate_email(self, value):
         email = value.strip().lower()

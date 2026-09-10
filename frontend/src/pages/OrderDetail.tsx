@@ -49,9 +49,9 @@ import { toEditOrder, toOrders, toProject, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge, OrderTypeBadge } from "./ChangeRequests";
 
 export default function OrderDetail() {
+  const { user, meta } = useAuth();
   const id = useEntityNum("order");
   const go = useGo();
-  const { user } = useAuth();
 
   const [item, setItem] = useState<ChangeRequestItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -822,11 +822,15 @@ export default function OrderDetail() {
                     value={pmStatus}
                     onChange={(e) => setPmStatus(e.target.value as ChangeRequestItem["status"])}
                   >
-                    <option value="ACCEPTED">Qabul qilindi</option>
-                    <option value="ASSIGNED_TO_DEV">Dasturchiga topshirildi</option>
-                    <option value="IN_PROGRESS">Jarayonda</option>
-                    <option value="TESTING">Testda</option>
-                    <option value="REJECTED">Rad etildi</option>
+                    {(meta?.order_status || [
+                      { value: "ACCEPTED", label: "Qabul qilindi" },
+                      { value: "ASSIGNED_TO_DEV", label: "Dasturchiga topshirildi" },
+                      { value: "IN_PROGRESS", label: "Jarayonda" },
+                      { value: "TESTING", label: "Testda" },
+                      { value: "REJECTED", label: "Rad etildi" },
+                    ]).filter((s) => s.value !== "COMPLETED" && s.value !== "READY_FOR_REVIEW" && s.value !== "NEW").map((s) => (
+                      <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="field">

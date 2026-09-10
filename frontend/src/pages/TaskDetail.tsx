@@ -1187,20 +1187,28 @@ export default function TaskDetail() {
                     <div className="field" style={{ flex: 1 }}>
                       <label htmlFor="st-type">{tx("task_form.turi") || "Turi"}</label>
                       <select id="st-type" value={stType} onChange={(e) => setStType(e.target.value)}>
-                        <option value="FEATURE">Yangi funksiya</option>
-                        <option value="BUG">Xatolik</option>
-                        <option value="CHORE">Texnik ish</option>
-                        <option value="DOCS">Hujjat</option>
-                        <option value="RESEARCH">Tadqiqot</option>
+                        {(meta?.task_type || [
+                          { value: "FEATURE", label: "Yangi funksiya" },
+                          { value: "BUG", label: "Xatolik" },
+                          { value: "CHORE", label: "Texnik ish" },
+                          { value: "DOCS", label: "Hujjat" },
+                          { value: "RESEARCH", label: "Tadqiqot" },
+                        ]).map((t) => (
+                          <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="field" style={{ flex: 1 }}>
                       <label htmlFor="st-priority">{tx("task_form.muhimlik") || "Muhimlik"}</label>
                       <select id="st-priority" value={stPriority} onChange={(e) => setStPriority(Number(e.target.value))}>
-                        <option value={1}>Past</option>
-                        <option value={2}>O'rtacha</option>
-                        <option value={3}>Yuqori</option>
-                        <option value={4}>Shoshilinch</option>
+                        {(meta?.task_priority || [
+                          { value: 1, label: "Past" },
+                          { value: 2, label: "O'rtacha" },
+                          { value: 3, label: "Yuqori" },
+                          { value: 4, label: "Shoshilinch" },
+                        ]).map((p) => (
+                          <option key={String(p.value)} value={Number(p.value)}>{p.label}</option>
+                        ))}
                       </select>
                     </div>
                   </div>

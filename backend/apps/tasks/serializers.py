@@ -144,10 +144,12 @@ class TaskSerializer(serializers.ModelSerializer):
         return annotated if annotated is not None else obj.attachments.count()
 
     def get_subtask_count(self, obj):
-        return obj.subtasks.filter(deleted_at__isnull=True).count()
+        annotated = getattr(obj, "subtasks_total", None)
+        return annotated if annotated is not None else obj.subtasks.filter(deleted_at__isnull=True).count()
 
     def get_subtasks_completed_count(self, obj):
-        return obj.subtasks.filter(deleted_at__isnull=True, status=TaskStatus.DONE).count()
+        annotated = getattr(obj, "subtasks_done_total", None)
+        return annotated if annotated is not None else obj.subtasks.filter(deleted_at__isnull=True, status=TaskStatus.DONE).count()
 
     def get_assignees(self, obj):
         users = [a.user for a in obj.assignments.all() if a.is_active]

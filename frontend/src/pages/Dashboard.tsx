@@ -632,6 +632,7 @@ const PERIOD_THEMES: Record<
 
 /** Boshqarma foydalanuvchisi uchun to'liq bosh panel ko'rinishi (yangi UX dizayn) */
 function DepartmentDashboard({ user }: { user: any }) {
+  const { meta } = useAuth();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<"submitted" | "approved" | "in_progress" | "completed" | null>(null);
@@ -1245,12 +1246,16 @@ function DepartmentDashboard({ user }: { user: any }) {
               }}
             >
               <option value="">{tx("dashboard.barcha_holatlar")}</option>
-              <option value="ACCEPTED">{tx("dashboard.tasdiqlangan")}</option>
-              <option value="IN_PROGRESS">{tx("dashboard.jarayonda")}</option>
-              <option value="COMPLETED">{tx("dashboard.bajarilgan")}</option>
-              <option value="NEW">{tx("dashboard.kutilyapti")}</option>
-              <option value="REJECTED">{tx("dashboard.rad_etilgan")}</option>
-              <option value="READY_FOR_REVIEW">{tx("dashboard.boshqarma_tasdigida")}</option>
+              {(meta?.order_status || [
+                { value: "ACCEPTED", label: tx("dashboard.tasdiqlangan") },
+                { value: "IN_PROGRESS", label: tx("dashboard.jarayonda") },
+                { value: "COMPLETED", label: tx("dashboard.bajarilgan") },
+                { value: "NEW", label: tx("dashboard.kutilyapti") },
+                { value: "REJECTED", label: tx("dashboard.rad_etilgan") },
+                { value: "READY_FOR_REVIEW", label: tx("dashboard.boshqarma_tasdigida") },
+              ]).map((s) => (
+                <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
+              ))}
             </select>
           </div>
         </div>

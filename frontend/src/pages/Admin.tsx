@@ -37,6 +37,7 @@ const PER_PAGE = 30;
 const EMPTY_FORM = {
   email: "", full_name: "", password: "",
   global_role: "DEVELOPER", specialty: "", seniority: "JUNIOR", job_title: "",
+  department: "",
 };
 
 const EMPTY_SPEC_FORM = {
@@ -138,7 +139,11 @@ export default function Admin() {
     e.preventDefault();
     setBusy(true);
     try {
-      await api.post("/users/create/", form);
+      const payload: Record<string, unknown> = {
+        ...form,
+        department: form.department ? Number(form.department) : null,
+      };
+      await api.post("/users/create/", payload);
       done(tx("admin.hisob_ochildi", { ism: form.full_name, login: form.email }));
       setForm(EMPTY_FORM);
       setCreating(false);
@@ -284,8 +289,18 @@ export default function Admin() {
                       <select id="nu-spec" value={form.specialty}
                               onChange={(e) => setForm({ ...form, specialty: e.target.value })}>
                         <option value="">{tx("admin.tanlanmagan")}</option>
-                        {(meta?.specialties || []).map((s: any) => (
+                        {((specialties && specialties.length ? specialties : meta?.specialties) || []).map((s: any) => (
                           <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="field" style={{ flex: "1 1 200px" }}>
+                      <label htmlFor="nu-dept">{tx("admin.bolim") || "Bo'lim"}</label>
+                      <select id="nu-dept" value={form.department}
+                              onChange={(e) => setForm({ ...form, department: e.target.value })}>
+                        <option value="">{tx("admin.bolim_tanlanmagan") || "Bo'lim tanlanmagan"}</option>
+                        {(meta?.departments || []).map((d: any) => (
+                          <option key={String(d.id)} value={String(d.id)}>{d.name}</option>
                         ))}
                       </select>
                     </div>
