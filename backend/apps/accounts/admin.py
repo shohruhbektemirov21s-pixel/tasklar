@@ -13,6 +13,25 @@ class SpecialtyItemAdmin(admin.ModelAdmin):
     search_fields = ("name", "code", "skills")
     ordering = ("order", "name")
 
+    fieldsets = (
+        ("Mutaxassislik ma'lumotlari", {
+            "fields": ("name", "code", "skills"),
+            "description": "Mutaxassislik nomi va kodi tizimda identifikator sifatida ishlatiladi."
+        }),
+        ("Dizayn va Belgilar", {
+            "fields": ("icon", "color", "order", "is_active"),
+            "description": "Rang va belgi tizim interfeysi, badgelar va kartalarda aks etadi."
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        if not obj.code:
+            import re
+            obj.code = re.sub(r"[^A-Z0-9_]+", "_", obj.name.upper()).strip("_")[:40]
+        else:
+            obj.code = obj.code.strip().upper()
+        super().save_model(request, obj, form, change)
+
     @admin.display(description="Rang")
     def color_preview(self, obj):
         return format_html(
@@ -128,10 +147,18 @@ class UserAdmin(BaseUserAdmin):
         }),
         ("2. Boshqarma va Xodim ma'lumotlari", {
             "classes": ("wide",),
-            "fields": ("full_name", "department", "job_title", "global_role", "can_access_inquiries"),
-            "description": "Foydalanuvchi biriktiriladigan boshqarma, F.I.Sh., lavozimi va So'rovlar ruxsatini belgilang."
+            "fields": ("full_name", "department", "specialty", "job_title", "global_role", "can_access_inquiries"),
+            "description": "Foydalanuvchi biriktiriladigan boshqarma, F.I.Sh., mutaxassisligi, lavozimi va So'rovlar ruxsatini belgilang."
         }),
     )
+
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        if db_field.name == "specialty":
+            from .specialties import specialty_catalog
+            from django import forms
+            choices = [(s["value"], s["label"]) for s in specialty_catalog()]
+            return forms.ChoiceField(choices=choices, label="Mutaxassislik", required=False)
+        return super().formfield_for_dbfield(db_field, **kwargs)
 
 
     @admin.display(description="Boshqarma")
@@ -529,15 +556,6 @@ class UserAdmin(BaseUserAdmin):
         return TemplateResponse(request, "admin/accounts/user/analytics.html", context)
 
 
-@admin.register(SpecialtyAnalytics)
-class SpecialtyAnalyticsAdmin(admin.ModelAdmin):
-    def changelist_view(self, request, extra_context=None):
-        from django.shortcuts import redirect
-        from django.urls import reverse
-        return redirect(reverse("admin:accounts_user_analytics"))
-
-
-
 # ---------------- Faqat ADMIN roli admin panelga kira oladi ----------------
 def admin_site_has_permission(request):
     """Admin panelga FAQAT ADMIN roli yoki superuser kira olishi shart."""
@@ -551,5 +569,24 @@ def admin_site_has_permission(request):
 
 
 admin.site.has_permission = admin_site_has_permission
+
+
+# Keraksiz tizim modellarini admin paneldan tozalash (sodda interfeys uchun)
+from django.contrib.auth.models import Group
+try:
+    admin.site.unregister(Group)
+except Exception:
+    pass
+
+try:
+    from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+    admin.site.unregister(BlacklistedToken)
+    admin.site.unregister(OutstandingToken)
+except Exception:
+    pass
+
+admin.site.site_header = "⚡ TeamFlow Boshqaruv Markazi"
+admin.site.site_title = "TeamFlow Admin"
+admin.site.index_title = "Boshqaruv Paneli"
 
 

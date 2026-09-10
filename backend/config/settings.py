@@ -374,10 +374,20 @@ JAZZMIN_SETTINGS = {
     "search_model": "accounts.User",
     "topmenu_links": [
         {"name": "Boshqaruv", "url": "admin:index"},
+        {"name": "➕ Yangi mutaxassislik", "url": "admin:accounts_specialtyitem_add"},
         {"name": "Ilovaga qaytish", "url": "http://localhost:5183/panel", "new_window": False},
     ],
     "show_sidebar": True,
     "navigation_expanded": True,
+    "custom_links": {
+        "accounts": [
+            {
+                "name": "➕ Yangi mutaxassislik qo'shish",
+                "url": "admin:accounts_specialtyitem_add",
+                "icon": "fas fa-plus-circle text-success",
+            }
+        ]
+    },
     "order_with_respect_to": [
         "accounts",
         "projects",

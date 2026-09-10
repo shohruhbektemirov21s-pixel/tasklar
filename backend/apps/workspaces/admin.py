@@ -18,9 +18,3 @@ class WorkspaceAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
     inlines = [MemberInline]
-
-
-@admin.register(WorkspaceMember)
-class WorkspaceMemberAdmin(admin.ModelAdmin):
-    list_display = ("workspace", "user", "role", "joined_at")
-    list_filter = ("role",)

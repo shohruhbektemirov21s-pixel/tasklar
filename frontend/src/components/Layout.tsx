@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, listOf } from "@/api/client";
@@ -339,6 +339,47 @@ export default function Layout() {
             </div>
           )}
         </div>
+
+        {/* Real-time yangilash (Ctrl+R) va jonli ulanish nishoni */}
+        <button
+          type="button"
+          className="top-icon"
+          onClick={triggerRefresh}
+          title={connected ? "Jonli ulanish faol · Sahifani yangilash (Ctrl+R)" : "Sahifani yangilash (Ctrl+R)"}
+          aria-label="Sahifani yangilash"
+          style={{ position: "relative" }}
+        >
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transition: "transform 0.5s ease",
+              transform: refreshing ? "rotate(360deg)" : "none",
+            }}
+          >
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+          </svg>
+          {connected && (
+            <span
+              style={{
+                position: "absolute",
+                top: 7,
+                right: 7,
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                backgroundColor: "#10b981",
+                boxShadow: "0 0 4px #10b981",
+              }}
+            />
+          )}
+        </button>
 
         <ThemeToggle />
         <NotificationBell />

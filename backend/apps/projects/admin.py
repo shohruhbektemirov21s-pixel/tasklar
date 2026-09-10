@@ -32,20 +32,3 @@ class ProjectAdmin(admin.ModelAdmin):
                 project.restore()
                 n += 1
         self.message_user(request, "{} ta loyiha qaytarildi.".format(n))
-
-
-@admin.register(ProjectMember)
-class ProjectMemberAdmin(admin.ModelAdmin):
-    list_display = ("project", "user", "role", "is_active", "joined_at", "left_at")
-    list_filter = ("role", "is_active")
-
-
-@admin.register(JoinRequest)
-class JoinRequestAdmin(admin.ModelAdmin):
-    list_display = ("project", "user", "desired_role", "status", "created_at", "decided_by")
-    list_filter = ("status", "desired_role")
-
-
-@admin.register(ProjectBrief)
-class ProjectBriefAdmin(admin.ModelAdmin):
-    list_display = ("project", "updated_by", "updated_at")
