@@ -464,7 +464,7 @@ export default function OrderDetail() {
   if (!id) {
     return (
       <>
-        <PageHead title={<strong>Buyurtma tafsilotlari</strong>} />
+        <PageHead title={<strong>{tx("orders.sarlavha")}</strong>} />
         <div className="content" style={{ maxWidth: 900, margin: "0 auto", padding: "20px 16px" }}>
           <Card padded>
             <Empty
@@ -485,7 +485,7 @@ export default function OrderDetail() {
   if (loading && !item) {
     return (
       <>
-        <PageHead title={<strong>Buyurtma tafsilotlari</strong>} />
+        <PageHead title={<strong>{tx("orders.sarlavha")}</strong>} />
         <div className="content" style={{ padding: "40px 16px", textAlign: "center" }}>
           <Loading text="Buyurtma ma'lumotlari yuklanmoqda..." />
         </div>
@@ -496,7 +496,7 @@ export default function OrderDetail() {
   if (error || !item) {
     return (
       <>
-        <PageHead title={<strong>Buyurtma tafsilotlari</strong>} />
+        <PageHead title={<strong>{tx("orders.sarlavha")}</strong>} />
         <div className="content" style={{ maxWidth: 900, margin: "0 auto", padding: "20px 16px" }}>
           <ErrorMsg error={error || "Buyurtma topilmadi"} />
           <button className="btn" style={{ marginTop: 12 }} onClick={() => go(toOrders())}>
@@ -514,10 +514,26 @@ export default function OrderDetail() {
     <>
       <PageHead
         title={
-          <div className="row middle" style={{ gap: 10 }}>
-            <span>{item.request_no}</span>
+          <span className="row middle" style={{ gap: 8, display: "inline-flex", alignItems: "center" }}>
+            <Link
+              to="/buyurtmalar"
+              className="muted"
+              style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {tx("orders.buyurtmalarga_qaytish")}
+            </Link>
+            <span className="muted" style={{ opacity: 0.5 }}>/</span>
+            <span className="badge badge-brand" style={{ fontSize: 12, fontWeight: 700 }}>
+              {item.request_no}
+            </span>
+            {(item.version || 1) > 1 && (
+              <span className="badge" style={{ fontSize: 11, fontWeight: 700 }}>
+                v{item.version}
+              </span>
+            )}
             <OrderStatusBadge status={item.status} label={item.status_display} />
-          </div>
+          </span>
         }
       />
 
@@ -535,42 +551,9 @@ export default function OrderDetail() {
         <ErrorMsg error={actionError} />
         <OkMsg text={actionOk} />
 
-        {/* 1. YUQORI QISM: Navigatsiya, Raqam, Status va Amallar */}
-        <div
-          className="row between middle"
-          style={{
-            flexWrap: "wrap",
-            gap: 10,
-            padding: "4px 0",
-          }}
-        >
-          <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost row middle"
-              style={{ gap: 6, padding: "5px 10px", fontWeight: 600, color: "var(--brand)" }}
-              onClick={() => go(toOrders())}
-            >
-              <IconBack size={14} /> {tx("orders.buyurtmalarga_qaytish")}
-            </button>
-
-            <span className="badge badge-brand" style={{ fontSize: 12, fontWeight: 700 }}>
-              {item.request_no}
-            </span>
-
-            {(item.version || 1) > 1 && (
-              <span
-                className="badge"
-                style={{ fontSize: 11, fontWeight: 700 }}
-              >
-                v{item.version}
-              </span>
-            )}
-
-            <OrderStatusBadge status={item.status} label={item.status_display} />
-          </div>
-
-          <div className="row middle" style={{ gap: 8 }}>
+        {/* Amallar tugmalari (agar kerak bo'lsa) */}
+        {(item.status === "DRAFT" || canEdit || canDelete) && (
+          <div className="row end middle" style={{ gap: 8, padding: "2px 0" }}>
             {item.status === "DRAFT" && (
               <button
                 type="button"
@@ -606,7 +589,7 @@ export default function OrderDetail() {
               </button>
             )}
           </div>
-        </div>
+        )}
 
         {/* Yangi TZ fayli / versiyasi yuklanganda PM ko'rib chiqishi uchun banner */}
         {item.pending_version && (

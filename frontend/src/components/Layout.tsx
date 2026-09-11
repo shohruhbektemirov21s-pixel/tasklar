@@ -463,8 +463,8 @@ export default function Layout() {
             <IconPlus size={17} />
           </Link>
         )}
-        <Link {...toSelfProfile()} title={user?.full_name}>
-          <Avatar user={user} />
+        <Link {...toSelfProfile()} aria-label={user?.full_name}>
+          <Avatar user={user} placement="bottom" />
         </Link>
     </header>
   );
@@ -520,7 +520,7 @@ export default function Layout() {
 
           <div className="sidebar-footer">
             <Link {...toSelfProfile()} className="sidebar-user">
-              <Avatar user={user} />
+              <Avatar user={user} showHoverCard={false} />
               <span style={{ minWidth: 0 }}>
                 <span className="name">{user?.full_name}</span>
                 <br />

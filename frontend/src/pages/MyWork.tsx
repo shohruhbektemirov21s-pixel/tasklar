@@ -191,7 +191,6 @@ export default function MyWork() {
     <>
       <PageHead
         title={<strong>{tx("my_work.mening_ishim")}</strong>}
-        subtitle={tx("my_work.sahifa_tavsifi")}
       />
       <div className="content">
         {error ? (

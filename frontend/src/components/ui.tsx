@@ -15,19 +15,51 @@ export function Avatar({
   user,
   size = "",
   showHoverCard = true,
+  placement = "auto",
 }: {
   user?: UserBrief | null;
   size?: "sm" | "lg" | "xl" | "";
   showHoverCard?: boolean;
+  placement?: "auto" | "top" | "bottom";
 }) {
   const [hovered, setHovered] = useState(false);
+  const [computedPlacement, setComputedPlacement] = useState<"top" | "bottom">("bottom");
+  const [computedAlign, setComputedAlign] = useState<"center" | "left" | "right">("center");
+  const wrapRef = useRef<HTMLDivElement>(null);
   const hoverTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    };
+  }, []);
 
   if (!user) return <span className={`avatar ${size}`} style={{ background: "#30363d" }}>?</span>;
 
+  const updatePosition = () => {
+    if (wrapRef.current) {
+      const rect = wrapRef.current.getBoundingClientRect();
+      // Tepada joy yetarli bo'lmasa (260px dan kam) yoki placement="bottom" bo'lsa pastga ochiladi
+      const isBottom = placement === "bottom" || (placement === "auto" && rect.top < 260);
+      setComputedPlacement(isBottom ? "bottom" : "top");
+
+      // Gorizontal holat: popover ekrandan chiqib ketmasligi uchun
+      const midX = rect.left + rect.width / 2;
+      if (midX + 125 > window.innerWidth) {
+        setComputedAlign("right");
+      } else if (midX - 125 < 0) {
+        setComputedAlign("left");
+      } else {
+        setComputedAlign("center");
+      }
+    }
+  };
+
   const handleMouseEnter = () => {
     if (!showHoverCard) return;
+    updatePosition();
     hoverTimer.current = window.setTimeout(() => {
+      updatePosition();
       setHovered(true);
     }, 140);
   };
@@ -38,9 +70,18 @@ export function Avatar({
   };
 
   const avatarElement = user.avatar ? (
-    <img className={`avatar ${size}`} src={user.avatar} alt={user.full_name} title={user.full_name} />
+    <img
+      className={`avatar ${size}`}
+      src={user.avatar}
+      alt={user.full_name}
+      title={showHoverCard ? undefined : user.full_name}
+    />
   ) : (
-    <span className={`avatar ${size}`} style={{ background: user.avatar_color }} title={user.full_name}>
+    <span
+      className={`avatar ${size}`}
+      style={{ background: user.avatar_color }}
+      title={showHoverCard ? undefined : user.full_name}
+    >
       {user.initials}
     </span>
   );
@@ -49,13 +90,17 @@ export function Avatar({
 
   return (
     <div
+      ref={wrapRef}
       className="avatar-hover-wrap"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {avatarElement}
       {hovered && (
-        <div className="avatar-hover-popover" onClick={(e) => e.stopPropagation()}>
+        <div
+          className={`avatar-hover-popover placement-${computedPlacement} align-${computedAlign}`}
+          onClick={(e) => e.stopPropagation()}
+        >
           {user.avatar ? (
             <img src={user.avatar} alt={user.full_name} className="avatar-hover-photo" />
           ) : (

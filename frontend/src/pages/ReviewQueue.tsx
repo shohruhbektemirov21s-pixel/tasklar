@@ -90,7 +90,6 @@ export default function ReviewQueue() {
     <>
       <PageHead
         title={<strong>{tx("common.tekshiruv_navbati")}</strong>}
-        subtitle={tx("review_queue.sahifa_tavsifi")}
         actions={total > 0 && (
           <span className="badge badge-danger">{total} {tx("review_queue.ta_kutmoqda")}</span>
         )}

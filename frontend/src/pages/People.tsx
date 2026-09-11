@@ -67,7 +67,6 @@ export default function People() {
     <>
       <PageHead
         title={<strong>{tx("people.foydalanuvchilar")}</strong>}
-        subtitle={tx("people.sahifa_tavsifi")}
         actions={!!data && <span className="badge">{total} {tx("common.ta")}</span>}
       />
       <div className="content">

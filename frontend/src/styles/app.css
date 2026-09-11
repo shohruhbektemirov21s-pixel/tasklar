@@ -279,12 +279,13 @@ html, body { transition: background-color .18s ease, color .18s ease; }
    O'ZI qisqaradi (`text-overflow: ellipsis`). */
 .top-title {
   display: flex; align-items: center; min-width: 0; overflow: hidden;
-  flex: 0 0 auto; max-width: 42%;
+  flex: 0 0 auto; max-width: 55%;
 }
 .top-title h1 {
   margin: 0; font-size: 15.5px; font-weight: 700; letter-spacing: -.01em;
   line-height: 1.2; color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: inline-flex; align-items: center;
   /* Bosilganda sahifa boshiga qaytadi. `user-select: none` - aks holda
      bosish so'zni belgilab qo'yardi va harakat "ishlamagandek" ko'rinardi. */
   cursor: pointer; -webkit-user-select: none; user-select: none;
@@ -3812,9 +3813,6 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 
 .avatar-hover-popover {
   position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 1200;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -3825,22 +3823,145 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   max-width: 90vw;
   text-align: center;
   pointer-events: auto;
-  animation: avatar-pop-up 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes avatar-pop-up {
-  from { opacity: 0; transform: translate(-50%, 6px) scale(0.95); }
-  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+/* Sichqoncha 10px bo'shliqdan o'tganda popover yopilib qolmasligi uchun ko'rinmas ko'prik */
+.avatar-hover-popover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14px;
 }
 
+/* 1. Tepaga ochilish */
+.avatar-hover-popover.placement-top,
+.avatar-hover-popover:not(.placement-bottom) {
+  bottom: calc(100% + 10px);
+  top: auto;
+}
+.avatar-hover-popover.placement-top::before,
+.avatar-hover-popover:not(.placement-bottom)::before {
+  top: 100%;
+}
+
+/* 2. Pastga ochilish (yuqori panel va ekran tepasidagi elementlar uchun) */
+.avatar-hover-popover.placement-bottom {
+  top: calc(100% + 10px);
+  bottom: auto;
+}
+.avatar-hover-popover.placement-bottom::before {
+  bottom: 100%;
+}
+
+/* Markazga tekislash */
+.avatar-hover-popover.align-center,
+.avatar-hover-popover:not(.align-left):not(.align-right) {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+.avatar-hover-popover.align-center.placement-top,
+.avatar-hover-popover:not(.align-left):not(.align-right):not(.placement-bottom) {
+  animation: avatar-pop-up-center 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.avatar-hover-popover.align-center.placement-bottom,
+.avatar-hover-popover:not(.align-left):not(.align-right).placement-bottom {
+  animation: avatar-pop-down-center 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* O'ngga tekislash (ekranning o'ng chekkasidagi holatlar) */
+.avatar-hover-popover.align-right {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.avatar-hover-popover.align-right.placement-top {
+  animation: avatar-pop-up-right 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.avatar-hover-popover.align-right.placement-bottom {
+  animation: avatar-pop-down-right 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Chapga tekislash */
+.avatar-hover-popover.align-left {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+.avatar-hover-popover.align-left.placement-top {
+  animation: avatar-pop-up-left 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.avatar-hover-popover.align-left.placement-bottom {
+  animation: avatar-pop-down-left 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Strelka (Arrow) */
 .avatar-hover-popover::after {
   content: "";
   position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
   border: 6px solid transparent;
+}
+
+/* Strelka: tepaga ochilganda (pastga qaraydi) */
+.avatar-hover-popover.placement-top::after,
+.avatar-hover-popover:not(.placement-bottom)::after {
+  top: 100%;
+  bottom: auto;
   border-top-color: var(--surface);
+  border-bottom-color: transparent;
+}
+
+/* Strelka: pastga ochilganda (tepaga qaraydi) */
+.avatar-hover-popover.placement-bottom::after {
+  top: auto;
+  bottom: 100%;
+  border-bottom-color: var(--surface);
+  border-top-color: transparent;
+}
+
+/* Strelka gorizontal joylashuvi */
+.avatar-hover-popover.align-center::after,
+.avatar-hover-popover:not(.align-left):not(.align-right)::after {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+.avatar-hover-popover.align-right::after {
+  left: auto;
+  right: 8px;
+  transform: none;
+}
+.avatar-hover-popover.align-left::after {
+  left: 8px;
+  right: auto;
+  transform: none;
+}
+
+/* Animatsiya kalitlari */
+@keyframes avatar-pop-up-center {
+  from { opacity: 0; transform: translate(-50%, 6px) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes avatar-pop-down-center {
+  from { opacity: 0; transform: translate(-50%, -6px) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes avatar-pop-up-right {
+  from { opacity: 0; transform: translateY(6px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes avatar-pop-down-right {
+  from { opacity: 0; transform: translateY(-6px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes avatar-pop-up-left {
+  from { opacity: 0; transform: translateY(6px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes avatar-pop-down-left {
+  from { opacity: 0; transform: translateY(-6px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .avatar-hover-photo {

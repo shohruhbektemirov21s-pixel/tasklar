@@ -1061,7 +1061,6 @@ export default function ChangeRequests() {
             <strong>{tx("orders.sarlavha")}</strong>
           </span>
         }
-        subtitle={tx("orders.sahifa_tavsifi")}
         actions={
           canCreateOrder ? (
             <button

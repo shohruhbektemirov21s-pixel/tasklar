@@ -109,7 +109,6 @@ function ManagerProjects() {
     <>
       <PageHead
         title={<strong>{tx("common.loyihalar")}</strong>}
-        subtitle={tx("projects.sahifa_tavsifi_menejer")}
         actions={<>
           {!!data && <span className="badge">{total} {tx("common.ta")}</span>}
           {
@@ -410,7 +409,6 @@ function MyProjectTasks() {
     <>
       <PageHead
         title={<strong>{tx("projects.vazifalarim")}</strong>}
-        subtitle={tx("projects.sahifa_tavsifi_ijrochi")}
         actions={!!total && <span className="badge">{total} {tx("projects.ta_vazifa")}</span>}
       />
       {/* Filtr qatori «Vazifalar» sahifasidagi bilan bir xil: qidiruv

@@ -62,7 +62,6 @@ export default function Workspaces() {
     <>
       <PageHead
         title={<strong>{tx("workspaces.ish_maydonlari")}</strong>}
-        subtitle={tx("workspaces.sahifa_tavsifi")}
         actions={user?.can_create_project
                  ? <Link className="btn btn-sm btn-primary" {...toNewWorkspace()}>{tx("workspaces.yangi_maydon")}</Link>
                  : undefined}

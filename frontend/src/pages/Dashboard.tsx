@@ -23,7 +23,6 @@ import type {
   DashboardData,
   DashboardPeriod,
   DashboardPeriodRow,
-  DashboardScope,
   OrderPeriodRow,
   OrderStats,
   Task,
@@ -46,20 +45,6 @@ const LABELS: Record<DashboardPeriod, string> = {
   year: tx("dashboard.yil_boshidan"),
   month: tx("dashboard.oy_boshidan"),
   week: tx("dashboard.hafta_boshidan"),
-};
-
-/**
- * Raqamlar KIMNIKI ekani yozib qo'yiladi.
- *
- * Ilgari panel faqat odamning o'ziga biriktirilgan ishlarini sanardi va
- * menejer loyihasida ikkita ochiq ish tursa ham «0» ko'rardi. Endi qamrov
- * rolga qarab kengayadi - lekin buni AYTIB qo'ymasak, «bu mening ishimmi
- * yoki jamoanikimi» degan savol javobsiz qolardi.
- */
-const SCOPE_LABELS: Record<DashboardScope, string> = {
-  all: tx("dashboard.butun_tizim_boyicha"),
-  managed: tx("dashboard.boshqaruvingizdagi_loyihalar_boyicha"),
-  mine: tx("dashboard.sizga_biriktirilgan_ishlar_boyicha"),
 };
 
 /** Taxtadagi uchta ustun: nomi, kaliti va nimani sanashi. */
@@ -1539,13 +1524,9 @@ export default function Dashboard() {
 
   return (
     <>
-      <PageHead title={name} subtitle={tx("dashboard.sahifa_tavsifi")} />
+      <PageHead title={name} />
 
       <div className="content">
-        <p className="scope-note">
-          {SCOPE_LABELS[d.scope]} · <span style={{ opacity: 0.85 }}>{tx("dashboard.katak_bosing_tavsif")}</span>
-        </p>
-
         <div className="period-grid">
           {d.periods.map((p) => (
             <Band p={p} key={p.key} picked={picked} onPick={setPicked} />

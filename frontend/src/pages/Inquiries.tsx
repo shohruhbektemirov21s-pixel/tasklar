@@ -270,15 +270,11 @@ export default function Inquiries() {
     <div className="page" style={{ position: "relative" }}>
       <PageHead
         title="So'rovlar"
-        subtitle={tx("inquiries.sahifa_tavsifi")}
       />
 
       <div className="row wrap between gap-3 mb-4" style={{ alignItems: "center" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>So'rovlar</h1>
-          <p className="page-subtitle" style={{ margin: "4px 0 0 0" }}>
-            {tx("inquiries.sahifa_tavsifi")}
-          </p>
         </div>
 
         <button

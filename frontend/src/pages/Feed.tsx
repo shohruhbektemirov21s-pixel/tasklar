@@ -200,7 +200,6 @@ export default function Feed() {
     <>
       <PageHead
         title={<strong>{tx("feed.umumiy_tarix")}</strong>}
-        subtitle={tx("feed.sahifa_tavsifi")}
         actions={<span className="badge">{total} {tx("feed.yozuv")}</span>}
       />
       <div className="content">

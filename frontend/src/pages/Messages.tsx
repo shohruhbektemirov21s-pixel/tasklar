@@ -73,7 +73,6 @@ export default function Messages() {
     <>
       <PageHead
         title={<strong>{tx("messages.xabarlar")}</strong>}
-        subtitle={tx("messages.sahifa_tavsifi")}
       />
 
       <div className="content">
