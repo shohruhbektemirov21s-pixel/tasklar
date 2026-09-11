@@ -211,7 +211,13 @@ class ProjectDetailSerializer(ProjectSerializer):
                                                   "pending_requests"]
 
     def get_members(self, obj):
-        qs = obj.memberships.filter(is_active=True).select_related("user").order_by("role")
+        from apps.accounts.models import GlobalRole
+
+        qs = (obj.memberships.filter(is_active=True)
+              .exclude(user__global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])
+              .exclude(user__is_superuser=True)
+              .select_related("user")
+              .order_by("role"))
         return ProjectMemberSerializer(qs, many=True, context=self.context).data
 
     def get_status_counts(self, obj):

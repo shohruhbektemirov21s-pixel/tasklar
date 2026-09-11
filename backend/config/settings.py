@@ -257,10 +257,13 @@ REST_FRAMEWORK = {
 # Tajovuzkor va haddan tashqari ko'p so'rov yuboruvchilarni avtomatik bloklash.
 # Testlarda daqiqasiga yuzlab so'rov yuboriladi - test muhitida soxta 429
 # xatoliklarining oldini olish uchun standartda o'chiriladi.
+# DEBUG rejimida esa Vite proksi orqali barcha so'rovlar bitta ichki konteyner IP si
+# orqali keladi va bir necha sahifa ochilishi bilan limit oshib qolmasligi uchun
+# produksiyadan tashqarida (DEBUG=True) o'chiriladi yoki kengaytiriladi.
 TESTING = "test" in sys.argv or any(arg.endswith("test") for arg in sys.argv)
-RATE_LIMIT_ENABLED = env_bool("RATE_LIMIT_ENABLED", not TESTING)
-RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "120"))
-RATE_LIMIT_BAN_THRESHOLD = int(os.getenv("RATE_LIMIT_BAN_THRESHOLD", "300"))
+RATE_LIMIT_ENABLED = env_bool("RATE_LIMIT_ENABLED", not TESTING and not DEBUG)
+RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "1200" if DEBUG else "120"))
+RATE_LIMIT_BAN_THRESHOLD = int(os.getenv("RATE_LIMIT_BAN_THRESHOLD", "3000" if DEBUG else "300"))
 RATE_LIMIT_BAN_SECONDS = int(os.getenv("RATE_LIMIT_BAN_SECONDS", "600"))
 
 SIMPLE_JWT = {

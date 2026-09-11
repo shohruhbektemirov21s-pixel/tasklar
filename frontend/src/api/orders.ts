@@ -95,13 +95,13 @@ export const ORDER_STATUS_CONFIG: Record<
     step: 2,
   },
   ASSIGNED_TO_DEV: {
-    label: "Dasturchiga topshirildi",
+    label: "Dasturchiga yo'naltirildi",
     icon: "💻",
     bg: "rgba(99, 102, 241, 0.14)",
     color: "#4338ca",
     border: "rgba(99, 102, 241, 0.38)",
     badgeClass: "badge-brand",
-    desc: "Vazifa dasturchiga topshirildi va amaliy ijroga biriktirildi",
+    desc: "Vazifa dasturchiga yo'naltirildi va amaliy ijroga biriktirildi",
     step: 3,
   },
   IN_PROGRESS: {

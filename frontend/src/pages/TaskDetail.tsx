@@ -13,6 +13,7 @@ import { IconChevron } from "@/components/icons";
 import { toProject, toTask, toTaskEdit, useEntityId, useGo } from "@/nav";
 import { createSubtask, getAvailableSubtasks, linkSubtask, unlinkSubtask } from "@/api/tasks";
 import { tx } from "@/i18n";
+import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 
 const FILE_ICON: Record<string, string> = {
   pdf: "PDF", doc: "DOC", docx: "DOC", xls: "XLS", xlsx: "XLS",
@@ -163,6 +164,7 @@ export default function TaskDetail() {
   const [editDue, setEditDue] = useState(false);
   const [due, setDue] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   // Ishni boshqa odamga o'tkazish: jamoa ro'yxati, kimga va nega.
   const [members, setMembers] = useState<ProjectMember[]>([]);
@@ -614,24 +616,48 @@ export default function TaskDetail() {
                   {attachments.map((a) => (
                     <div key={a.id} className="card" style={{ background: "var(--canvas-inset)" }}>
                       {a.is_image ? (
-                        <a href={a.url} target="_blank" rel="noreferrer">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewFile({ url: a.url, name: a.original_name, size: a.size_display })}
+                          style={{ padding: 0, border: "none", background: "none", cursor: "pointer", width: "100%", display: "block" }}
+                          title="Veb-saytda ochish"
+                        >
                           <img src={a.url} alt={a.original_name}
                                style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
-                        </a>
+                        </button>
                       ) : (
-                        <a href={a.url} target="_blank" rel="noreferrer"
-                           style={{ height: 120, display: "grid", placeItems: "center",
-                                    background: "var(--surface)", color: "var(--muted)" }}>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewFile({ url: a.url, name: a.original_name, size: a.size_display })}
+                          style={{ width: "100%", height: 120, display: "grid", placeItems: "center",
+                                   background: "var(--surface)", color: "var(--muted)", border: "none", cursor: "pointer" }}
+                          title="Veb-saytda ochish"
+                        >
                           <span className="mono" style={{ fontSize: 20, fontWeight: 700 }}>
                             {FILE_ICON[a.extension] || a.extension.toUpperCase() || "FILE"}
                           </span>
-                        </a>
+                        </button>
                       )}
                       <div className="card-body tight">
-                        <a href={a.url} target="_blank" rel="noreferrer"
-                           style={{ fontSize: 13, wordBreak: "break-all" }}>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewFile({ url: a.url, name: a.original_name, size: a.size_display })}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            font: "inherit",
+                            fontSize: 13,
+                            color: "var(--brand, #2563eb)",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            wordBreak: "break-all",
+                            textDecoration: "underline",
+                          }}
+                          title="Veb-saytda ochish"
+                        >
                           {a.original_name}
-                        </a>
+                        </button>
                         <div className="row" style={{ marginTop: 6 }}>
                           <small className="muted">{a.size_display}</small>
                           <span className="spacer" />
@@ -1320,6 +1346,13 @@ export default function TaskDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {previewFile && (
+        <FilePreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
       )}
     </>
   );

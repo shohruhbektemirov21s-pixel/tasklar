@@ -136,6 +136,13 @@ export default function NotificationModal({
   let messageContent = notification.body;
   let isReason = false;
 
+  const noteCandidate =
+    meta.decision_note ||
+    meta.pm_notes ||
+    meta.feedback_note ||
+    meta.note ||
+    meta.completion_note;
+
   if (isRejected) {
     let reasonText = meta.reason ? String(meta.reason).trim() : "";
     if (!reasonText && notification.body) {
@@ -146,12 +153,12 @@ export default function NotificationModal({
     }
     if (reasonText) {
       messageContent = reasonText;
-      messageLabel = tx("notifications.sabab");
+      messageLabel = "Rad etish sababi";
       isReason = true;
     }
-  } else if (meta.feedback_note) {
-    messageContent = String(meta.feedback_note).trim();
-    messageLabel = tx("notifications.izoh");
+  } else if (noteCandidate && String(noteCandidate).trim()) {
+    messageContent = String(noteCandidate).trim();
+    messageLabel = "Berilgan izoh";
     isReason = true;
   }
 

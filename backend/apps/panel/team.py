@@ -71,7 +71,12 @@ def candidates(request):
     project, workspace = _resolve_scope(request)
     _require_manage(request.user, project, workspace)
 
-    qs = User.objects.filter(is_active=True).exclude(pk=request.user.pk)
+    from apps.accounts.models import GlobalRole
+
+    qs = (User.objects.filter(is_active=True)
+          .exclude(pk=request.user.pk)
+          .exclude(global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])
+          .exclude(is_superuser=True))
     if project is not None:
         qs = qs.exclude(project_memberships__project=project,
                         project_memberships__is_active=True)
@@ -105,6 +110,10 @@ def add_member(request):
     target = object_or_404(User, pk=request.data.get("user_id"), is_active=True)
     if target.pk == request.user.pk:
         raise ValidationError({"user_id": "Ozingizni qosha olmaysiz."})
+
+    from apps.accounts.models import GlobalRole
+    if target.global_role in (GlobalRole.ADMIN, GlobalRole.BOSS) or target.is_superuser:
+        raise ValidationError({"user_id": "Boshliq va tizim administratorini jamoaga a'zo qilib qo'shib bo'lmaydi."})
 
     if project is not None:
         member = add_to_project(request.user, project, target, request.data.get("role"))

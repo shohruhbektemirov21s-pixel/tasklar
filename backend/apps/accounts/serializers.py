@@ -27,10 +27,12 @@ class UserBriefSerializer(serializers.ModelSerializer):
     # Nisbiy manzil: proksi Host ni almashtirsa ham brauzer rasmni ocha oladi.
     avatar = serializers.SerializerMethodField()
 
+    is_boss = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = User
         fields = ["id", "full_name", "email", "job_title", "initials", "avatar_color", "avatar",
-                  "is_platform_admin", "is_sohaviy_boshqarma", "can_access_orders",
+                  "is_platform_admin", "is_boss", "global_role", "is_sohaviy_boshqarma", "can_access_orders",
                   "department_name",
                   "specialty", "specialty_display", "specialty_icon", "specialty_color",
                   "seniority", "seniority_display"]

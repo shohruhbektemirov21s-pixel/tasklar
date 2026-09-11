@@ -337,10 +337,40 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         if order_id:
             try:
-                from apps.orders.models import ChangeRequest
-                ChangeRequest.objects.filter(pk=order_id).update(project=project)
-            except Exception:
-                pass
+                from apps.orders.models import ChangeRequest, ChangeRequestStatus
+                order = ChangeRequest.objects.filter(pk=order_id).first()
+                if order:
+                    order.project = project
+                    order.status = ChangeRequestStatus.ASSIGNED_TO_DEV
+                    if not order.assigned_pm_id:
+                        order.assigned_pm_id = manager_id
+                    order.save(update_fields=["project", "status", "assigned_pm", "updated_at"])
+
+                    cur_ver = order.versions.filter(version=order.version).first()
+                    if cur_ver:
+                        cur_ver.status = ChangeRequestStatus.ASSIGNED_TO_DEV
+                        if not cur_ver.decided_by_id:
+                            cur_ver.decided_by_id = manager_id
+                            cur_ver.decided_at = timezone.now()
+                        cur_ver.save(update_fields=["status", "decided_by", "decided_at"])
+
+                    if order.created_by:
+                        try:
+                            from apps.notifications.models import NotificationKind
+                            from apps.notifications.services import notify
+                            notify(
+                                order.created_by,
+                                NotificationKind.TASK_ASSIGNED,
+                                title="Buyurtmangiz bo'yicha loyiha ochildi",
+                                body=f"«{project.name}» loyihasi ochildi va ishlar dasturchiga yo'naltirildi.",
+                                url=f"/loyiha/{project.pk}",
+                                actor=user,
+                                meta={"project": project.pk, "order": order.pk},
+                            )
+                        except Exception:
+                            pass
+            except Exception as exc:
+                logger.exception("Buyurtmani loyihaga biriktirishda xatolik: %s", exc)
 
         brief_data = self.request.data.get("brief")
         brief_defaults = {"updated_by": user}
@@ -354,12 +384,18 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 setattr(brief_obj, k, v)
             brief_obj.save()
 
-        ProjectMember.objects.get_or_create(
-            project=project, user_id=manager_id,
-            defaults={"role": ProjectRole.MANAGER, "added_by": user})
-        ProjectMember.objects.get_or_create(
-            project=project, user=user,
-            defaults={"role": ProjectRole.MANAGER, "added_by": user})
+        from apps.accounts.models import GlobalRole
+
+        if manager_id and manager_id != user.id:
+            mgr = User.objects.filter(pk=manager_id).first()
+            if mgr and mgr.global_role not in (GlobalRole.ADMIN, GlobalRole.BOSS) and not mgr.is_superuser:
+                ProjectMember.objects.get_or_create(
+                    project=project, user_id=manager_id,
+                    defaults={"role": ProjectRole.MANAGER, "added_by": user})
+        if user.global_role not in (GlobalRole.ADMIN, GlobalRole.BOSS) and not user.is_superuser:
+            ProjectMember.objects.get_or_create(
+                project=project, user=user,
+                defaults={"role": ProjectRole.MANAGER, "added_by": user})
 
         WorkspaceMember.objects.get_or_create(
             workspace=project.workspace, user=user,
@@ -396,9 +432,16 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         if order_id is not None:
             try:
-                from apps.orders.models import ChangeRequest
+                from apps.orders.models import ChangeRequest, ChangeRequestStatus
                 if order_id:
-                    ChangeRequest.objects.filter(pk=order_id).update(project=project)
+                    order = ChangeRequest.objects.filter(pk=order_id).first()
+                    if order:
+                        order.project = project
+                        if order.status in (ChangeRequestStatus.NEW, ChangeRequestStatus.ACCEPTED):
+                            order.status = ChangeRequestStatus.ASSIGNED_TO_DEV
+                        if not order.assigned_pm_id and project.manager_id:
+                            order.assigned_pm_id = project.manager_id
+                        order.save(update_fields=["project", "status", "assigned_pm", "updated_at"])
                 else:
                     ChangeRequest.objects.filter(project=project).update(project=None)
             except Exception:

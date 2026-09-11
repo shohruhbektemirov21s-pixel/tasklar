@@ -237,7 +237,14 @@ class TaskViewSet(viewsets.ModelViewSet):
             raise ValidationError({
                 "status": "Vazifalar «Bajarildi» holatida yaratilmaydi."})
 
-        members = list(project.memberships.filter(is_active=True).select_related("user"))
+        from apps.accounts.models import GlobalRole
+
+        members = list(
+            project.memberships.filter(is_active=True)
+            .exclude(user__global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])
+            .exclude(user__is_superuser=True)
+            .select_related("user")
+        )
         member_ids = {m.user_id for m in members}
         assignees = [uid for uid in d["assignee_ids"] if uid in member_ids]
 
@@ -775,9 +782,13 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         project = object_or_404(Project, pk=request.query_params.get("project"))
         check_access(request.user, project, "view")
-        specialty = request.query_params.get("specialty") or ""
+        from apps.accounts.models import GlobalRole
 
-        members = project.memberships.filter(is_active=True).select_related("user")
+        members = (project.memberships
+                   .filter(is_active=True)
+                   .exclude(user__global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])
+                   .exclude(user__is_superuser=True)
+                   .select_related("user"))
         # Ochiq vazifalar soni HAMMA a'zo uchun bitta guruhlangan so'rovda
         # olinadi. Ilgari tsikl ichida `count()` chaqirilardi va so'rovlar soni
         # jamoa kattaligiga ko'payib ketardi (14 a'zo -> 18 so'rov).

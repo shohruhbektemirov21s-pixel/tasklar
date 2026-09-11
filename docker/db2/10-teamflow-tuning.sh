@@ -38,9 +38,17 @@ run "UPDATE DB CFG FOR $DB USING LOGSECOND 48 IMMEDIATE"
 # 1) LOCKTIMEOUT 15: tranzaksiya qulf kutib cheksiz (-1) osilib qolmaydi
 # 2) MAXAPPLS 150: bir vaqtning o'zida 150 tagacha parallel faol ilovani qabul qiladi
 # 3) CUR_COMMIT ON: o'qish amallari yozish amallarini kutib to'xtab qolmaydi
+# 4) DB2 registr parametrlari: concurrency va disk I/O ni oshirish
+su - db2inst1 -c "db2set DB2_USE_FAST_PREALLOCATION=ON"
+su - db2inst1 -c "db2set DB2_PARALLEL_IO=*"
+su - db2inst1 -c "db2set DB2_EVALUNCOMMITTED=ON"
+su - db2inst1 -c "db2set DB2_SKIPDELETED=ON"
+su - db2inst1 -c "db2set DB2_SKIPINSERTED=ON"
+
 run "UPDATE DB CFG FOR $DB USING LOCKTIMEOUT 15"
 run "UPDATE DB CFG FOR $DB USING MAXAPPLS 150"
 run "UPDATE DB CFG FOR $DB USING CUR_COMMIT ON"
+run "UPDATE DB CFG FOR $DB USING CHNGPGS_THRESH 60 LOGBUFSZ 4096"
 
 
 # ---------------------------------------------------------------- XOTIRA
@@ -57,6 +65,7 @@ run "UPDATE DBM CFG USING INSTANCE_MEMORY 655360"
 # O'z-o'zini sozlash YOQIQ qoladi - yuqoridagi chegara ichida bufer
 # hovuzini ish yukiga qarab o'zi taqsimlaydi.
 run "UPDATE DB CFG FOR $DB USING SELF_TUNING_MEM ON"
+su - db2inst1 -c "db2 connect to $DB >/dev/null && db2 'ALTER BUFFERPOOL IBMDEFAULTBP SIZE AUTOMATIC' && db2 connect reset >/dev/null" || true
 
 # ---------------------------------------------------------------- PARVARISH
 # Jadval va indekslar vaqt o'tib parchalanadi: o'chirilgan qatorlardan

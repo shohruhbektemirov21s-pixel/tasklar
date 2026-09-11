@@ -37,12 +37,14 @@ import {
   approveVersion,
   rejectVersion,
   createOrderTask,
+  downloadOrderDocx,
 } from "@/api/orders";
 import type { ChangeRequestItem, UserBrief } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { tx } from "@/i18n";
 import { confirmDialog } from "@/components/Confirm";
 import { PageHead } from "@/components/Layout";
+import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 import {
   IconBack,
   IconDownload,
@@ -58,6 +60,7 @@ export default function OrderDetail() {
   const go = useGo();
 
   const [item, setItem] = useState<ChangeRequestItem | null>(null);
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -89,7 +92,7 @@ export default function OrderDetail() {
   const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>("/users/", { is_active: true });
   const usersList: UserBrief[] = useMemo(() => (usersData ? listOf<UserBrief>(usersData) : []), [usersData]);
   const developersList = useMemo(
-    () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY"),
+    () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY" && u.global_role !== "ADMIN" && u.global_role !== "BOSS" && !u.is_platform_admin && !u.is_boss),
     [usersList]
   );
 
@@ -633,16 +636,19 @@ export default function OrderDetail() {
 
               <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
                 {item.pending_version.tz_file_url && (
-                  <a
-                    href={item.pending_version.tz_file_url}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => setPreviewFile({
+                      url: item.pending_version!.tz_file_url!,
+                      name: item.pending_version!.tz_file_name || "Yangi_TZ.docx",
+                      size: item.pending_version!.tz_file_size_display,
+                    })}
                     className="btn btn-sm btn-outline row middle"
                     style={{ gap: 6 }}
-                    download
+                    title="Yangi TZ faylini veb-saytda ochish"
                   >
-                    <IconDownload size={13} /> {item.pending_version.tz_file_name || "Yangi TZ faylini yuklab olish"}
-                  </a>
+                    <span>📄</span> {item.pending_version.tz_file_name || "Yangi TZ faylini ko'rish"}
+                  </button>
                 )}
                 {isPMOrAdmin && (
                   <>
@@ -1013,29 +1019,30 @@ export default function OrderDetail() {
                 {item.attachments && item.attachments.length > 0 ? (
                   <div style={{ display: "inline-flex", flexWrap: "wrap", gap: 6 }}>
                     {item.attachments.map((att) => (
-                      <a
+                      <button
                         key={att.id}
-                        href={att.url}
-                        target="_blank"
-                        rel="noreferrer"
+                        type="button"
+                        onClick={() => setPreviewFile({ url: att.url, name: att.original_name, size: att.size_display })}
                         className="btn btn-xs btn-outline"
-                        download
-                        title={att.original_name}
+                        title="Veb-saytda ochish"
+                        style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
                       >
-                        <IconDownload size={12} /> {att.original_name} {att.size_display ? `(${att.size_display})` : ""}
-                      </a>
+                        <span>📄</span>
+                        <span>{att.original_name} {att.size_display ? `(${att.size_display})` : ""}</span>
+                      </button>
                     ))}
                   </div>
                 ) : item.tz_file_url ? (
-                  <a
-                    href={item.tz_file_url}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => setPreviewFile({ url: item.tz_file_url!, name: item.tz_file_name || "TZ_fayli.docx", size: item.tz_file_size_display })}
                     className="btn btn-xs btn-outline"
-                    download
+                    title="Veb-saytda ochish"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
                   >
-                    <IconDownload size={12} /> {item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}
-                  </a>
+                    <span>📄</span>
+                    <span>{item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}</span>
+                  </button>
                 ) : (
                   <span className="muted" style={{ fontSize: 12 }}>{tx("orders.fayl_biriktirilmagan")}</span>
                 )}
@@ -1044,17 +1051,34 @@ export default function OrderDetail() {
               {item.completion_file_url && (
                 <div>
                   <span className="muted" style={{ fontSize: 11.5, marginRight: 6 }}>{tx("orders.hisobot_fayli")}:</span>
-                  <a
-                    href={item.completion_file_url}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => setPreviewFile({ url: item.completion_file_url!, name: item.completion_file_name || "Hisobot_hujjati.docx" })}
                     className="btn btn-xs btn-outline"
-                    download
+                    title="Veb-saytda ochish"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
                   >
-                    <IconDownload size={12} /> {item.completion_file_name || tx("orders.faylni_yuklab_olish")}
-                  </a>
+                    <span>📄</span>
+                    <span>{item.completion_file_name || tx("orders.faylni_yuklab_olish")}</span>
+                  </button>
                 </div>
               )}
+
+              <div>
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline"
+                  onClick={() => setPreviewFile({
+                    url: `/api/orders/${item.id}/export-docx/`,
+                    name: `Buyurtma_TZ_${item.request_no}.docx`,
+                  })}
+                  title="Rasmiy Word (.docx) blankini veb-saytda ochish"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--brand)" }}
+                >
+                  <span>📝</span>
+                  <span>Word (.docx) blanki</span>
+                </button>
+              </div>
             </div>
 
             <div className="row middle" style={{ gap: 8 }}>
@@ -1224,16 +1248,18 @@ export default function OrderDetail() {
 
                         <div className="row middle" style={{ gap: 8 }}>
                           {ver.tz_file_url && (
-                            <a
-                              href={ver.tz_file_url}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              type="button"
+                              onClick={() => setPreviewFile({
+                                url: ver.tz_file_url!,
+                                name: ver.tz_file_name || `TZ_v${ver.version}.docx`,
+                                size: ver.tz_file_size_display,
+                              })}
                               className="btn btn-xs btn-outline"
-                              download
-                              title={ver.tz_file_name || `TZ v${ver.version}`}
+                              title="Veb-saytda ochish"
                             >
-                              <IconDownload size={11} /> {tx("orders.faylni_yuklab_olish")}
-                            </a>
+                              <span>📄</span> {tx("orders.faylni_yuklab_olish")}
+                            </button>
                           )}
                         </div>
 
@@ -1284,7 +1310,7 @@ export default function OrderDetail() {
                   >
                     {(meta?.order_status || [
                       { value: "ACCEPTED", label: "Qabul qilindi" },
-                      { value: "ASSIGNED_TO_DEV", label: "Dasturchiga topshirildi" },
+                      { value: "ASSIGNED_TO_DEV", label: "Dasturchiga yo'naltirildi" },
                       { value: "IN_PROGRESS", label: "Jarayonda" },
                       { value: "TESTING", label: "Testda" },
                       { value: "REJECTED", label: "Rad etildi" },
@@ -2151,6 +2177,13 @@ export default function OrderDetail() {
             </form>
           </div>
         </div>
+      )}
+
+      {previewFile && (
+        <FilePreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
       )}
     </>
   );

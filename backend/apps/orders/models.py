@@ -21,7 +21,7 @@ class ChangeRequestStatus(models.TextChoices):
     DRAFT = "DRAFT", "Qoralama"
     NEW = "NEW", "Yangi (Yuborilgan)"
     ACCEPTED = "ACCEPTED", "Qabul qilindi"
-    ASSIGNED_TO_DEV = "ASSIGNED_TO_DEV", "Dasturchiga topshirildi"
+    ASSIGNED_TO_DEV = "ASSIGNED_TO_DEV", "Dasturchiga yo'naltirildi"
     IN_PROGRESS = "IN_PROGRESS", "Jarayonda"
     TESTING = "TESTING", "Test qilinmoqda"
     READY_FOR_REVIEW = "READY_FOR_REVIEW", "Boshqarma tasdig'ida"

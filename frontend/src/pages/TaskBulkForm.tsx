@@ -40,7 +40,11 @@ export default function TaskBulkForm() {
   const titles = lines.split("\n").map((l) => l.trim().replace(/^[-*]\s*/, "")).filter(Boolean);
 
   const members = (project?.members || []).filter(
-    (m) => !f.required_specialty || !matchSpec || m.user.specialty === f.required_specialty
+    (m) => (!f.required_specialty || !matchSpec || m.user.specialty === f.required_specialty) &&
+           m.user.global_role !== "ADMIN" &&
+           m.user.global_role !== "BOSS" &&
+           !m.user.is_platform_admin &&
+           !m.user.is_boss
   );
 
   const selected = members.filter((m) => assignees.includes(m.user.id));

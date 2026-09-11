@@ -338,6 +338,8 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         seniority = self.request.query_params.get("seniority")
         if seniority:
             qs = qs.filter(seniority=seniority)
+        if self.request.query_params.get("exclude_management") == "1":
+            qs = qs.exclude(global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS]).exclude(is_superuser=True)
         return qs
 
     @action(detail=False, methods=["get"], url_path="specialty-stats")

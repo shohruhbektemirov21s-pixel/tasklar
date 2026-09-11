@@ -88,8 +88,7 @@ def sees_all_projects(user):
     if not user or not user.is_authenticated:
         return False
     return bool(runs_everything(user)
-                or getattr(user, "global_role", None) == GlobalRole.MANAGER
-                or getattr(user, "is_sohaviy_boshqarma", False))
+                or getattr(user, "global_role", None) == GlobalRole.MANAGER)
 
 
 def manages_all_projects(user):
@@ -217,6 +216,19 @@ def visible_projects_q(user, path=""):
     project_ref = "pk" if not path else "project_id"
     member_of = Exists(ProjectMember.objects.filter(
         project=OuterRef(project_ref), user=user, is_active=True))
+
+    # Sohaviy boshqarma vakili: o'zi yoki o'z boshqarmasiga tegishli buyurtmasi (TZ) bor loyihalarni ko'radi
+    if getattr(user, "is_sohaviy_boshqarma", False):
+        from apps.orders.models import ChangeRequest
+        cr_q = Q(project=OuterRef(project_ref), created_by=user)
+        dept_name = getattr(user, "department_name", "") or ""
+        if dept_name:
+            cr_q |= Q(project=OuterRef(project_ref), department=dept_name)
+        if getattr(user, "department_id", None):
+            cr_q |= Q(project=OuterRef(project_ref), created_by__department_id=user.department_id)
+        has_my_order = Exists(ChangeRequest.objects.filter(cr_q))
+        return member_of | has_my_order
+
     in_ws = Exists(WorkspaceMember.objects.filter(
         workspace=OuterRef(path + "workspace_id"), user=user))
     owns_ws = Q(**{path + "workspace__owner": user})
@@ -233,7 +245,7 @@ def task_scope_q(user):
     QOIDA: ISHNI BAJARADIGAN odam o'z ishini ko'radi, qolgani hammasini.
 
       DEVELOPER / QA  - faqat o'ziga biriktirilgan ish;
-      menejer, loyiha admini, kuzatuvchi, tizim admini - loyihaning hammasi.
+      menejer, loyiha admini, kuzatuvchi, boshqarma, tizim admini - loyihaning hammasi.
 
     NEGA SHUNDAY BO'LINDI. Ilgari a'zo bo'lgan loyihaning hamma vazifasi
     ko'rinardi: doska, vazifalar ro'yxati va taqvim dasturchi uchun jamoadagi
@@ -263,12 +275,9 @@ def task_scope_q(user):
 
     if not user or not user.is_authenticated:
         return Q(pk__in=[])
-    # Hamma loyihani ko'radiganlar (admin, boshliq, loyiha menejeri) bu
-    # yerda ham cheklanmaydi: ro'yxatda hammaning ishi turishi kerak.
-    # Ular ijrochi (`DEVELOPER`/`QA`) sifatida a'zo bo'lmasa shartsiz ham
-    # hammasini ko'rardi - lekin bo'lib qolsa, ro'yxati jimgina o'z
-    # vazifalarigacha qisqarardi va butun manzara yo'qolardi.
-    if sees_all_projects(user):
+    # Hamma loyihani ko'radiganlar (admin, boshliq, loyiha menejeri) va
+    # sohaviy boshqarma uchun - loyihadagi hamma vazifalar ko'rinadi (kimga qanday berilgani bilan).
+    if sees_all_projects(user) or getattr(user, "is_sohaviy_boshqarma", False):
         return Q()
 
     executor = Exists(ProjectMember.objects.filter(
@@ -362,30 +371,26 @@ class ProjectAccess:
         self.is_project_admin = self.role == ProjectRole.ADMIN
         self.is_developer = self.role in (ProjectRole.DEVELOPER, ProjectRole.QA)
         self.is_member = self.membership is not None
+        self.is_sohaviy = bool(user and user.is_authenticated
+                               and getattr(user, "is_sohaviy_boshqarma", False))
         # `can_view` bir necha marta so'raladi (`as_dict` ham chaqiradi) -
         # ish maydoni a'zoligi uchun bazaga ko'pi bilan bir marta boriladi.
         self._in_workspace = None
 
     @property
     def can_view(self):
-        """Loyihani ochib ko'rish huquqi.
-
-        `is_public` - modelda ham shunday nomlangan: «ISH MAYDONI ICHIDA
-        ochiq». Ilgari maydon a'zoligi tekshirilmasdi, ya'ni tizimda
-        ro'yxatdan o'tgan har qanday odam begona jamoaning loyihasini,
-        vazifalarini, brifini va hujjatlar ro'yxatini o'qiy olardi.
-
-        Bosh sahifadagi ochiq qidiruv bundan ALOHIDA: u `apps/panel/public.py`
-        da va faqat xavfsiz maydonlarni beradi (a'zolar, vazifalar, fayllar
-        chiqmaydi). Ya'ni "platformada nima bor" ko'rinib turadi, ichiga esa
-        maydon a'zosi kiradi.
-
-        Boshliq va loyiha menejeri bu yerda admin bilan bir qatorda turadi
-        (`sees_all`). `visible_projects_q` ham xuddi shu shartga tayanadi,
-        ya'ni ro'yxat va bitta loyiha sahifasi bir xil javob beradi.
-        """
+        """Loyihani ochib ko'rish huquqi."""
         if self.sees_all or self.is_member:
             return True
+        if self.is_sohaviy:
+            from apps.orders.models import ChangeRequest
+            cr_q = Q(project=self.project, created_by=self.user)
+            dept_name = getattr(self.user, "department_name", "") or ""
+            if dept_name:
+                cr_q |= Q(project=self.project, department=dept_name)
+            if getattr(self.user, "department_id", None):
+                cr_q |= Q(project=self.project, created_by__department_id=self.user.department_id)
+            return ChangeRequest.objects.filter(cr_q).exists()
         if not self.project.is_public:
             return False
         if self._in_workspace is None:
@@ -394,25 +399,22 @@ class ProjectAccess:
 
     @property
     def can_manage(self):
-        """Azolarni qabul qilish/chiqarish, loyiha sozlamalari, fayl ochirish.
-
-        Boshliq bu yerda ham admin bilan teng: ochilgan har qanday loyihada
-        u hamma amalni bajara oladi. GLOBAL MENEJER ham shu qatorda -
-        ilgari u begona loyihani faqat ko'rardi va «Mehmon» bo'lib turardi.
-        Faqat MENEJERGA tegish alohida tekshiriladi (`can_change_member`) -
-        u qoida rolga emas, menejerlikning o'ziga bog'langan.
-        """
+        """Azolarni qabul qilish/chiqarish, loyiha sozlamalari, fayl ochirish."""
+        if self.is_sohaviy and not self.is_admin and not self.is_boss:
+            return False
         return (self.manages_all or self.is_manager or self.is_project_admin)
 
     @property
     def can_create_task(self):
+        if self.is_sohaviy and not self.is_admin and not self.is_boss:
+            return False
         return self.can_manage
 
     @property
     def can_create_subtask(self):
-        """Vazifa ichiga ostki vazifa (subtask) biriktirish yoki yaratish.
-        Faqat loyiha menejeri (PM), loyiha admini yoki tizim adminiga ruxsat beriladi.
-        """
+        """Vazifa ichiga ostki vazifa (subtask) biriktirish yoki yaratish."""
+        if self.is_sohaviy and not self.is_admin and not self.is_boss:
+            return False
         return bool(self.is_admin or self.manages_all or self.is_manager or self.is_project_admin)
 
     @property
@@ -465,6 +467,8 @@ class ProjectAccess:
     @property
     def can_work(self):
         """Task statusini surish, izoh, worklog va fayl yuklash."""
+        if self.is_sohaviy and not self.is_admin and not self.is_boss:
+            return False
         return self.can_manage or self.is_developer
 
     # ------------------------------------------------------------ azolar
@@ -521,6 +525,8 @@ class ProjectAccess:
         # tugmalarni izlab qolardi.
         if self.manages_all:
             return "Loyiha menejeri"
+        if self.is_sohaviy:
+            return "Sohaviy boshqarma"
         return "Mehmon"
 
     def as_dict(self):
@@ -532,6 +538,7 @@ class ProjectAccess:
             # boshliq loyihani ochadi-yu, birorta tugma ishlamaydi -
             # sababini aytmasak, buzuq sahifadek ko'rinadi.
             "is_boss": self.is_boss,
+            "is_sohaviy": self.is_sohaviy,
             "is_manager": self.is_manager,
             "is_project_admin": self.is_project_admin,
             # Ijrochimi - ro'yxatlar shunga qarab qirqiladi (`task_scope_q`)

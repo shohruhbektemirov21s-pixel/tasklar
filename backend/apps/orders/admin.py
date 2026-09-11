@@ -147,7 +147,7 @@ class ChangeRequestAdmin(admin.ModelAdmin):
         colors = {
             ChangeRequestStatus.NEW: ("#0284c7", "🆕 Yangi"),
             ChangeRequestStatus.ACCEPTED: ("#8b5cf6", "📥 Qabul qilindi"),
-            ChangeRequestStatus.ASSIGNED_TO_DEV: ("#6366f1", "💻 Dasturchiga topshirildi"),
+            ChangeRequestStatus.ASSIGNED_TO_DEV: ("#6366f1", "💻 Dasturchiga yo'naltirildi"),
             ChangeRequestStatus.IN_PROGRESS: ("#f59e0b", "⚙️ Jarayonda"),
             ChangeRequestStatus.TESTING: ("#ec4899", "🧪 Testda"),
             ChangeRequestStatus.COMPLETED: ("#10b981", "✅ Bajarildi"),

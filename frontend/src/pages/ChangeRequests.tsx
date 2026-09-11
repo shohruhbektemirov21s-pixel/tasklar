@@ -26,6 +26,7 @@ import {
 } from "@/components/icons";
 import { toEditOrder, toNewOrder, toOrder, useGo } from "@/nav";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
+import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 import {
   Card,
   Empty,
@@ -157,13 +158,13 @@ export const ORDER_STATUS_CONFIG: Record<
     step: 2,
   },
   ASSIGNED_TO_DEV: {
-    label: "Dasturchiga topshirildi",
+    label: "Dasturchiga yo'naltirildi",
     icon: "💻",
     bg: "rgba(99, 102, 241, 0.14)",
     color: "#4338ca",
     border: "rgba(99, 102, 241, 0.38)",
     badgeClass: "badge-brand",
-    desc: "Vazifa dasturchiga topshirildi va amaliy ijroga biriktirildi",
+    desc: "Vazifa dasturchiga yo'naltirildi va amaliy ijroga biriktirildi",
     step: 3,
   },
   IN_PROGRESS: {
@@ -303,7 +304,7 @@ export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
     },
     {
       num: 3,
-      title: "Dasturchiga topshirildi",
+      title: "Dasturchiga yo'naltirildi",
       icon: "💻",
       sub: item.assigned_developer_name ? `👨‍💻 ${item.assigned_developer_name}` : "Ijrochi tayinlanmoqda",
     },
@@ -545,6 +546,7 @@ export default function ChangeRequests() {
 
   // Modal oynasi (faqat batafsil ko'rish va PM qarori uchun)
   const [viewingItem, setViewingItem] = useState<ChangeRequestItem | null>(null);
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
 
   // PM qarorini belgilash holatlari (view modal ichida)
   const [pmDecisionForm, setPmDecisionForm] = useState<{
@@ -607,7 +609,7 @@ export default function ChangeRequests() {
   const projects: Project[] = useMemo(() => (projectsData ? listOf<Project>(projectsData) : []), [projectsData]);
   const usersList: UserBrief[] = useMemo(() => (usersData ? listOf<UserBrief>(usersData) : []), [usersData]);
   const developersList = useMemo(
-    () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY"),
+    () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY" && u.global_role !== "ADMIN" && u.global_role !== "BOSS" && !u.is_platform_admin && !u.is_boss),
     [usersList]
   );
 
@@ -843,6 +845,14 @@ export default function ChangeRequests() {
 
   const handleClaimOrder = (item: ChangeRequestItem) => {
     handleOpenClaim(item);
+  };
+
+  // Word (.docx) ko'rish
+  const handlePreviewDocx = (id: number, requestNo: string) => {
+    setPreviewFile({
+      url: `/api/orders/${id}/export-docx/`,
+      name: `Buyurtma_TZ_${requestNo}.docx`,
+    });
   };
 
   // Word (.docx) yuklab olish
@@ -2009,10 +2019,21 @@ export default function ChangeRequests() {
                                 style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5 }}
                                 onClick={() => {
                                   setActiveActionMenuId(null);
+                                  handlePreviewDocx(item.id, item.request_no);
+                                }}
+                              >
+                                📝 Word (.docx) ko'rish
+                              </button>
+
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5 }}
+                                onClick={() => {
+                                  setActiveActionMenuId(null);
                                   handleDownloadDocx(item.id, item.request_no);
                                 }}
                               >
-                                📄 Word (.docx) yuklash
+                                📥 Word (.docx) yuklash
                               </button>
 
                               {item.status === "DRAFT" && (
@@ -2525,21 +2546,27 @@ export default function ChangeRequests() {
                   </button>
                 )}
                 <button
+                  type="button"
                   className="btn btn-sm btn-primary"
-                  onClick={() => handleDownloadDocx(viewingItem.id, viewingItem.request_no)}
+                  onClick={() => handlePreviewDocx(viewingItem.id, viewingItem.request_no)}
+                  title="Word (.docx) blankini veb-saytda ochish"
                 >
-                  <IconDownload size={14} /> Word (.docx)
+                  📝 Word (.docx)
                 </button>
                 {viewingItem.tz_file_url && (
-                  <a
-                    href={viewingItem.tz_file_url}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => setPreviewFile({
+                      url: viewingItem.tz_file_url!,
+                      name: viewingItem.tz_file_name || "TZ_fayli.docx",
+                      size: viewingItem.tz_file_size_display,
+                    })}
                     className="btn btn-sm btn-outline row middle"
                     style={{ gap: 4 }}
+                    title="TZ faylini veb-saytda ochish"
                   >
                     <IconPaperclip size={14} /> TZ Fayli
-                  </a>
+                  </button>
                 )}
                 {canEditOrder(viewingItem) && (
                   <button
@@ -2598,15 +2625,19 @@ export default function ChangeRequests() {
 
                     <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
                       {viewingItem.pending_version.tz_file_url && (
-                        <a
-                          href={viewingItem.pending_version.tz_file_url}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => setPreviewFile({
+                            url: viewingItem.pending_version!.tz_file_url!,
+                            name: viewingItem.pending_version!.tz_file_name || `Yangi_TZ_v${viewingItem.pending_version!.version}.docx`,
+                            size: viewingItem.pending_version!.tz_file_size_display,
+                          })}
                           className="btn btn-sm btn-outline row middle"
                           style={{ gap: 4, background: "#fff" }}
+                          title="Yangi TZ faylini veb-saytda ochish"
                         >
-                          <IconDownload size={14} /> Yangi TZ fayli (v{viewingItem.pending_version.version})
-                        </a>
+                          <span>📄</span> Yangi TZ fayli (v{viewingItem.pending_version.version})
+                        </button>
                       )}
 
                       {isPMOrAdmin && (user?.is_platform_admin || user?.is_boss || !viewingItem.assigned_pm || viewingItem.assigned_pm === user?.id) && (
@@ -2879,14 +2910,18 @@ export default function ChangeRequests() {
                       </div>
                     </div>
                     {viewingItem.completion_file_url && (
-                      <a
-                        href={viewingItem.completion_file_url}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => setPreviewFile({
+                          url: viewingItem.completion_file_url!,
+                          name: viewingItem.completion_file_name || "Hisobot_hujjati.docx",
+                          size: viewingItem.completion_file_size_display,
+                        })}
                         className="btn btn-sm btn-primary"
+                        title="Hisobot hujjatini veb-saytda ochish"
                       >
-                        <IconDownload size={14} /> Hujjatni yuklab olish
-                      </a>
+                        <span>📄</span> Hujjatni ko'rish
+                      </button>
                     )}
                   </div>
 
@@ -3057,15 +3092,19 @@ export default function ChangeRequests() {
                 </div>
                 <div className="row middle" style={{ gap: 6 }}>
                   {viewingItem.tz_file_url && (
-                    <a
-                      href={viewingItem.tz_file_url}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => setPreviewFile({
+                        url: viewingItem.tz_file_url!,
+                        name: viewingItem.tz_file_name || "TZ_fayli.docx",
+                        size: viewingItem.tz_file_size_display,
+                      })}
                       className="btn btn-sm btn-primary"
                       style={{ background: "#16a34a", borderColor: "#16a34a" }}
+                      title="TZ faylini veb-saytda ochish"
                     >
-                      <IconDownload size={13} /> TZ faylini yuklab olish
-                    </a>
+                      <span>📄</span> TZ faylini ko'rish
+                    </button>
                   )}
                   {isSohaviyOrAdmin && viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && (
                     <button
@@ -3114,14 +3153,18 @@ export default function ChangeRequests() {
                           )}
                         </div>
                         {v.tz_file_url && (
-                          <a
-                            href={v.tz_file_url}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => setPreviewFile({
+                              url: v.tz_file_url!,
+                              name: v.tz_file_name || `TZ_v${v.version}.docx`,
+                              size: v.tz_file_size_display,
+                            })}
                             className="btn btn-xs btn-outline"
+                            title="TZ faylini veb-saytda ochish"
                           >
-                            <IconDownload size={11} /> Yuklab olish
-                          </a>
+                            <span>📄</span> Ko'rish
+                          </button>
                         )}
                       </div>
                     ))}
@@ -3234,7 +3277,7 @@ export default function ChangeRequests() {
                           {(meta?.order_status || [
                             { value: "NEW", label: "Yangi (Yuborilgan)" },
                             { value: "ACCEPTED", label: "Qabul qilindi (Tasdiqlandi)" },
-                            { value: "ASSIGNED_TO_DEV", label: "Dasturchiga topshirildi" },
+                            { value: "ASSIGNED_TO_DEV", label: "Dasturchiga yo'naltirildi" },
                             { value: "IN_PROGRESS", label: "Jarayonda (Ishlanmoqda)" },
                             { value: "TESTING", label: "Test qilinmoqda" },
                             { value: "REJECTED", label: "Rad etildi" },
@@ -3371,12 +3414,23 @@ export default function ChangeRequests() {
             </div>
 
             <div className="modal-footer row between middle" style={{ padding: "12px 20px" }}>
-              <button
-                className="btn btn-outline"
-                onClick={() => handleDownloadDocx(viewingItem.id, viewingItem.request_no)}
-              >
-                <IconDownload size={15} /> Rasmiy Word (.docx) yuklab olish
-              </button>
+              <div className="row middle" style={{ gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => handlePreviewDocx(viewingItem.id, viewingItem.request_no)}
+                  title="Rasmiy Word (.docx) blankini veb-saytda ochish"
+                >
+                  📝 Word (.docx) saytda ochish
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => handleDownloadDocx(viewingItem.id, viewingItem.request_no)}
+                >
+                  <IconDownload size={15} /> Yuklab olish
+                </button>
+              </div>
               <button className="btn btn-ghost" onClick={() => setViewingItem(null)}>
                 Yopish
               </button>
@@ -3848,6 +3902,13 @@ export default function ChangeRequests() {
             </form>
           </div>
         </div>
+      )}
+
+      {previewFile && (
+        <FilePreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
       )}
     </>
   );

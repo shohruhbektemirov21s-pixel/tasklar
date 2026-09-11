@@ -49,10 +49,15 @@ Standart Db2 katta ma'lumotga **tayyor emas**, ikkita joyda:
   Bitta yirik amal shunga urilib `SQL0964C The transaction log for the
   database is full` bilan yiqiladi va butun amal orqaga qaytadi —
   40 000 ta vazifa yuklashda aynan shu bo'lgan. Endi 32 MB × (16+48) ≈ 2 GB.
-- **`INSTANCE_MEMORY = AUTOMATIC`** konteynerda ham XOST xotirasidan
-  hisoblanadi (~6.3 GB). Yonida boshqa konteynerlar tursa OOM qotili
-  birinchi bo'lib Db2 ni o'ldiradi. Endi qat'iy 2.5 GB, `mem_limit: 3g`
-  dan past: Db2 cgroup chegarasiga yetmasdan o'zini tiyadi.
+  `LOGBUFSZ` 16 MB ga oshirilgan, `CHNGPGS_THRESH = 60` orqali dirty sahifalar erta diskka yoziladi.
+- **`INSTANCE_MEMORY = 655360` (2.5 GB)**: xost xotirasidan cheksiz olib OOM da o'lmasligi
+  uchun `mem_limit: 3g` dan past qilib cheklangan. `SELF_TUNING_MEM = ON` va
+  `BUFFERPOOL IBMDEFAULTBP SIZE AUTOMATIC` bilan buferpool yuklamaga qarab o'zi kengayadi.
+- **Parallelizm va Qulflar (Concurrency):** `CUR_COMMIT = ON`, `LOCKTIMEOUT = 15`,
+  `MAXAPPLS = 150`, shuningdek `DB2_EVALUNCOMMITTED = ON`, `DB2_SKIPDELETED = ON`,
+  `DB2_SKIPINSERTED = ON` orqali tranzaksiyalarning bir-birini kutib bloklanishi bartaraf etilgan.
+- **Disk I/O:** `DB2_USE_FAST_PREALLOCATION = ON` (fallocate orqali fayllarni 10x tez ochish)
+  va `DB2_PARALLEL_IO = *` (barcha tablespace'lar bo'ylab parallel I/O) yoqilgan.
 
 Skript `/var/custom` ga ulanadi va instans **birinchi marta** yaratilganda
 o'zi yuguradi. Mavjud bazaga qo'lda:
@@ -61,8 +66,9 @@ o'zi yuguradi. Mavjud bazaga qo'lda:
 docker exec teamflow_db2 bash /var/custom/10-teamflow-tuning.sh
 ```
 
-`AUTO_REORG` ham yoqilgan — usiz jadval va indekslar vaqt o'tib
-parchalanadi va bir xil so'rov sekinlashib boraveradi.
+`AUTO_REORG` va `AUTO_RUNSTATS` ham yoqilgan — usiz jadval va indekslar vaqt o'tib
+parchalanadi va bir xil so'rov sekinlashib boraveradi. Barcha jadvallar bo'yicha
+batafsil statistika `RUNSTATS WITH DISTRIBUTION AND DETAILED INDEXES ALL` bilan yangilanadi.
 
 > Konteyner jurnallari `max-size: 10m, max-file: 3` bilan cheklangan
 > (`x-logging` langari). Usiz `json-file` cheksiz o'sadi va diskni

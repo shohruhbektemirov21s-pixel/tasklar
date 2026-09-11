@@ -460,9 +460,11 @@ export default function TaskForm() {
                   <label htmlFor={`${fid}-8`}>{tx("task_form.tekshiruvchi")}</label>
                   <select id={`${fid}-8`} value={f.reviewer_id} onChange={(e) => set("reviewer_id", e.target.value)}>
                     <option value="">{tx("task_form.menejer_tekshiradi")}</option>
-                    {(project.members || []).map((m) => (
-                      <option key={m.user.id} value={m.user.id}>{m.user.full_name}</option>
-                    ))}
+                    {(project.members || [])
+                      .filter((m) => m.user.global_role !== "ADMIN" && m.user.global_role !== "BOSS" && !m.user.is_platform_admin && !m.user.is_boss)
+                      .map((m) => (
+                        <option key={m.user.id} value={m.user.id}>{m.user.full_name}</option>
+                      ))}
                   </select>
                 </div>
               </Card>

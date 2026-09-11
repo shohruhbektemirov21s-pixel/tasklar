@@ -209,20 +209,23 @@ def notify_order_completion_rejected(order, actor, feedback_note):
     )
 
 
-def notify_order_version_approved(order, version_obj, actor):
+def notify_order_version_approved(order, version_obj, actor, decision_note=""):
     """PM yangi TZ versiyasini tasdiqlaganda bildirishnoma."""
     recipients = get_order_notification_recipients(order=order, exclude_id=actor.id)
     if not recipients:
         return 0
 
+    note = (version_obj.decision_note or decision_note or order.pm_notes or "").strip()
+    body = note if note else f"PM ({actor.full_name}) yangi TZ versiyasini tasdiqladi."
+
     return notify_many(
         recipients,
         NotificationKind.ORDER_STATUS,
         title=f"Yangi TZ versiyasi tasdiqlandi (v{version_obj.version}): {order.request_no}",
-        body=f"PM ({actor.full_name}) yangi TZ versiyasini tasdiqladi. Eski TZ atmen qilindi va loyiha yangi TZ ga o'tkazildi.",
+        body=body,
         url=order_url(order),
         actor=actor,
-        meta={"order_id": order.pk, "version": version_obj.version, "status": "ACCEPTED"},
+        meta={"order_id": order.pk, "version": version_obj.version, "status": "ACCEPTED", "decision_note": note},
     )
 
 
@@ -237,14 +240,15 @@ def notify_order_version_rejected(order, version_obj, actor, reason):
     if not recipients:
         return 0
 
-    reason_text = f": «{reason[:100]}»" if reason else "."
+    reason_clean = (reason or "").strip()
+    body = reason_clean if reason_clean else f"PM ({actor.full_name}) TZ versiyasini rad etdi."
     return notify_many(
         recipients,
         NotificationKind.ORDER_STATUS,
         title=f"Yangi TZ versiyasi rad etildi (v{version_obj.version}): {order.request_no}",
-        body=f"PM ({actor.full_name}) TZ versiyasini rad etdi{reason_text} Eski versiya o'z kuchida qoldi.",
+        body=body,
         url=order_url(order),
         actor=actor,
-        meta={"order_id": order.pk, "version": version_obj.version, "reason": reason, "status": "REJECTED"},
+        meta={"order_id": order.pk, "version": version_obj.version, "reason": reason_clean, "status": "REJECTED"},
     )
 

@@ -984,7 +984,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             order.save()
 
         try:
-            notify_order_version_approved(order, target_version, user)
+            notify_order_version_approved(order, target_version, user, decision_note=decision_note)
         except Exception:
             logger.exception("Versiya tasdiqlanganda bildirishnoma yuborishda xatolik: %s", order.pk)
 

@@ -36,12 +36,14 @@ import {
 } from "@/components/ui";
 import { useProjectLive } from "@/realtime/RealtimeContext";
 import { tx } from "@/i18n";
+import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 
 export default function Files({ project }: { project: Project }) {
   const fid = useId();
   const acc = project.access;
   const { user } = useAuth();
   const [items, setItems] = useState<ProjectFile[] | null>(null);
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -243,7 +245,24 @@ export default function Files({ project }: { project: Project }) {
                     ? <img src={f.url} alt={f.original_name} className="file-thumb" />
                     : <span className="file-ico"><IconFile size={16} /></span>}
                   <div style={{ minWidth: 0 }}>
-                    <a href={f.url || "#"} target="_blank" rel="noreferrer">{f.original_name}</a>
+                    <button
+                      type="button"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        font: "inherit",
+                        fontWeight: 600,
+                        color: "var(--brand, #2563eb)",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        textDecoration: "underline",
+                      }}
+                      onClick={() => f.url && setPreviewFile({ url: f.url, name: f.original_name, size: f.size_display })}
+                      title="Veb-saytda ochish"
+                    >
+                      {f.original_name}
+                    </button>
                     {f.version > 1 && (
                       <>
                         {" "}
@@ -317,9 +336,23 @@ export default function Files({ project }: { project: Project }) {
                         <div key={v.id}>
                           <div className="row wrap" style={{ gap: 8 }}>
                             <span className="badge mono">{tx("project_files.v")}{v.version}</span>
-                            <a href={v.url || "#"} target="_blank" rel="noreferrer">
+                            <button
+                              type="button"
+                              style={{
+                                background: "none",
+                                border: "none",
+                                padding: 0,
+                                font: "inherit",
+                                color: "var(--brand, #2563eb)",
+                                cursor: "pointer",
+                                textAlign: "left",
+                                textDecoration: "underline",
+                              }}
+                              onClick={() => v.url && setPreviewFile({ url: v.url, name: v.original_name, size: v.size_display })}
+                              title="Veb-saytda ochish"
+                            >
                               {v.original_name}
-                            </a>
+                            </button>
                             <small className="muted">
                               {v.size_display} · {v.uploaded_by?.full_name || "—"} {tx("project_files.yuklagan")}
                               {v.doc_date && tx("project_files.hujjat_sanasi_qatori", { sana: fmtDateTime(v.doc_date) })}
@@ -343,6 +376,13 @@ export default function Files({ project }: { project: Project }) {
           </div>
         )}
       </Card>
+
+      {previewFile && (
+        <FilePreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
+      )}
     </>
   );
 }

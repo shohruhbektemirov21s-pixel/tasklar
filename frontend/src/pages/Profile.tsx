@@ -69,8 +69,6 @@ export default function Profile() {
         skills: u.skills,
         bio: u.bio,
         telegram: u.telegram,
-        seniority: u.seniority,
-        years_experience: String(u.years_experience ?? 0),
       });
       // Loyihalar, vazifalar, statistika va tarix - hammasi bitta endpointdan.
       // Ko'rinish serverda so'rovchining huquqiga qarab cheklanadi.
@@ -291,22 +289,6 @@ export default function Profile() {
                     />
                   </div>
 
-                  <div className="row">
-                    <div className="field" style={{ flex: 1 }}>
-                      <label htmlFor={`${fid}-1`}>{tx("common.daraja")}</label>
-                      <select id={`${fid}-1`} value={form.seniority || ""}
-                              onChange={(e) => setForm({ ...form, seniority: e.target.value })}>
-                        {(meta?.seniority || []).map((s) => (
-                          <option key={s.value} value={String(s.value)}>{s.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="field" style={{ width: 140 }}>
-                      <label htmlFor={`${fid}-2`}>{tx("profile.tajriba_yil")}</label>
-                      <input id={`${fid}-2`} type="number" min={0} max={30} value={form.years_experience || "0"}
-                             onChange={(e) => setForm({ ...form, years_experience: e.target.value })} />
-                    </div>
-                  </div>
                   <div className="field">
                     <label htmlFor={`${fid}-3`}>{tx("profile.qisqacha_malumot")}</label>
                     <textarea id={`${fid}-3`} rows={3} value={form.bio || ""}

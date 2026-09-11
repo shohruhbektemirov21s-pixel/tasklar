@@ -503,7 +503,7 @@ class OrdersSeniorDevTests(ApiTestCase):
         data = res.json()
 
         self.assertEqual(data["status"], ChangeRequestStatus.ASSIGNED_TO_DEV)
-        self.assertEqual(data["status_display"], "Dasturchiga topshirildi")
+        self.assertEqual(data["status_display"], "Dasturchiga yo'naltirildi")
         self.assertEqual(data["assigned_developer"], self.dev_user.id)
         self.assertEqual(data["assigned_developer_name"], "Jasur Dasturchi")
         self.assertEqual(data["stage_index"], 3)

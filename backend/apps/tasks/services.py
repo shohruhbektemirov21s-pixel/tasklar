@@ -203,10 +203,13 @@ def live_task(task, action, actor=None, **extra):
 def sync_assignees(task, user_ids, actor):
     """Ijrochilar ro'yxatini yangilaydi va tarixga yozadi."""
     wanted = set(user_ids or [])
+    from apps.accounts.models import GlobalRole
+
     members = set(
-        task.project.memberships.filter(is_active=True).values_list(
-            "user_id", flat=True
-        )
+        task.project.memberships.filter(is_active=True)
+        .exclude(user__global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])
+        .exclude(user__is_superuser=True)
+        .values_list("user_id", flat=True)
     )
     skipped = sorted(wanted - members)
     wanted &= members

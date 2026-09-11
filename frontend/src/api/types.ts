@@ -13,6 +13,8 @@ export interface UserBrief {
   full_name: string;
   email: string;
   is_platform_admin: boolean;
+  is_boss?: boolean;
+  global_role?: GlobalRoleValue;
   is_manager?: boolean;
   is_sohaviy_boshqarma?: boolean;
   can_access_orders?: boolean;

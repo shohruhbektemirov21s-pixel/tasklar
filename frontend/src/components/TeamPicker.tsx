@@ -162,9 +162,14 @@ export default function TeamPicker({
 }: Props) {
 
   const search = useCallback(async (q: string) => {
-    const data = await api.get<any>("/users/", { search: q, page_size: 8 });
+    const data = await api.get<any>("/users/", { search: q, page_size: 8, exclude_management: "1" });
     return listOf<UserBrief>(data).filter(
-      (u) => u.id !== excludeId && !picks.some((p) => p.user.id === u.id));
+      (u) => u.id !== excludeId &&
+             u.global_role !== "ADMIN" &&
+             u.global_role !== "BOSS" &&
+             !u.is_platform_admin &&
+             !u.is_boss &&
+             !picks.some((p) => p.user.id === u.id));
   }, [excludeId, picks]);
 
   /** Bitta odamning yozuvini yangilaydi — qolganlariga tegmaydi. */
