@@ -463,6 +463,10 @@
   "value": "Yanvar",
   "note": "pages/Calendar.tsx"
  },
+ "calendar.keyingi_vazifalar": {
+  "value": "Keyingi vazifalar",
+  "note": "pages/Calendar.tsx"
+ },
  "chat.birinchi_xabarni_siz_yozing": {
   "value": "Birinchi xabarni siz yozing.",
   "note": "components/Chat.tsx"
@@ -493,7 +497,7 @@
  },
  "common.amallar": {
   "value": "Amallar",
-  "note": "umumiy"
+  "note": "components/ui.tsx"
  },
  "common.amalni_bajarib_bolmadi": {
   "value": "Amalni bajarib bolmadi",
@@ -793,7 +797,11 @@
  },
  "common.yopish": {
   "value": "Yopish",
-  "note": "umumiy"
+  "note": "components/ui.tsx"
+ },
+ "common.tushunarli": {
+  "value": "Tushunarli",
+  "note": "components/NotificationModal.tsx"
  },
  "confirm.davom_etish": {
   "value": "Davom etish",
@@ -2291,6 +2299,10 @@
   "value": "Hozircha buyurtmalar mavjud emas",
   "note": "pages/ChangeRequests.tsx"
  },
+ "orders.vazifa_yaratish": {
+  "value": "Vazifa yaratish",
+  "note": "pages/OrderDetail.tsx"
+ },
  "orders.sizga_biriktirilgan": {
   "value": "Siz qabul qilgansiz",
   "note": "pages/ChangeRequests.tsx"
@@ -2477,6 +2489,38 @@
  },
  "orders.tz_hujjati": {
   "value": "TZ hujjati",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.mijoz": {
+  "value": "Mijoz",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.muddat": {
+  "value": "Muddat",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.vaqt": {
+  "value": "Vaqt",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.qolgan_vaqt": {
+  "value": "Qolgan vaqt",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.tavsif": {
+  "value": "Tavsif",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.fayllar": {
+  "value": "Fayllar",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.avalgi_tz_versiyalari": {
+  "value": "Avvalgi TZ versiyalari (Tarix)",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.avvalgi_tz_versiyalari": {
+  "value": "Avvalgi TZ versiyalari (Tarix)",
   "note": "pages/OrderDetail.tsx"
  },
  "orders.yangi_tz_versiyasi": {
@@ -4004,12 +4048,12 @@
   "note": "components/SkillEditor.tsx"
  },
  "suggestions.anonim_muallif": {
-  "value": "Anonim",
+  "value": "Anonim muallif",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.anonim_yuborish": {
-  "value": "Anonim yuborish",
-  "note": "pages/Suggestions.tsx"
+  "value": "Anonim yuborish (ism ko'rsatilmasin)",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.barcha_takliflar": {
   "value": "Barcha takliflar",
@@ -4028,32 +4072,32 @@
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.bosh_holat": {
-  "value": "Hali taklif yo'q",
+  "value": "Takliflar mavjud emas",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.bosh_holat_matn": {
-  "value": "Birinchi taklifni siz yozing — jamoa ovoz beradi, boshliq ko'radi.",
+  "value": "Hozircha tizimda faol takliflar yo'q.",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.boshliq_izohi": {
-  "value": "Boshliq izohi",
-  "note": "pages/Suggestions.tsx"
+  "value": "Boshliq izohi / qarori",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.boshliq_korib_chiqmoqda": {
   "value": "Boshliq ko'rib chiqmoqda",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.fayl_hint": {
-  "value": "Hujjat, chizma yoki rasmni shu yerga tashlang — 25 MB gacha",
-  "note": "pages/Suggestions.tsx"
+  "value": "Hujjatlar yoki skrinshotlar biriktiring",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.fayl_ochirilsinmi": {
-  "value": "«{nom}» o'chirilsinmi?",
-  "note": "pages/Suggestions.tsx"
+  "value": "Fayl o'chirilsinmi?",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.fayl_ochirish_izohi": {
-  "value": "Fayl taklifdan butunlay olib tashlanadi.",
-  "note": "pages/Suggestions.tsx"
+  "value": "Biriktirilgan fayl o'chirib tashlanadi.",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.fayl_qoshish": {
   "value": "Fayl biriktirish",
@@ -4061,26 +4105,26 @@
  },
  "suggestions.fayllar": {
   "value": "Biriktirilgan fayllar",
-  "note": "pages/Suggestions.tsx"
+  "note": "components/suggestion.tsx"
  },
  "suggestions.fayllar_yuklanmadi": {
-  "value": "Taklif saqlandi, lekin fayllarni yuklab bo'lmadi.",
-  "note": "pages/Suggestions.tsx"
+  "value": "Taklif saqlandi, lekin fayllar yuklanmadi:",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.holat": {
   "value": "Holat",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.holat_all": {
-  "value": "Barcha holatlar",
+  "value": "Barchasi",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.holat_approved": {
-  "value": "Tasdiqlangan",
+  "value": "Ma'qullangan",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.holat_pending": {
-  "value": "Ko'rib chiqilmoqda",
+  "value": "Kutilmoqda",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.holat_rejected": {
@@ -4088,59 +4132,59 @@
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.izoh_placeholder": {
-  "value": "Qaroringiz sababini yozing",
-  "note": "pages/Suggestions.tsx"
+  "value": "Qaror bo'yicha izoh qoldiring...",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.izohni_saqlash": {
   "value": "Izohni saqlash",
-  "note": "pages/Suggestions.tsx"
+  "note": "components/suggestion.tsx"
  },
  "suggestions.kim_koradi": {
   "value": "Kim ko'radi",
-  "note": "pages/Suggestions.tsx"
+  "note": "components/suggestion.tsx"
  },
  "suggestions.matn_placeholder": {
-  "value": "Nima taklif qilyapsiz va nega kerak? Iloji bo'lsa misol keltiring.",
-  "note": "pages/Suggestions.tsx"
+  "value": "Taklifingizni batafsil bayon qiling...",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.meniki": {
   "value": "Mening takliflarim",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.meniki_bosh": {
-  "value": "Siz hali taklif yozmagansiz",
+  "value": "Sizda takliflar yo'q",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.meniki_bosh_matn": {
-  "value": "«Yangi taklif» tugmasi bilan boshlang.",
+  "value": "Hozircha hech qanday taklif kiritmagansiz.",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.natija_soni": {
-  "value": "{jami} ta taklifdan {dan}–{gacha} tasi ko'rsatilmoqda",
-  "note": "pages/Suggestions.tsx - ro'yxat ostidagi yakun"
+  "value": "{count} ta taklif",
+  "note": "pages/Suggestions.tsx"
  },
  "suggestions.nechta_taklif": {
   "value": "{n} ta taklif",
   "note": "pages/Suggestions.tsx - sarlavha yonidagi sanoq"
  },
  "suggestions.ochib_bolmadi": {
-  "value": "Taklifni ochib bo'lmadi.",
-  "note": "pages/SuggestionDetail.tsx"
- },
- "suggestions.ochiq": {
-  "value": "Ochiq",
+  "value": "Taklifni ochib bo'lmadi",
   "note": "pages/Suggestions.tsx"
  },
+ "suggestions.ochiq": {
+  "value": "Ochiq (barcha a'zolar)",
+  "note": "components/suggestion.tsx"
+ },
  "suggestions.ochirildi": {
-  "value": "Taklif o'chirildi.",
+  "value": "Taklif o'chirildi",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.ochirilsinmi": {
-  "value": "«{nom}» o'chirilsinmi?",
+  "value": "Taklif o'chirilsinmi?",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.ochirish_izohi": {
-  "value": "Taklif va unga berilgan ovozlar butunlay o'chadi. Buni qaytarib bo'lmaydi.",
+  "value": "Ushbu taklif va unga berilgan ovozlar o'chiriladi.",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.qaror_izoh_qisqa": {
@@ -4149,11 +4193,11 @@
  },
  "suggestions.qaror_qildi": {
   "value": "{ism} qaror qildi",
-  "note": "pages/Suggestions.tsx"
+  "note": "components/suggestion.tsx"
  },
  "suggestions.qarorni_ozgartirish": {
   "value": "Qarorni o'zgartirish",
-  "note": "pages/Suggestions.tsx - boshliqning «⋯» menyusi"
+  "note": "pages/Suggestions.tsx"
  },
  "suggestions.qatorni_ochish": {
   "value": "«{nom}» taklifini ochish",
@@ -4164,8 +4208,8 @@
   "note": "pages/Suggestions.tsx - qatorni yopadigan tugmaning yorlig'i"
  },
  "suggestions.qidiruv_placeholder": {
-  "value": "Sarlavha, ism yoki muallif...",
-  "note": "pages/Suggestions.tsx - filtr panelidagi qidiruv maydoni"
+  "value": "Takliflarni qidirish...",
+  "note": "pages/Suggestions.tsx"
  },
  "suggestions.qoshilaman": {
   "value": "Qo'shilaman",
@@ -4189,22 +4233,22 @@
  },
  "suggestions.rad_etish": {
   "value": "Rad etish",
-  "note": "pages/Suggestions.tsx"
+  "note": "components/suggestion.tsx"
  },
  "suggestions.rasmni_kattalashtirish": {
   "value": "Rasmni kattalashtirish",
-  "note": "pages/Suggestions.tsx — biriktirilgan rasm ustidagi izoh"
+  "note": "components/suggestion.tsx"
  },
  "suggestions.royxatga": {
-  "value": "Takliflar ro'yxatiga",
-  "note": "pages/SuggestionDetail.tsx"
+  "value": "Ro'yxatga qaytish",
+  "note": "pages/Suggestions.tsx"
  },
  "suggestions.sahifa_tavsifi": {
-  "value": "Sizga kelgan takliflarni ko'rib chiqing va ularga javob bering.",
+  "value": "Tizim va jarayonlarni yaxshilash bo'yicha jamoaviy tashabbuslar",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.saqlandi": {
-  "value": "Taklif saqlandi.",
+  "value": "Muvaffaqiyatli saqlandi",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.saralash": {
@@ -4220,40 +4264,40 @@
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.saralash_top": {
-  "value": "Eng ko'p qo'llab-quvvatlangan",
+  "value": "Eng ko'p ovoz olgan",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.sarlavha": {
   "value": "Sarlavha",
-  "note": "pages/Suggestions.tsx"
+  "note": "components/suggestion.tsx"
  },
  "suggestions.sarlavha_placeholder": {
-  "value": "Qisqa va aniq: nima o'zgarsin",
-  "note": "pages/Suggestions.tsx"
+  "value": "Taklifning qisqacha mazmuni...",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.sarlavha_sahifa": {
-  "value": "Takliflar",
+  "value": "Takliflar va tashabbuslar",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.taklif": {
   "value": "Taklif",
-  "note": "pages/SuggestionDetail.tsx"
+  "note": "pages/Suggestions.tsx"
  },
  "suggestions.taklif_matni": {
   "value": "Taklif matni",
-  "note": "pages/Suggestions.tsx"
+  "note": "components/suggestion.tsx"
  },
  "suggestions.taklifni_tahrirlash": {
   "value": "Taklifni tahrirlash",
-  "note": "pages/Suggestions.tsx"
+  "note": "components/suggestion.tsx"
  },
  "suggestions.tanlanmagan": {
   "value": "Taklif tanlanmagan",
-  "note": "pages/SuggestionDetail.tsx"
+  "note": "pages/Suggestions.tsx"
  },
  "suggestions.tanlanmagan_matn": {
-  "value": "Bu sahifa takliflar ro'yxatidan ochiladi - qaysi taklif kerakligini o'sha yerdan tanlang.",
-  "note": "pages/SuggestionDetail.tsx"
+  "value": "Iltimos, ko'rmoqchi bo'lgan taklifingizni ro'yxatdan tanlang.",
+  "note": "pages/Suggestions.tsx"
  },
  "suggestions.tasdiqlangan_bosh": {
   "value": "Tasdiqlangan taklif yo'q",
@@ -4269,18 +4313,18 @@
  },
  "suggestions.tasdiqlash": {
   "value": "Tasdiqlash",
-  "note": "pages/Suggestions.tsx"
+  "note": "components/suggestion.tsx"
  },
  "suggestions.toliq_sahifada": {
-  "value": "To'liq sahifada ochish",
+  "value": "To'liq sahifada",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.topilmadi": {
-  "value": "Taklif topilmadi",
+  "value": "Takliflar topilmadi",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.topilmadi_matn": {
-  "value": "Tanlangan filtrga mos taklif yo'q - shartlarni yumshatib ko'ring.",
+  "value": "Qidiruv bo'yicha hech qanday taklif topilmadi.",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.turi": {
@@ -4296,20 +4340,20 @@
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.yopiq": {
-  "value": "Yopiq",
-  "note": "pages/Suggestions.tsx"
+  "value": "Yopiq (faqat boshliq)",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.yoyish": {
   "value": "Taklifni yoyish",
   "note": "pages/Suggestions.tsx"
  },
  "suggestions.yuborish": {
-  "value": "Taklifni yuborish",
-  "note": "pages/Suggestions.tsx"
+  "value": "Yuborish",
+  "note": "components/suggestion.tsx"
  },
  "suggestions.yuklagan": {
   "value": "Yuklagan: {ism}",
-  "note": "pages/Suggestions.tsx"
+  "note": "components/suggestion.tsx"
  },
  "task_bulk_form.bu_sahifa_loyiha_ichidan_ochiladi": {
   "value": "Bu sahifa loyiha ichidan ochiladi.",
@@ -5175,6 +5219,10 @@
   "value": "/vazifalarim",
   "note": "components/TelegramCard.tsx"
  },
+ "telegram_card.buyurtmalar": {
+  "value": "/buyurtmalar",
+  "note": "components/TelegramCard.tsx"
+ },
  "telegram_card.xabarlar_ochirilgan": {
   "value": "Xabarlar o'chirilgan",
   "note": "components/TelegramCard.tsx"
@@ -5671,10 +5719,6 @@
   "value": "Sizga tegishli barcha yangilanishlar, izohlar va o'zgarishlar",
   "note": "pages/Notifications.tsx"
  },
- "suggestions.sahifa_tavsifi": {
-  "value": "Tizim va jarayonlarni yaxshilash bo'yicha jamoaviy tashabbuslar",
-  "note": "pages/Suggestions.tsx"
- },
  "inquiries.sahifa_tavsifi": {
   "value": "Boshqarma va xodimlardan kelgan rasmiy va texnik murojaatlar",
   "note": "pages/Inquiries.tsx"
@@ -5762,246 +5806,6 @@
  "layout.bolim_boshqaruv": {
   "value": "Boshqaruv",
   "note": "components/Layout.tsx"
- },
- "common.amallar": {
-  "value": "Amallar",
-  "note": "components/ui.tsx"
- },
- "common.yopish": {
-  "value": "Yopish",
-  "note": "components/ui.tsx"
- },
- "suggestions.sarlavha_sahifa": {
-  "value": "Takliflar va tashabbuslar",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.yangi_taklif": {
-  "value": "Yangi taklif",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.qidiruv_placeholder": {
-  "value": "Takliflarni qidirish...",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.holat": {
-  "value": "Holat",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.holat_all": {
-  "value": "Barchasi",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.holat_pending": {
-  "value": "Kutilmoqda",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.holat_approved": {
-  "value": "Ma'qullangan",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.holat_rejected": {
-  "value": "Rad etilgan",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.saralash": {
-  "value": "Saralash",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.saralash_top": {
-  "value": "Eng ko'p ovoz olgan",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.saralash_new": {
-  "value": "Eng yangi",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.saralash_old": {
-  "value": "Eng eski",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.anonim_muallif": {
-  "value": "Anonim muallif",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.qoshilaman": {
-  "value": "Qo'shilaman",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.qoshilmayman": {
-  "value": "Qo'shilmayman",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.betarafman": {
-  "value": "Betarafman",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.toliq_sahifada": {
-  "value": "To'liq sahifada",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.boshliq_korib_chiqmoqda": {
-  "value": "Boshliq ko'rib chiqmoqda",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.meniki_bosh": {
-  "value": "Sizda takliflar yo'q",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.meniki_bosh_matn": {
-  "value": "Hozircha hech qanday taklif kiritmagansiz.",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.topilmadi": {
-  "value": "Takliflar topilmadi",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.topilmadi_matn": {
-  "value": "Qidiruv bo'yicha hech qanday taklif topilmadi.",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.bosh_holat": {
-  "value": "Takliflar mavjud emas",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.bosh_holat_matn": {
-  "value": "Hozircha tizimda faol takliflar yo'q.",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.natija_soni": {
-  "value": "{count} ta taklif",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.ochirilsinmi": {
-  "value": "Taklif o'chirilsinmi?",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.ochirish_izohi": {
-  "value": "Ushbu taklif va unga berilgan ovozlar o'chiriladi.",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.ochirildi": {
-  "value": "Taklif o'chirildi",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.saqlandi": {
-  "value": "Muvaffaqiyatli saqlandi",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.ochib_bolmadi": {
-  "value": "Taklifni ochib bo'lmadi",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.taklif": {
-  "value": "Taklif",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.tanlanmagan": {
-  "value": "Taklif tanlanmagan",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.tanlanmagan_matn": {
-  "value": "Iltimos, ko'rmoqchi bo'lgan taklifingizni ro'yxatdan tanlang.",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.royxatga": {
-  "value": "Ro'yxatga qaytish",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.qarorni_ozgartirish": {
-  "value": "Qarorni o'zgartirish",
-  "note": "pages/Suggestions.tsx"
- },
- "suggestions.fayllar": {
-  "value": "Biriktirilgan fayllar",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.fayl_ochirilsinmi": {
-  "value": "Fayl o'chirilsinmi?",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.fayl_ochirish_izohi": {
-  "value": "Biriktirilgan fayl o'chirib tashlanadi.",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.taklifni_tahrirlash": {
-  "value": "Taklifni tahrirlash",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.sarlavha": {
-  "value": "Sarlavha",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.sarlavha_placeholder": {
-  "value": "Taklifning qisqacha mazmuni...",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.taklif_matni": {
-  "value": "Taklif matni",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.matn_placeholder": {
-  "value": "Taklifingizni batafsil bayon qiling...",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.kim_koradi": {
-  "value": "Kim ko'radi",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.ochiq": {
-  "value": "Ochiq (barcha a'zolar)",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.yopiq": {
-  "value": "Yopiq (faqat boshliq)",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.anonim_yuborish": {
-  "value": "Anonim yuborish (ism ko'rsatilmasin)",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.fayl_hint": {
-  "value": "Hujjatlar yoki skrinshotlar biriktiring",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.yuborish": {
-  "value": "Yuborish",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.boshliq_izohi": {
-  "value": "Boshliq izohi / qarori",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.izoh_placeholder": {
-  "value": "Qaror bo'yicha izoh qoldiring...",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.tasdiqlash": {
-  "value": "Tasdiqlash",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.rad_etish": {
-  "value": "Rad etish",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.izohni_saqlash": {
-  "value": "Izohni saqlash",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.fayllar_yuklanmadi": {
-  "value": "Taklif saqlandi, lekin fayllar yuklanmadi:",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.rasmni_kattalashtirish": {
-  "value": "Rasmni kattalashtirish",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.yuklagan": {
-  "value": "Yuklagan: {ism}",
-  "note": "components/suggestion.tsx"
- },
- "suggestions.qaror_qildi": {
-  "value": "{ism} qaror qildi",
-  "note": "components/suggestion.tsx"
  },
  "orders.status_draft": {
   "value": "Qoralama",
@@ -6170,5 +5974,17 @@
  "orders.eski_tz_tarixi": {
   "value": "Avvalgi TZ versiyalari (Tarix)",
   "note": "pages/OrderDetail.tsx"
+ },
+ "calendar.oldingi_kun": {
+  "value": "Oldingi kun",
+  "note": "pages/Calendar.tsx"
+ },
+ "calendar.keyingi_kun": {
+  "value": "Keyingi kun",
+  "note": "pages/Calendar.tsx"
+ },
+ "calendar.batafsil": {
+  "value": "Batafsil",
+  "note": "pages/Calendar.tsx"
  }
 }

@@ -418,7 +418,7 @@ export default function NotificationModal({
               className="btn btn-primary"
               onClick={onClose}
             >
-              {tx("common.tushunarli")}
+              {tx("common.tushunarli", undefined, "Tushunarli")}
             </button>
           )}
         </div>

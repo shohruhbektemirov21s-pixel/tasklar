@@ -128,7 +128,7 @@ services:
     volumes:
       - ./backend:/app
     mem_limit: 512m
-    restart: on-failure:3
+    restart: unless-stopped
     logging: *logging
     networks: [teamflow]
 

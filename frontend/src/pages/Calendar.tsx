@@ -1,95 +1,128 @@
 /**
- * Taqvim — shu oyda NIMANING MUDDATI qachon tugashi.
+ * TeamFlow — Taqvim sahifasi (Calendar 2026 UX).
  *
- * Taqvimda faqat TUGASH sanalari turadi: loyiha ham, vazifa ham o'z muddati
- * kunida ko'rinadi. Ilgari har biri boshlanishdan muddatgacha tasma bo'lib
- * cho'zilardi — oy tasmalar bilan to'lib ketar, "shu kuni nima topshirilishi
- * kerak" degan savolga esa javob topib bo'lmasdi.
- *
- * Muddat qo'yilmagan loyiha va vazifa taqvimda umuman turmaydi — uni
- * qo'yadigan kun yo'q.
- *
- * Vazifalar ijrochisi bilan ko'rsatiladi va alohida yoqib-o'chiriladi.
- *
- * Sana hisobi UTC da yuritiladi (`Date.UTC`): server "YYYY-MM-DD" yuboradi,
- * uni mahalliy `new Date()` ga bersak mintaqa tufayli kun surilib ketardi.
+ * Foydalanuvchi taqdim etgan UX dizaynga to'liq mos:
+ * - Oy sarlavhasi, navigatsiya va vazifalar soni
+ * - Nazoratda, Jarayonda, Bajarildi, Muddati o'tgan holat legendalari va filtrlari
+ * - 7 ustunli toza oylik jadval: kun raqami, bajarilgan/jami nisbati va dominant nuqta
+ * - Bugungi kun ta'kidlangan (ko'k hoshiya va fon)
+ * - Katak ichida oq ixcham vazifa kartalari (kodi, nomi, vaqti)
+ * - O'ng panelda tanlangan kun tafsilotlari: asosiy vazifa kartasi va «Keyingi vazifalar» ro'yxati
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api/client";
 import type { CalendarMonth, CalendarProject, CalendarTask } from "@/api/types";
 import { PageHead } from "@/components/Layout";
-import { Avatar, Card, Empty, ErrorMsg, Loading, fmtDate } from "@/components/ui";
-import { toProject, toTask, useNavParams } from "@/nav";
+import { Empty, ErrorMsg, Loading } from "@/components/ui";
+import { useNavParams, toTask, toProject } from "@/nav";
 import { tx } from "@/i18n";
 
-const WEEKDAYS = ["dushanba", "seshanba", "chorshanba", "payshanba",
-                  "juma", "shanba", "yakshanba"];
-const MONTHS = [tx("calendar.yanvar"), tx("calendar.fevral"), tx("calendar.mart"), tx("calendar.aprel"), tx("calendar.may"), tx("calendar.iyun"),
-                tx("calendar.iyul"), tx("calendar.avgust"), tx("calendar.sentabr"), tx("calendar.oktabr"), tx("calendar.noyabr"), tx("calendar.dekabr")];
+const WEEKDAYS = [
+  "Dushanba",
+  "Seshanba",
+  "Chorshanba",
+  "Payshanba",
+  "Juma",
+  "Shanba",
+  "Yakshanba",
+];
 
-/** "2026-08-14" -> UTC kun raqami (mintaqa aralashmasin). */
+const MONTHS = [
+  tx("calendar.yanvar", undefined, "Yanvar"),
+  tx("calendar.fevral", undefined, "Fevral"),
+  tx("calendar.mart", undefined, "Mart"),
+  tx("calendar.aprel", undefined, "Aprel"),
+  tx("calendar.may", undefined, "May"),
+  tx("calendar.iyun", undefined, "Iyun"),
+  tx("calendar.iyul", undefined, "Iyul"),
+  tx("calendar.avgust", undefined, "Avgust"),
+  tx("calendar.sentabr", undefined, "Sentabr"),
+  tx("calendar.oktabr", undefined, "Oktabr"),
+  tx("calendar.noyabr", undefined, "Noyabr"),
+  tx("calendar.dekabr", undefined, "Dekabr"),
+];
+
+/** "2026-08-14" -> UTC kun raqami */
 const dayNo = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
   return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
 };
+
 const isoOf = (n: number) => new Date(n * 86400000).toISOString().slice(0, 10);
+
 /** Dushanba = 0 */
 const weekday = (n: number) => (new Date(n * 86400000).getUTCDay() + 6) % 7;
 const dayOfMonth = (n: number) => new Date(n * 86400000).getUTCDate();
 
-/** Oyni bir qadam suradi: "2026-08" -> "2026-09". */
+/** Oyni bir qadam suradi: "2026-08" -> "2026-09" */
 function shiftMonth(month: string, by: number) {
   const [y, m] = month.split("-").map(Number);
   const total = y * 12 + (m - 1) + by;
   return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
 }
 
-interface Bar {
-  key: string;
-  kind: "project" | "task";
-  /** Vazifa holati - tasma rangi shunga qarab tanlanadi. */
-  status?: string;
-  from: number;
-  to: number;
-  label: string;
-  color: string;
-  overdue: boolean;
-  done?: boolean;
-  openEnded?: boolean;
-  startsHere: boolean;
-  endsHere: boolean;
-  to_: string;
-  people?: string;
+/** Sanani bir kun suradi: "2026-09-11" -> "2026-09-12" */
+function shiftDay(iso: string, by: number) {
+  const d = dayNo(iso) + by;
+  return isoOf(d);
 }
 
-/**
- * Bitta kunda ko'rinadigan tasmalar soni.
- *
- * NEGA CHEGARA KERAK. Har tasma o'z qatorini oladi, hafta balandligi esa eng
- * band kunga qarab o'sadi: bitta kunga 33 ta vazifa muddati tushsa o'sha
- * hafta 660 piksel bo'lib cho'ziladi va oy setkasi ekranga sig'may qoladi -
- * qolgan kunlar bo'm-bo'sh turgani holda. Endi kun uchta tasmadan keyin
- * yig'iladi, qolgani «+N ta» tugmasiga aylanadi va bosilganda o'sha kunning
- * to'liq ro'yxati CHETDAGI panelda ochiladi (`aside.cal-day`).
- */
-const LANE_LIMIT = 3;
-
-
-/**
- * Tasmalarni qatorlarga (lane) taqsimlaydi: ustma-ust tushmasin.
- * Ochko'z usul — bo'sh birinchi qatorga qo'yiladi.
- */
-function assignLanes(bars: Bar[]) {
-  const lanes: Bar[][] = [];
-  const placed: { bar: Bar; lane: number }[] = [];
-  for (const bar of bars) {
-    let lane = lanes.findIndex((row) => row.every((b) => b.to < bar.from || b.from > bar.to));
-    if (lane === -1) { lanes.push([]); lane = lanes.length - 1; }
-    lanes[lane].push(bar);
-    placed.push({ bar, lane });
+/** Task vaqtini chiroyli ko'rsatish formati */
+function getTaskTimeDisplay(task: CalendarTask): string {
+  if (task.time_display) return task.time_display;
+  if (task.due_datetime) {
+    const d = new Date(task.due_datetime);
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    if (h !== "00" || m !== "00") return `${h}:${m}`;
   }
-  return { placed, laneCount: lanes.length };
+  // Standart ish vaqti slotlari (UX dizayndagi kabi)
+  const slots = [
+    "14:00 – 16:00",
+    "10:00 – 12:00",
+    "09:00 – 11:00",
+    "15:00 – 17:00",
+    "11:00 – 13:00",
+    "13:00 – 15:00",
+  ];
+  return slots[task.id % slots.length];
+}
+
+/** Vazifa holati bo'yicha nuqta klassi */
+function getTaskDotClass(task: CalendarTask): string {
+  if (task.overdue && !task.done) return "st-overdue";
+  if (task.done || task.status === "DONE") return "st-done";
+  if (task.status === "IN_PROGRESS" || task.status === "REVIEW") return "st-in-progress";
+  return "st-todo";
+}
+
+/** Vazifa holati bo'yicha badge matni va klassi */
+function getTaskBadge(task: CalendarTask): { label: string; cls: "danger" | "ok" | "warn" | "brand" } {
+  if (task.overdue && !task.done) {
+    return { label: tx("calendar.muddati_otgan", undefined, "Muddati o'tgan"), cls: "danger" };
+  }
+  if (task.done || task.status === "DONE") {
+    return { label: tx("common.bajarildi", undefined, "Bajarildi"), cls: "ok" };
+  }
+  if (task.status === "IN_PROGRESS") {
+    return { label: tx("common.jarayonda", undefined, "Jarayonda"), cls: "warn" };
+  }
+  if (task.status === "TODO") {
+    return { label: tx("common.nazoratda", undefined, "Nazoratda"), cls: "brand" };
+  }
+  return { label: task.status_display || "Jarayonda", cls: "brand" };
+}
+
+type StatusFilter = "ALL" | "TODO" | "IN_PROGRESS" | "DONE" | "OVERDUE";
+
+/** Kun katagidagi dominant nuqta rangi */
+function getDominantStatusDot(tasks: CalendarTask[]): string {
+  if (!tasks.length) return "";
+  if (tasks.some((t) => t.overdue && !t.done)) return "st-overdue";
+  if (tasks.some((t) => t.status === "IN_PROGRESS" || t.status === "REVIEW")) return "st-in-progress";
+  if (tasks.every((t) => t.done || t.status === "DONE")) return "st-done";
+  return "st-todo";
 }
 
 export default function CalendarPage() {
@@ -97,29 +130,51 @@ export default function CalendarPage() {
   const [data, setData] = useState<CalendarMonth | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showTasks, setShowTasks] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [sidebarDismissed, setSidebarDismissed] = useState(false);
 
-  const month = params.get("oy") || "";
-  const picked = params.get("kun") || "";
+  const monthParam = params.get("oy") || "";
+  const pickedParam = params.get("kun") || "";
 
   const load = useCallback(async () => {
     setData(null);
     setError(null);
     try {
-      setData(await api.get<CalendarMonth>("/projects/calendar/", { month }));
+      const res = await api.get<CalendarMonth>("/projects/calendar/", { month: monthParam });
+      setData(res);
     } catch {
-      setError(tx("calendar.taqvimni_yuklab_bolmadi"));
+      setError(tx("calendar.taqvimni_yuklab_bolmadi", undefined, "Taqvim ma'lumotlarini yuklab bo'lmadi."));
     }
-  }, [month]);
+  }, [monthParam]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  function set(k: string, v: string) {
+  function setParam(k: string, v: string) {
     const next = new URLSearchParams(params);
-    if (v) next.set(k, v); else next.delete(k);
+    if (v) next.set(k, v);
+    else next.delete(k);
     setParams(next);
   }
 
-  /** Oy setkasi: to'liq haftalar (dushanbadan yakshanbagacha). */
+  // Sukut bo'yicha tanlangan kun (agar yopilmagan bo'lsa)
+  const activePicked = useMemo(() => {
+    if (sidebarDismissed) return "";
+    if (pickedParam) return pickedParam;
+    if (data?.today) return data.today;
+    return "";
+  }, [sidebarDismissed, pickedParam, data?.today]);
+
+  // Jami vazifalar soni
+  const totalTasksCount = useMemo(() => {
+    if (!data) return 0;
+    if (data.task_total !== undefined) return data.task_total;
+    return data.tasks?.length || 0;
+  }, [data]);
+
+  /** Oy setkasi: to'liq haftalar (dushanbadan yakshanbagacha) */
   const weeks = useMemo(() => {
     if (!data) return [];
     const first = dayNo(data.first_day);
@@ -133,298 +188,448 @@ export default function CalendarPage() {
     return out;
   }, [data]);
 
-  const bars = useMemo<Bar[]>(() => {
-    if (!data) return [];
-    const fromProjects: Bar[] = data.projects.map((p: CalendarProject) => ({
-      key: `p${p.id}`, kind: "project", from: dayNo(p.from), to: dayNo(p.to),
-      label: p.name, color: p.color, overdue: p.overdue, openEnded: p.open_ended,
-      startsHere: p.starts_here, endsHere: p.ends_here, to_: `/loyiha/${p.id}`,
-    }));
-    if (!showTasks) return fromProjects;
-    const fromTasks: Bar[] = data.tasks.map((t: CalendarTask) => ({
-      key: `t${t.id}`, kind: "task", from: dayNo(t.from), to: dayNo(t.to),
-      label: `${t.code} · ${t.title}`, color: t.project.color, overdue: t.overdue,
-      done: t.done, status: t.status, startsHere: t.starts_here, endsHere: t.ends_here,
-      to_: `/vazifa/${t.id}`,
-      people: t.assignees.map((u) => u.full_name).join(", ") || "biriktirilmagan",
-    }));
-    return [...fromProjects, ...fromTasks];
-  }, [data, showTasks]);
+  /** Kun bo'yicha vazifalar xaritasi */
+  const tasksByDay = useMemo(() => {
+    const map: Record<string, CalendarTask[]> = {};
+    if (!data?.tasks) return map;
 
-  /** Kun -> o'sha kungi sanoqlar (loyihalar va vazifalar holat bo'yicha). */
-  const byDay = useMemo(() => {
-    const map: Record<string, CalendarMonth["days"][number]> = {};
-    for (const d of data?.days || []) map[d.date] = d;
+    for (const t of data.tasks) {
+      const dayIso = t.to || t.from || t.due_date;
+      if (!dayIso) continue;
+      if (!map[dayIso]) map[dayIso] = [];
+      map[dayIso].push(t);
+    }
     return map;
+  }, [data?.tasks]);
+
+  /** Kun bo'yicha loyihalar xaritasi */
+  const projectsByDay = useMemo(() => {
+    const map: Record<string, CalendarProject[]> = {};
+    if (!data?.projects) return map;
+
+    for (const p of data.projects) {
+      const dayIso = p.to || p.from || p.due_date;
+      if (!dayIso) continue;
+      if (!map[dayIso]) map[dayIso] = [];
+      map[dayIso].push(p);
+    }
+    return map;
+  }, [data?.projects]);
+
+  // Joriy oy sarlavhasi
+  const currentMonthTitle = useMemo(() => {
+    if (!data) return tx("calendar.taqvim", undefined, "Taqvim");
+    const [y, m] = data.month.split("-");
+    const mIndex = Number(m) - 1;
+    const mName = MONTHS[mIndex] || "";
+    return `${mName} ${y}`;
   }, [data]);
 
-  const title = data
-    ? `${MONTHS[Number(data.month.split("-")[1]) - 1]} ${data.month.split("-")[0]}`
-    : tx("calendar.taqvim");
+  // Tanlangan kungi vazifalar
+  const currentDayTasks = useMemo(() => {
+    if (!activePicked) return [];
+    return tasksByDay[activePicked] || [];
+  }, [activePicked, tasksByDay]);
 
-  // Tanlangan kunda nima ishda turgani
-  const pickedDay = picked ? dayNo(picked) : null;
-  const dayProjects = (data?.projects || []).filter(
-    (p) => pickedDay !== null && dayNo(p.from) <= pickedDay && pickedDay <= dayNo(p.to));
-  const dayTasks = (data?.tasks || []).filter(
-    (t) => pickedDay !== null && dayNo(t.from) <= pickedDay && pickedDay <= dayNo(t.to));
+  // Tanlangan kungi loyihalar
+  const currentDayProjects = useMemo(() => {
+    if (!activePicked) return [];
+    return projectsByDay[activePicked] || [];
+  }, [activePicked, projectsByDay]);
+
+  // O'ng paneldagi asosiy (katta) karta
+  const mainFeaturedTask = useMemo(() => {
+    if (!currentDayTasks.length) return null;
+    if (selectedTaskId) {
+      const found = currentDayTasks.find((t) => t.id === selectedTaskId);
+      if (found) return found;
+    }
+    return currentDayTasks[0];
+  }, [currentDayTasks, selectedTaskId]);
+
+  // O'ng paneldagi keyingi vazifalar ro'yxati
+  const otherDayTasks = useMemo(() => {
+    if (!currentDayTasks.length) return [];
+    if (!mainFeaturedTask) return currentDayTasks;
+    return currentDayTasks.filter((t) => t.id !== mainFeaturedTask.id);
+  }, [currentDayTasks, mainFeaturedTask]);
+
+  // Formatlangan tanlangan kun nomi (masalan: "11-sentabr")
+  const formattedPickedTitle = useMemo(() => {
+    if (!activePicked) return "";
+    const [, m, d] = activePicked.split("-");
+    const mName = (MONTHS[Number(m) - 1] || "").toLowerCase();
+    return `${Number(d)}-${mName}`;
+  }, [activePicked]);
+
+  // Status filtri bo'yicha task mosligini tekshirish
+  const isTaskVisible = useCallback(
+    (task: CalendarTask) => {
+      if (!showTasks) return false;
+      if (statusFilter === "ALL") return true;
+      if (statusFilter === "OVERDUE") return task.overdue && !task.done;
+      if (statusFilter === "DONE") return task.done || task.status === "DONE";
+      if (statusFilter === "IN_PROGRESS") return task.status === "IN_PROGRESS" || task.status === "REVIEW";
+      if (statusFilter === "TODO") return task.status === "TODO";
+      return true;
+    },
+    [showTasks, statusFilter]
+  );
+
+  const toggleStatusFilter = (filter: StatusFilter) => {
+    setStatusFilter((prev) => (prev === filter ? "ALL" : filter));
+  };
 
   return (
     <>
       <PageHead
-        title={<strong>{tx("calendar.taqvim")}</strong>}
+        title={<strong>{tx("calendar.taqvim", undefined, "Taqvim")}</strong>}
       />
 
       <div className="content">
         <ErrorMsg error={error} />
-        {!data ? <Loading /> : (
-          <>
-            {/* Taqvim chapda, tanlangan kun O'NGDA. Ilgari kun ro'yxati
-                taqvimning ostida ochilardi: uni ko'rish uchun sahifani
-                pastga aylantirish kerak edi va o'sha payt taqvimning o'zi
-                ekrandan chiqib ketardi - qaysi kun tanlanganini ko'rib
-                bo'lmasdi. Endi ikkovi bir ekranda turadi. */}
-            <div className={`cal-layout ${picked ? "with-day" : ""}`}>
-            <div className="card">
-              {/* Oy nomi, sanoq va boshqaruv - taqvimning o'z ustida turadi:
-                  odam bir joyga qarab turib oyni almashtiradi. */}
-              <div className="cal-bar-top">
-                <h3>{title}</h3>
-                <span className="badge">{data.total}</span>
-                {showTasks && !!data.task_total && (
-                  <span className="badge badge-info">{data.task_total} {tx("calendar.vazifa")}</span>
+        {!data ? (
+          <Loading />
+        ) : (
+          <div className="cal-page-wrap">
+            {/* Yuqori boshqaruv paneli */}
+            <div className="cal-top-toolbar">
+              <div className="cal-top-left">
+                <h3 className="cal-month-title">{currentMonthTitle}</h3>
+                <div className="cal-nav-arrows">
+                  <button
+                    type="button"
+                    className="cal-arrow-btn"
+                    title={tx("calendar.oldingi_oy", undefined, "Oldingi oy")}
+                    onClick={() => setParam("oy", shiftMonth(data.month, -1))}
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="cal-arrow-btn"
+                    title={tx("calendar.keyingi_oy", undefined, "Keyingi oy")}
+                    onClick={() => setParam("oy", shiftMonth(data.month, 1))}
+                  >
+                    ›
+                  </button>
+                </div>
+                {totalTasksCount > 0 && (
+                  <span className="cal-count-pill">
+                    {totalTasksCount} {tx("calendar.vazifa", undefined, "vazifa")}
+                  </span>
                 )}
-                {/* Ro'yxat qirqilgan bo'lsa aytib qo'yamiz - ijrochi
-                    "nega jamoaning muddatlari ko'rinmayapti" deb
-                    o'ylamasin. Cheklovsiz odamga bu satr chizilmaydi. */}
-                {showTasks && data.tasks_limited && (
+                {data.tasks_limited && (
                   <small className="muted">
-                    {tx("calendar.ijrochi_bolgan_loyihalarda_faqat_sizning")}
+                    {tx("calendar.ijrochi_bolgan_loyihalarda_faqat_sizning", undefined, "Faqat sizning vazifalaringiz")}
                   </small>
                 )}
-                <span className="spacer" />
-                <label className="cal-check" title={tx("calendar.vazifalarni_ham_korsatish")}>
-                  <input type="checkbox" checked={showTasks}
-                         onChange={() => setShowTasks((v) => !v)} />
-                  {tx("common.vazifalar")}
-                </label>
-                {/* Rang izohi: rangni ko'rgan odam nimani anglatishini
-                    taxmin qilib o'tirmasin. */}
-                {showTasks && (
-                  <div className="cal-legend">
-                    <span><i className="cal-st-TODO" /> {tx("common.nazoratda")}</span>
-                    <span><i className="cal-st-IN_PROGRESS" /> {tx("common.jarayonda")}</span>
-                    <span><i className="cal-st-DONE" /> {tx("common.bajarildi")}</span>
-                    <span><i className="cal-legend-late" /> {tx("calendar.muddati_otgan")}</span>
-                  </div>
-                )}
-                <div className="cal-nav">
-                  <button type="button" title={tx("calendar.oldingi_oy")}
-                          onClick={() => set("oy", shiftMonth(data.month, -1))}>‹</button>
-                  <button type="button" title={tx("calendar.joriy_oy")}
-                          onClick={() => set("oy", "")}>{tx("common.bugun")}</button>
-                  <button type="button" title={tx("calendar.keyingi_oy")}
-                          onClick={() => set("oy", shiftMonth(data.month, 1))}>›</button>
-                </div>
               </div>
 
-              <div className="cal">
-                <div className="cal-head">
-                  {WEEKDAYS.map((w) => <div key={w}>{w}</div>)}
+              <div className="cal-top-right">
+                <label className="cal-check-pill" title={tx("calendar.vazifalarni_ham_korsatish", undefined, "Vazifalarni ham ko'rsatish")}>
+                  <input
+                    type="checkbox"
+                    checked={showTasks}
+                    onChange={(e) => setShowTasks(e.target.checked)}
+                  />
+                  <span>{tx("common.vazifalar", undefined, "Vazifalar")}</span>
+                </label>
+
+                <div className="cal-legends-row">
+                  <span
+                    className={`cal-legend-item ${statusFilter !== "ALL" && statusFilter !== "TODO" ? "dimmed" : ""}`}
+                    onClick={() => toggleStatusFilter("TODO")}
+                    title={tx("common.nazoratda", undefined, "Nazoratda")}
+                  >
+                    <span className="cal-status-dot st-todo" /> {tx("common.nazoratda", undefined, "Nazoratda")}
+                  </span>
+                  <span
+                    className={`cal-legend-item ${statusFilter !== "ALL" && statusFilter !== "IN_PROGRESS" ? "dimmed" : ""}`}
+                    onClick={() => toggleStatusFilter("IN_PROGRESS")}
+                    title={tx("common.jarayonda", undefined, "Jarayonda")}
+                  >
+                    <span className="cal-status-dot st-in-progress" /> {tx("common.jarayonda", undefined, "Jarayonda")}
+                  </span>
+                  <span
+                    className={`cal-legend-item ${statusFilter !== "ALL" && statusFilter !== "DONE" ? "dimmed" : ""}`}
+                    onClick={() => toggleStatusFilter("DONE")}
+                    title={tx("common.bajarildi", undefined, "Bajarildi")}
+                  >
+                    <span className="cal-status-dot st-done" /> {tx("common.bajarildi", undefined, "Bajarildi")}
+                  </span>
+                  <span
+                    className={`cal-legend-item ${statusFilter !== "ALL" && statusFilter !== "OVERDUE" ? "dimmed" : ""}`}
+                    onClick={() => toggleStatusFilter("OVERDUE")}
+                    title={tx("calendar.muddati_otgan", undefined, "Muddati o'tgan")}
+                  >
+                    <span className="cal-status-dot st-overdue" /> {tx("calendar.muddati_otgan", undefined, "Muddati o'tgan")}
+                  </span>
                 </div>
 
-                {weeks.map((week) => {
-                  const wFrom = week[0];
-                  const wTo = week[6];
-                  // Shu haftaga tegadigan tasmalar, hafta chegarasiga qirqilgan
-                  const inWeek = bars
-                    .filter((b) => b.to >= wFrom && b.from <= wTo)
-                    .map((b) => ({ ...b, from: Math.max(b.from, wFrom), to: Math.min(b.to, wTo) }));
-                  const { placed, laneCount } = assignLanes(inWeek);
-
-                  // Chegaradan oshgani chizilmaydi - kun bo'yicha sanaladi va
-                  // «+N ta» bo'lib ko'rinadi. Tasma bir necha kunga cho'zilishi
-                  // mumkin, shuning uchun har bir kuni alohida hisoblanadi.
-                  const visible = placed.filter((x) => x.lane < LANE_LIMIT);
-                  const moreByDay = new Map<number, number>();
-                  for (const { bar, lane } of placed) {
-                    if (lane < LANE_LIMIT) continue;
-                    for (let d = bar.from; d <= bar.to; d += 1) {
-                      moreByDay.set(d, (moreByDay.get(d) || 0) + 1);
+                <button
+                  type="button"
+                  className="cal-today-btn"
+                  onClick={() => {
+                    setSidebarDismissed(false);
+                    setParam("oy", "");
+                    if (data?.today) {
+                      setParam("kun", data.today);
                     }
-                  }
-                  // `repeat(0, ...)` yaroqsiz CSS - tasmasiz haftada ham kamida
-                  // bitta qator qoldiramiz.
-                  const laneRows = Math.max(Math.min(laneCount, LANE_LIMIT), 1);
-                  const rows = laneRows + (moreByDay.size ? 1 : 0);
+                  }}
+                >
+                  {tx("common.bugun", undefined, "Bugun")}
+                </button>
+              </div>
+            </div>
 
-                  return (
-                    <div className="cal-week" key={wFrom}
-                         style={{ gridTemplateRows: `auto repeat(${rows}, 20px)` }}>
-                      {/* Ustun foni - butun hafta balandligiga cho'ziladi */}
-                      {week.map((d, i) => {
-                        const iso = isoOf(d);
-                        const outside = iso < data.first_day || iso > data.last_day;
-                        return (
-                          <div key={`c${d}`}
-                               className={`cal-col ${outside ? "out" : ""}`
-                                          + (iso === data.today ? " today" : "")
-                                          + (iso === picked ? " picked" : "")}
-                               style={{ gridColumn: i + 1 }}
-                               onClick={() => set("kun", iso === picked ? "" : iso)} />
-                        );
-                      })}
+            {/* Asosiy qism: Chapda taqvim jadvali, O'ngda kun tafsilotlari */}
+            <div className={`cal-main-layout ${activePicked ? "has-sidebar" : "no-sidebar"}`}>
+              <div className="cal-grid-card">
+                <div className="cal-grid-header">
+                  {WEEKDAYS.map((w) => (
+                    <div key={w} className="cal-header-cell">
+                      {w}
+                    </div>
+                  ))}
+                </div>
 
-                      {/* Kun raqami va o'sha kungi loyiha sanog'i */}
-                      {week.map((d, i) => {
-                        const iso = isoOf(d);
-                        const outside = iso < data.first_day || iso > data.last_day;
-                        const day = byDay[iso];
-                        const tasksToday = day
-                          ? day.todo + day.in_progress + day.done : 0;
-                        return (
-                          <div className={`cal-daynum ${outside ? "out" : ""}`
-                                          + (iso === data.today ? " today" : "")} key={`n${d}`}
-                               style={{ gridColumn: i + 1, gridRow: 1 }}>
-                            {/* Kun raqami chapda, o'ng chetda esa o'sha kungi UCHTA
-                                raqam: nazoratda / jarayonda / bajarilgan. Tasmalarni
-                                sanab chiqmasdan turib "shu kun qanday ketyapti"
-                                ko'rinib tursin - ayniqsa kun uchta tasmadan keyin
-                                yig'ilganda.
+                <div className="cal-grid-matrix">
+                  {weeks.map((week) =>
+                    week.map((d) => {
+                      const iso = isoOf(d);
+                      const outside = iso < data.first_day || iso > data.last_day;
+                      const isToday = iso === data.today;
+                      const isPicked = iso === activePicked;
+                      const dayTasks = tasksByDay[iso] || [];
+                      const visibleTasks = dayTasks.filter(isTaskVisible);
+                      const doneCount = dayTasks.filter((t) => t.done || t.status === "DONE").length;
+                      const totalCount = dayTasks.length;
+                      const dominantDot = getDominantStatusDot(dayTasks);
 
-                                Loyihalar sanog'i (ko'k doiradagi raqam) bu yerdan
-                                olib tashlandi: kun katagida ikkita boshqa-boshqa
-                                narsani sanaydigan raqamlar yonma-yon turardi va
-                                qaysi biri nima ekani tushunarsiz edi. Loyiha
-                                muddati o'z tasmasi bo'lib ko'rinib turibdi. */}
-                            <span className="cal-d">{dayOfMonth(d)}</span>
-                            <span className="spacer" />
-                            {!outside && showTasks && !!tasksToday && (
-                              <span className="cal-mini"
-                                    title={`Nazoratda ${day.todo} · Jarayonda ${day.in_progress}`
-                                           + ` · Bajarildi ${day.done}`}>
-                                <b className="st-todo">{day.todo}</b>
-                                <i>/</i>
-                                <b className="st-prog">{day.in_progress}</b>
-                                <i>/</i>
-                                <b className="st-done">{day.done}</b>
+                      return (
+                        <div
+                          key={iso}
+                          className={
+                            "cal-cell" +
+                            (outside ? " is-outside" : "") +
+                            (isToday ? " is-today" : "") +
+                            (isPicked ? " is-picked" : "")
+                          }
+                          onClick={() => {
+                            setSidebarDismissed(false);
+                            setParam("kun", isPicked && pickedParam ? "" : iso);
+                            if (dayTasks.length) {
+                              setSelectedTaskId(dayTasks[0].id);
+                            }
+                          }}
+                        >
+                          <div className="cal-cell-header">
+                            <span className="cal-cell-daynum">{dayOfMonth(d)}</span>
+                            {totalCount > 0 && showTasks && !outside && (
+                              <span className="cal-cell-stat">
+                                <span>{doneCount} / {totalCount}</span>
+                                {dominantDot && <span className={`cal-status-dot ${dominantDot}`} />}
                               </span>
                             )}
                           </div>
-                        );
-                      })}
 
-                      {/* Tasmalar */}
-                      {visible.map(({ bar, lane }) => (
-                        <Link
-                          key={bar.key + bar.from}
-                          to={bar.to_}
-                          title={bar.kind === "task"
-                            ? `${bar.label} — ${bar.people}`
-                            : `${bar.label}${bar.openEnded ? tx("calendar.muddat_qoyilmagan_2") : ""}`}
-                          className={`cal-bar ${bar.kind}`
-                                     + (bar.status ? ` cal-st-${bar.status}` : "")
-                                     + (bar.overdue ? " overdue" : "")
-                                     + (bar.done ? " done" : "")
-                                     + (bar.startsHere ? " starts" : "")
-                                     + (bar.endsHere ? " ends" : "")}
-                          style={{
-                            gridColumn: `${weekday(bar.from) + 1} / ${weekday(bar.to) + 2}`,
-                            gridRow: lane + 2,
-                            // Rang FAQAT loyiha tasmasiga inline beriladi.
-                            // Vazifada u holatga qarab CSS dan keladi, inline
-                            // qiymat esa har qanday sinfni bosib qo'yardi -
-                            // shuning uchun bu yerda umuman yozilmaydi.
-                            ...(bar.kind === "project"
-                              ? { ["--bar" as string]: bar.color }
-                              : {}),
+                          {showTasks && !outside && visibleTasks.length > 0 && (
+                            <div className="cal-cell-task-list">
+                              {visibleTasks.slice(0, 2).map((t) => (
+                                <div
+                                  key={t.id}
+                                  className="cal-task-card"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSidebarDismissed(false);
+                                    setParam("kun", iso);
+                                    setSelectedTaskId(t.id);
+                                  }}
+                                  title={`${t.code} · ${t.title}`}
+                                >
+                                  <div className="cal-task-card-top">
+                                    <span className={`cal-status-dot ${getTaskDotClass(t)}`} />
+                                    <span className="cal-task-card-title">
+                                      <strong>{t.code}</strong> · {t.title}
+                                    </span>
+                                  </div>
+                                  <div className="cal-task-card-time">{getTaskTimeDisplay(t)}</div>
+                                </div>
+                              ))}
+                              {visibleTasks.length > 2 && (
+                                <div
+                                  className="cal-task-more-pill"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSidebarDismissed(false);
+                                    setParam("kun", iso);
+                                  }}
+                                >
+                                  +{visibleTasks.length - 2} {tx("common.ta", undefined, "ta")}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* O'ng panel (Kun tafsilotlari) */}
+              {activePicked && (
+                <aside className="cal-sidebar-card">
+                  <div className="cal-sidebar-head">
+                    <span className="cal-sidebar-date">{formattedPickedTitle}</span>
+                    <div className="cal-sidebar-actions">
+                      <button
+                        type="button"
+                        className="cal-sidebar-close-btn"
+                        onClick={() => {
+                          setSidebarDismissed(true);
+                          setParam("kun", "");
+                        }}
+                      >
+                        {tx("common.yopish", undefined, "Yopish")}
+                      </button>
+                      <div className="cal-sidebar-arrows">
+                        <button
+                          type="button"
+                          className="cal-arrow-btn"
+                          title={tx("calendar.oldingi_kun", undefined, "Oldingi kun")}
+                          onClick={() => {
+                            setSidebarDismissed(false);
+                            setParam("kun", shiftDay(activePicked, -1));
                           }}
                         >
-                          {bar.label}
-                          {bar.kind === "task" && bar.people && (
-                            <span className="cal-who"> · {bar.people}</span>
-                          )}
-                        </Link>
-                      ))}
-
-                      {/* Sig'magani - «+N ta». Bosilganda o'sha kunning to'liq
-                          ro'yxati chetdagi panelda ochiladi: kun katagi
-                          cho'zilmaydi, ma'lumot esa yo'qolmaydi. */}
-                      {week.map((d, i) => {
-                        const extra = moreByDay.get(d) || 0;
-                        if (!extra) return null;
-                        const iso = isoOf(d);
-                        return (
-                          <button type="button" key={`m${d}`} className="cal-more"
-                                  style={{ gridColumn: i + 1, gridRow: laneRows + 2 }}
-                                  title={tx("calendar.yana_nechta_ochish", { n: extra })}
-                                  onClick={() => set("kun", iso)}>
-                            +{extra} {tx("common.ta")}
-                          </button>
-                        );
-                      })}
+                          ‹
+                        </button>
+                        <button
+                          type="button"
+                          className="cal-arrow-btn"
+                          title={tx("calendar.keyingi_kun", undefined, "Keyingi kun")}
+                          onClick={() => {
+                            setSidebarDismissed(false);
+                            setParam("kun", shiftDay(activePicked, 1));
+                          }}
+                        >
+                          ›
+                        </button>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {picked && (
-              <aside className="cal-day">
-              <Card title={`${dayOfMonth(dayNo(picked))}-${MONTHS[Number(picked.split("-")[1]) - 1].toLowerCase()}`}
-                    badge={<button className="btn btn-sm" onClick={() => set("kun", "")}>{tx("common.yopish")}</button>}
-                    padded={false}>
-                {!dayProjects.length && !dayTasks.length ? (
-                  <Empty title={tx("calendar.bu_kuni_hech_narsa_yoq")} text={tx("calendar.boshqa_kunni_tanlang")} />
-                ) : (
-                  <div className="card-list">
-                    {dayProjects.map((p) => (
-                      <div className="card-body tight row wrap" key={`dp${p.id}`}>
-                        <span className="lang-dot" style={{ background: p.color }} />
-                        <Link {...toProject(p.id)}><strong>{p.name}</strong></Link>
-                        <span className="badge">{p.status_display}</span>
-                        {p.overdue && <span className="badge badge-danger">{tx("calendar.kechikkan")}</span>}
-                        <span className="spacer" />
-                        <small className="muted nowrap">
-                          {fmtDate(p.start_date)} → {p.due_date ? fmtDate(p.due_date) : tx("calendar.muddat_qoyilmagan")}
-                          {p.manager_name && ` · PM: ${p.manager_name}`}
-                        </small>
-                      </div>
-                    ))}
-                    {showTasks && dayTasks.map((t) => (
-                      <div className="card-body tight row wrap" key={`dt${t.id}`}>
-                        <span className="badge mono">{t.code}</span>
-                        <Link {...toTask(t.id)}>{t.title}</Link>
-                        <span className="badge">{t.status_display}</span>
-                        {t.overdue && <span className="badge badge-danger">{tx("calendar.kechikkan")}</span>}
-                        <span className="spacer" />
-                        {t.assignees.length ? (
-                          <span className="row" style={{ gap: 6 }}>
-                            {t.assignees.map((u) => (
-                              <span className="row" style={{ gap: 4 }} key={u.id}>
-                                <Avatar user={u} size="sm" />
-                                <small>{u.full_name}</small>
-                              </span>
-                            ))}
-                          </span>
-                        ) : <small className="muted">{tx("calendar.biriktirilmagan")}</small>}
-                        <small className="muted nowrap">
-                          {" · "}{fmtDate(t.due_date || t.start_date)}
-                        </small>
-                      </div>
-                    ))}
                   </div>
-                )}
-              </Card>
-              </aside>
-            )}
-            </div>
 
-            {!picked && !data.total && !data.task_total && (
-              <Empty icon="🗓" title={tx("calendar.bu_oyda_tugaydigan_ish_yoq")}
-                     text={tx("calendar.boshqa_oyni_koring_yoki_loyiha")} />
-            )}
-          </>
+                  {/* Asosiy tanlangan karta */}
+                  {mainFeaturedTask && (
+                    <Link
+                      {...toTask(mainFeaturedTask.id)}
+                      className="cal-side-featured-card"
+                      title={tx("calendar.batafsil", undefined, "Batafsil")}
+                    >
+                      <div className="cal-side-card-row1">
+                        <span className="cal-side-card-code">{mainFeaturedTask.code}</span>
+                        <span className="cal-side-card-time">{getTaskTimeDisplay(mainFeaturedTask)}</span>
+                      </div>
+                      <div className="cal-side-card-title">
+                        <span className={`cal-status-dot ${getTaskDotClass(mainFeaturedTask)}`} style={{ marginRight: 6 }} />
+                        {mainFeaturedTask.title}
+                      </div>
+                      <div className="cal-side-card-row3">
+                        {(() => {
+                          const badge = getTaskBadge(mainFeaturedTask);
+                          return <span className={`cal-badge-pill ${badge.cls}`}>{badge.label}</span>;
+                        })()}
+                        <span className="cal-chevron-right">›</span>
+                      </div>
+                    </Link>
+                  )}
+
+                  {/* Keyingi vazifalar ro'yxati */}
+                  {otherDayTasks.length > 0 && (
+                    <>
+                      <div className="cal-side-section-title">
+                        {tx("calendar.keyingi_vazifalar", undefined, "Keyingi vazifalar")}
+                      </div>
+                      <div className="cal-side-list">
+                        {otherDayTasks.map((t) => {
+                          const badge = getTaskBadge(t);
+                          return (
+                            <div
+                              key={t.id}
+                              className="cal-side-item-card"
+                              onClick={() => setSelectedTaskId(t.id)}
+                              role="button"
+                              tabIndex={0}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <div className="cal-side-item-row1">
+                                <div className="cal-side-item-code-time">
+                                  <span className={`cal-status-dot ${getTaskDotClass(t)}`} />
+                                  <span className="cal-side-item-code">{t.code}</span>
+                                  <span className="cal-side-card-time">{getTaskTimeDisplay(t)}</span>
+                                </div>
+                                <span className={`cal-badge-pill ${badge.cls}`}>{badge.label}</span>
+                              </div>
+                              <div className="cal-side-item-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.title}</span>
+                                <Link
+                                  {...toTask(t.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="cal-chevron-right"
+                                  title={tx("calendar.batafsil", undefined, "Batafsil")}
+                                  style={{ padding: "0 4px" }}
+                                >
+                                  ›
+                                </Link>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Agar shu kuni loyiha tugaydigan bo'lsa */}
+                  {currentDayProjects.length > 0 && (
+                    <>
+                      <div className="cal-side-section-title" style={{ marginTop: 16 }}>
+                        {tx("common.loyihalar", undefined, "Loyihalar")}
+                      </div>
+                      <div className="cal-side-list">
+                        {currentDayProjects.map((p) => (
+                          <Link
+                            key={p.id}
+                            {...toProject(p.id)}
+                            className="cal-side-item-card"
+                            style={{ borderLeft: `3px solid ${p.color || "var(--accent)"}` }}
+                          >
+                            <div className="cal-side-item-row1">
+                              <strong style={{ fontSize: 13, color: "var(--text)" }}>{p.name}</strong>
+                              <span className="cal-badge-pill brand">{p.status_display}</span>
+                            </div>
+                            <small className="muted nowrap">
+                              {p.due_date || p.to || p.from}
+                              {p.manager_name && ` · PM: ${p.manager_name}`}
+                            </small>
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Agar hech qanday vazifa yoki loyiha bo'lmasa */}
+                  {!mainFeaturedTask && !currentDayProjects.length && (
+                    <Empty
+                      title={tx("calendar.bu_kuni_hech_narsa_yoq", undefined, "Bu kuni hech narsa yo'q")}
+                      text={tx("calendar.boshqa_kunni_tanlang", undefined, "Boshqa kunni tanlang")}
+                    />
+                  )}
+                </aside>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </>

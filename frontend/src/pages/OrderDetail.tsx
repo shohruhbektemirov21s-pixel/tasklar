@@ -54,6 +54,83 @@ import { Card, Empty, ErrorMsg, Loading, OkMsg, fmtDate, fmtDateTime, timeAgo } 
 import { toEditOrder, toOrders, toProject, toTask, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge } from "./ChangeRequests";
 
+const UserOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const CalendarOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+const ClockOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const TimerOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="14" r="8" />
+    <line x1="12" y1="2" x2="12" y2="6" />
+    <line x1="12" y1="14" x2="15" y2="11" />
+  </svg>
+);
+
+const HourglassOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+  </svg>
+);
+
+const ChatOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
+const PaperclipOutlineIcon = ({ size = 16, color = "#3b82f6" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l7.88-7.88" />
+  </svg>
+);
+
+const FolderFilledIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+  </svg>
+);
+
+const DocLilacIcon = ({ size = 20, color = "#8b5cf6" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </svg>
+);
+
+const ChevronDownOutlineIcon = ({ size = 16, color = "#64748b" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const ChevronRightOutlineIcon = ({ size = 16, color = "#64748b" }: { size?: number; color?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
 export default function OrderDetail() {
   const { user, meta } = useAuth();
   const id = useEntityNum("order");
@@ -119,6 +196,19 @@ export default function OrderDetail() {
 
   // Eski TZ versiyalari tarixi (yig'ilgan / ochilgan)
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Fayllar bloki (ochilgan / yopilgan)
+  const [filesOpen, setFilesOpen] = useState(true);
+
+  // Jami fayllar soni
+  const totalFilesCount = useMemo(() => {
+    if (!item) return 1;
+    const atts = item.attachments && item.attachments.length > 0
+      ? item.attachments.length
+      : item.tz_file_url ? 1 : 0;
+    const comp = item.completion_file_url ? 1 : 0;
+    return atts + comp + 1; // +1 Word (.docx) blanki
+  }, [item?.attachments, item?.tz_file_url, item?.completion_file_url]);
 
   // Buyurtma bo'yicha yangi vazifa (Task) yaratish modali
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -246,9 +336,7 @@ export default function OrderDetail() {
     d.setDate(d.getDate() + days);
     const iso = d.toISOString().split("T")[0];
     setClaimDeadlineInput(iso);
-    if (!claimDuration.trim()) {
-      setClaimDuration(durationText);
-    }
+    setClaimDuration(durationText);
   }
 
   async function handleClaimSubmit(e: React.FormEvent) {
@@ -260,7 +348,6 @@ export default function OrderDetail() {
       const updated = await claimOrder(item.id, {
         pm_estimated_duration: claimDuration.trim() || undefined,
         pm_deadline: claimDeadlineInput || undefined,
-        assigned_developer: claimDeveloper || null,
         pm_notes: claimNotesInput.trim() || undefined,
       });
       setItem(updated);
@@ -535,25 +622,8 @@ export default function OrderDetail() {
             <OrderStatusBadge status={item.status} label={item.status_display} />
           </span>
         }
-      />
-
-      <div
-        className="content"
-        style={{
-          maxWidth: 960,
-          margin: "0 auto",
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 14,
-        }}
-      >
-        <ErrorMsg error={actionError} />
-        <OkMsg text={actionOk} />
-
-        {/* Amallar tugmalari (agar kerak bo'lsa) */}
-        {(item.status === "DRAFT" || canEdit || canDelete) && (
-          <div className="row end middle" style={{ gap: 8, padding: "2px 0" }}>
+        actions={
+          <div className="row middle" style={{ gap: 8 }}>
             {item.status === "DRAFT" && (
               <button
                 type="button"
@@ -565,6 +635,35 @@ export default function OrderDetail() {
                 <span>🚀</span>
                 <span>{sendingOrder ? "Yuborilmoqda..." : tx("orders.send_order")}</span>
               </button>
+            )}
+
+            {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline"
+                onClick={() => setVersionModal(true)}
+              >
+                + {tx("orders.yangi_tz_versiyasi")}
+              </button>
+            )}
+
+            {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline"
+                  onClick={() => setPmPanelOpen((v) => !v)}
+                >
+                  {pmPanelOpen ? tx("orders.pm_panelni_yopish") : tx("orders.pm_holat_muddatni_ozgartirish")}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline"
+                  onClick={handleOpenCreateTask}
+                >
+                  + {tx("orders.vazifa_yaratish", undefined, "Vazifa yaratish")}
+                </button>
+              </>
             )}
 
             {canEdit && (
@@ -589,84 +688,152 @@ export default function OrderDetail() {
               </button>
             )}
           </div>
-        )}
+        }
+      />
 
-        {/* Yangi TZ fayli / versiyasi yuklanganda PM ko'rib chiqishi uchun banner */}
+      <div
+        className="content"
+        style={{
+          maxWidth: 960,
+          margin: "0 auto",
+          padding: "16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        <ErrorMsg error={actionError} />
+        <OkMsg text={actionOk} />
+
+        {/* Yangi TZ fayli / versiyasi yuklanganda PM ko'rib chiqishi uchun banner (Image 1 UX) */}
         {item.pending_version && (
           <div
             style={{
-              background: "linear-gradient(135deg, rgba(59, 130, 246, 0.09) 0%, rgba(99, 102, 241, 0.09) 100%)",
-              border: "1px solid rgba(59, 130, 246, 0.35)",
-              borderRadius: 10,
-              padding: "14px 18px",
+              background: "#f0f7ff",
+              border: "1px solid #dbeafe",
+              borderRadius: 14,
+              padding: "18px 22px",
               display: "flex",
               flexDirection: "column",
-              gap: 12,
+              gap: 14,
+              boxShadow: "0 1px 3px rgba(59, 130, 246, 0.05)",
             }}
           >
-            <div className="row between middle" style={{ flexWrap: "wrap", gap: 10 }}>
-              <div className="row middle" style={{ gap: 10 }}>
-                <span style={{ fontSize: 24 }}>📄</span>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>
-                    {tx("orders.new_tz_uploaded_title", { v: item.pending_version.version })}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    Yuklagan: <strong>{item.pending_version.uploaded_by_name || "Buyurtmachi"}</strong> • {fmtDateTime(item.pending_version.created_at)}
-                  </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: "#ede9fe",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <DocLilacIcon size={22} color="#7c3aed" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text, #0f172a)" }}>
+                  {tx("orders.new_tz_uploaded_title", { v: item.pending_version.version })}
+                </div>
+                <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
+                  Yuklangan: <strong>{item.pending_version.uploaded_by_name || "Buyurtmachi"}</strong> • {fmtDateTime(item.pending_version.created_at)}
                 </div>
               </div>
+            </div>
 
-              <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
-                {item.pending_version.tz_file_url && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+              {item.pending_version.tz_file_url && (
+                <button
+                  type="button"
+                  onClick={() => setPreviewFile({
+                    url: item.pending_version!.tz_file_url!,
+                    name: item.pending_version!.tz_file_name || "Yangi_TZ.docx",
+                    size: item.pending_version!.tz_file_size_display,
+                  })}
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 10,
+                    padding: "7px 14px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                    cursor: "pointer",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                  }}
+                  title="Yangi TZ faylini ko'rish"
+                >
+                  <DocLilacIcon size={16} color="#8b5cf6" />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text, #1e293b)" }}>
+                    {item.pending_version.tz_file_name || "Yangi TZ fayli"}
+                  </span>
+                  {item.pending_version.tz_file_size_display && (
+                    <span style={{ background: "#f1f5f9", color: "#64748b", fontSize: 11.5, fontWeight: 600, padding: "2px 8px", borderRadius: 6 }}>
+                      {item.pending_version.tz_file_size_display}
+                    </span>
+                  )}
+                </button>
+              )}
+
+              {isPMOrAdmin && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <button
                     type="button"
-                    onClick={() => setPreviewFile({
-                      url: item.pending_version!.tz_file_url!,
-                      name: item.pending_version!.tz_file_name || "Yangi_TZ.docx",
-                      size: item.pending_version!.tz_file_size_display,
-                    })}
-                    className="btn btn-sm btn-outline row middle"
-                    style={{ gap: 6 }}
-                    title="Yangi TZ faylini veb-saytda ochish"
+                    style={{
+                      background: "#10b981",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: 10,
+                      padding: "8px 18px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      boxShadow: "0 1px 2px rgba(16, 185, 129, 0.2)",
+                    }}
+                    onClick={() => handleOpenApproveVersion(item.pending_version?.version)}
                   >
-                    <span>📄</span> {item.pending_version.tz_file_name || "Yangi TZ faylini ko'rish"}
+                    <span>✓</span>
+                    <span>{tx("orders.approve_tz_btn")}</span>
                   </button>
-                )}
-                {isPMOrAdmin && (
-                  <>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-ok row middle"
-                      style={{ gap: 6, fontWeight: 600 }}
-                      onClick={() => handleOpenApproveVersion(item.pending_version?.version)}
-                    >
-                      <span>✓</span>
-                      <span>{tx("orders.approve_tz_btn")}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-danger row middle"
-                      style={{ gap: 6 }}
-                      onClick={() => handleOpenRejectVersion(item.pending_version?.version)}
-                    >
-                      <span>✕</span>
-                      <span>{tx("orders.reject_tz_btn")}</span>
-                    </button>
-                  </>
-                )}
-              </div>
+                  <button
+                    type="button"
+                    style={{
+                      background: "#ffffff",
+                      color: "#ef4444",
+                      border: "1px solid #fca5a5",
+                      borderRadius: 10,
+                      padding: "8px 18px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                    onClick={() => handleOpenRejectVersion(item.pending_version?.version)}
+                  >
+                    <span>✕</span>
+                    <span>{tx("orders.reject_tz_btn")}</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {item.pending_version.change_note && (
               <div
                 style={{
-                  background: "var(--surface)",
-                  borderRadius: 6,
+                  background: "rgba(255, 255, 255, 0.75)",
+                  borderRadius: 8,
                   padding: "8px 12px",
                   fontSize: 12.5,
-                  borderLeft: "3px solid var(--brand)",
-                  color: "var(--text)",
+                  borderLeft: "3px solid #7c3aed",
+                  color: "var(--text, #334155)",
                 }}
               >
                 <strong>O'zgarishlar tavsifi (sababi): </strong>
@@ -796,102 +963,191 @@ export default function OrderDetail() {
           </div>
         )}
 
-        {/* YAGONA ASOSIY KARTA (Barcha ma'lumotlar bitta ixcham, toza blokda) */}
+        {/* YAGONA ASOSIY KARTA (Image 1 UX) */}
         <section
           className="card padded"
           style={{
-            borderRadius: 10,
+            borderRadius: 16,
             border: "1px solid var(--border-color, #e2e8f0)",
-            padding: "16px 18px",
+            padding: "24px 28px",
+            background: "var(--surface, #ffffff)",
+            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.03)",
           }}
         >
           {/* Sarlavha va Loyiha */}
-          <div style={{ borderBottom: "1px solid var(--border-color, #e2e8f0)", paddingBottom: 12, marginBottom: 12 }}>
-            <span className="muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              {tx("orders.buyurtma_nomi")}
-            </span>
-            <h1
-              style={{
-                fontSize: 17,
-                fontWeight: 700,
-                color: "var(--text)",
-                margin: "3px 0 0 0",
-                lineHeight: 1.3,
-              }}
-            >
-              {item.system_name} {item.module ? `— ${item.module}` : ""}
-            </h1>
-            {item.project_detail && (
-              <div style={{ marginTop: 4, fontSize: 12.5 }}>
-                <span className="muted">{tx("orders.loyiha")}: </span>
-                <Link
-                  {...toProject(item.project_detail.id)}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <div style={{ paddingTop: 2, color: "#3b82f6", display: "inline-flex" }}>
+              <CalendarOutlineIcon size={22} color="#3b82f6" />
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  color: "#64748b",
+                  textTransform: "uppercase",
+                }}
+              >
+                {tx("orders.buyurtma_nomi")}
+              </div>
+              <h1
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: "var(--text, #0f172a)",
+                  margin: "4px 0 2px 0",
+                  lineHeight: 1.3,
+                }}
+              >
+                {item.system_name} {item.module ? `— ${item.module}` : ""}
+              </h1>
+              {item.project_detail && (
+                <div
                   style={{
-                    fontWeight: 600,
-                    color: "var(--brand)",
-                    textDecoration: "none",
+                    marginTop: 4,
+                    fontSize: 13,
+                    color: "#64748b",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    flexWrap: "wrap",
                   }}
                 >
-                  {item.project_detail.name}
-                </Link>
-                <span className="badge badge-brand" style={{ fontSize: 10, padding: "1px 5px", marginLeft: 6 }}>
-                  {item.project_detail.key}
-                </span>
-              </div>
-            )}
+                  <span>{tx("orders.loyiha")}:</span>
+                  <Link
+                    {...toProject(item.project_detail.id)}
+                    style={{
+                      fontWeight: 600,
+                      color: "var(--text, #0f172a)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    {item.project_detail.name}
+                  </Link>
+                  <span
+                    style={{
+                      background: "#f3e8ff",
+                      color: "#7c3aed",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "2px 7px",
+                      borderRadius: 6,
+                    }}
+                  >
+                    {item.project_detail.key}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Parametrlar to'plami (Ixcham Grid) */}
+          <div style={{ height: 1, background: "var(--border-muted, #f1f5f9)", margin: "20px 0" }} />
+
+          {/* 1-Qator: 4 ta ustun (Mijoz, Mas'ul PM, Muddat, PM belgilagan muddat) */}
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-              gap: "10px 16px",
-              fontSize: 12.5,
-              paddingBottom: 12,
-              borderBottom: "1px solid var(--border-color, #e2e8f0)",
+              gap: "16px 20px",
             }}
           >
             <div>
-              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.soha_mijoz")}:</span>
-              <div style={{ fontWeight: 600, color: "var(--text)", marginTop: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
+                <UserOutlineIcon size={15} color="#64748b" />
+                <span>{tx("orders.mijoz", undefined, "Mijoz")}</span>
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text, #0f172a)", marginTop: 4 }}>
                 {item.responsible_person || "—"}
-                {item.department && (
-                  <span className="muted" style={{ fontWeight: 400, marginLeft: 4 }}>
-                    ({item.department})
-                  </span>
-                )}
+              </div>
+              {item.department && (
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                  ({item.department})
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
+                <UserOutlineIcon size={15} color="#64748b" />
+                <span>{tx("orders.masul_pm", undefined, "Mas'ul PM")}</span>
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text, #0f172a)", marginTop: 4 }}>
+                {item.assigned_pm_name || <span style={{ color: "#94a3b8", fontWeight: 500 }}>{tx("orders.biriktirilmagan")}</span>}
               </div>
             </div>
 
             <div>
-              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.masul_pm")}:</span>
-              <div style={{ fontWeight: 600, color: "var(--text)", marginTop: 2 }}>
-                {item.assigned_pm_name || <span className="muted">{tx("orders.biriktirilmagan")}</span>}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
+                <CalendarOutlineIcon size={15} color="#64748b" />
+                <span>{tx("orders.muddat", undefined, "Muddat")}</span>
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text, #0f172a)", marginTop: 4 }}>
+                {item.due_date ? fmtDate(item.due_date) : "—"}
               </div>
             </div>
 
             <div>
-              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.masul_dasturchi")}:</span>
-              <div style={{ fontWeight: 600, color: "var(--text)", marginTop: 2 }}>
-                {item.assigned_developer_name || <span className="muted">{tx("orders.biriktirilmagan")}</span>}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
+                <ClockOutlineIcon size={15} color="#64748b" />
+                <span>{tx("orders.pm_belgilagan_muddat", undefined, "PM belgilagan muddat")}</span>
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text, #0f172a)", marginTop: 4 }}>
+                {item.pm_deadline ? fmtDate(item.pm_deadline) : item.pm_estimated_duration || <span style={{ color: "#94a3b8", fontWeight: 500 }}>{tx("orders.kutilmoqda")}</span>}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ height: 1, background: "var(--border-muted, #f1f5f9)", margin: "20px 0" }} />
+
+          {/* 2-Qator: 4 ta ustun (Mas'ul dasturchi, Muhimlik turi, Vaqt, Qolgan vaqt) */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gap: "16px 20px",
+            }}
+          >
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
+                <ClockOutlineIcon size={15} color="#64748b" />
+                <span>{tx("orders.masul_dasturchi", undefined, "Mas'ul dasturchi")}</span>
+              </div>
+              <div style={{ fontWeight: item.assigned_developer_name ? 700 : 500, fontSize: 14, color: item.assigned_developer_name ? "var(--text, #0f172a)" : "#64748b", marginTop: 4 }}>
+                {item.assigned_developer_name || tx("orders.biriktirilmagan")}
               </div>
             </div>
 
             <div>
-              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.muhimlik_turi")}:</span>
-              <div style={{ marginTop: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
+                <ClockOutlineIcon size={15} color="#64748b" />
+                <span>{tx("orders.muhimlik_turi", undefined, "Muhimlik turi")}</span>
+              </div>
+              <div style={{ marginTop: 4 }}>
                 <span
-                  className={`badge ${
-                    item.priority === "URGENT"
-                      ? "badge-danger"
-                      : item.priority === "HIGH"
-                      ? "badge-warning"
-                      : item.priority === "MEDIUM"
-                      ? "badge-brand"
-                      : ""
-                  }`}
-                  style={{ fontSize: 11 }}
+                  style={{
+                    background:
+                      item.priority === "URGENT"
+                        ? "#fef2f2"
+                        : item.priority === "HIGH"
+                        ? "#eff6ff"
+                        : item.priority === "MEDIUM"
+                        ? "#f0fdf4"
+                        : "#f8fafc",
+                    color:
+                      item.priority === "URGENT"
+                        ? "#ef4444"
+                        : item.priority === "HIGH"
+                        ? "#3b82f6"
+                        : item.priority === "MEDIUM"
+                        ? "#10b981"
+                        : "#64748b",
+                    padding: "3px 14px",
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    display: "inline-block",
+                  }}
                 >
                   {item.priority_display || item.priority}
                 </span>
@@ -899,56 +1155,38 @@ export default function OrderDetail() {
             </div>
 
             <div>
-              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.soralgan_muddat")}:</span>
-              <div style={{ fontWeight: 600, color: "var(--text)", marginTop: 2 }}>
-                {item.due_date ? fmtDate(item.due_date) : "—"}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
+                <TimerOutlineIcon size={15} color="#64748b" />
+                <span>{tx("orders.vaqt", undefined, "Vaqt")}</span>
               </div>
-            </div>
-
-            <div>
-              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.pm_belgilagan_muddat")}:</span>
-              <div style={{ fontWeight: 600, color: item.pm_deadline ? "var(--brand)" : "var(--text)", marginTop: 2 }}>
-                {item.pm_deadline ? fmtDate(item.pm_deadline) : item.pm_estimated_duration || <span className="muted">{tx("orders.kutilmoqda")}</span>}
-              </div>
-            </div>
-
-            <div>
-              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.yaratilgan_sana_vaqti")}:</span>
-              <div style={{ fontWeight: 500, color: "var(--text)", marginTop: 2 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text, #0f172a)", marginTop: 4 }}>
                 {fmtDateTime(item.created_at || item.request_date)}
               </div>
             </div>
 
             <div>
-              <span className="muted" style={{ fontSize: 11 }}>{tx("orders.oxirgi_yangilanish")}:</span>
-              <div style={{ color: "var(--muted)", marginTop: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
+                <HourglassOutlineIcon size={15} color="#64748b" />
+                <span>{tx("orders.qolgan_vaqt", undefined, "Qolgan vaqt")}</span>
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text, #0f172a)", marginTop: 4 }}>
                 {timeAgo(item.updated_at || item.created_at)}
               </div>
             </div>
           </div>
 
-          {/* Tavsif va Talablar */}
-          <div style={{ paddingTop: 12, paddingBottom: 12, borderBottom: "1px solid var(--border-color, #e2e8f0)" }}>
-            <div className="row between middle" style={{ marginBottom: 4 }}>
-              <span className="muted" style={{ fontSize: 11 }}>
-                {tx("orders.tavsif_va_talablar")}:
-              </span>
-              {isLongText && (
-                <button
-                  type="button"
-                  className="btn btn-xs btn-ghost"
-                  style={{ fontSize: 11, padding: "2px 6px" }}
-                  onClick={() => setExpandDesc((v) => !v)}
-                >
-                  {expandDesc ? "Qisqartirish" : "Batafsil ko'rish"}
-                </button>
-              )}
-            </div>
+          <div style={{ height: 1, background: "var(--border-muted, #f1f5f9)", margin: "20px 0" }} />
 
+          {/* Tavsif */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b", marginBottom: 6 }}>
+              <ChatOutlineIcon size={15} color="#64748b" />
+              <span>{tx("orders.tavsif", undefined, "Tavsif")}</span>
+            </div>
             <div
               style={{
-                fontSize: 13,
-                color: "var(--text)",
+                fontSize: 13.5,
+                color: "var(--text, #334155)",
                 lineHeight: 1.5,
                 whiteSpace: "pre-wrap",
                 display: !expandDesc && isLongText ? "-webkit-box" : "block",
@@ -959,15 +1197,18 @@ export default function OrderDetail() {
             >
               {descText}
             </div>
-
-            {item.reason && (
-              <div
-                style={{
-                  marginTop: 8,
-                  fontSize: 12,
-                  color: "var(--muted)",
-                }}
+            {isLongText && (
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost"
+                style={{ fontSize: 11, padding: "2px 6px", marginTop: 4 }}
+                onClick={() => setExpandDesc((v) => !v)}
               >
+                {expandDesc ? "Qisqartirish" : "Batafsil ko'rish"}
+              </button>
+            )}
+            {item.reason && (
+              <div style={{ marginTop: 8, fontSize: 12.5, color: "#64748b" }}>
                 <strong>{tx("orders.asos_sabab")}:</strong> {item.reason}
               </div>
             )}
@@ -975,298 +1216,349 @@ export default function OrderDetail() {
 
           {/* Izohlar / Ko'rsatmalar (agar mavjud bo'lsa) */}
           {(item.pm_notes || item.client_feedback_note || item.completion_note) && (
-            <div style={{ paddingTop: 12, paddingBottom: 12, borderBottom: "1px solid var(--border-color, #e2e8f0)", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
               {item.pm_notes && (
-                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 6 }}>
+                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
                   <strong>{tx("orders.pm_izohi")}:</strong> {item.pm_notes}
                 </div>
               )}
               {item.client_feedback_note && (
-                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 6 }}>
+                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 8, border: "1px solid #fecaca", color: "var(--danger, #dc2626)" }}>
                   <strong>{tx("orders.boshqarma_etirozi")}:</strong> {item.client_feedback_note}
                 </div>
               )}
               {item.completion_note && (
-                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 6 }}>
+                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
                   <strong>{tx("orders.hisobot_izohi")}:</strong> {item.completion_note}
                 </div>
               )}
             </div>
           )}
 
-          {/* Hujjatlar va Qo'shimcha Amallar */}
-          <div className="row between middle" style={{ paddingTop: 12, flexWrap: "wrap", gap: 10 }}>
-            <div className="row middle" style={{ gap: 12, flexWrap: "wrap" }}>
-              <div>
-                <span className="muted" style={{ fontSize: 11.5, marginRight: 6 }}>{tx("orders.biriktirilgan_fayllar")}:</span>
+          {/* Fayllar Accordion (ochilib-yopiladigan blok) */}
+          <div
+            style={{
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: 12,
+              padding: "14px 18px",
+              marginTop: 20,
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+            onClick={() => setFilesOpen((v) => !v)}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <PaperclipOutlineIcon size={18} color="#3b82f6" />
+                <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #334155)" }}>
+                  {tx("orders.fayllar", undefined, "Fayllar")}
+                </span>
+                <span
+                  style={{
+                    background: "#e2e8f0",
+                    color: "#475569",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: "1px 8px",
+                    borderRadius: 10,
+                  }}
+                >
+                  {totalFilesCount} ta
+                </span>
+              </div>
+
+              <div
+                style={{
+                  color: "#64748b",
+                  display: "inline-flex",
+                  transition: "transform 0.2s ease",
+                  transform: filesOpen ? "rotate(180deg)" : "none",
+                }}
+              >
+                <ChevronDownOutlineIcon size={16} color="#64748b" />
+              </div>
+            </div>
+
+            {filesOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  marginTop: 14,
+                  paddingTop: 14,
+                  borderTop: "1px solid var(--border-color, #e2e8f0)",
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 10,
+                  cursor: "default",
+                }}
+              >
                 {item.attachments && item.attachments.length > 0 ? (
-                  <div style={{ display: "inline-flex", flexWrap: "wrap", gap: 6 }}>
-                    {item.attachments.map((att) => (
-                      <button
-                        key={att.id}
-                        type="button"
-                        onClick={() => setPreviewFile({ url: att.url, name: att.original_name, size: att.size_display })}
-                        className="btn btn-xs btn-outline"
-                        title="Veb-saytda ochish"
-                        style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
-                      >
-                        <span>📄</span>
-                        <span>{att.original_name} {att.size_display ? `(${att.size_display})` : ""}</span>
-                      </button>
-                    ))}
-                  </div>
+                  item.attachments.map((att) => (
+                    <button
+                      key={att.id}
+                      type="button"
+                      onClick={() => setPreviewFile({ url: att.url, name: att.original_name, size: att.size_display })}
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid var(--border-color, #e2e8f0)",
+                        borderRadius: 8,
+                        padding: "6px 14px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        cursor: "pointer",
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        color: "var(--text, #1e293b)",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                      }}
+                      title="Veb-saytda ochish"
+                    >
+                      <DocLilacIcon size={15} color="#8b5cf6" />
+                      <span>{att.original_name} {att.size_display ? `(${att.size_display})` : ""}</span>
+                    </button>
+                  ))
                 ) : item.tz_file_url ? (
                   <button
                     type="button"
                     onClick={() => setPreviewFile({ url: item.tz_file_url!, name: item.tz_file_name || "TZ_fayli.docx", size: item.tz_file_size_display })}
-                    className="btn btn-xs btn-outline"
+                    style={{
+                      background: "#ffffff",
+                      border: "1px solid var(--border-color, #e2e8f0)",
+                      borderRadius: 8,
+                      padding: "6px 14px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      cursor: "pointer",
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      color: "var(--text, #1e293b)",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                    }}
                     title="Veb-saytda ochish"
-                    style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
                   >
-                    <span>📄</span>
+                    <DocLilacIcon size={15} color="#8b5cf6" />
                     <span>{item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}</span>
                   </button>
-                ) : (
-                  <span className="muted" style={{ fontSize: 12 }}>{tx("orders.fayl_biriktirilmagan")}</span>
-                )}
-              </div>
+                ) : null}
 
-              {item.completion_file_url && (
-                <div>
-                  <span className="muted" style={{ fontSize: 11.5, marginRight: 6 }}>{tx("orders.hisobot_fayli")}:</span>
+                {item.completion_file_url && (
                   <button
                     type="button"
                     onClick={() => setPreviewFile({ url: item.completion_file_url!, name: item.completion_file_name || "Hisobot_hujjati.docx" })}
-                    className="btn btn-xs btn-outline"
-                    title="Veb-saytda ochish"
-                    style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+                    style={{
+                      background: "#ffffff",
+                      border: "1px solid var(--border-color, #e2e8f0)",
+                      borderRadius: 8,
+                      padding: "6px 14px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      cursor: "pointer",
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      color: "var(--text, #1e293b)",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                    }}
+                    title="Hisobot faylini ko'rish"
                   >
-                    <span>📄</span>
-                    <span>{item.completion_file_name || tx("orders.faylni_yuklab_olish")}</span>
+                    <DocLilacIcon size={15} color="#8b5cf6" />
+                    <span>{item.completion_file_name || "Hisobot fayli"}</span>
                   </button>
-                </div>
-              )}
+                )}
 
-              <div>
+                {/* Word (.docx) blanki */}
                 <button
                   type="button"
-                  className="btn btn-xs btn-outline"
                   onClick={() => setPreviewFile({
                     url: `/api/orders/${item.id}/export-docx/`,
                     name: `Buyurtma_TZ_${item.request_no}.docx`,
                   })}
-                  title="Rasmiy Word (.docx) blankini veb-saytda ochish"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--brand)" }}
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid var(--border-color, #e2e8f0)",
+                    borderRadius: 8,
+                    padding: "6px 14px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: "var(--text, #1e293b)",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                  }}
+                  title="Rasmiy Word (.docx) blankini ko'rish / yuklab olish"
                 >
-                  <span>📝</span>
+                  <span style={{ background: "#2563eb", color: "#fff", fontWeight: 800, fontSize: 10, padding: "2px 5px", borderRadius: 3, lineHeight: 1 }}>W</span>
                   <span>Word (.docx) blanki</span>
                 </button>
               </div>
+            )}
+          </div>
+
+          {/* Avalgi TZ versiyalari (Tarix) Accordion (Image 1 UX) */}
+          <div
+            style={{
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: 12,
+              padding: "14px 18px",
+              marginTop: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+            onClick={() => setHistoryOpen((v) => !v)}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <FolderFilledIcon size={18} />
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #334155)" }}>
+                {tx("orders.avvalgi_tz_versiyalari", undefined, "Avvalgi TZ versiyalari (Tarix)")}
+              </span>
+              {olderVersions.length > 0 && (
+                <span
+                  style={{
+                    background: "#e2e8f0",
+                    color: "#475569",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: "1px 8px",
+                    borderRadius: 10,
+                  }}
+                >
+                  {olderVersions.length} ta
+                </span>
+              )}
             </div>
 
-            <div className="row middle" style={{ gap: 8 }}>
-              {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && (
-                <button
-                  type="button"
-                  className="btn btn-xs btn-outline"
-                  onClick={() => setVersionModal(true)}
-                >
-                  + {tx("orders.yangi_tz_versiyasi")}
-                </button>
-              )}
-
-              {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
-                <button
-                  type="button"
-                  className="btn btn-xs btn-outline"
-                  onClick={() => setPmPanelOpen((v) => !v)}
-                >
-                  {pmPanelOpen ? tx("orders.pm_panelni_yopish") : tx("orders.pm_holat_muddatni_ozgartirish")}
-                </button>
-              )}
+            <div
+              style={{
+                color: "#64748b",
+                display: "inline-flex",
+                transform: historyOpen ? "rotate(90deg)" : "none",
+                transition: "transform 0.15s ease",
+              }}
+            >
+              <ChevronRightOutlineIcon size={16} color="#64748b" />
             </div>
           </div>
 
-          {/* Avvalgi (eski) TZ versiyalari tarixi */}
-          {olderVersions.length > 0 && (
-            <div
-              style={{
-                marginTop: 14,
-                paddingTop: 12,
-                borderTop: "1px dashed var(--border-color, #e2e8f0)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
-              <div
-                role="button"
-                tabIndex={0}
-                className="clickable"
-                onClick={() => setHistoryOpen((v) => !v)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setHistoryOpen((v) => !v);
-                  }
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "8px 12px",
-                  borderRadius: 8,
-                  background: historyOpen ? "var(--surface-2, #f8fafc)" : "var(--surface, #ffffff)",
-                  border: "1px solid var(--border-color, #e2e8f0)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  transition: "background 0.15s ease, border-color 0.15s ease",
-                }}
-              >
-                <div className="row middle" style={{ gap: 8, fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}>
-                  <span style={{ fontSize: 14 }}>📜</span>
-                  <span>{tx("orders.eski_tz_tarixi")}</span>
+          {/* Tarix ro'yxati (ochilganda) */}
+          {historyOpen && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+              {olderVersions.length === 0 ? (
+                <div style={{ padding: "12px", fontSize: 12.5, color: "#64748b", textAlign: "center", background: "var(--surface-2, #f8fafc)", borderRadius: 8 }}>
+                  Avvalgi versiyalar tarixi mavjud emas
                 </div>
-
-                <div className="row middle" style={{ gap: 8 }}>
-                  <span
-                    className="badge"
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      padding: "1px 8px",
-                      borderRadius: 10,
-                    }}
-                  >
-                    {olderVersions.length} ta
-                  </span>
-                  <span
-                    className="muted"
-                    style={{
-                      fontSize: 16,
-                      lineHeight: 1,
-                      display: "inline-flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    {historyOpen ? "▴" : "▾"}
-                  </span>
-                </div>
-              </div>
-
-              {historyOpen && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
-                  {olderVersions.map((ver) => {
-                    const isRejected = ver.status === "REJECTED";
-                    return (
-                      <div
-                        key={ver.id || ver.version}
-                        style={{
-                          padding: "8px 12px",
-                          borderRadius: 8,
-                          border: "1px solid var(--border-color, #e2e8f0)",
-                          background: isRejected ? "rgba(239, 68, 68, 0.03)" : "var(--surface-2, #f8fafc)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          flexWrap: "wrap",
-                          gap: 10,
-                        }}
-                      >
-                        <div className="row middle" style={{ gap: 8, flex: 1, minWidth: 260, flexWrap: "wrap" }}>
-                          <span
-                            style={{
-                              fontFamily: "var(--mono)",
-                              fontWeight: 700,
-                              fontSize: 11,
-                              padding: "2px 6px",
-                              borderRadius: 4,
-                              background: isRejected ? "var(--danger-soft, #fee2e2)" : "var(--surface-3, #e2e8f0)",
-                              color: isRejected ? "var(--danger, #ef4444)" : "var(--text-muted, #64748b)",
-                            }}
-                          >
-                            v{ver.version}
+              ) : (
+                olderVersions.map((ver) => {
+                  const isRejected = ver.status === "REJECTED";
+                  return (
+                    <div
+                      key={ver.id || ver.version}
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: 8,
+                        border: "1px solid var(--border-color, #e2e8f0)",
+                        background: isRejected ? "rgba(239, 68, 68, 0.03)" : "var(--surface-2, #f8fafc)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: 10,
+                      }}
+                    >
+                      <div className="row middle" style={{ gap: 8, flex: 1, minWidth: 260, flexWrap: "wrap" }}>
+                        <span
+                          style={{
+                            fontFamily: "var(--mono)",
+                            fontWeight: 700,
+                            fontSize: 11,
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            background: isRejected ? "var(--danger-soft, #fee2e2)" : "var(--surface-3, #e2e8f0)",
+                            color: isRejected ? "var(--danger, #ef4444)" : "var(--text-muted, #64748b)",
+                          }}
+                        >
+                          v{ver.version}
+                        </span>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}>
+                          {ver.tz_file_name || `TZ v${ver.version}`}
+                        </span>
+                        {ver.tz_file_size_display && (
+                          <span style={{ fontSize: 11.5, color: "var(--muted)" }}>
+                            ({ver.tz_file_size_display})
                           </span>
-
-                          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}>
-                            {ver.tz_file_name || `TZ v${ver.version}`}
+                        )}
+                        <span
+                          className={`badge ${
+                            isRejected
+                              ? "badge-danger"
+                              : ver.status === "CANCELLED"
+                              ? "badge-ghost"
+                              : "badge-outline"
+                          }`}
+                          style={{ fontSize: 10.5 }}
+                        >
+                          {isRejected
+                            ? "Rad etilgan"
+                            : ver.version === 1
+                            ? "Dastlabki TZ (Eski versiya)"
+                            : "Eski versiya (Bekor qilingan)"}
+                        </span>
+                        {ver.uploaded_by_name && (
+                          <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                            • Yuklagan: {ver.uploaded_by_name}
                           </span>
-
-                          {ver.tz_file_size_display && (
-                            <span style={{ fontSize: 11.5, color: "var(--muted)" }}>
-                              ({ver.tz_file_size_display})
-                            </span>
-                          )}
-
-                          <span
-                            className={`badge ${
-                              isRejected
-                                ? "badge-danger"
-                                : ver.status === "CANCELLED"
-                                ? "badge-ghost"
-                                : "badge-outline"
-                            }`}
-                            style={{ fontSize: 10.5 }}
-                          >
-                            {isRejected
-                              ? "Rad etilgan"
-                              : ver.version === 1
-                              ? "Dastlabki TZ (Eski versiya)"
-                              : "Eski versiya (Bekor qilingan)"}
+                        )}
+                        {ver.created_at && (
+                          <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                            • {fmtDateTime(ver.created_at)}
                           </span>
-
-                          {ver.uploaded_by_name && (
-                            <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                              • Yuklagan: {ver.uploaded_by_name}
-                            </span>
-                          )}
-
-                          {ver.created_at && (
-                            <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                              • {fmtDateTime(ver.created_at)}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="row middle" style={{ gap: 8 }}>
-                          {ver.tz_file_url && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewFile({
-                                url: ver.tz_file_url!,
-                                name: ver.tz_file_name || `TZ_v${ver.version}.docx`,
-                                size: ver.tz_file_size_display,
-                              })}
-                              className="btn btn-xs btn-outline"
-                              title="Veb-saytda ochish"
-                            >
-                              <span>📄</span> {tx("orders.faylni_yuklab_olish")}
-                            </button>
-                          )}
-                        </div>
-
-                        {(ver.change_note || ver.decision_note) && (
-                          <div
-                            style={{
-                              width: "100%",
-                              fontSize: 11.5,
-                              color: isRejected ? "var(--danger)" : "var(--muted)",
-                              background: isRejected ? "rgba(239, 68, 68, 0.06)" : "var(--surface)",
-                              padding: "4px 8px",
-                              borderRadius: 4,
-                              marginTop: 2,
-                            }}
-                          >
-                            {ver.change_note && <span>O'zgarish izohi: {ver.change_note}</span>}
-                            {ver.change_note && ver.decision_note && <span> • </span>}
-                            {ver.decision_note && <span>PM qarori: {ver.decision_note}</span>}
-                          </div>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
+                      <div>
+                        {ver.tz_file_url && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewFile({
+                              url: ver.tz_file_url!,
+                              name: ver.tz_file_name || `TZ_v${ver.version}.docx`,
+                              size: ver.tz_file_size_display,
+                            })}
+                            className="btn btn-xs btn-outline"
+                            title="Veb-saytda ochish"
+                          >
+                            <span>📄</span> {tx("orders.faylni_yuklab_olish")}
+                          </button>
+                        )}
+                      </div>
+                      {(ver.change_note || ver.decision_note) && (
+                        <div
+                          style={{
+                            width: "100%",
+                            fontSize: 11.5,
+                            color: isRejected ? "var(--danger)" : "var(--muted)",
+                            background: isRejected ? "rgba(239, 68, 68, 0.06)" : "var(--surface)",
+                            padding: "4px 8px",
+                            borderRadius: 4,
+                            marginTop: 2,
+                          }}
+                        >
+                          {ver.change_note && <span>O'zgarish izohi: {ver.change_note}</span>}
+                          {ver.change_note && ver.decision_note && <span> • </span>}
+                          {ver.decision_note && <span>PM qarori: {ver.decision_note}</span>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           )}
@@ -1545,28 +1837,28 @@ export default function OrderDetail() {
                       <span style={{ fontSize: 11, color: "var(--muted)", marginRight: 2 }}>{tx("orders.claim_quick_label")}</span>
                       <button
                         type="button"
-                        className="modal-quick-chip"
+                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_3days_duration") ? "active" : ""}`}
                         onClick={() => applyQuickDeadline(3, tx("orders.claim_3days_duration"))}
                       >
                         {tx("orders.claim_3days")}
                       </button>
                       <button
                         type="button"
-                        className="modal-quick-chip"
+                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_1week_duration") ? "active" : ""}`}
                         onClick={() => applyQuickDeadline(7, tx("orders.claim_1week_duration"))}
                       >
                         {tx("orders.claim_1week")}
                       </button>
                       <button
                         type="button"
-                        className="modal-quick-chip"
+                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_2weeks_duration") ? "active" : ""}`}
                         onClick={() => applyQuickDeadline(14, tx("orders.claim_2weeks_duration"))}
                       >
                         {tx("orders.claim_2weeks")}
                       </button>
                       <button
                         type="button"
-                        className="modal-quick-chip"
+                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_1month_duration") ? "active" : ""}`}
                         onClick={() => applyQuickDeadline(30, tx("orders.claim_1month_duration"))}
                       >
                         {tx("orders.claim_1month")}
@@ -1598,28 +1890,6 @@ export default function OrderDetail() {
                   />
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
                     {tx("orders.claim_duration_hint")}
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
-                    {tx("orders.claim_dev_label")}
-                  </label>
-                  <select
-                    className="select"
-                    value={claimDeveloper || ""}
-                    onChange={(e) => setClaimDeveloper(e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: "100%" }}
-                  >
-                    <option value="">{tx("orders.claim_dev_placeholder")}</option>
-                    {developersList.map((dev) => (
-                      <option key={dev.id} value={dev.id}>
-                        {dev.full_name} ({dev.specialty || dev.department || "Dasturchi"})
-                      </option>
-                    ))}
-                  </select>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
-                    {tx("orders.claim_dev_hint")}
                   </div>
                 </div>
 

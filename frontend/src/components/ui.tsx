@@ -36,6 +36,8 @@ export function Avatar({
 
   if (!user) return <span className={`avatar ${size}`} style={{ background: "#30363d" }}>?</span>;
 
+  const shouldHover = showHoverCard && size !== "xl";
+
   const updatePosition = () => {
     if (wrapRef.current) {
       const rect = wrapRef.current.getBoundingClientRect();
@@ -56,7 +58,7 @@ export function Avatar({
   };
 
   const handleMouseEnter = () => {
-    if (!showHoverCard) return;
+    if (!shouldHover) return;
     updatePosition();
     hoverTimer.current = window.setTimeout(() => {
       updatePosition();
@@ -74,19 +76,19 @@ export function Avatar({
       className={`avatar ${size}`}
       src={user.avatar}
       alt={user.full_name}
-      title={showHoverCard ? undefined : user.full_name}
+      title={shouldHover ? undefined : user.full_name}
     />
   ) : (
     <span
       className={`avatar ${size}`}
       style={{ background: user.avatar_color }}
-      title={showHoverCard ? undefined : user.full_name}
+      title={shouldHover ? undefined : user.full_name}
     >
       {user.initials}
     </span>
   );
 
-  if (!showHoverCard) return avatarElement;
+  if (!shouldHover) return avatarElement;
 
   return (
     <div
@@ -178,12 +180,12 @@ export function PhotoView({
 /** Rasmi bor avatarni bosib to'liq ko'rish uchun o'ram. */
 export function AvatarViewable({ user, size = "" }: { user?: UserBrief | null; size?: "sm" | "lg" | "xl" | "" }) {
   const [open, setOpen] = useState(false);
-  if (!user?.avatar) return <Avatar user={user} size={size} />;
+  if (!user?.avatar) return <Avatar user={user} size={size} showHoverCard={false} />;
   return (
     <>
       <button type="button" className="avatar-btn" onClick={() => setOpen(true)}
               title={tx("ui.rasmni_toliq_korish")}>
-        <Avatar user={user} size={size} />
+        <Avatar user={user} size={size} showHoverCard={false} />
       </button>
       {open && (
         <PhotoView src={user.avatar} alt={user.full_name}

@@ -50,7 +50,7 @@ export default function DeveloperReport() {
       <div className="content">
         <div className="card mb">
           <div className="card-body row wrap">
-            <Avatar user={d.developer} size="lg" />
+            <Avatar user={d.developer} size="lg" showHoverCard={false} />
             <div>
               <h2 style={{ margin: 0 }}>{d.developer.full_name}</h2>
               <div className="row wrap" style={{ gap: 6, marginTop: 6 }}>

@@ -51,11 +51,11 @@ export function textsReady(): boolean {
  * Kalit topilmasa kalitning o'zi qaytadi — sahifa buzilmaydi va yetishmayotgan
  * yozuv ko'rinib turadi (konsolda ham ogohlantirish chiqadi).
  */
-export function tx(key: string, vars?: Record<string, string | number>): string {
+export function tx(key: string, vars?: Record<string, string | number>, fallback?: string): string {
   let out = dict[key];
   if (out === undefined) {
     if (import.meta.env.DEV) console.warn(`[matn] kalit topilmadi: ${key}`);
-    out = key;
+    out = fallback !== undefined ? fallback : key;
   }
   if (!vars) return out;
   return out.replace(/\{(\w+)\}/g, (whole, name) =>

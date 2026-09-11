@@ -670,6 +670,9 @@ export interface CalendarTask extends CalendarSpan {
   project: { id: number; name: string; key: string; color: string };
   assignees: UserBrief[];
   done: boolean;
+  start_datetime?: string | null;
+  due_datetime?: string | null;
+  time_display?: string;
 }
 
 /** `GET /api/projects/calendar/?month=YYYY-MM` javobi */

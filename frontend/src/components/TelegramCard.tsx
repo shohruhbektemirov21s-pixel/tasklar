@@ -66,6 +66,7 @@ export default function TelegramCard() {
           </p>
           <p className="muted" style={{ margin: 0, fontSize: 13 }}>
             {tx("telegram_card.bildirishnomalar_telegramga_ham_keladi_botda")} <code>{tx("telegram_card.vazifalarim")}</code>,{" "}
+            <code>{tx("telegram_card.buyurtmalar", undefined, "/buyurtmalar")}</code>,{" "}
             <code>{tx("telegram_card.bugun")}</code> {tx("telegram_card.va")} <code>{tx("telegram_card.tekshiruv")}</code> {tx("telegram_card.buyruqlari_bor")}
           </p>
           <div className="row" style={{ gap: 8 }}>

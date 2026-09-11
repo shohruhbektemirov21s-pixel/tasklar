@@ -152,7 +152,15 @@ def month_calendar(request):
         else:
             slot["in_progress"] += 1
 
-        people = [a.user for a in task.assignments.all() if a.is_active and a.user]
+        start_local = timezone.localtime(task.start_date) if task.start_date and timezone.is_aware(task.start_date) else task.start_date
+        due_local = timezone.localtime(task.due_date) if task.due_date and timezone.is_aware(task.due_date) else task.due_date
+
+        time_display = ""
+        if start_local and due_local and start_local.date() == due_local.date():
+            time_display = f"{start_local.strftime('%H:%M')} – {due_local.strftime('%H:%M')}"
+        elif due_local and (due_local.hour != 0 or due_local.minute != 0):
+            time_display = due_local.strftime("%H:%M")
+
         task_rows.append({
             "id": task.pk,
             "code": task.code,
@@ -166,6 +174,9 @@ def month_calendar(request):
                                              context={"request": request}).data,
             "start_date": as_date(task.start_date),
             "due_date": finish,
+            "start_datetime": start_local.isoformat() if start_local else None,
+            "due_datetime": due_local.isoformat() if due_local else None,
+            "time_display": time_display,
             "from": finish,
             "to": finish,
             "starts_here": True,

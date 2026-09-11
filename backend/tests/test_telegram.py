@@ -49,6 +49,13 @@ class BotCommandTest(ApiTestCase):
         cls.task = Task.objects.create(project=cls.project, title="Bot sinovi",
                                        created_by=cls.manager)
         TaskAssignment.objects.create(task=cls.task, user=cls.dev)
+        from apps.orders.models import ChangeRequest
+        cls.order = ChangeRequest.objects.create(
+            request_no="ORD-TEST-001",
+            system_name="Sinov tizimi",
+            assigned_developer=cls.dev,
+            created_by=cls.manager,
+        )
 
     def setUp(self):
         super().setUp()
@@ -96,24 +103,34 @@ class BotCommandTest(ApiTestCase):
         self.assertFalse(TelegramLink.objects.filter(user=self.dev).exists())
         self.assertEqual(TelegramLink.objects.get(chat_id=self.CHAT).user, self.manager)
 
-    # --------------------------------------------------------- faqat xabar
-    # Bot buyruqlarni qabul qilmaydi: `/vazifalarim`, `/bugun` va
-    # `/tekshiruv` olib tashlandi - ular ilovadagi sahifalarni Telegramda
-    # takrorlardi. Quyidagi testlar shu qarorni bog'laydi.
-    def test_eski_buyruqlar_ishlamaydi(self):
+    # --------------------------------------------------------- buyruqlar
+    def test_vazifalarim_buyrugi(self):
         commands.handle(update(self.CHAT, "/start"))
-        for text in ("/vazifalarim", "/bugun", "/tekshiruv", "/uzish", "/yordam"):
-            with self.subTest(text=text):
-                commands.handle(update(self.CHAT, text))
-                self.assertIn("faqat bildirishnoma", self.last())
-                # Vazifa nomi javobga tushib qolmasin.
-                self.assertNotIn("Bot sinovi", self.last())
+        commands.handle(update(self.CHAT, "/vazifalarim"))
+        self.assertIn("Bot sinovi", self.last())
 
-    def test_oddiy_matn_ham_shu_javobni_oladi(self):
-        """Bot jim qolmaydi - aks holda odam «yetib bordimi?» deb o'ylardi."""
+    def test_buyurtmalar_buyrugi(self):
+        commands.handle(update(self.CHAT, "/start"))
+        commands.handle(update(self.CHAT, "/buyurtmalar"))
+        self.assertIn("ORD-TEST-001", self.last())
+
+    def test_yordam_buyrugi(self):
+        commands.handle(update(self.CHAT, "/start"))
+        commands.handle(update(self.CHAT, "/yordam"))
+        self.assertIn("/vazifalarim", self.last())
+        self.assertIn("/buyurtmalar", self.last())
+
+    def test_uzish_buyrugi(self):
+        commands.handle(update(self.CHAT, "/start"))
+        self.assertTrue(TelegramLink.objects.filter(user=self.dev).exists())
+        commands.handle(update(self.CHAT, "/uzish"))
+        self.assertFalse(TelegramLink.objects.filter(user=self.dev).exists())
+        self.assertIn("uzildi", self.last())
+
+    def test_oddiy_matn_yo_riqnoma_beradi(self):
         commands.handle(update(self.CHAT, "/start"))
         self.assertTrue(commands.handle(update(self.CHAT, "salom")))
-        self.assertIn("faqat bildirishnoma", self.last())
+        self.assertIn("/vazifalarim", self.last())
 
     def test_bosh_xabar_javobsiz(self):
         self.assertFalse(commands.handle(update(self.CHAT, "")))

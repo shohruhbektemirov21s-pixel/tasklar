@@ -33,7 +33,14 @@ class Command(BaseCommand):
         name, error = client.check()
         if error:
             self.stderr.write(self.style.ERROR(error))
-            return
+            if options.get("once"):
+                return
+            self.stdout.write("Telegram bot token kiritilishini kutmoqda (har 15 soniyada tekshiriladi)...")
+            while True:
+                time.sleep(15)
+                name, error = client.check()
+                if not error:
+                    break
 
         # Webhook qo'yilgan bo'lsa `getUpdates` 409 beradi - tozalab qo'yamiz.
         client.delete_webhook()

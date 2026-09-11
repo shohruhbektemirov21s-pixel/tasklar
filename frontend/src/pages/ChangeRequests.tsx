@@ -815,9 +815,7 @@ export default function ChangeRequests() {
     d.setDate(d.getDate() + days);
     const iso = d.toISOString().split("T")[0];
     setClaimDeadline(iso);
-    if (!claimDuration.trim()) {
-      setClaimDuration(durationText);
-    }
+    setClaimDuration(durationText);
   };
 
   const handleClaimSubmit = async (e: React.FormEvent) => {
@@ -828,7 +826,6 @@ export default function ChangeRequests() {
       const updated = await claimOrder(claimModalItem.id, {
         pm_estimated_duration: claimDuration.trim() || undefined,
         pm_deadline: claimDeadline || undefined,
-        assigned_developer: claimDeveloper || null,
         pm_notes: claimNotes.trim() || undefined,
       });
       if (viewingItem && viewingItem.id === claimModalItem.id) {
@@ -2370,28 +2367,28 @@ export default function ChangeRequests() {
                       <span style={{ fontSize: 11, color: "var(--muted)", marginRight: 2 }}>{tx("orders.claim_quick_label")}</span>
                       <button
                         type="button"
-                        className="modal-quick-chip"
+                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_3days_duration") ? "active" : ""}`}
                         onClick={() => applyQuickDeadline(3, tx("orders.claim_3days_duration"))}
                       >
                         {tx("orders.claim_3days")}
                       </button>
                       <button
                         type="button"
-                        className="modal-quick-chip"
+                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_1week_duration") ? "active" : ""}`}
                         onClick={() => applyQuickDeadline(7, tx("orders.claim_1week_duration"))}
                       >
                         {tx("orders.claim_1week")}
                       </button>
                       <button
                         type="button"
-                        className="modal-quick-chip"
+                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_2weeks_duration") ? "active" : ""}`}
                         onClick={() => applyQuickDeadline(14, tx("orders.claim_2weeks_duration"))}
                       >
                         {tx("orders.claim_2weeks")}
                       </button>
                       <button
                         type="button"
-                        className="modal-quick-chip"
+                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_1month_duration") ? "active" : ""}`}
                         onClick={() => applyQuickDeadline(30, tx("orders.claim_1month_duration"))}
                       >
                         {tx("orders.claim_1month")}
@@ -2423,28 +2420,6 @@ export default function ChangeRequests() {
                   />
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
                     {tx("orders.claim_duration_hint")}
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
-                    {tx("orders.claim_dev_label")}
-                  </label>
-                  <select
-                    className="select"
-                    value={claimDeveloper || ""}
-                    onChange={(e) => setClaimDeveloper(e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: "100%" }}
-                  >
-                    <option value="">{tx("orders.claim_dev_placeholder")}</option>
-                    {developersList.map((dev) => (
-                      <option key={dev.id} value={dev.id}>
-                        {dev.full_name} ({dev.specialty || dev.department || "Dasturchi"})
-                      </option>
-                    ))}
-                  </select>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
-                    {tx("orders.claim_dev_hint")}
                   </div>
                 </div>
 
