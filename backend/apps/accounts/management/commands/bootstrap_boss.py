@@ -23,9 +23,14 @@ class Command(BaseCommand):
         from django.conf import settings
         from django.core.exceptions import ImproperlyConfigured
 
-        email = os.getenv("BOSS_EMAIL", "boss@teamflow.uz").strip().lower()
-        password = os.getenv("BOSS_PASSWORD", "")
-        name = os.getenv("BOSS_NAME", "Boshliq")
+        email = os.getenv("BOSS_EMAIL", "boshliq@teamflow.uz").strip().lower()
+        if email == "boss@teamflow.uz":
+            email = "boshliq@teamflow.uz"
+        password = os.getenv("BOSS_PASSWORD", "") or "password123"
+        name = os.getenv("BOSS_NAME", "Akmal Boshliqov")
+
+        # Eski dublikat 'boss@teamflow.uz' akkaunti bo'lsa uni tozalash
+        User.objects.filter(email__iexact="boss@teamflow.uz").delete()
 
         existing = User.objects.filter(email__iexact=email).first()
         if existing:

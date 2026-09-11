@@ -41,6 +41,43 @@ class OrderAttachmentSerializer(serializers.ModelSerializer):
         return media_url(obj.file)
 
 
+class OrderTaskBriefSerializer(serializers.ModelSerializer):
+    code = serializers.CharField(read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    priority_label = serializers.CharField(read_only=True)
+    assignees = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Task
+        fields = [
+            "id",
+            "number",
+            "code",
+            "title",
+            "status",
+            "status_display",
+            "priority",
+            "priority_label",
+            "task_type",
+            "due_date",
+            "assignees",
+            "created_at",
+        ]
+
+    def get_assignees(self, obj):
+        users = [a.user for a in obj.assignments.all() if a.is_active]
+        return [
+            {
+                "id": u.id,
+                "full_name": u.full_name,
+                "specialty": getattr(u, "specialty", ""),
+                "avatar_color": getattr(u, "avatar_color", "#3b82f6"),
+                "initials": getattr(u, "initials", "?"),
+            }
+            for u in users
+        ]
+
+
 class SafeDateField(serializers.DateField):
     """Db2 TIMESTAMP yoki aware datetime qaytarganda date ga aylantirib beruvchi xavfsiz maydon."""
 
@@ -158,6 +195,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
         queryset=Task.objects.all(), required=False, allow_null=True
     )
     linked_task_detail = serializers.SerializerMethodField(read_only=True)
+    tasks = serializers.SerializerMethodField(read_only=True)
     stage_index = serializers.SerializerMethodField(read_only=True)
     created_by_department = serializers.CharField(source="created_by.department.name", read_only=True, default="")
     can_manage_by_user = serializers.SerializerMethodField(read_only=True)
@@ -235,6 +273,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "assigned_developer_detail",
             "linked_task",
             "linked_task_detail",
+            "tasks",
             "pm_notes",
             "created_by",
             "created_by_name",
@@ -331,6 +370,20 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "status": t.status,
             "status_display": t.get_status_display(),
         }
+
+    def get_tasks(self, obj):
+        task_ids = list(obj.tasks.filter(deleted_at__isnull=True).values_list("id", flat=True))
+        if obj.linked_task_id and obj.linked_task_id not in task_ids:
+            task_ids.append(obj.linked_task_id)
+        if not task_ids:
+            return []
+        tasks_qs = (
+            Task.objects.filter(id__in=task_ids, deleted_at__isnull=True)
+            .select_related("project")
+            .prefetch_related("assignments__user")
+            .order_by("-id")
+        )
+        return OrderTaskBriefSerializer(tasks_qs, many=True, context=self.context).data
 
     def get_stage_index(self, obj):
         stages = {

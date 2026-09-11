@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
@@ -17,20 +17,54 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [failCount, setFailCount] = useState(0);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+
+  // 30 soniyalik qulf taymeri (har sekundda kamayadi)
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutSeconds((s) => {
+        if (s <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutSeconds]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (lockoutSeconds > 0) return;
     setBusy(true);
     setError(null);
     try {
       await login(email, password);
+      setFailCount(0);
+      setLockoutSeconds(0);
       // Odam qaysidir sahifaga kirmoqchi bo'lib bu yerga otilgan bo'lsa
       // (`Protected`), kirgandan keyin o'sha yerga qaytadi - masalan
       // Telegramdagi «Ochish» tugmasi bosilganda. Aks holda u har safar
       // «Bosh panel» ga tushib, qidirgan ishini qo'lda topishi kerak edi.
       nav(next || "/panel", { replace: true });
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : tx("login.kirishda_xatolik"));
+    } catch (err: any) {
+      const msg = err instanceof ApiError ? err.message : tx("login.kirishda_xatolik");
+      // Agar backend qolgan soniyani yuborgan bo'lsa
+      const match = msg.match(/(\d+)\s+soniyadan/);
+      if (match) {
+        const sec = parseInt(match[1], 10);
+        setLockoutSeconds(sec > 0 ? sec : 30);
+      } else {
+        const nextFails = failCount + 1;
+        setFailCount(nextFails);
+        if (nextFails >= 5) {
+          setLockoutSeconds(30);
+          setFailCount(0);
+        }
+      }
+      setError(msg);
     } finally {
       setBusy(false);
     }
@@ -69,8 +103,33 @@ export default function Login() {
               <PasswordInput id={`${fid}-1`} value={password} required autoComplete="current-password"
                              onChange={setPassword} placeholder="parolingiz" />
             </div>
-            <button className="btn btn-primary btn-block" disabled={busy}>
-              {busy ? tx("login.tekshirilmoqda") : tx("common.kirish")}
+            {lockoutSeconds > 0 && (
+              <div
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  background: "rgba(239, 68, 68, 0.12)",
+                  border: "1px solid rgba(239, 68, 68, 0.35)",
+                  color: "var(--danger, #dc2626)",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  marginBottom: 14,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  lineHeight: 1.4,
+                }}
+              >
+                <span style={{ fontSize: 16 }}>⏳</span>
+                <span>Xavfsizlik blokirovkasi: {lockoutSeconds} soniyadan so'ng qayta urinishingiz mumkin.</span>
+              </div>
+            )}
+            <button className="btn btn-primary btn-block" disabled={busy || lockoutSeconds > 0}>
+              {busy
+                ? tx("login.tekshirilmoqda")
+                : lockoutSeconds > 0
+                ? `Qayta urinish: ${lockoutSeconds}s`
+                : tx("common.kirish")}
             </button>
           </form>
         </div>

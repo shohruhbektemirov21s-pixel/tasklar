@@ -1,11 +1,12 @@
 import { useEffect, useId, useState } from "react";
 import { ApiError, api } from "@/api/client";
 import { deleteProject } from "@/api/projects";
+import { getOrders } from "@/api/orders";
 import FilePicker, { uploadFiles } from "@/components/FilePicker";
 import TeamPicker, { addPickedMembers, createPickedTasks, taskCount }
   from "@/components/TeamPicker";
 import type { Pick as TeamPick } from "@/components/TeamPicker";
-import type { Access, Brief, Project } from "@/api/types";
+import type { Access, Brief, ChangeRequestItem, Project } from "@/api/types";
 
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
@@ -57,7 +58,28 @@ export default function ProjectForm() {
     // Ish maydoni ichida ochiq - standart holat, jamoa bir-birining ishini
     // ko'rib tursin. Tashqariga chiqarish esa ATAYLAB belgilanadi.
     is_public: true, is_listed: false,
+    order_id: null as number | null,
   });
+
+  const [orders, setOrders] = useState<ChangeRequestItem[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    setOrdersLoading(true);
+    getOrders({ page_size: 200 })
+      .then((res) => {
+        if (!alive) return;
+        setOrders(res.results || []);
+      })
+      .catch(() => {
+        // Buyurtmalar ruxsati bo'lmasa yoki xato bo'lsa ro'yxat bo'sh qoladi
+      })
+      .finally(() => {
+        if (alive) setOrdersLoading(false);
+      });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -75,6 +97,7 @@ export default function ProjectForm() {
           project_type: p.project_type || "NEW",
           start_date: p.start_date || "", due_date: p.due_date || "",
           is_public: p.is_public, is_listed: p.is_listed,
+          order_id: p.linked_order?.id || null,
         });
         if (b) {
           setBrief({
@@ -96,6 +119,22 @@ export default function ProjectForm() {
 
   function set(k: string, v: unknown) {
     setF((p) => ({ ...p, [k]: v }));
+  }
+
+  function handleOrderChange(selectedId: number | null) {
+    set("order_id", selectedId);
+    if (selectedId && !editing) {
+      const ord = orders.find((o) => o.id === selectedId);
+      if (ord) {
+        setF((prev) => ({
+          ...prev,
+          order_id: selectedId,
+          name: prev.name.trim() ? prev.name : (ord.system_name || `Buyurtma #${ord.request_no}`),
+          description: prev.description.trim() ? prev.description : (ord.requested_change || ""),
+          project_type: ord.order_type || prev.project_type,
+        }));
+      }
+    }
   }
 
   const DRAFT_KEY = "teamflow_draft_new_project";
@@ -155,6 +194,7 @@ export default function ProjectForm() {
       due_date: "",
       is_public: true,
       is_listed: false,
+      order_id: null,
     });
     setBrief({
       architecture: "",
@@ -187,6 +227,7 @@ export default function ProjectForm() {
     // Ish maydoni yuborilmaydi - server o'zi tanlaydi (`resolve_workspace`).
     const body = {
       ...f,
+      order_id: f.order_id || null,
       start_date: f.start_date || null,
       due_date: f.due_date || null,
       brief,
@@ -337,6 +378,38 @@ export default function ProjectForm() {
             {/* Chap ustun: asosiy maydonlar va boshlang'ich fayllar */}
             <div>
             <Card title={tx("project_form.asosiy_malumot")}>
+              <div className="field">
+                <label htmlFor={`${fid}-order`}>
+                  {tx("project_form.boglanadigan_buyurtma")}
+                  <span style={{ fontSize: 12, fontWeight: "normal", color: "var(--color-fg-muted)", marginLeft: 6 }}>
+                    ({tx("common.ixtiyoriy")})
+                  </span>
+                </label>
+                <select
+                  id={`${fid}-order`}
+                  value={f.order_id || ""}
+                  onChange={(e) => {
+                    const val = e.target.value ? Number(e.target.value) : null;
+                    handleOrderChange(val);
+                  }}
+                  disabled={ordersLoading}
+                >
+                  <option value="">{tx("project_form.buyurtma_tanlanmagan")}</option>
+                  {orders.filter((ord) => ord.status !== "DRAFT").map((ord) => (
+                    <option key={ord.id} value={ord.id}>
+                      {ord.request_no} — {ord.system_name} ({ord.status_display})
+                    </option>
+                  ))}
+                  {f.order_id && !orders.some((o) => o.id === f.order_id) && (
+                    <option value={f.order_id}>
+                      Buyurtma #{f.order_id}
+                    </option>
+                  )}
+                </select>
+                <div style={{ fontSize: 11, color: "var(--color-fg-muted)", marginTop: 4 }}>
+                  {tx("project_form.buyurtma_tanlash_izohi")}
+                </div>
+              </div>
               <div className="field">
                 <label htmlFor={`${fid}-0`}>{tx("project_form.loyiha_nomi")}</label>
                 <input id={`${fid}-0`} value={f.name} required onChange={(e) => set("name", e.target.value)}

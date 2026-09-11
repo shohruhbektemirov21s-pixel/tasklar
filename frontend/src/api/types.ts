@@ -185,6 +185,14 @@ export interface Project {
   members?: ProjectMember[];
   status_counts?: Record<string, number>;
   pending_requests?: number;
+  order_id?: number | null;
+  linked_order?: {
+    id: number;
+    request_no: string;
+    system_name: string;
+    status: string;
+    status_display: string;
+  } | null;
 }
 
 export interface ProjectMember {
@@ -978,6 +986,27 @@ export interface OrderAttachmentItem {
   created_at: string;
 }
 
+export interface OrderTaskBriefItem {
+  id: number;
+  number: number;
+  code: string;
+  title: string;
+  status: string;
+  status_display: string;
+  priority: number;
+  priority_label?: string;
+  task_type?: string;
+  due_date?: string | null;
+  assignees?: {
+    id: number;
+    full_name: string;
+    specialty?: string;
+    avatar_color?: string;
+    initials?: string;
+  }[];
+  created_at?: string;
+}
+
 /** Axborot tizimiga o'zgartirish kiritish so'rovi (TZ) */
 export interface ChangeRequestItem {
   id: number;
@@ -1056,6 +1085,7 @@ export interface ChangeRequestItem {
     status: string;
     status_display: string;
   } | null;
+  tasks?: OrderTaskBriefItem[];
   pm_notes?: string;
   created_by?: number;
   created_by_name?: string;

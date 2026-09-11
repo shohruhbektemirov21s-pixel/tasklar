@@ -3483,6 +3483,7 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   align-items: center;
   justify-content: center;
   padding: 16px;
+  overflow-y: auto;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   animation: modal-fade-in 0.18s ease-out;
@@ -3502,6 +3503,7 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   width: 100%;
   max-width: 580px;
   max-height: 90vh;
+  margin: auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;

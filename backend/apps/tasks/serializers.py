@@ -106,6 +106,7 @@ class TaskSerializer(serializers.ModelSerializer):
     is_overdue = serializers.BooleanField(read_only=True)
     logged_hours = serializers.DecimalField(max_digits=8, decimal_places=1, read_only=True)
     specialty_label = serializers.CharField(read_only=True)
+    order_request_no = serializers.CharField(source="order.request_no", read_only=True, allow_null=True)
     attachment_count = serializers.SerializerMethodField()
     parent_code = serializers.CharField(source="parent.code", read_only=True, allow_null=True)
     parent_title = serializers.CharField(source="parent.title", read_only=True, allow_null=True)
@@ -114,7 +115,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Task
-        fields = ["id", "project", "project_name", "project_key", "number", "code",
+        fields = ["id", "project", "project_name", "project_key", "order", "order_request_no", "number", "code",
                   "title", "description", "acceptance_criteria",
                   "status", "status_display", "priority", "priority_label",
                   "task_type", "type_display", "required_specialty", "specialty_label",

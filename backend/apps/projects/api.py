@@ -326,11 +326,21 @@ class ProjectViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def perform_create(self, serializer):
         user = self.request.user
+        order_id = serializer.validated_data.pop("order_id", None)
+        if order_id is None and "order_id" in self.request.data:
+            order_id = self.request.data.get("order_id")
         manager_id = serializer.validated_data.pop("manager_id", None) or user.id
         # Forma ish maydonini so'ramaydi - yuborilmagan bo'lsa o'zimiz topamiz.
         workspace = serializer.validated_data.get("workspace") or resolve_workspace(user)
         project = serializer.save(created_by=user, manager_id=manager_id,
                                   workspace=workspace)
+
+        if order_id:
+            try:
+                from apps.orders.models import ChangeRequest
+                ChangeRequest.objects.filter(pk=order_id).update(project=project)
+            except Exception:
+                pass
 
         brief_data = self.request.data.get("brief")
         brief_defaults = {"updated_by": user}
@@ -369,6 +379,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         ko'rsatmasa ham, API ochiq.
         """
         manager_id = serializer.validated_data.pop("manager_id", None)
+        order_id = serializer.validated_data.pop("order_id", None)
+        if order_id is None and "order_id" in self.request.data:
+            order_id = self.request.data.get("order_id")
+
         if manager_id and manager_id != serializer.instance.manager_id:
             access = ProjectAccess(self.request.user, serializer.instance)
             if not access.can_grant_role(ProjectRole.MANAGER):
@@ -379,6 +393,16 @@ class ProjectViewSet(viewsets.ModelViewSet):
             ProjectMember.objects.update_or_create(
                 project=project, user_id=manager_id,
                 defaults={"role": ProjectRole.MANAGER, "is_active": True})
+
+        if order_id is not None:
+            try:
+                from apps.orders.models import ChangeRequest
+                if order_id:
+                    ChangeRequest.objects.filter(pk=order_id).update(project=project)
+                else:
+                    ChangeRequest.objects.filter(project=project).update(project=None)
+            except Exception:
+                pass
 
 
 

@@ -1,10 +1,13 @@
+import time
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.core.cache import cache
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import (TokenObtainPairSerializer,
                                                   TokenRefreshSerializer)
 
+from apps.core.middleware import get_client_ip
 from .models import Department, GlobalRole
 from .specialties import Seniority, Specialty, specialty_catalog
 
@@ -63,7 +66,7 @@ class UserSerializer(serializers.ModelSerializer):
     # Tajriba chegarasi royxatdan otishdagi bilan bir xil: 0-30 yil.
     years_experience = serializers.IntegerField(required=False, min_value=0, max_value=30)
     # Rasm /api/auth/me/avatar/ orqali yuklanadi, bu yerda faqat o'qiladi.
-    department_name = serializers.CharField(read_only=True)
+    department_name = serializers.CharField(required=False, allow_blank=True)
     avatar = serializers.SerializerMethodField()
 
     class Meta:
@@ -82,6 +85,21 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active", "date_joined",
         ]
         read_only_fields = ["email", "global_role", "is_active", "date_joined"]
+
+    def update(self, instance, validated_data):
+        dept_name = validated_data.pop("department_name", None)
+        if dept_name is not None:
+            dept_name = dept_name.strip()
+            if dept_name:
+                from .models import Department
+                department, _ = Department.objects.get_or_create(
+                    name=dept_name,
+                    defaults={"code": dept_name[:10].upper()}
+                )
+                instance.department = department
+            else:
+                instance.department = None
+        return super().update(instance, validated_data)
 
     def get_avatar(self, obj):
         from apps.core.media import media_url
@@ -313,14 +331,63 @@ class TokenSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        request = self.context.get("request")
+        ip = get_client_ip(request) if request else "127.0.0.1"
         email = (attrs.get("email") or "").strip().lower()
         password = attrs.get("password") or ""
+
+        # 1. 30 soniyalik qulf (lockout) mavjudligini tekshirish
+        lock_key = f"auth_lock:{ip}:{email}"
+        ip_lock_key = f"auth_lock_ip:{ip}"
+        lock_until = cache.get(lock_key) or cache.get(ip_lock_key)
+        if lock_until:
+            remaining = max(1, int(lock_until - time.time()))
+            raise AuthenticationFailed(
+                f"Kirish uchun ketma-ket 5 marta noto'g'ri urinish amalga oshirildi. "
+                f"Xavfsizlik yuzasidan tizimga kirish vaqtincha to'xtatildi. "
+                f"Iltimos, {remaining} soniyadan so'ng qayta urinib ko'ring.",
+                code="account_locked",
+            )
+
+        fail_key = f"auth_fails:{ip}:{email}"
+        ip_fail_key = f"auth_fails_ip:{ip}"
+
         existing_user = User.objects.filter(email__iexact=email).first()
         if existing_user and existing_user.check_password(password) and not existing_user.is_active:
             raise serializers.ValidationError({
                 "detail": "Hisobingiz administrator tomonidan tasdiqlanishi kutilmoqda. Tasdiqlangandan so'ng tizimga kirishingiz mumkin."
             })
-        data = super().validate(attrs)
+
+        try:
+            data = super().validate(attrs)
+        except Exception as exc:
+            # Login muvaffaqiyatsiz bo'ldi - xatoliklar sonini oshiramiz
+            fails = cache.get(fail_key, 0) + 1
+            cache.set(fail_key, fails, timeout=300)
+
+            ip_fails = cache.get(ip_fail_key, 0) + 1
+            cache.set(ip_fail_key, ip_fails, timeout=300)
+
+            if fails >= 5 or ip_fails >= 5:
+                lock_time = time.time() + 30
+                cache.set(lock_key, lock_time, timeout=30)
+                cache.set(ip_lock_key, lock_time, timeout=30)
+                cache.delete(fail_key)
+                cache.delete(ip_fail_key)
+                raise AuthenticationFailed(
+                    "Kirish uchun ketma-ket 5 marta noto'g'ri urinish amalga oshirildi. "
+                    "Xavfsizlik yuzasidan tizimga kirish 30 soniyaga to'xtatildi. "
+                    "Iltimos, 30 soniyadan so'ng qayta urinib ko'ring.",
+                    code="account_locked",
+                )
+            raise exc
+
+        # Kirish muvaffaqiyatli bo'lsa - hisoblagichlarni tozalaymiz
+        cache.delete(fail_key)
+        cache.delete(ip_fail_key)
+        cache.delete(lock_key)
+        cache.delete(ip_lock_key)
+
         data["user"] = MeSerializer(self.user, context=self.context).data
         return data
 

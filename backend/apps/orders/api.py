@@ -55,6 +55,7 @@ class CanAccessOrders(permissions.BasePermission):
             or getattr(user, "is_manager", False)
             or getattr(user, "can_access_orders", False)
             or getattr(user, "is_sohaviy_boshqarma", False)
+            or getattr(user, "can_create_project", False)
         )
         if not can_access:
             return False
@@ -180,19 +181,23 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 sohaviy_q |= (Q(department__iexact=user.department_name) & ~Q(status=ChangeRequestStatus.DRAFT))
             qs = qs.filter(sohaviy_q)
         else:
-            if for_pm and user.is_authenticated:
-                qs = qs.filter(Q(assigned_pm=user) | Q(project__manager=user)).exclude(status=ChangeRequestStatus.DRAFT)
-            elif mine and user.is_authenticated:
-                mine_q = Q(created_by=user) | Q(assigned_pm=user) | Q(project__manager=user)
-                if getattr(user, "department_id", None) and user.department:
-                    mine_q |= (
-                        (Q(department__iexact=user.department.name) | Q(created_by__department=user.department))
-                        & ~Q(status=ChangeRequestStatus.DRAFT)
-                    )
-                qs = qs.filter(mine_q)
+            if not is_admin_or_boss:
+                if for_pm and user.is_authenticated:
+                    qs = qs.filter(Q(assigned_pm=user) | Q(project__manager=user)).exclude(status=ChangeRequestStatus.DRAFT)
+                elif mine and user.is_authenticated:
+                    mine_q = Q(created_by=user) | Q(assigned_pm=user) | Q(project__manager=user)
+                    if getattr(user, "department_id", None) and user.department:
+                        mine_q |= (
+                            (Q(department__iexact=user.department.name) | Q(created_by__department=user.department))
+                            & ~Q(status=ChangeRequestStatus.DRAFT)
+                        )
+                    qs = qs.filter(mine_q)
 
-        if not is_admin_or_boss:
+        # Qoralamalar (DRAFT) userni o'zidan boshqa hech kimga (hatto admin yoki boshliqqa ham) ko'rinmaydi!
+        if user.is_authenticated:
             qs = qs.exclude(Q(status=ChangeRequestStatus.DRAFT) & ~Q(created_by=user))
+        else:
+            qs = qs.exclude(status=ChangeRequestStatus.DRAFT)
 
         deadline_param = self.request.query_params.get("deadline")
         if deadline_param:
@@ -365,17 +370,16 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
 
-        # Agar buyurtma allaqachon yuborilgan bo'lsa (ya'ni DRAFT emas):
-        # Na boshqarma, na PM buyurtmani to'g'ridan-to'g'ri tahrirlay oladi!
+        # Foydalanuvchi talabi: Oddiy foydalanuvchilar buyurtmani tahrirlashi taqiqlangan!
         if instance.status != ChangeRequestStatus.DRAFT and not is_admin_or_boss:
             raise ValidationError(
-                {"detail": "Yuborilgan yoki qabul qilingan buyurtmani tahrirlab bo'lmaydi. Faqat qoralama (draft) holatidagi buyurtmani tahrirlash mumkin."}
+                {"detail": "Yuborilgan yoki qabul qilingan buyurtmani tahrirlab bo'lmaydi. Buyurtmani tahrirlash tizimda taqiqlangan."}
             )
 
-        # Agar DRAFT bo'lsa, faqat uni yaratgan shaxs tahrirlay oladi
-        if instance.status == ChangeRequestStatus.DRAFT and not is_admin_or_boss and instance.created_by_id != user.id:
+        # Agar DRAFT bo'lsa, faqat uni yaratgan shaxs yuborishi/to'ldirishi mumkin
+        if instance.status == ChangeRequestStatus.DRAFT and instance.created_by_id != user.id and not is_admin_or_boss:
             raise ValidationError(
-                {"detail": "Faqat buyurtmani yaratgan foydalanuvchi qoralamani tahrirlashi mumkin."}
+                {"detail": "Faqat buyurtmani yaratgan foydalanuvchi qoralamani to'ldirishi yoki yuborishi mumkin."}
             )
 
         old_status = instance.status
@@ -426,23 +430,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             pass
 
     def perform_destroy(self, instance):
-        user = self.request.user
-        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
-
-        # Yuborilgan buyurtmani o'chirish taqiqlanadi (PM ga ham, boshqarmaga ham)
-        if instance.status != ChangeRequestStatus.DRAFT and not is_admin_or_boss:
-            raise ValidationError(
-                {"detail": "Yuborilgan buyurtmani o'chirib bo'lmaydi. Faqat qoralama (draft) holatidagi buyurtmani o'chirish mumkin."}
-            )
-
-        # Faqat o'zining DRAFT ini o'chira oladi
-        if not is_admin_or_boss and instance.created_by_id != user.id:
-            raise ValidationError(
-                {"detail": "Faqat qoralamani yaratgan foydalanuvchi yoki tizim administratori o'chira oladi."}
-            )
-
-        order_pk = instance.pk
-        super().perform_destroy(instance)
+        raise ValidationError({"detail": "Buyurtmani o'chirish tizimda taqiqlangan."})
         try:
             from apps.notifications.services import send_to_users
             from .services import get_order_notification_recipients
@@ -578,6 +566,8 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             )
 
         order = self.get_object()
+        if order.status == ChangeRequestStatus.DRAFT:
+            raise ValidationError({"detail": "Qoralama (draft) holatidagi buyurtmani qabul qilib bo'lmaydi. Avval yuborilishi kerak."})
 
         # Agar bu buyurtmani allaqachon boshqa PM olgan bo'lsa:
         if order.assigned_pm_id and order.assigned_pm_id != user.id:
@@ -638,6 +628,8 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             )
 
         order = self.get_object()
+        if order.status == ChangeRequestStatus.DRAFT:
+            raise ValidationError({"detail": "Qoralama (draft) holatidagi buyurtmaga qaror chiqarib bo'lmaydi. Avval yuborilishi kerak."})
 
         # Agar bu buyurtmani allaqachon boshqa PM olgan bo'lsa:
         if order.assigned_pm_id and order.assigned_pm_id != user.id:
@@ -1064,6 +1056,122 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         )
         return Response(ChangeRequestSerializer(order, context={"request": request}).data)
 
+    @action(detail=True, methods=["post"], url_path="create-task")
+    def create_task(self, request, pk=None):
+        """Buyurtma (TZ) asosida loyihada yangi vazifa (Task) yaratish va biriktirish."""
+        user = request.user
+        order = self.get_object()
+
+        is_pm_or_admin = bool(
+            user.is_platform_admin
+            or getattr(user, "is_boss", False)
+            or getattr(user, "is_manager", False)
+            or getattr(user, "specialty", "") == "PM"
+            or getattr(user, "global_role", "") == "MANAGER"
+            or (order.assigned_pm_id == user.id)
+            or (order.project and order.project.manager_id == user.id)
+        )
+        if not is_pm_or_admin:
+            return Response(
+                {"detail": "Faqat loyiha menejeri (PM) yoki admin buyurtma bo'yicha vazifa yarata oladi."},
+                status=403,
+            )
+
+        if not order.project:
+            return Response(
+                {"detail": "Vazifa yaratish uchun buyurtmaga avval loyiha (axborot tizimi) biriktirilgan bo'lishi shart."},
+                status=400,
+            )
+
+        title = (request.data.get("title") or "").strip()
+        if not title:
+            return Response({"title": "Vazifa sarlavhasi kiritilishi shart."}, status=400)
+
+        description = (request.data.get("description") or "").strip()
+        priority = request.data.get("priority", 2)
+        try:
+            priority = int(priority)
+        except (ValueError, TypeError):
+            priority = 2
+
+        task_type = request.data.get("task_type") or "FEATURE"
+        due_date = request.data.get("due_date") or order.pm_deadline or None
+        assignee_ids = request.data.get("assignee_ids") or []
+        if not isinstance(assignee_ids, list):
+            assignee_ids = [assignee_ids]
+        if "assignee_id" in request.data and request.data["assignee_id"]:
+            assignee_ids.append(request.data["assignee_id"])
+        assignee_ids = [int(a) for a in assignee_ids if str(a).isdigit()]
+
+        from apps.tasks.models import Task, TaskAssignment
+        from apps.activity.services import log
+        from apps.notifications.models import NotificationKind
+        from apps.notifications.services import notify_many
+
+        with transaction.atomic():
+            task = Task.objects.create(
+                project=order.project,
+                order=order,
+                title=title,
+                description=description,
+                priority=priority,
+                task_type=task_type,
+                due_date=due_date,
+                created_by=user,
+                reviewer=order.assigned_pm or user,
+            )
+
+            # Ijrochilarni biriktirish
+            added_users = []
+            for uid in set(assignee_ids):
+                u = User.objects.filter(id=uid).first()
+                if u:
+                    TaskAssignment.objects.create(task=task, user=u, assigned_by=user)
+                    added_users.append(u)
+
+            if added_users:
+                try:
+                    log(
+                        actor=user,
+                        verb="task.assigned",
+                        task=task,
+                        summary=f"{task.code}: {', '.join(u.full_name for u in added_users)} biriktirildi",
+                    )
+                    notify_many(
+                        added_users,
+                        NotificationKind.TASK_ASSIGNED,
+                        title=f"{task.code} sizga biriktirildi",
+                        body=task.title[:150],
+                        url=f"/vazifa/{task.pk}",
+                        actor=user,
+                        meta={"task": task.pk, "project": task.project_id},
+                    )
+                except Exception:
+                    pass
+
+            # Agar buyurtmada linked_task bo'lmasa, birinchi taskni u bilan ham bog'laymiz
+            if not order.linked_task:
+                order.linked_task = task
+                if order.status == ChangeRequestStatus.ACCEPTED and assignee_ids:
+                    order.status = ChangeRequestStatus.ASSIGNED_TO_DEV
+                order.save(update_fields=["linked_task", "status", "updated_at"])
+
+        try:
+            from apps.notifications.services import send_to_users
+            from .services import get_order_notification_recipients
+            all_users = get_order_notification_recipients(order=order)
+            if order.created_by:
+                all_users.append(order.created_by)
+            send_to_users(all_users, {"event": "order.update", "order_id": order.pk})
+        except Exception:
+            pass
+
+        order = (
+            ChangeRequest.objects.select_related("created_by", "project", "project__manager", "assigned_pm", "assigned_developer", "linked_task")
+            .prefetch_related("versions__uploaded_by", "versions__decided_by", "tasks__assignments__user")
+            .get(pk=order.pk)
+        )
+        return Response(ChangeRequestSerializer(order, context={"request": request}).data, status=201)
 
     @action(detail=True, methods=["get"], url_path="export-docx")
     def export_docx(self, request, pk=None):
@@ -1081,7 +1189,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="stats")
     def stats(self, request):
         """Umumiy buyurtmalar ko'rsatkichlari (statistika)."""
-        qs = self.get_queryset()
+        qs = self.get_queryset().exclude(status=ChangeRequestStatus.DRAFT)
         total = qs.count()
         new_count = qs.filter(status=ChangeRequestStatus.NEW).count()
         accepted_count = qs.filter(status=ChangeRequestStatus.ACCEPTED).count()

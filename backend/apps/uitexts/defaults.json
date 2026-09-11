@@ -523,6 +523,10 @@
   "value": "Bekor qilish",
   "note": "umumiy"
  },
+ "common.ixtiyoriy": {
+  "value": "ixtiyoriy",
+  "note": "umumiy"
+ },
  "common.bildirishnomalar": {
   "value": "Bildirishnomalar",
   "note": "umumiy"
@@ -1943,6 +1947,86 @@
   "value": "Yangi",
   "note": "pages/Notifications.tsx"
  },
+ "notifications.tafsilot": {
+  "value": "Bildirishnoma tafsilotlari",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.xabar_matni": {
+  "value": "Xabar matni",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.matn_korsatilmagan": {
+  "value": "Qo'shimcha matn ko'rsatilmagan.",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.yuboruvchi": {
+  "value": "Yuboruvchi",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.foydalanuvchi": {
+  "value": "Foydalanuvchi",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.tizim": {
+  "value": "TeamFlow tizimi",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.sana": {
+  "value": "Sana va vaqt",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.sabab": {
+  "value": "Rad etish sababi",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.izoh": {
+  "value": "Izoh / Ko'rsatma",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.buyurtma": {
+  "value": "Buyurtma",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.versiya": {
+  "value": "Versiya",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.muddat": {
+  "value": "Belgilangan muddat",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.bajarish_vaqti": {
+  "value": "Kutilayotgan muddat",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.qo_shimcha_malumot": {
+  "value": "Qo'shimcha ma'lumotlar",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.buyurtmaga_otish": {
+  "value": "Buyurtmaga o'tish",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.vazifaga_otish": {
+  "value": "Vazifaga o'tish",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.suhbatga_otish": {
+  "value": "Suhbatga o'tish",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.loyihaga_otish": {
+  "value": "Loyihaga o'tish",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.jamoaga_otish": {
+  "value": "Jamoaga o'tish",
+  "note": "components/NotificationModal.tsx"
+ },
+ "notifications.sahifaga_otish": {
+  "value": "Sahifaga o'tish",
+  "note": "components/NotificationModal.tsx"
+ },
  "orders.approve_version_btn": {
   "value": "Yangi versiyani tasdiqlash",
   "note": "pages/ChangeRequests.tsx"
@@ -2523,6 +2607,10 @@
   "value": "Aloqa",
   "note": "pages/Profile.tsx"
  },
+ "profile.boshqarma": {
+  "value": "Bo'linma / Boshqarma",
+  "note": "pages/Profile.tsx"
+ },
  "profile.bajarilgan_ishlarni_royxatda_korish": {
   "value": "Bajarilgan ishlarni royxatda korish",
   "note": "pages/Profile.tsx"
@@ -3002,6 +3090,18 @@
  "project_forecast.vazifalarning_oxirgi_muddati": {
   "value": "Vazifalarning oxirgi muddati",
   "note": "pages/project/Forecast.tsx"
+ },
+ "project_form.boglanadigan_buyurtma": {
+  "value": "Bog'lanadigan buyurtma (TZ)",
+  "note": "pages/ProjectForm.tsx"
+ },
+ "project_form.buyurtma_tanlanmagan": {
+  "value": "— Tanlanmagan (Buyurtmasiz) —",
+  "note": "pages/ProjectForm.tsx"
+ },
+ "project_form.buyurtma_tanlash_izohi": {
+  "value": "Loyiha biror buyurtma (TZ) asosida yaratilayotgan bo'lsa, uni tanlang.",
+  "note": "pages/ProjectForm.tsx"
  },
  "project_form.asosiy_malumot": {
   "value": "Asosiy maʼlumot",
@@ -5962,5 +6062,113 @@
  "orders.autosave_saved": {
   "value": "Avtomatik saqlandi (Qoralama)",
   "note": "pages/OrderForm.tsx"
+ },
+ "orders.tasks_section_title": {
+  "value": "Buyurtma bo'yicha vazifalar (Topshiriqlar)",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.tasks_section_desc": {
+  "value": "Ushbu TZ asosida dasturchilarga berilgan topshiriqlar va ijro holati",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.create_task_btn": {
+  "value": "Yangi vazifa berish",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.no_tasks_title": {
+  "value": "Ushbu buyurtma bo'yicha hali vazifalar berilmagan",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.no_tasks_desc_pm": {
+  "value": "PM ushbu TZ bo'yicha dasturchilarga alohida topshiriqlar berishi va ularning ijrosini nazorat qilishi mumkin.",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.no_tasks_desc_user": {
+  "value": "Loyihaning mas'ul PMi ushbu buyurtma asosida topshiriqlarni taqsimlaydi.",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.first_task_btn": {
+  "value": "+ Birinchi vazifani yaratish",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.new_tz_uploaded_title": {
+  "value": "Yangi TZ fayli yuklandi (v{v}) — Mas'ul PM ko'rib chiqishi kutilmoqda",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.approve_tz_btn": {
+  "value": "Yangi TZ ni tasdiqlash",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.reject_tz_btn": {
+  "value": "Rad etish",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.task_title_label": {
+  "value": "Vazifa sarlavhasi",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.task_desc_label": {
+  "value": "Topshiriq tavsifi",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.task_assignee_label": {
+  "value": "Ijrochi dasturchi",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.task_priority_label": {
+  "value": "Muhimlik darajasi",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.task_due_date_label": {
+  "value": "Bajarish muddati",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.task_submit_btn": {
+  "value": "Vazifani topshirish",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.qabul_qilingan": {
+  "value": "Qabul qilingan",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "orders.rad_etildi": {
+  "value": "Rad etildi",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "task_form.turi": {
+  "value": "Turi",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_form.muhimlik": {
+  "value": "Muhimlik",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "common.bosh_sahifa": {
+  "value": "Bosh sahifa",
+  "note": "pages/ChangeRequests.tsx"
+ },
+ "common.qaytarish": {
+  "value": "Qaytarish",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "common.saqlab_bolmadi": {
+  "value": "Saqlab bo'lmadi",
+  "note": "components/inquiry.tsx"
+ },
+ "common.tasdiqlash": {
+  "value": "Tasdiqlash",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "common.yuborish": {
+  "value": "Yuborish",
+  "note": "components/inquiry.tsx"
+ },
+ "common.yuklanmoqda": {
+  "value": "Yuklanmoqda...",
+  "note": "pages/Register.tsx"
+ },
+ "orders.eski_tz_tarixi": {
+  "value": "Avvalgi TZ versiyalari (Tarix)",
+  "note": "pages/OrderDetail.tsx"
  }
 }

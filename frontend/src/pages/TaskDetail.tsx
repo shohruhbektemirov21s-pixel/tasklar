@@ -1057,20 +1057,6 @@ export default function TaskDetail() {
               </AccordionSection>
             )}
 
-            {!!task.quality_checklist?.length && (
-              <AccordionSection
-                id="section-checklist"
-                icon="📋"
-                title={tx("task_detail.topshirishdan_oldin_tekshiring")}
-                badge={<span className="badge">{task.quality_checklist.length}</span>}
-                isOpen={openRight === "checklist"}
-                onToggle={() => toggleRight("checklist")}
-              >
-                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
-                  {task.quality_checklist.map((c: string) => <li key={c}>{c}</li>)}
-                </ul>
-              </AccordionSection>
-            )}
 
             {!!task.mismatched_assignees?.length && acc.can_manage && (
               <AccordionSection
@@ -1185,7 +1171,7 @@ export default function TaskDetail() {
 
                   <div className="row" style={{ gap: 12 }}>
                     <div className="field" style={{ flex: 1 }}>
-                      <label htmlFor="st-type">{tx("task_form.turi") || "Turi"}</label>
+                      <label htmlFor="st-type">{tx("common.turi")}</label>
                       <select id="st-type" value={stType} onChange={(e) => setStType(e.target.value)}>
                         {(meta?.task_type || [
                           { value: "FEATURE", label: "Yangi funksiya" },
@@ -1199,7 +1185,7 @@ export default function TaskDetail() {
                       </select>
                     </div>
                     <div className="field" style={{ flex: 1 }}>
-                      <label htmlFor="st-priority">{tx("task_form.muhimlik") || "Muhimlik"}</label>
+                      <label htmlFor="st-priority">{tx("common.muhimlik")}</label>
                       <select id="st-priority" value={stPriority} onChange={(e) => setStPriority(Number(e.target.value))}>
                         {(meta?.task_priority || [
                           { value: 1, label: "Past" },

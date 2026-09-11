@@ -6,6 +6,7 @@ import { useRealtime } from "@/realtime/RealtimeContext";
 import { IconBell } from "./icons";
 import { Avatar, safePath, timeAgo } from "./ui";
 import { tx } from "@/i18n";
+import NotificationModal from "./NotificationModal";
 
 const TONE: Record<string, string> = {
   "join.request": "badge-warn",
@@ -28,6 +29,7 @@ export default function NotificationBell() {
   // yon paneldagi yozuv bilan bir xil qoida.
   const manages = Boolean(user?.can_create_project || user?.manages_projects);
   const [open, setOpen] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState<AppNotification | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const nav = useNavigate();
 
@@ -50,7 +52,7 @@ export default function NotificationBell() {
   function go(n: AppNotification) {
     setOpen(false);
     if (!n.is_read) void markRead(n.id);
-    if (n.url) nav(safePath(n.url));
+    setSelectedNotif(n);
   }
 
   return (
@@ -122,6 +124,11 @@ export default function NotificationBell() {
           </div>
         </div>
       )}
+
+      <NotificationModal
+        notification={selectedNotif}
+        onClose={() => setSelectedNotif(null)}
+      />
     </div>
   );
 }

@@ -8,6 +8,7 @@ from .models import Notification
 class NotificationSerializer(serializers.ModelSerializer):
     actor = UserBriefSerializer(read_only=True)
     kind_display = serializers.CharField(source="get_kind_display", read_only=True)
+    meta = serializers.JSONField(read_only=True)
 
     class Meta:
         model = Notification

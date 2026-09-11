@@ -55,11 +55,9 @@ export default function OrderForm() {
     if (!user) return "";
     if (user.department_name && user.department_name.trim()) return user.department_name.trim();
     if (user.department && typeof user.department === "string" && user.department.trim()) return user.department.trim();
-    if (user.job_title && user.job_title.trim()) return user.job_title.trim();
     if (user.is_sohaviy_boshqarma || user.global_role === "SOHAVIY" || user.specialty === "SOHAVIY") {
       return "Sohaviy boshqarmalar";
     }
-    if (user.specialty_display && user.specialty_display.trim()) return user.specialty_display.trim();
     return "";
   }, [user]);
 
@@ -85,6 +83,29 @@ export default function OrderForm() {
     project: null,
   });
 
+  // Foydalanuvchi profili yuklanganda profilidagi bo'linma va ism avtomatik o'rnatiladi
+  useEffect(() => {
+    if (!editing && userDepartment) {
+      setF((prev) => {
+        if (!prev.department || prev.department === "Axborot texnologiyalari (IT) boshqarmasi") {
+          return { ...prev, department: userDepartment };
+        }
+        return prev;
+      });
+    }
+  }, [userDepartment, editing]);
+
+  useEffect(() => {
+    if (!editing && user?.full_name) {
+      setF((prev) => {
+        if (!prev.responsible_person) {
+          return { ...prev, responsible_person: user.full_name };
+        }
+        return prev;
+      });
+    }
+  }, [user?.full_name, editing]);
+
   const [draftRestored, setDraftRestored] = useState(false);
   const [serverDraftId, setServerDraftId] = useState<number | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -107,7 +128,12 @@ export default function OrderForm() {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed?.f && ((parsed.f.system_name && parsed.f.system_name !== "TeamFlow") || parsed.f.module?.trim() || parsed.f.due_date || parsed.f.project)) {
-          setF((prev) => ({ ...prev, ...parsed.f }));
+          setF((prev) => ({
+            ...prev,
+            ...parsed.f,
+            department: userDepartment || parsed.f.department || prev.department,
+            responsible_person: user?.full_name || parsed.f.responsible_person || prev.responsible_person,
+          }));
           if (parsed.serverDraftId) {
             setServerDraftId(parsed.serverDraftId);
           }
@@ -117,7 +143,7 @@ export default function OrderForm() {
     } catch {
       // ignore
     }
-  }, [editing]);
+  }, [editing, userDepartment, user?.full_name]);
 
   // Serverga avtomatik saqlash (huddi auto-saveday, bazada DRAFT holatida saqlanadi)
   useEffect(() => {
@@ -419,6 +445,22 @@ export default function OrderForm() {
     );
   }
 
+  if (editing) {
+    return (
+      <div className="content">
+        <div className="msg msg-error" style={{ margin: "40px auto", maxWidth: 500, textAlign: "center", padding: 24, borderRadius: 10 }}>
+          <h3 style={{ margin: "0 0 10px 0" }}>Buyurtmani tahrirlash taqiqlangan</h3>
+          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+            Tizim qoidalariga muvofiq, buyurtmalarni tahrirlash imkoniyati mavjud emas.
+          </p>
+          <button type="button" className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => go(toOrders())}>
+            Buyurtmalar ro'yxatiga qaytish
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHead
@@ -439,22 +481,6 @@ export default function OrderForm() {
         }
         actions={
           <div className="row" style={{ gap: 8 }}>
-            <select
-              aria-label="Muhimlilik darajasi"
-              title="Muhimlilik darajasi"
-              value={f.priority}
-              style={{ width: "auto", minWidth: 150 }}
-              onChange={(e) => set("priority", e.target.value)}
-            >
-              {(meta?.order_priority || [
-                { value: "URGENT", label: "Shoshilinch" },
-                { value: "HIGH", label: "Yuqori" },
-                { value: "MEDIUM", label: "O'rta" },
-                { value: "LOW", label: "Past" },
-              ]).map((p) => (
-                <option key={String(p.value)} value={String(p.value)}>{p.label}</option>
-              ))}
-            </select>
             <button
               type="button"
               className="btn"

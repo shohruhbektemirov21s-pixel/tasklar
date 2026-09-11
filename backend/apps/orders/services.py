@@ -7,8 +7,9 @@ from apps.notifications.models import NotificationKind
 from apps.notifications.services import notify, notify_many
 
 logger = logging.getLogger(__name__)
-
-URL = "/buyurtmalar"
+def order_url(order):
+    order_id = getattr(order, "pk", None) or getattr(order, "id", None) or order
+    return f"/buyurtmalar/{order_id}"
 
 
 def get_order_notification_recipients(order=None, exclude_id=None):
@@ -51,7 +52,7 @@ def notify_order_created(order):
         NotificationKind.ORDER_NEW,
         title=f"Yangi buyurtma (TZ): {order.request_no}",
         body=f"{dept} — {sys_name}{prj_name}{mod}",
-        url=URL,
+        url=order_url(order),
         actor=order.created_by,
         meta={"order_id": order.pk, "request_no": order.request_no},
     )
@@ -70,7 +71,7 @@ def notify_order_status(order, actor, old_status, new_status):
         NotificationKind.ORDER_STATUS,
         title=f"Buyurtma holati o'zgardi: {order.request_no}",
         body=f"Yangi holat: {status_label}",
-        url=URL,
+        url=order_url(order),
         actor=actor,
         meta={"order_id": order.pk, "status": new_status, "old_status": old_status},
     )
@@ -94,7 +95,7 @@ def notify_pm_decision(order, pm_user):
             NotificationKind.ORDER_STATUS,
             title=f"Buyurtma holati: {order.request_no}",
             body=f"{pm_user.full_name}: {body_text}",
-            url=URL,
+            url=order_url(order),
             actor=pm_user,
             meta={
                 "order_id": order.pk,
@@ -110,7 +111,7 @@ def notify_pm_decision(order, pm_user):
             NotificationKind.ORDER_STATUS,
             title=f"Sizga yangi buyurtma/topshiriq topshirildi: {order.request_no}",
             body=f"Loyiha: {order.project.name if order.project else order.system_name}. {body_text}",
-            url=URL,
+            url=order_url(order),
             actor=pm_user,
             meta={
                 "order_id": order.pk,
@@ -135,7 +136,7 @@ def notify_order_new_version(order, version_obj, actor):
         NotificationKind.ORDER_NEW,
         title=f"Yangi TZ versiyasi (v{version_obj.version}): {order.request_no}{prj_name}",
         body=f"{actor.full_name} tomonidan yangi versiya yuklandi{note_preview}. PM ko'rib chiqishi kutilmoqda.",
-        url=URL,
+        url=order_url(order),
         actor=actor,
         meta={
             "order_id": order.pk,
@@ -156,7 +157,7 @@ def notify_order_completion_submitted(order, actor):
         NotificationKind.ORDER_STATUS,
         title=f"Ish yakunlandi va tasdiqlash uchun topshirildi: {order.request_no}",
         body=f"{actor.full_name} ishni yakunladi va tugatilgan ish hujjatini biriktirdi. Iltimos, tekshirib tasdiqlang yoki kamchilik bo'lsa qaytaring.",
-        url=URL,
+        url=order_url(order),
         actor=actor,
         meta={"order_id": order.pk, "status": order.status},
     )
@@ -178,7 +179,7 @@ def notify_order_client_approved(order, actor):
         NotificationKind.ORDER_STATUS,
         title=f"Boshqarma ishni tasdiqladi va qabul qildi: {order.request_no}",
         body=f"{actor.full_name} tomonidan bajarilgan ish to'liq tasdiqlandi va buyurtma muvaffaqiyatli yakunlandi.",
-        url=URL,
+        url=order_url(order),
         actor=actor,
         meta={"order_id": order.pk, "status": order.status},
     )
@@ -202,7 +203,7 @@ def notify_order_completion_rejected(order, actor, feedback_note):
         NotificationKind.ORDER_STATUS,
         title=f"Ishda kamchilik aniqlandi (Qayta ishlashga): {order.request_no}",
         body=f"Boshqarma vakili ({actor.full_name}) kamchiliklarni ko'rsatib ishni qayta tugatishga yubordi{note_text}",
-        url=URL,
+        url=order_url(order),
         actor=actor,
         meta={"order_id": order.pk, "status": order.status, "feedback_note": feedback_note},
     )
@@ -219,7 +220,7 @@ def notify_order_version_approved(order, version_obj, actor):
         NotificationKind.ORDER_STATUS,
         title=f"Yangi TZ versiyasi tasdiqlandi (v{version_obj.version}): {order.request_no}",
         body=f"PM ({actor.full_name}) yangi TZ versiyasini tasdiqladi. Eski TZ atmen qilindi va loyiha yangi TZ ga o'tkazildi.",
-        url=URL,
+        url=order_url(order),
         actor=actor,
         meta={"order_id": order.pk, "version": version_obj.version, "status": "ACCEPTED"},
     )
@@ -242,7 +243,7 @@ def notify_order_version_rejected(order, version_obj, actor, reason):
         NotificationKind.ORDER_STATUS,
         title=f"Yangi TZ versiyasi rad etildi (v{version_obj.version}): {order.request_no}",
         body=f"PM ({actor.full_name}) TZ versiyasini rad etdi{reason_text} Eski versiya o'z kuchida qoldi.",
-        url=URL,
+        url=order_url(order),
         actor=actor,
         meta={"order_id": order.pk, "version": version_obj.version, "reason": reason, "status": "REJECTED"},
     )

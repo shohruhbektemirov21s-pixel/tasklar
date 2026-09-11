@@ -10,6 +10,7 @@ import {
 import { Card, Empty, safePath, timeAgo } from "@/components/ui";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import { tx } from "@/i18n";
+import NotificationModal from "@/components/NotificationModal";
 
 /**
  * Kesimlar - dizayndagi tablar.
@@ -39,6 +40,7 @@ export default function Notifications() {
   const { notifications, unread, connected, markRead, markAllRead, reload } = useRealtime();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("all");
+  const [selectedNotif, setSelectedNotif] = useState<AppNotification | null>(null);
   const nav = useNavigate();
 
   const tabs: [Tab, string][] = useMemo(() => {
@@ -66,7 +68,7 @@ export default function Notifications() {
 
   function open(n: AppNotification) {
     if (!n.is_read) void markRead(n.id);
-    if (n.url) nav(safePath(n.url));
+    setSelectedNotif(n);
   }
 
   async function clearRead() {
@@ -132,6 +134,11 @@ export default function Notifications() {
           </Card>
         )}
       </div>
+
+      <NotificationModal
+        notification={selectedNotif}
+        onClose={() => setSelectedNotif(null)}
+      />
     </>
   );
 }

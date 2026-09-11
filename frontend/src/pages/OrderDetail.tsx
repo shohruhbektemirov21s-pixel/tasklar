@@ -34,6 +34,9 @@ import {
   sendOrder,
   setPmDecision,
   uploadVersion,
+  approveVersion,
+  rejectVersion,
+  createOrderTask,
 } from "@/api/orders";
 import type { ChangeRequestItem, UserBrief } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
@@ -46,8 +49,8 @@ import {
 } from "@/components/icons";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { Card, Empty, ErrorMsg, Loading, OkMsg, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
-import { toEditOrder, toOrders, toProject, useEntityNum, useGo } from "@/nav";
-import { OrderStatusBadge, OrderTypeBadge } from "./ChangeRequests";
+import { toEditOrder, toOrders, toProject, toTask, useEntityNum, useGo } from "@/nav";
+import { OrderStatusBadge } from "./ChangeRequests";
 
 export default function OrderDetail() {
   const { user, meta } = useAuth();
@@ -96,6 +99,42 @@ export default function OrderDetail() {
   const [versionNote, setVersionNote] = useState("");
   const [versionSubmitting, setVersionSubmitting] = useState(false);
 
+  // Yangi TZ versiyasini tasdiqlash modali (PM)
+  const [approveVersionModal, setApproveVersionModal] = useState(false);
+  const [approveVersionTarget, setApproveVersionTarget] = useState<number | null>(null);
+  const [approveDeadline, setApproveDeadline] = useState("");
+  const [approveDuration, setApproveDuration] = useState("");
+  const [approveDeveloper, setApproveDeveloper] = useState<number | null>(null);
+  const [approveNote, setApproveNote] = useState("");
+  const [approveSubmitting, setApproveSubmitting] = useState(false);
+
+  // Yangi TZ versiyasini rad etish modali (PM)
+  const [rejectVersionModal, setRejectVersionModal] = useState(false);
+  const [rejectVersionTarget, setRejectVersionTarget] = useState<number | null>(null);
+  const [rejectVersionReason, setRejectVersionReason] = useState("");
+  const [rejectVersionSubmitting, setRejectVersionSubmitting] = useState(false);
+
+  // Eski TZ versiyalari tarixi (yig'ilgan / ochilgan)
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Buyurtma bo'yicha yangi vazifa (Task) yaratish modali
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskAssignee, setTaskAssignee] = useState<number | null>(null);
+  const [taskPriority, setTaskPriority] = useState<number>(2);
+  const [taskDueDate, setTaskDueDate] = useState("");
+  const [taskType, setTaskType] = useState("FEATURE");
+  const [taskSubmitting, setTaskSubmitting] = useState(false);
+
+  // Eski TZ versiyalari tarixi (amaldagi joriy versiyadan tashqari)
+  const olderVersions = useMemo(() => {
+    if (!item?.versions) return [];
+    return item.versions
+      .filter((v) => v.version !== item.version && v.status !== "NEW")
+      .sort((a, b) => b.version - a.version);
+  }, [item?.versions, item?.version]);
+
   const load = useCallback(async () => {
     if (!id) return;
     try {
@@ -141,15 +180,8 @@ export default function OrderDetail() {
       user?.is_boss
   );
 
-  // Foydalanuvchi talabi: "uchirish taxrirlashni qila olmasin saqlagani keyinchalik ham kirib kurib junata olsin"
-  // Oddiy foydalanuvchilar va boshqarma buyurtmani tahrirlay yoki o'chira olmaydi, faqat kirib ko'rib yuborishi mumkin.
-  const canEdit = Boolean(
-    item && (user?.is_platform_admin || user?.is_boss)
-  );
-
-  const canDelete = Boolean(
-    item && (user?.is_platform_admin || user?.is_boss)
-  );
+  const canEdit = false;
+  const canDelete = false;
 
   const [sendingOrder, setSendingOrder] = useState(false);
 
@@ -329,6 +361,103 @@ export default function OrderDetail() {
     }
   }
 
+  // Yangi TZ versiyasini tasdiqlashni ochish (PM)
+  function handleOpenApproveVersion(verNum?: number) {
+    setApproveVersionTarget(verNum || item?.pending_version?.version || null);
+    setApproveDeadline(item?.pm_deadline || item?.due_date || "");
+    setApproveDuration(item?.pm_estimated_duration || "");
+    setApproveDeveloper(item?.assigned_developer || null);
+    setApproveNote("");
+    setApproveVersionModal(true);
+  }
+
+  async function handleApproveVersionSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!item) return;
+    setApproveSubmitting(true);
+    setActionError(null);
+    try {
+      const updated = await approveVersion(item.id, {
+        version: approveVersionTarget || undefined,
+        decision_note: approveNote.trim() || undefined,
+        pm_estimated_duration: approveDuration.trim() || undefined,
+        pm_deadline: approveDeadline || undefined,
+        assigned_developer: approveDeveloper,
+      });
+      setItem(updated);
+      setApproveVersionModal(false);
+      setActionOk("Yangi TZ versiyasi muvaffaqiyatli tasdiqlandi va amalda kuchga kirdi!");
+    } catch (err: any) {
+      setActionError(err?.message || "Versiyani tasdiqlashda xatolik yuz berdi.");
+    } finally {
+      setApproveSubmitting(false);
+    }
+  }
+
+  // Yangi TZ versiyasini rad etishni ochish (PM)
+  function handleOpenRejectVersion(verNum?: number) {
+    setRejectVersionTarget(verNum || item?.pending_version?.version || null);
+    setRejectVersionReason("");
+    setRejectVersionModal(true);
+  }
+
+  async function handleRejectVersionSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!item || !rejectVersionReason.trim()) return;
+    setRejectVersionSubmitting(true);
+    setActionError(null);
+    try {
+      const updated = await rejectVersion(item.id, {
+        version: rejectVersionTarget || undefined,
+        decision_note: rejectVersionReason.trim(),
+      });
+      setItem(updated);
+      setRejectVersionModal(false);
+      setActionOk("Yangi TZ versiyasi rad etildi (avvalgi TZ amalda qoladi).");
+    } catch (err: any) {
+      setActionError(err?.message || "Versiyani rad etishda xatolik yuz berdi.");
+    } finally {
+      setRejectVersionSubmitting(false);
+    }
+  }
+
+  // Buyurtma bo'yicha yangi vazifa yaratish handler
+  function handleOpenCreateTask() {
+    setTaskTitle(item?.requested_change ? `Topshiriq: ${item.system_name} - ${item.module || 'TZ ijrosi'}` : "");
+    setTaskDescription(item?.requested_change || "");
+    setTaskAssignee(item?.assigned_developer || null);
+    setTaskPriority(item?.priority === "URGENT" ? 4 : item?.priority === "HIGH" ? 3 : 2);
+    setTaskDueDate(item?.pm_deadline || item?.due_date || "");
+    setTaskType("FEATURE");
+    setTaskModalOpen(true);
+  }
+
+  async function handleCreateTaskSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!item || !taskTitle.trim()) return;
+    setTaskSubmitting(true);
+    setActionError(null);
+    try {
+      const updated = await createOrderTask(item.id, {
+        title: taskTitle.trim(),
+        description: taskDescription.trim() || undefined,
+        priority: taskPriority,
+        task_type: taskType,
+        due_date: taskDueDate || undefined,
+        assignee_id: taskAssignee || undefined,
+      });
+      setItem(updated);
+      setTaskModalOpen(false);
+      setTaskTitle("");
+      setTaskDescription("");
+      setActionOk("Vazifa muvaffaqiyatli yaratildi va buyurtmaga biriktirildi!");
+    } catch (err: any) {
+      setActionError(err?.message || "Vazifa yaratishda xatolik yuz berdi.");
+    } finally {
+      setTaskSubmitting(false);
+    }
+  }
+
   if (!id) {
     return (
       <>
@@ -436,24 +565,9 @@ export default function OrderDetail() {
             )}
 
             <OrderStatusBadge status={item.status} label={item.status_display} />
-            <OrderTypeBadge type={item.order_type} />
           </div>
 
           <div className="row middle" style={{ gap: 8 }}>
-            {(item.tz_file_url || (item.attachments && item.attachments.length > 0)) && (
-              <a
-                href={item.attachments?.[0]?.url || item.tz_file_url || "#"}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-sm btn-outline row middle"
-                style={{ gap: 6 }}
-                download
-                title={item.attachments?.[0]?.original_name || item.tz_file_name || tx("orders.faylni_yuklab_olish")}
-              >
-                <IconDownload size={13} /> {tx("orders.faylni_yuklab_olish")}
-              </a>
-            )}
-
             {item.status === "DRAFT" && (
               <button
                 type="button"
@@ -490,6 +604,88 @@ export default function OrderDetail() {
             )}
           </div>
         </div>
+
+        {/* Yangi TZ fayli / versiyasi yuklanganda PM ko'rib chiqishi uchun banner */}
+        {item.pending_version && (
+          <div
+            style={{
+              background: "linear-gradient(135deg, rgba(59, 130, 246, 0.09) 0%, rgba(99, 102, 241, 0.09) 100%)",
+              border: "1px solid rgba(59, 130, 246, 0.35)",
+              borderRadius: 10,
+              padding: "14px 18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <div className="row between middle" style={{ flexWrap: "wrap", gap: 10 }}>
+              <div className="row middle" style={{ gap: 10 }}>
+                <span style={{ fontSize: 24 }}>📄</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>
+                    {tx("orders.new_tz_uploaded_title", { v: item.pending_version.version })}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                    Yuklagan: <strong>{item.pending_version.uploaded_by_name || "Buyurtmachi"}</strong> • {fmtDateTime(item.pending_version.created_at)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
+                {item.pending_version.tz_file_url && (
+                  <a
+                    href={item.pending_version.tz_file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-sm btn-outline row middle"
+                    style={{ gap: 6 }}
+                    download
+                  >
+                    <IconDownload size={13} /> {item.pending_version.tz_file_name || "Yangi TZ faylini yuklab olish"}
+                  </a>
+                )}
+                {isPMOrAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ok row middle"
+                      style={{ gap: 6, fontWeight: 600 }}
+                      onClick={() => handleOpenApproveVersion(item.pending_version?.version)}
+                    >
+                      <span>✓</span>
+                      <span>{tx("orders.approve_tz_btn")}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-danger row middle"
+                      style={{ gap: 6 }}
+                      onClick={() => handleOpenRejectVersion(item.pending_version?.version)}
+                    >
+                      <span>✕</span>
+                      <span>{tx("orders.reject_tz_btn")}</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {item.pending_version.change_note && (
+              <div
+                style={{
+                  background: "var(--surface)",
+                  borderRadius: 6,
+                  padding: "8px 12px",
+                  fontSize: 12.5,
+                  borderLeft: "3px solid var(--brand)",
+                  color: "var(--text)",
+                }}
+              >
+                <strong>O'zgarishlar tavsifi (sababi): </strong>
+                <span>{item.pending_version.change_note}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Qoralama (DRAFT) holatidagi buyurtma banneri */}
         {item.status === "DRAFT" && (
@@ -883,6 +1079,188 @@ export default function OrderDetail() {
               )}
             </div>
           </div>
+
+          {/* Avvalgi (eski) TZ versiyalari tarixi */}
+          {olderVersions.length > 0 && (
+            <div
+              style={{
+                marginTop: 14,
+                paddingTop: 12,
+                borderTop: "1px dashed var(--border-color, #e2e8f0)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <div
+                role="button"
+                tabIndex={0}
+                className="clickable"
+                onClick={() => setHistoryOpen((v) => !v)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setHistoryOpen((v) => !v);
+                  }
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  background: historyOpen ? "var(--surface-2, #f8fafc)" : "var(--surface, #ffffff)",
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                  cursor: "pointer",
+                  userSelect: "none",
+                  transition: "background 0.15s ease, border-color 0.15s ease",
+                }}
+              >
+                <div className="row middle" style={{ gap: 8, fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}>
+                  <span style={{ fontSize: 14 }}>📜</span>
+                  <span>{tx("orders.eski_tz_tarixi")}</span>
+                </div>
+
+                <div className="row middle" style={{ gap: 8 }}>
+                  <span
+                    className="badge"
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "1px 8px",
+                      borderRadius: 10,
+                    }}
+                  >
+                    {olderVersions.length} ta
+                  </span>
+                  <span
+                    className="muted"
+                    style={{
+                      fontSize: 16,
+                      lineHeight: 1,
+                      display: "inline-flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    {historyOpen ? "▴" : "▾"}
+                  </span>
+                </div>
+              </div>
+
+              {historyOpen && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+                  {olderVersions.map((ver) => {
+                    const isRejected = ver.status === "REJECTED";
+                    return (
+                      <div
+                        key={ver.id || ver.version}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: 8,
+                          border: "1px solid var(--border-color, #e2e8f0)",
+                          background: isRejected ? "rgba(239, 68, 68, 0.03)" : "var(--surface-2, #f8fafc)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: 10,
+                        }}
+                      >
+                        <div className="row middle" style={{ gap: 8, flex: 1, minWidth: 260, flexWrap: "wrap" }}>
+                          <span
+                            style={{
+                              fontFamily: "var(--mono)",
+                              fontWeight: 700,
+                              fontSize: 11,
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              background: isRejected ? "var(--danger-soft, #fee2e2)" : "var(--surface-3, #e2e8f0)",
+                              color: isRejected ? "var(--danger, #ef4444)" : "var(--text-muted, #64748b)",
+                            }}
+                          >
+                            v{ver.version}
+                          </span>
+
+                          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}>
+                            {ver.tz_file_name || `TZ v${ver.version}`}
+                          </span>
+
+                          {ver.tz_file_size_display && (
+                            <span style={{ fontSize: 11.5, color: "var(--muted)" }}>
+                              ({ver.tz_file_size_display})
+                            </span>
+                          )}
+
+                          <span
+                            className={`badge ${
+                              isRejected
+                                ? "badge-danger"
+                                : ver.status === "CANCELLED"
+                                ? "badge-ghost"
+                                : "badge-outline"
+                            }`}
+                            style={{ fontSize: 10.5 }}
+                          >
+                            {isRejected
+                              ? "Rad etilgan"
+                              : ver.version === 1
+                              ? "Dastlabki TZ (Eski versiya)"
+                              : "Eski versiya (Bekor qilingan)"}
+                          </span>
+
+                          {ver.uploaded_by_name && (
+                            <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                              • Yuklagan: {ver.uploaded_by_name}
+                            </span>
+                          )}
+
+                          {ver.created_at && (
+                            <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                              • {fmtDateTime(ver.created_at)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="row middle" style={{ gap: 8 }}>
+                          {ver.tz_file_url && (
+                            <a
+                              href={ver.tz_file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-xs btn-outline"
+                              download
+                              title={ver.tz_file_name || `TZ v${ver.version}`}
+                            >
+                              <IconDownload size={11} /> {tx("orders.faylni_yuklab_olish")}
+                            </a>
+                          )}
+                        </div>
+
+                        {(ver.change_note || ver.decision_note) && (
+                          <div
+                            style={{
+                              width: "100%",
+                              fontSize: 11.5,
+                              color: isRejected ? "var(--danger)" : "var(--muted)",
+                              background: isRejected ? "rgba(239, 68, 68, 0.06)" : "var(--surface)",
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              marginTop: 2,
+                            }}
+                          >
+                            {ver.change_note && <span>O'zgarish izohi: {ver.change_note}</span>}
+                            {ver.change_note && ver.decision_note && <span> • </span>}
+                            {ver.decision_note && <span>PM qarori: {ver.decision_note}</span>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* PM tahrir paneli (ochilganda) */}
           {pmPanelOpen && (
@@ -1384,6 +1762,390 @@ export default function OrderDetail() {
                   disabled={rejectSubmitting || !rejectReason.trim()}
                 >
                   {rejectSubmitting ? "Yuborilmoqda..." : "Kamchilik bilan qaytarish"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* BUYURTMA BO'YICHA VAZIFA YARATISH MODALI */}
+      {taskModalOpen && item && (
+        <div className="modal-overlay" onClick={() => !taskSubmitting && setTaskModalOpen(false)}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: 540, width: "95%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
+              <div className="row middle" style={{ gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "rgba(59, 130, 246, 0.12)",
+                    color: "var(--brand)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    flexShrink: 0,
+                  }}
+                >
+                  📋
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>
+                    {tx("orders.create_task_btn")}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                    {item.request_no} — {item.project_detail?.name || item.system_name}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost"
+                onClick={() => setTaskModalOpen(false)}
+                disabled={taskSubmitting}
+                style={{ width: 30, height: 30, padding: 0 }}
+                title={tx("common.bekor_qilish")}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTaskSubmit}>
+              <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                    {tx("orders.task_title_label")} <span style={{ color: "var(--danger)" }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="input"
+                    placeholder="Masalan: Frontend formasini ishlab chiqish"
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="field">
+                    <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                      {tx("orders.task_assignee_label")}
+                    </label>
+                    <select
+                      className="select"
+                      value={taskAssignee || ""}
+                      onChange={(e) => setTaskAssignee(e.target.value ? Number(e.target.value) : null)}
+                      style={{ width: "100%" }}
+                    >
+                      <option value="">Tanlanmagan</option>
+                      {developersList.map((dev) => (
+                        <option key={dev.id} value={dev.id}>
+                          {dev.full_name} ({dev.specialty || "Dasturchi"})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                      {tx("orders.task_priority_label")}
+                    </label>
+                    <select
+                      className="select"
+                      value={taskPriority}
+                      onChange={(e) => setTaskPriority(Number(e.target.value))}
+                      style={{ width: "100%" }}
+                    >
+                      <option value={1}>Past</option>
+                      <option value={2}>O'rtacha</option>
+                      <option value={3}>Yuqori</option>
+                      <option value={4}>Shoshilinch</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                    {tx("orders.task_due_date_label")}
+                  </label>
+                  <input
+                    type="date"
+                    className="input"
+                    value={taskDueDate}
+                    onChange={(e) => setTaskDueDate(e.target.value)}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                    {tx("orders.task_desc_label")}
+                  </label>
+                  <textarea
+                    rows={4}
+                    className="textarea"
+                    placeholder="Vazifa bo'yicha aniq ko'rsatma va talablar..."
+                    value={taskDescription}
+                    onChange={(e) => setTaskDescription(e.target.value)}
+                    style={{ width: "100%", resize: "vertical" }}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setTaskModalOpen(false)}
+                  disabled={taskSubmitting}
+                >
+                  {tx("common.bekor_qilish")}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={taskSubmitting || !taskTitle.trim()}
+                  style={{ fontWeight: 600 }}
+                >
+                  {taskSubmitting ? "Yaratilmoqda..." : tx("orders.task_submit_btn")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* YANGI TZ VERSIYASINI TASDIQLASH MODALI (PM) */}
+      {approveVersionModal && item && (
+        <div className="modal-overlay" onClick={() => !approveSubmitting && setApproveVersionModal(false)}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: 520, width: "95%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
+              <div className="row middle" style={{ gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "rgba(16, 185, 129, 0.14)",
+                    color: "var(--success)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    flexShrink: 0,
+                  }}
+                >
+                  ✓
+                </div>
+                <div>
+                  <strong style={{ fontSize: 16 }}>Yangi TZ versiyasini tasdiqlash</strong>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                    {item.request_no} • Versiya: <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || item.pending_version?.version || "yangi"}</strong>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost"
+                onClick={() => setApproveVersionModal(false)}
+                disabled={approveSubmitting}
+                style={{ width: 28, height: 28, padding: 0 }}
+                title={tx("common.bekor_qilish")}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleApproveVersionSubmit}>
+              <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+                <div
+                  style={{
+                    background: "var(--accent-soft)",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    fontSize: 12.5,
+                    lineHeight: 1.45,
+                    color: "var(--text)",
+                  }}
+                >
+                  Yangi TZ tasdiqlangach, oldingi versiyalar bekor qilinadi (atmen) va buyurtma yangi topshiriq hujjatiga to'liq o'tkaziladi.
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="field">
+                    <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                      PM yakuniy muddati
+                    </label>
+                    <input
+                      type="date"
+                      className="input"
+                      value={approveDeadline}
+                      onChange={(e) => setApproveDeadline(e.target.value)}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                      Qanchada tugashi (baho)
+                    </label>
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="Masalan: 10 kun, 2 hafta"
+                      value={approveDuration}
+                      onChange={(e) => setApproveDuration(e.target.value)}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                </div>
+
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                    PM xulosasi va ko'rsatmasi
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="textarea"
+                    placeholder="Ushbu versiya bo'yicha PM izohi yoki dasturchilarga ko'rsatma..."
+                    value={approveNote}
+                    onChange={(e) => setApproveNote(e.target.value)}
+                    style={{ width: "100%", resize: "vertical" }}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setApproveVersionModal(false)}
+                  disabled={approveSubmitting}
+                >
+                  {tx("common.bekor_qilish")}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-ok"
+                  disabled={approveSubmitting}
+                  style={{ fontWeight: 600 }}
+                >
+                  {approveSubmitting ? "Tasdiqlanmoqda..." : "✓ Tasdiqlash va amalda qo'llash"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* YANGI TZ VERSIYASINI RAD ETISH MODALI (PM) */}
+      {rejectVersionModal && item && (
+        <div className="modal-overlay" onClick={() => !rejectVersionSubmitting && setRejectVersionModal(false)}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: 480, width: "95%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
+              <div className="row middle" style={{ gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "var(--danger-soft)",
+                    color: "var(--danger)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    flexShrink: 0,
+                  }}
+                >
+                  ✕
+                </div>
+                <div>
+                  <strong style={{ fontSize: 16 }}>Yangi TZ versiyasini rad etish</strong>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                    {item.request_no} • Versiya: v{rejectVersionTarget || item.pending_version?.version || "yangi"}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost"
+                onClick={() => setRejectVersionModal(false)}
+                disabled={rejectVersionSubmitting}
+                style={{ width: 28, height: 28, padding: 0 }}
+                title={tx("common.bekor_qilish")}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleRejectVersionSubmit}>
+              <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+                <div
+                  style={{
+                    background: "var(--danger-soft)",
+                    border: "1px solid rgba(239, 68, 68, 0.25)",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    fontSize: 12.5,
+                    color: "var(--danger)",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  Yangi TZ rad etiladi va amaldagi avvalgi TZ o'z kuchida qoladi.
+                </div>
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                    Rad etish sababi <span style={{ color: "var(--danger)" }}>*</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    className="textarea"
+                    placeholder="Nima sababdan ushbu TZ versiyasi rad etilayotganini yozing..."
+                    value={rejectVersionReason}
+                    onChange={(e) => setRejectVersionReason(e.target.value)}
+                    style={{ width: "100%", resize: "vertical" }}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setRejectVersionModal(false)}
+                  disabled={rejectVersionSubmitting}
+                >
+                  {tx("common.bekor_qilish")}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-danger"
+                  disabled={rejectVersionSubmitting || !rejectVersionReason.trim()}
+                  style={{ fontWeight: 600 }}
+                >
+                  {rejectVersionSubmitting ? "Rad etilmoqda..." : "✕ Rad etish"}
                 </button>
               </div>
             </form>

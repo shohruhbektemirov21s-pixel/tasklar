@@ -873,17 +873,8 @@ export default function ChangeRequests() {
     go(toOrder(item.id));
   };
 
-  const canEditOrder = (_item: ChangeRequestItem) => {
-    // Foydalanuvchi talabi: "uchirish taxrirlashni qila olmasin saqlagani keyinchalik ham kirib kurib junata olsin"
-    if (user?.is_platform_admin || user?.is_boss) return true;
-    return false;
-  };
-
-  const canDeleteOrder = (_item: ChangeRequestItem) => {
-    // Foydalanuvchi talabi: "uchirish taxrirlashni qila olmasin"
-    if (user?.is_platform_admin || user?.is_boss) return true;
-    return false;
-  };
+  const canEditOrder = (_item: ChangeRequestItem) => false;
+  const canDeleteOrder = (_item: ChangeRequestItem) => false;
 
   const handleSendOrder = async (item: ChangeRequestItem) => {
     if (!window.confirm(tx("orders.send_order_confirm_desc") || `«${item.request_no}» buyurtmasini yuborishni tasdiqlaysizmi?`)) {
@@ -1490,64 +1481,11 @@ export default function ChangeRequests() {
               }}
             >
               <option value="">{tx("orders.barcha_holatlar")}</option>
-              {(meta?.order_status || [
-                { value: "NEW", label: tx("orders.yangi") },
-                { value: "ACCEPTED", label: "Qabul qilindi" },
-                { value: "ASSIGNED_TO_DEV", label: "Dasturchiga topshirildi" },
-                { value: "IN_PROGRESS", label: tx("orders.jarayonda") },
-                { value: "TESTING", label: "Testda" },
-                { value: "READY_FOR_REVIEW", label: "Boshqarma tasdig'ida" },
-                { value: "COMPLETED", label: tx("orders.tugallangan") },
-                { value: "REJECTED", label: tx("orders.bekor_qilingan") },
-              ]).map((s) => (
-                <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
-              ))}
-            </select>
-            <span
-              style={{
-                position: "absolute",
-                right: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                pointerEvents: "none",
-                color: "#64748b",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </span>
-          </div>
-
-          {/* Barcha muddatlar */}
-          <div style={{ position: "relative", minWidth: 160 }}>
-            <select
-              value={deadlineFilter}
-              onChange={(e) => {
-                setDeadlineFilter(e.target.value);
-                setPage(1);
-              }}
-              style={{
-                width: "100%",
-                height: 42,
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-                background: "var(--surface-2)",
-                fontSize: 13,
-                padding: "0 34px 0 14px",
-                cursor: "pointer",
-                appearance: "none",
-                color: "var(--text)",
-                fontWeight: 500,
-              }}
-            >
-              <option value="">{tx("orders.barcha_muddatlar")}</option>
-              <option value="TODAY">Bugun tugaydigan</option>
-              <option value="WEEK">Shu haftada</option>
-              <option value="URGENT">Shoshilinch</option>
-              <option value="OVERDUE">Muddati o'tganlar</option>
+              <option value="NEW">{tx("orders.yangi")}</option>
+              <option value="ACCEPTED">{tx("orders.qabul_qilingan")}</option>
+              <option value="IN_PROGRESS">{tx("orders.jarayonda")}</option>
+              <option value="COMPLETED">{tx("orders.bajarildi")}</option>
+              <option value="REJECTED">{tx("orders.rad_etildi")}</option>
             </select>
             <span
               style={{

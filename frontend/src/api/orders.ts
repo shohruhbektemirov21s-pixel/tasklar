@@ -176,6 +176,7 @@ export interface PaginatedResponse<T> {
 
 export interface OrderFilters {
   page?: number;
+  page_size?: number;
   search?: string;
   project?: number | string;
   status?: string;
@@ -199,6 +200,7 @@ export interface PMDecisionPayload {
 export async function getOrders(filters: OrderFilters = {}): Promise<PaginatedResponse<ChangeRequestItem>> {
   const params: Record<string, string | number> = {};
   if (filters.page) params.page = filters.page;
+  if (filters.page_size) params.page_size = filters.page_size;
   if (filters.search?.trim()) params.search = filters.search.trim();
   if (filters.project) params.project = filters.project;
   if (filters.status) params.status = filters.status;
@@ -336,6 +338,24 @@ export async function rejectVersion(
   }
 ): Promise<ChangeRequestItem> {
   return api.post<ChangeRequestItem>(`/orders/${id}/reject-version/`, payload);
+}
+
+/**
+ * Buyurtma (TZ) asosida yangi vazifa (Task) yaratish va biriktirish.
+ */
+export async function createOrderTask(
+  orderId: number | string,
+  payload: {
+    title: string;
+    description?: string;
+    priority?: number;
+    task_type?: string;
+    due_date?: string;
+    assignee_ids?: number[];
+    assignee_id?: number;
+  }
+): Promise<ChangeRequestItem> {
+  return api.post<ChangeRequestItem>(`/orders/${orderId}/create-task/`, payload);
 }
 
 /**

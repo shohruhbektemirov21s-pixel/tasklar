@@ -63,9 +63,14 @@ export default function Profile() {
       if (!alive) return;
       setTarget(u);
       setForm({
-        full_name: u.full_name, job_title: u.job_title, skills: u.skills,
-        bio: u.bio, telegram: u.telegram,
-        seniority: u.seniority, years_experience: String(u.years_experience ?? 0),
+        full_name: u.full_name,
+        department_name: u.department_name || "",
+        job_title: u.job_title,
+        skills: u.skills,
+        bio: u.bio,
+        telegram: u.telegram,
+        seniority: u.seniority,
+        years_experience: String(u.years_experience ?? 0),
       });
       // Loyihalar, vazifalar, statistika va tarix - hammasi bitta endpointdan.
       // Ko'rinish serverda so'rovchining huquqiga qarab cheklanadi.
@@ -231,7 +236,10 @@ export default function Profile() {
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <h2 style={{ margin: 0 }}>{target.full_name}</h2>
-                  <p className="muted" style={{ margin: "4px 0" }}>{target.job_title}</p>
+                  <p className="muted" style={{ margin: "4px 0" }}>
+                    {target.job_title}
+                    {target.department_name ? ` • ${target.department_name}` : ""}
+                  </p>
                   <div className="row wrap" style={{ gap: 6 }}>
                     <span className="badge">{target.seniority_display}</span>
                     <span className="badge">{target.years_experience} {tx("profile.yil_tajriba")}</span>
@@ -255,13 +263,22 @@ export default function Profile() {
                 <form id={`${fid}-form`} onSubmit={save}>
                   {[
                     ["full_name", tx("common.f_i_sh"), "text"],
+                    ["department_name", tx("profile.boshqarma"), "text"],
                     ["job_title", tx("profile.lavozim"), "text"],
                     ["telegram", tx("profile.telegram_2"), "text"],
                   ].map(([k, label]) => (
                     <div className="field" key={k}>
-                      <label htmlFor={`${fid}-0`}>{label}</label>
-                      <input id={`${fid}-0`} value={form[k] || ""}
+                      <label htmlFor={`${fid}-${k}`}>{label}</label>
+                      <input id={`${fid}-${k}`} value={form[k] || ""}
+                             list={k === "department_name" ? `${fid}-dept-list` : undefined}
                              onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
+                      {k === "department_name" && (
+                        <datalist id={`${fid}-dept-list`}>
+                          {(meta?.departments || []).map((d: any) => (
+                            <option key={d.id || d.name} value={d.name} />
+                          ))}
+                        </datalist>
+                      )}
                     </div>
                   ))}
                   <div className="field">

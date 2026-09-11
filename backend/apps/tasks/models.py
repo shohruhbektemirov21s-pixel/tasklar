@@ -129,6 +129,15 @@ class AliveTaskManager(models.Manager.from_queryset(TaskQuerySet)):
 
 class Task(SoftDeleteModel):
     project = models.ForeignKey("projects.Project", on_delete=models.CASCADE, related_name="tasks")
+    order = models.ForeignKey(
+        "orders.ChangeRequest",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tasks",
+        verbose_name="Tegishli buyurtma (TZ)",
+        help_text="Ushbu vazifa bog'langan buyurtma",
+    )
     number = models.PositiveIntegerField("Raqam", default=1, editable=False)
 
     title = models.CharField("Sarlavha", max_length=250)

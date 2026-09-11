@@ -99,6 +99,8 @@ class ProjectSerializer(serializers.ModelSerializer):
     # ochiq e'lon qilinadi. Tashqi ko'rinish oldingidek oddiy ro'yxat.
     needed_specialties = serializers.ListField(
         child=serializers.CharField(max_length=20), required=False)
+    order_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    linked_order = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Project
@@ -110,7 +112,7 @@ class ProjectSerializer(serializers.ModelSerializer):
                   "created_at", "updated_at",
                   "member_count", "open_tasks", "done_tasks", "my_tasks", "progress", "access",
                   "needed_specialties", "needed_specialty_labels", "team_composition",
-                  "specialty_gaps", "matches_my_specialty"]
+                  "specialty_gaps", "matches_my_specialty", "order_id", "linked_order"]
         read_only_fields = ["created_by", "key", "color"]
         # Ish maydoni forma orqali so'ralmaydi - yuborilmasa server o'zi tanlaydi
         # (`api.resolve_workspace`). Yuborilsa esa oldingidek ishlaydi.
@@ -150,6 +152,20 @@ class ProjectSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return False
         return obj.matches_user(request.user)
+
+    def get_linked_order(self, obj):
+        orders_rel = getattr(obj, "orders", None)
+        if orders_rel is not None:
+            first = orders_rel.first()
+            if first:
+                return {
+                    "id": first.id,
+                    "request_no": first.request_no,
+                    "system_name": first.system_name,
+                    "status": first.status,
+                    "status_display": first.get_status_display(),
+                }
+        return None
 
     def _access(self, obj):
         """Shu loyiha uchun ruxsat javoblari - qator boshiga BIR MARTA.
