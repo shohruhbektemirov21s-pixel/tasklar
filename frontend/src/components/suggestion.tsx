@@ -27,6 +27,7 @@ import {
 } from "@/components/icons";
 import { Card, ErrorMsg, PhotoView, timeAgo } from "@/components/ui";
 import { tx } from "@/i18n";
+import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 
 /** Holat nishonining rangi - ro'yxatda ham, sahifada ham bir xil. */
 export const STATUS_TONE: Record<SuggestionStatusValue, string> = {
@@ -340,8 +341,7 @@ export function VoteBar({ item, onChange }: {
  * sahifalaridagi bilan bir xil (`is_image` serverdan keladi).
  */
 export function Attachments({ item }: { item: Suggestion }) {
-  // Kattalashtirib ko'rilayotgan rasm (yoki `null`).
-  const [shot, setShot] = useState<SuggestionFile | null>(null);
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const images = useMemo(() => item.files.filter((f) => f.is_image && f.url), [item.files]);
   const docs = useMemo(() => item.files.filter((f) => !(f.is_image && f.url)), [item.files]);
 
@@ -353,7 +353,7 @@ export function Attachments({ item }: { item: Suggestion }) {
         <div className="sg-shots">
           {images.map((file) => (
             <button key={file.id} type="button" className="sg-shot"
-                    onClick={() => setShot(file)}
+                    onClick={() => setPreviewFile({ url: file.url, name: file.original_name, size: file.size_display })}
                     title={tx("suggestions.rasmni_kattalashtirish")}>
               <img src={file.url} alt={file.original_name} loading="lazy" />
             </button>
@@ -366,9 +366,15 @@ export function Attachments({ item }: { item: Suggestion }) {
           {docs.map((file) => (
             <div key={file.id} className="row sg-file">
               <span className="file-ico"><IconFile size={15} /></span>
-              <a href={file.url} target="_blank" rel="noreferrer" className="sg-file-name">
+              <button
+                type="button"
+                onClick={() => setPreviewFile({ url: file.url, name: file.original_name, size: file.size_display })}
+                className="sg-file-name"
+                style={{ background: "none", border: "none", padding: 0, font: "inherit", cursor: "pointer", textAlign: "left" }}
+                title={tx("file_preview.hujjat_ochilmoqda")}
+              >
                 {file.original_name}
-              </a>
+              </button>
               <small className="muted">{file.size_display}</small>
               <span className="spacer" />
               <small className="muted">
@@ -381,17 +387,10 @@ export function Attachments({ item }: { item: Suggestion }) {
         </div>
       )}
 
-      {/* Rasm to'liq holda - «Vazifa» sahifasidagi ko'ruvchining o'zi.
-          Anonim taklifda «kim yuklagani» yozilmaydi. */}
-      {shot && (
-        <PhotoView
-          src={shot.url}
-          alt={shot.original_name}
-          title={shot.original_name}
-          subtitle={shot.uploaded_by
-            ? tx("suggestions.yuklagan", { ism: shot.uploaded_by.full_name })
-            : tx("suggestions.anonim_muallif")}
-          onClose={() => setShot(null)}
+      {previewFile && (
+        <FilePreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
         />
       )}
     </>

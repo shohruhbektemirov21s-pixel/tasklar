@@ -9,6 +9,7 @@ import {
 import { Avatar, Card, timeAgo } from "@/components/ui";
 import { tx } from "@/i18n";
 import { IconClose, IconFile } from "@/components/icons";
+import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 
 export default function InquiryDrawer({
   item,
@@ -20,6 +21,7 @@ export default function InquiryDrawer({
   onPatch: (saved: Inquiry) => void;
 }) {
   const [redeciding, setRedeciding] = useState(false);
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
 
   useEffect(() => {
     setRedeciding(false);
@@ -86,16 +88,16 @@ export default function InquiryDrawer({
             <span className="muted" style={{ fontSize: 12, fontWeight: 600 }}>Biriktirilgan fayllar:</span>
             <div className="stack gap-1" style={{ marginTop: 6 }}>
               {item.files.map((f) => (
-                <a
+                <button
                   key={f.id}
-                  href={f.url}
-                  target="_blank"
-                  rel="noreferrer"
+                  type="button"
+                  onClick={() => setPreviewFile({ url: f.url, name: f.original_name, size: f.size_display })}
                   className="badge"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, width: "fit-content" }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, width: "fit-content", cursor: "pointer", border: "none", font: "inherit" }}
+                  title={tx("file_preview.hujjat_ochilmoqda")}
                 >
                   <IconFile size={13} /> {f.original_name} <span className="muted">({f.size_display})</span>
-                </a>
+                </button>
               ))}
             </div>
           </div>
@@ -138,6 +140,9 @@ export default function InquiryDrawer({
           </div>
         )}
       </Card>
+      {previewFile && (
+        <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
+      )}
     </aside>
   );
 }

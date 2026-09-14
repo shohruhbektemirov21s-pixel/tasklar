@@ -14,6 +14,7 @@ import { IconCheck, IconChevron, IconClose, IconFile, IconHistory } from "./icon
 import { Avatar, DiffView, ErrorMsg, OkMsg, fmtDateTime, timeAgo } from "./ui";
 import { toTask } from "@/nav";
 import { tx } from "@/i18n";
+import FilePreviewModal, { PreviewFile } from "./FilePreviewModal";
 
 interface Props {
   task: Task;
@@ -34,6 +35,7 @@ export default function TaskSubmission({ task, canWork, onChange, isOpen, onTogg
   const [editing, setEditing] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [openHistory, setOpenHistory] = useState<number | null>(null);
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -284,10 +286,17 @@ export default function TaskSubmission({ task, canWork, onChange, isOpen, onTogg
             {!!s.files.length && (
               <div className="row wrap" style={{ marginTop: 10, gap: 8 }}>
                 {s.files.map((f) => (
-                  <a key={f.id} className="chip" href={f.url || "#"} target="_blank" rel="noreferrer">
+                  <button
+                    key={f.id}
+                    type="button"
+                    className="chip"
+                    onClick={() => setPreviewFile({ url: f.url || "", name: f.original_name, size: f.size_display })}
+                    style={{ cursor: "pointer", border: "1px solid var(--border)", background: "var(--surface)", font: "inherit" }}
+                    title={tx("file_preview.hujjat_ochilmoqda")}
+                  >
                     <IconFile size={13} /> {f.original_name}
                     <span className="muted">{f.size_display}</span>
-                  </a>
+                  </button>
                 ))}
               </div>
             )}
@@ -325,6 +334,9 @@ export default function TaskSubmission({ task, canWork, onChange, isOpen, onTogg
         {tx("task_submission.vazifa")} <Link {...toTask(task.id)}>{task.title}</Link> {tx("task_submission.holat")} {task.status_display}
       </p>
         </div>
+      )}
+      {previewFile && (
+        <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
       )}
     </div>
   );

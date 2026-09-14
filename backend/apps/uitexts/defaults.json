@@ -6302,5 +6302,109 @@
  "dashboard.davr_2": {
   "value": "2 (16—30 sanalar)",
   "note": "pages/Dashboard.tsx"
+ },
+ "file_preview.yuklab_bolmadi": {
+  "value": "Faylni yuklab bo'lmadi",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.word_xatosi": {
+  "value": "Word faylini ochishda xatolik yuz berdi",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.excel_xatosi": {
+  "value": "Excel jadvalini ochishda xatolik yuz berdi",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.matn_xatosi": {
+  "value": "Matn faylini ochishda xatolik yuz berdi",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.yuklab_olish": {
+  "value": "Yuklab olish",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.saqlash_title": {
+  "value": "Faylni kompyuterga saqlash",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.yopish": {
+  "value": "Yopish (Esc)",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.hujjat_ochilmoqda": {
+  "value": "Hujjat veb-saytda ochilmoqda...",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.faylni_yuklab_olish": {
+  "value": "Faylni yuklab olish",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.nomalum_format_izoh": {
+  "value": "Ushbu formatdagi ({ext}) fayl avtomatik ko'rsatilmasligi mumkin. Uni to'g'ridan-to'g'ri matn sifatida ko'rishingiz yoki qurilmangizga yuklab olishingiz mumkin.",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.matn_sifatida_ochish": {
+  "value": "Matn sifatida ochib ko'rish",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.nusxa_olindi": {
+  "value": "Nusxa olindi!",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.nusxa_olish": {
+  "value": "Nusxa olish",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.varaq": {
+  "value": "Varaq",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.katakcha_bosh": {
+  "value": "Ushbu varaqda ma'lumotlar topilmadi",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.kattalashtirish": {
+  "value": "Kattalashtirish",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.kichiklashtirish": {
+  "value": "Kichiklashtirish",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.aylantirish": {
+  "value": "90° aylantirish",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.asl_olcham": {
+  "value": "Asl o'lcham",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.sigdirish": {
+  "value": "Ekranga sig'dirish",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.toliq_ekran": {
+  "value": "To'liq ekran",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.videoni_qollab_quvvatlamaydi": {
+  "value": "Brauzeringiz ushbu videoni ijro etishni qo'llab-quvvatlamaydi.",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.audioni_qollab_quvvatlamaydi": {
+  "value": "Brauzeringiz ushbu audioni ijro etishni qo'llab-quvvatlamaydi.",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.yangi_oynada_ochish": {
+  "value": "Yangi oynada ochish",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.qatorlar_soni": {
+  "value": "{n} ta qator",
+  "note": "components/FilePreviewModal.tsx"
+ },
+ "file_preview.izlash_placeholder": {
+  "value": "Jadvaldan izlash...",
+  "note": "components/FilePreviewModal.tsx"
  }
 }
