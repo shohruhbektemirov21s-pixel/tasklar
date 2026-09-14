@@ -86,9 +86,39 @@ class ReviewSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class TaskAssignmentSerializer(serializers.ModelSerializer):
+    user = UserBriefSerializer(read_only=True)
+    assigned_by = UserBriefSerializer(read_only=True)
+
+    class Meta:
+        model = TaskAssignment
+        fields = [
+            "id", "task", "user", "assigned_by", "start_date", "due_date",
+            "allocated_hours", "role", "note", "assigned_at", "is_active", "unassigned_at"
+        ]
+        read_only_fields = ["id", "task", "user", "assigned_by", "assigned_at", "is_active", "unassigned_at"]
+
+
+class TaskTeamMemberInputSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    start_date = serializers.DateTimeField(required=False, allow_null=True)
+    due_date = serializers.DateTimeField(required=False, allow_null=True)
+    allocated_hours = serializers.DecimalField(max_digits=6, decimal_places=1, required=False, allow_null=True)
+    role = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
+    note = serializers.CharField(max_length=250, required=False, allow_blank=True, default="")
+
+    def validate(self, attrs):
+        start = attrs.get("start_date")
+        due = attrs.get("due_date")
+        if start and due and start > due:
+            raise serializers.ValidationError({"due_date": "Muddat boshlanish sanasidan oldin bolishi mumkin emas."})
+        return attrs
+
+
 class TaskSerializer(serializers.ModelSerializer):
     code = serializers.CharField(read_only=True)
     assignees = serializers.SerializerMethodField()
+    assignments = serializers.SerializerMethodField()
     assignee_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True,
                                          required=False)
     reviewer = UserBriefSerializer(read_only=True)
@@ -122,7 +152,7 @@ class TaskSerializer(serializers.ModelSerializer):
                   "created_by", "reviewer", "reviewer_id",
                   "parent", "parent_code", "parent_title",
                   "subtask_count", "subtasks_completed_count",
-                  "labels", "label_ids", "assignees", "assignee_ids",
+                  "labels", "label_ids", "assignees", "assignments", "assignee_ids",
                   "start_date", "due_date", "estimate_hours",
                   "branch_name", "pr_url", "blocked_reason",
                   "review_round", "is_overdue", "logged_hours", "attachment_count",
@@ -155,6 +185,10 @@ class TaskSerializer(serializers.ModelSerializer):
     def get_assignees(self, obj):
         users = [a.user for a in obj.assignments.all() if a.is_active]
         return UserBriefSerializer(users, many=True, context=self.context).data
+
+    def get_assignments(self, obj):
+        active = [a for a in obj.assignments.all() if a.is_active]
+        return TaskAssignmentSerializer(active, many=True, context=self.context).data
 
 
 class BoardTaskSerializer(TaskSerializer):

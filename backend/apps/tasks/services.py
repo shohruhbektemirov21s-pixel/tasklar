@@ -10,7 +10,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from apps.activity.services import log
 from apps.notifications.models import NotificationKind
-from apps.notifications.services import notify_many, send_to_users
+from apps.notifications.services import notify, notify_many, send_to_users
 from apps.projects.models import ProjectRole
 
 from .models import ReviewVerdict, TaskAssignment, TaskStatus
@@ -266,3 +266,85 @@ def sync_assignees(task, user_ids, actor):
             ),
         )
     return added, removed, skipped
+
+
+def assign_team_member(task, user, actor, start_date=None, due_date=None, allocated_hours=None, role="", note=""):
+    """Vazifaga jamoa a'zosini biriktiradi yoki uning muddat/rol parametrlarini yangilaydi."""
+    assignment = task.assignments.filter(user=user).first()
+    is_new = False
+    if assignment is None:
+        assignment = TaskAssignment.objects.create(
+            task=task,
+            user=user,
+            assigned_by=actor,
+            start_date=start_date,
+            due_date=due_date,
+            allocated_hours=allocated_hours,
+            role=role,
+            note=note,
+            is_active=True,
+        )
+        is_new = True
+    else:
+        assignment.is_active = True
+        assignment.unassigned_at = None
+        assignment.assigned_by = actor
+        assignment.start_date = start_date
+        assignment.due_date = due_date
+        assignment.allocated_hours = allocated_hours
+        assignment.role = role
+        assignment.note = note
+        assignment.save(update_fields=[
+            "is_active", "unassigned_at", "assigned_by",
+            "start_date", "due_date", "allocated_hours", "role", "note"
+        ])
+
+    detail_parts = []
+    if role:
+        detail_parts.append(f"Rol: {role}")
+    if start_date:
+        detail_parts.append(f"Boshlanish: {start_date}")
+    if due_date:
+        detail_parts.append(f"Muddat: {due_date}")
+    if allocated_hours:
+        detail_parts.append(f"Reja: {allocated_hours} soat")
+    detail_str = " · ".join(detail_parts)
+
+    log(
+        actor=actor,
+        verb="task.assigned" if is_new else "task.assignment_updated",
+        task=task,
+        summary=f"{task.code}: jamoaga {user.full_name} biriktirildi" if is_new else f"{task.code}: {user.full_name} ma'lumotlari yangilandi",
+        detail=detail_str,
+        meta={"user_id": user.id, "role": role},
+    )
+    if is_new or actor != user:
+        notify(
+            user,
+            NotificationKind.TASK_ASSIGNED,
+            title=f"{task.code} vazifasiga jamoa a'zosi sifatida biriktirildingiz",
+            body=((f"{role}: " if role else "") + task.title)[:150],
+            url=f"/vazifa/{task.pk}",
+            actor=actor,
+            meta={"task": task.pk, "project": task.project_id},
+        )
+    return assignment
+
+
+def remove_team_member(task, user, actor):
+    """Vazifadan jamoa a'zosini chiqaradi (nofaol qiladi)."""
+    assignment = task.assignments.filter(user=user, is_active=True).first()
+    if not assignment:
+        return None
+    assignment.is_active = False
+    assignment.unassigned_at = timezone.now()
+    assignment.save(update_fields=["is_active", "unassigned_at"])
+
+    log(
+        actor=actor,
+        verb="task.unassigned",
+        task=task,
+        summary=f"{task.code}: {user.full_name} jamoa tarkibidan chiqarildi",
+        meta={"user_id": user.id},
+    )
+    return assignment

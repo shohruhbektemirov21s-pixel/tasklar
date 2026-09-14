@@ -24,13 +24,14 @@ from .models import (BOARD_COLUMNS, Attachment, Label, Review, ReviewVerdict, Su
 from .serializers import (AttachmentSerializer, BoardTaskSerializer, BulkTaskSerializer,
                           CommentSerializer, LabelSerializer, ReviewSerializer,
                           StatusChangeSerializer, SubmissionSerializer,
-                          TaskDetailSerializer, TaskSerializer, WorkLogSerializer)
+                          TaskAssignmentSerializer, TaskDetailSerializer,
+                          TaskSerializer, TaskTeamMemberInputSerializer, WorkLogSerializer)
 
 User = get_user_model()
 
 
-from .services import (apply_review, live_task, move_status, project_people,
-                       send_to_review, sync_assignees, task_watchers)
+from .services import (apply_review, assign_team_member, live_task, move_status, project_people,
+                       remove_team_member, send_to_review, sync_assignees, task_watchers)
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -523,6 +524,80 @@ class TaskViewSet(viewsets.ModelViewSet):
         task.refresh_from_db()
         return Response(TaskDetailSerializer(
             task, context=self.get_serializer_context()).data)
+
+    # ------------------------------------------------------------ jamoa shaklida ishlash
+    @action(detail=True, methods=["get", "post"], url_path="team")
+    def team(self, request, pk=None):
+        """Vazifaga jamoa a'zosini biriktirish, muddat va vaqtlarini belgilash."""
+        task = self.get_object()
+        if request.method == "GET":
+            assignments = task.assignments.filter(is_active=True).select_related("user", "assigned_by")
+            return Response(TaskAssignmentSerializer(assignments, many=True, context=self.get_serializer_context()).data)
+
+        access = ProjectAccess(request.user, task.project)
+        is_assignee = task.assignments.filter(user_id=request.user.id, is_active=True).exists()
+        can_manage_team = bool(
+            access.can_manage
+            or access.is_member
+            or is_assignee
+            or task.created_by_id == request.user.id
+            or getattr(request.user, "is_boss", False)
+            or getattr(request.user, "is_platform_admin", False)
+        )
+        if not can_manage_team:
+            raise PermissionDenied("Vazifaga jamoa a'zolarini biriktirish huquqingiz yo'q.")
+
+        if task.status in (TaskStatus.DONE, TaskStatus.CANCELLED):
+            raise ValidationError({"detail": "Yakunlangan yoki bekor qilingan vazifaga jamoa a'zolarini qo'shib bo'lmaydi."})
+
+        serializer = TaskTeamMemberInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        d = serializer.validated_data
+
+        target_user = object_or_404(User, pk=d["user_id"])
+        is_proj_member = task.project.memberships.filter(is_active=True, user=target_user).exists()
+        if not is_proj_member:
+            raise ValidationError({"user_id": "Foydalanuvchi ushbu loyiha a'zosi emas."})
+
+        assign_team_member(
+            task=task,
+            user=target_user,
+            actor=request.user,
+            start_date=d.get("start_date"),
+            due_date=d.get("due_date"),
+            allocated_hours=d.get("allocated_hours"),
+            role=d.get("role", ""),
+            note=d.get("note", ""),
+        )
+        live_task(task, "updated", request.user, title=task.title[:120])
+        task.refresh_from_db()
+        return Response(TaskDetailSerializer(task, context=self.get_serializer_context()).data, status=200)
+
+    @action(detail=True, methods=["post"], url_path="team-remove")
+    def team_remove(self, request, pk=None):
+        """Vazifadan jamoa a'zosini chiqarish."""
+        task = self.get_object()
+        access = ProjectAccess(request.user, task.project)
+        is_assignee = task.assignments.filter(user_id=request.user.id, is_active=True).exists()
+        can_manage_team = bool(
+            access.can_manage
+            or access.is_member
+            or is_assignee
+            or task.created_by_id == request.user.id
+            or getattr(request.user, "is_boss", False)
+            or getattr(request.user, "is_platform_admin", False)
+        )
+        if not can_manage_team:
+            raise PermissionDenied("Vazifadan jamoa a'zosini chiqarish huquqingiz yo'q.")
+
+        user_id = request.data.get("user_id")
+        if not user_id:
+            raise ValidationError({"user_id": "Foydalanuvchi ko'rsatilmagan."})
+        target_user = object_or_404(User, pk=user_id)
+        remove_team_member(task, target_user, request.user)
+        live_task(task, "updated", request.user, title=task.title[:120])
+        task.refresh_from_db()
+        return Response(TaskDetailSerializer(task, context=self.get_serializer_context()).data, status=200)
 
     # ------------------------------------------------------------ izoh / ish jurnali
     @action(detail=True, methods=["post"], url_path="comments")

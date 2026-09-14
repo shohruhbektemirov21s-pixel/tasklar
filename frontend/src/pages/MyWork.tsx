@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 import { ApiError, api } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import type { DueColumnKey, MyWorkData, Task } from "@/api/types";
+import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { IconCalendar } from "@/components/icons";
 import {
-  Empty, ErrorMsg, Loading, Pager, StatusBadge, fmtDate,
+  Empty, ErrorMsg, Loading, Pager, StatusBadge, fmtDate, fmtDateTime,
 } from "@/components/ui";
 import { toTask, useNavParams } from "@/nav";
 import { tx } from "@/i18n";
@@ -43,54 +44,29 @@ const TERMS = [
 
 /**
  * «Mening ishim» — muddat bo'yicha ustunlar.
- *
- * Ilgari ustunlar HOLAT edi («Jarayonda», «Bajarildi»). U ish oqimini
- * ko'rsatardi, lekin odam ertalab boshqa savol bilan keladi: "bugun nima
- * qilaman, shu haftada nima bor". Holat esa vazifaning o'zida ham,
- * loyiha doskasida ham (`pages/project/Board.tsx`) turibdi.
- *
- * USTUNLAR BIR-BIRINI INKOR QILMAYDI: bugungi ish shu haftalikda ham,
- * «barchasi» da ham ko'rinadi. Bu Kanban emas — kesimlar to'plami, ya'ni
- * bitta kartani ikki joyda ko'rish kutilgan holat.
- *
- * Kesimni SERVER hisoblaydi (`due_span`): «shu hafta» bu yerda ham,
- * «Vazifalar» ro'yxatida ham, bosh panelda ham bir xil hafta bo'lsin.
  */
 export default function MyWork() {
   const fid = useId();
-  // Sudralayotgan karta va ustidagi ustun. Ko'chirish xatosi yuklash
-  // xatosidan alohida turadi - biri ikkinchisini o'chirib yubormasin.
+  const { user } = useAuth();
   const [dragId, setDragId] = useState<number | null>(null);
-  /**
-   * Sudralayotgan karta - REF da, holatda emas.
-   *
-   * `dragstart` va `drop` ketma-ket, bir zumda kelsa React holatni oradan
-   * ULGURMAY yangilaydi va `drop` ichida raqam hali `null` bo'ladi: karta
-   * qimirlamaydi, xato ham chiqmaydi - odam "sudrash ishlamayapti" deb
-   * qoladi. Ref o'sha zahoti yoziladi. Holat baribir kerak: ustunning
-   * yonishi qayta chizishga bog'liq.
-   */
   const dragRef = useRef<number | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  // Loyiha ham, holat ham URL da: bosh paneldagi kataklar shu yerga
-  // tayyor filtr bilan olib keladi (holat orqali). Ilgari ular filtrsiz
-  // olib kelardi - odam «Tuzatish kerak 2» ni bosib, oltita ustunni
-  // ko'rar va o'sha ikkitasini o'zi qidirib topishi kerak edi.
+
   const [params, setParams] = useNavParams();
   const period = params.get("period") || "";
+  const projectId = params.get("project") || "";
+  const half = params.get("half") || "";
+  const scope = params.get("scope") || "";
 
-  // HAR USTUN O'Z SAHIFASIDA turadi: ular uzunligi bilan bir-biriga
-  // o'xshamaydi va bitta umumiy raqam «bajarilganlar» ni uchinchi
-  // sahifaga olib chiqqanda «bugun» ni bo'shatib qo'yardi. Raqamlar ham
-  // manzilda - orqaga qaytish tugmasi ishlashi uchun.
   const pageOf = (key: string) => Number(params.get(`page_${key.toLowerCase()}`)) || 1;
 
-  // KESISH SERVERDA. Ro'yxat to'liq kelib, mijozda kesilmaydi: ilgari
-  // ustun 100 tada jimgina qirqilardi va yuz birinchi ish yo'qolardi.
   const { data, error: loadError, reload } = useFetch<MyWorkData>("/my-work/", {
     board: "due",
     period,
+    project: projectId,
+    half,
+    scope,
     ...Object.fromEntries(COLUMNS.map((c) => [`page_${c.key.toLowerCase()}`, String(pageOf(c.key))])),
   });
 
@@ -101,11 +77,34 @@ export default function MyWork() {
     setParams(next, { replace: true });
   };
 
-  /** Muddat o'zgardi - ustunlar boshqacha to'ladi, hamma sahifa boshiga qaytadi. */
   const setPeriod = (v: string) => {
     const next = new URLSearchParams(params);
     if (v) next.set("period", v);
     else next.delete("period");
+    COLUMNS.forEach((c) => next.delete(`page_${c.key.toLowerCase()}`));
+    setParams(next, { replace: true });
+  };
+
+  const setProject = (v: string) => {
+    const next = new URLSearchParams(params);
+    if (v) next.set("project", v);
+    else next.delete("project");
+    COLUMNS.forEach((c) => next.delete(`page_${c.key.toLowerCase()}`));
+    setParams(next, { replace: true });
+  };
+
+  const setHalf = (v: string) => {
+    const next = new URLSearchParams(params);
+    if (v) next.set("half", v);
+    else next.delete("half");
+    COLUMNS.forEach((c) => next.delete(`page_${c.key.toLowerCase()}`));
+    setParams(next, { replace: true });
+  };
+
+  const setScope = (v: string) => {
+    const next = new URLSearchParams(params);
+    if (v) next.set("scope", v);
+    else next.delete("scope");
     COLUMNS.forEach((c) => next.delete(`page_${c.key.toLowerCase()}`));
     setParams(next, { replace: true });
   };
@@ -200,6 +199,29 @@ export default function MyWork() {
         ) : (
           <>
             <div className="filters">
+              {(user?.is_boss || user?.is_platform_admin) && (
+                <div className="f">
+                  <label htmlFor={`${fid}-scope`}>{tx("my_work.qamrov")}</label>
+                  <select id={`${fid}-scope`} value={scope} onChange={(e) => setScope(e.target.value)}>
+                    <option value="">{tx("my_work.boshliq_barchasi")}</option>
+                    <option value="mine">{tx("my_work.boshliq_meniki")}</option>
+                  </select>
+                </div>
+              )}
+
+              {Boolean(data?.projects?.length) && (
+                <div className="f">
+                  <label htmlFor={`${fid}-project`}>{tx("my_work.loyiha")}</label>
+                  <select id={`${fid}-project`} value={projectId} onChange={(e) => setProject(e.target.value)}>
+                    <option value="">{tx("my_work.barcha_loyihalar")}</option>
+                    {(data?.projects || []).map((p) => (
+                      <option key={p.id} value={String(p.id)}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+
               <div className="f">
                 <label htmlFor={`${fid}-0`}>{tx("common.muddat")}</label>
                 <select id={`${fid}-0`} value={period} onChange={(e) => setPeriod(e.target.value)}>
@@ -243,6 +265,9 @@ export default function MyWork() {
                         // umuman sudralmaydi - qo'l bejiz tortmasin.
                         const movable = COLUMNS.some(
                           (c) => c.key !== g.status && accepts(c.key, t));
+                        const day = t.due_date ? parseInt(fmtDate(t.due_date).split(".")[0], 10) : null;
+                        const halfNum = day ? (day <= 15 ? 1 : 2) : null;
+
                         return (
                           <Link className={`tcard ${t.is_overdue ? "overdue" : ""} ${dragId === t.id ? "dragging" : ""}`}
                                 {...toTask(t.id)} key={t.id}
@@ -251,21 +276,54 @@ export default function MyWork() {
                                 onDragEnd={() => {
                                   dragRef.current = null; setDragId(null); setOver(null);
                                 }}>
+                            {t.project_name && (
+                              <div style={{ marginBottom: 4 }}>
+                                <span className="badge badge-subtle" style={{ fontSize: 10.5, padding: "1px 6px", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {t.project_name}
+                                </span>
+                              </div>
+                            )}
                             <div className="title" style={{ margin: 0 }}>{t.title}</div>
-                            <div className="foot" style={{ marginTop: 9 }}>
-                              {/* HOLAT, prioritet emas. Bu doskada ustun -
-                                  muddat kesimi, ya'ni ish qaysi bosqichda
-                                  ekani boshqa hech qayerda ko'rinmaydi.
-                                  Prioritet esa ro'yxatning yarmida bir xil
-                                  bo'lib chiqadi va kartalarni ajratmaydi.
-                                  Loyiha doskasida teskarisi: u yerda ustunning
-                                  O'ZI holat, shuning uchun u yerda prioritet
-                                  qoladi. */}
+                            {t.description && (
+                              <div className="muted" style={{
+                                fontSize: 12,
+                                marginTop: 4,
+                                marginBottom: 2,
+                                whiteSpace: "pre-wrap",
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                                lineHeight: 1.35,
+                              }}>
+                                {t.description}
+                              </div>
+                            )}
+                            <div className="foot" style={{ marginTop: 8, alignItems: "center" }}>
                               <StatusBadge task={t} />
                               <span className="spacer" />
                               {t.due_date && (
-                                <span className="tcard-due">
-                                  <IconCalendar size={12} /> {fmtDate(t.due_date)}
+                                <span className="row middle" style={{ gap: 4 }}>
+                                  {halfNum && (
+                                    <span
+                                      className="badge"
+                                      style={{
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        padding: "1px 5px",
+                                        borderRadius: 4,
+                                        background: halfNum === 1 ? "var(--accent-bg, #eff6ff)" : "var(--warning-bg, #fef3c7)",
+                                        color: halfNum === 1 ? "var(--accent, #2563eb)" : "var(--warning, #d97706)",
+                                        border: `1px solid ${halfNum === 1 ? "rgba(37,99,235,0.2)" : "rgba(217,119,6,0.2)"}`,
+                                      }}
+                                      title={halfNum === 1 ? tx("my_work.davr_1") : tx("my_work.davr_2")}
+                                    >
+                                      {halfNum}
+                                    </span>
+                                  )}
+                                  <span className="tcard-due" title={tx("task_detail.tugash_vaqti")}>
+                                    <IconCalendar size={12} /> {fmtDateTime(t.due_date)}
+                                  </span>
                                 </span>
                               )}
                             </div>

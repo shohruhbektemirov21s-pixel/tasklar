@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { ApiError, api, listOf } from "@/api/client";
-import type { Activity, ProjectMember, Task } from "@/api/types";
+import type { Activity, ProjectMember, Task, TaskAssignment } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import TaskSubmission from "@/components/TaskSubmission";
@@ -207,6 +207,16 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
   const [selectedSubtaskId, setSelectedSubtaskId] = useState("");
   const [availSearch, setAvailSearch] = useState("");
 
+  // Jamoa shaklida birlashtirish (Team Collaboration)
+  const [teamModalOpen, setTeamModalOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<TaskAssignment | null>(null);
+  const [teamMemberId, setTeamMemberId] = useState("");
+  const [teamRole, setTeamRole] = useState("");
+  const [teamStartDate, setTeamStartDate] = useState("");
+  const [teamDueDate, setTeamDueDate] = useState("");
+  const [teamAllocatedHours, setTeamAllocatedHours] = useState("");
+  const [teamNote, setTeamNote] = useState("");
+
   // Accordion yig'iladigan bo'limlar holati:
   // Sahifa ochilganda faqat eng muhim bo'limlar ochiq bo'ladi.
   const [openLeft, setOpenLeft] = useState<string | null>("desc");
@@ -232,12 +242,16 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
 
   useEffect(() => { void load(); }, [load]);
 
-  // Jamoa ro'yxati faqat vazifani boshqara oladigan odamga kerak - o'tkazish
-  // kartasidagi tanlov uchun. Boshqalarga ortiqcha so'rov ketmaydi.
+  // Jamoa ro'yxati vazifada jamoani birlashtirish va o'tkazish uchun kerak
   const projectId = task?.project;
-  const canReassign = Boolean(task?.access?.can_create_task);
+  const canManageTeamMembers = Boolean(
+    task?.access?.can_manage ||
+    task?.access?.is_member ||
+    task?.access?.can_work ||
+    task?.access?.can_create_task
+  );
   useEffect(() => {
-    if (!projectId || !canReassign) return;
+    if (!projectId || !canManageTeamMembers) return;
     let alive = true;
     void (async () => {
       try {
@@ -248,7 +262,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
       }
     })();
     return () => { alive = false; };
-  }, [projectId, canReassign]);
+  }, [projectId, canManageTeamMembers]);
 
   // Shu vazifaga tegilsa (izoh, holat, tekshiruv) - sahifa o'zi yangilanadi.
   useEffect(() => subscribe((d) => {
@@ -349,6 +363,60 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
     if (!ok) return;
     await run(async () => {
       await unlinkSubtask(task.id, subtaskId);
+    });
+  }
+
+  function handleOpenTeamModal(assignment?: TaskAssignment) {
+    if (assignment) {
+      setEditingAssignment(assignment);
+      setTeamMemberId(String(assignment.user.id));
+      setTeamRole(assignment.role || "");
+      setTeamStartDate(toDateTimeInput(assignment.start_date));
+      setTeamDueDate(toDateTimeInput(assignment.due_date));
+      setTeamAllocatedHours(assignment.allocated_hours ? String(assignment.allocated_hours) : "");
+      setTeamNote(assignment.note || "");
+    } else {
+      setEditingAssignment(null);
+      setTeamMemberId("");
+      setTeamRole("");
+      setTeamStartDate(toDateTimeInput(task?.start_date));
+      setTeamDueDate(toDateTimeInput(task?.due_date));
+      setTeamAllocatedHours("");
+      setTeamNote("");
+    }
+    setTeamModalOpen(true);
+  }
+
+  async function handleSaveTeamMember(e: React.FormEvent) {
+    e.preventDefault();
+    if (!task || !teamMemberId) return;
+    await run(async () => {
+      const payload = {
+        user_id: Number(teamMemberId),
+        role: teamRole.trim(),
+        start_date: teamStartDate ? fromDateTimeInput(teamStartDate) : null,
+        due_date: teamDueDate ? fromDateTimeInput(teamDueDate) : null,
+        allocated_hours: teamAllocatedHours ? Number(teamAllocatedHours) : null,
+        note: teamNote.trim(),
+      };
+      const updated = await api.post<Task>(`/tasks/${task.id}/team/`, payload);
+      setTask(updated);
+      setTeamModalOpen(false);
+    });
+  }
+
+  async function handleRemoveTeamMember(targetUserId: number, userName: string) {
+    if (!task) return;
+    const ok = await confirmDialog({
+      title: tx("task_detail.jamoa_chiqarish", undefined, "Chiqarish"),
+      body: `${userName} — ${tx("task_detail.jamoa_chiqarish_tasdiq", undefined, "Ushbu jamoa a'zosini vazifadan chiqarishni xohlaysizmi?")}`,
+      confirmText: tx("task_detail.jamoa_chiqarish", undefined, "Chiqarish"),
+      danger: true,
+    });
+    if (!ok) return;
+    await run(async () => {
+      const updated = await api.post<Task>(`/tasks/${task.id}/team-remove/`, { user_id: targetUserId });
+      setTask(updated);
     });
   }
 
@@ -551,6 +619,176 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
               {task.description ? (
                 <div className="pre-wrap">{task.description}</div>
               ) : <p className="muted" style={{ margin: 0 }}>{tx("common.tavsif_kiritilmagan")}</p>}
+            </AccordionSection>
+
+            {/* ------------------------------------------------ JAMOA SHAKLIDA ISHLASH */}
+            <AccordionSection
+              id="section-team"
+              icon="👥"
+              title={tx("task_detail.jamoa_azolari", undefined, "Jamoa a'zolari")}
+              badge={<span className="badge badge-brand">{task.assignments?.length || task.assignees?.length || 0}</span>}
+              statusText={
+                (task.assignments?.length || task.assignees?.length)
+                  ? `${task.assignments?.length || task.assignees?.length} ${tx("task_detail.jamoa_orqali_birlashgan", undefined, "ta dasturchi birgalikda ishlamoqda")}`
+                  : tx("task_detail.jamoa_bosh", undefined, "Jamoa biriktirilmagan")
+              }
+              action={canEdit && task.status !== "DONE" && task.status !== "CANCELLED" && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  onClick={() => handleOpenTeamModal()}
+                  disabled={busy}
+                >
+                  + {tx("task_detail.jamoa_azosi_qoshish", undefined, "Jamoa a'zosi qo'shish")}
+                </button>
+              )}
+              isOpen={openLeft === "team"}
+              onToggle={() => toggleLeft("team")}
+            >
+              {task.assignments && task.assignments.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {task.assignments.map((a) => (
+                    <div
+                      key={a.id}
+                      style={{
+                        padding: "12px 14px",
+                        border: "1px solid var(--border-muted)",
+                        borderRadius: 8,
+                        background: "var(--surface-subtle)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                      }}
+                    >
+                      <div className="row middle" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                        <div className="row middle" style={{ gap: 10 }}>
+                          <Avatar user={a.user} size="sm" />
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 13.5 }}>
+                              {a.user.full_name}
+                            </div>
+                            <div className="muted" style={{ fontSize: 11.5 }}>
+                              {a.user.job_title || a.user.specialty_display || a.user.email}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="row middle" style={{ gap: 6 }}>
+                          {a.role && (
+                            <span className="badge badge-brand" style={{ fontSize: 11.5, fontWeight: 600 }}>
+                              {a.role}
+                            </span>
+                          )}
+                          {a.allocated_hours && (
+                            <span className="badge" style={{ fontSize: 11.5 }}>
+                              ⏱️ {a.allocated_hours} {tx("common.soat", undefined, "soat")}
+                            </span>
+                          )}
+                          {canEdit && task.status !== "DONE" && task.status !== "CANCELLED" && (
+                            <div className="row middle" style={{ gap: 4 }}>
+                              <button
+                                type="button"
+                                className="btn btn-sm"
+                                style={{ padding: "3px 8px", fontSize: 12 }}
+                                onClick={() => handleOpenTeamModal(a)}
+                                title={tx("task_detail.jamoa_azosi_tahrirlash", undefined, "Tahrirlash")}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-danger"
+                                style={{ padding: "3px 8px", fontSize: 12 }}
+                                onClick={() => handleRemoveTeamMember(a.user.id, a.user.full_name)}
+                                title={tx("task_detail.jamoa_chiqarish", undefined, "Chiqarish")}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {(a.start_date || a.due_date) && (
+                        <div className="row middle" style={{ fontSize: 12, color: "var(--text-muted)", gap: 14 }}>
+                          {a.start_date && (
+                            <span>
+                              <strong>{tx("task_detail.boshlanish", undefined, "Boshlanish")}:</strong> {fmtDateTime(a.start_date)}
+                            </span>
+                          )}
+                          {a.due_date && (
+                            <span>
+                              <strong>{tx("task_detail.muddat", undefined, "Muddat")}:</strong> {fmtDateTime(a.due_date)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {a.note && (
+                        <div style={{ fontSize: 12, color: "var(--text)", background: "var(--surface)", padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border-muted)" }}>
+                          <span className="muted">{tx("task_detail.eslatma_izoh", undefined, "Eslatma")}: </span>
+                          {a.note}
+                        </div>
+                      )}
+
+                      {a.assigned_by && (
+                        <div className="muted" style={{ fontSize: 11, textAlign: "right" }}>
+                          {a.assigned_by.full_name} {tx("task_detail.dasturchi_biriktirdi", undefined, "tomonidan biriktirildi")} · {timeAgo(a.assigned_at)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : task.assignees && task.assignees.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {task.assignees.map((u) => (
+                    <div
+                      key={u.id}
+                      className="row middle"
+                      style={{
+                        padding: "8px 12px",
+                        border: "1px solid var(--border-muted)",
+                        borderRadius: 6,
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div className="row middle" style={{ gap: 8 }}>
+                        <Avatar user={u} size="sm" />
+                        <div>
+                          <strong style={{ fontSize: 13 }}>{u.full_name}</strong>
+                          <div className="muted" style={{ fontSize: 11 }}>{u.job_title || u.specialty_display}</div>
+                        </div>
+                      </div>
+                      {canEdit && task.status !== "DONE" && task.status !== "CANCELLED" && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-danger"
+                          style={{ padding: "2px 6px", fontSize: 11 }}
+                          onClick={() => handleRemoveTeamMember(u.id, u.full_name)}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "16px 12px", background: "var(--surface-subtle)", borderRadius: 6 }}>
+                  <p className="muted" style={{ margin: "0 0 10px 0", fontSize: 13 }}>
+                    {tx("task_detail.jamoa_bosh", undefined, "Ushbu vazifada hali jamoa a'zolari biriktirilmagan. 3 kishi yoki bir nechta dasturchini birlashtirib ishlashingiz mumkin.")}
+                  </p>
+                  {canEdit && task.status !== "DONE" && task.status !== "CANCELLED" && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={() => handleOpenTeamModal()}
+                      disabled={busy}
+                    >
+                      + {tx("task_detail.jamoa_azosi_qoshish", undefined, "Jamoa a'zosi qo'shish")}
+                    </button>
+                  )}
+                </div>
+              )}
             </AccordionSection>
 
             {/* ------------------------------------------------ OSTKI VAZIFALAR (SUBTASKS) */}
@@ -1517,6 +1755,155 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {teamModalOpen && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(8, 11, 16, 0.72)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            padding: "20px 16px",
+          }}
+          onClick={() => setTeamModalOpen(false)}
+        >
+          <div
+            className="modal-window card"
+            style={{
+              width: "min(560px, 96vw)",
+              borderRadius: 12,
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              overflow: "hidden",
+              background: "var(--card-bg, #ffffff)",
+              border: "1px solid var(--border)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 20px",
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: 16 }}>
+                {editingAssignment
+                  ? tx("task_detail.jamoa_azosi_tahrirlash", undefined, "Jamoa a'zosi ma'lumotlarini tahrirlash")
+                  : tx("task_detail.jamoa_azosi_qoshish", undefined, "Jamoa a'zosi qo'shish")}
+              </h3>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setTeamModalOpen(false)}
+                style={{ fontSize: 18, lineHeight: 1, padding: "2px 6px" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTeamMember} style={{ padding: "16px 20px" }}>
+              <div className="field mb">
+                <label htmlFor={`${fid}-team-user`}>
+                  {tx("task_detail.kimga", undefined, "Dasturchi / A'zo")} <span className="text-danger">*</span>
+                </label>
+                <select
+                  id={`${fid}-team-user`}
+                  value={teamMemberId}
+                  required
+                  disabled={Boolean(editingAssignment)}
+                  onChange={(e) => setTeamMemberId(e.target.value)}
+                >
+                  <option value="">{tx("task_detail.jamoadan_tanlang", undefined, "Jamoadan tanlang")}</option>
+                  {members.map((m) => {
+                    const alreadyIn = task.assignments?.some((a) => a.user.id === m.user.id && a.id !== editingAssignment?.id);
+                    return (
+                      <option key={m.id} value={m.user.id} disabled={alreadyIn}>
+                        {m.user.full_name} ({m.user.job_title || m.role_display})
+                        {alreadyIn ? " — (allaqachon biriktirilgan)" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <div className="field mb">
+                <label htmlFor={`${fid}-team-role`}>
+                  {tx("task_detail.jamoa_roli", undefined, "Jamoada roli / vazifasi")}
+                </label>
+                <input
+                  id={`${fid}-team-role`}
+                  value={teamRole}
+                  placeholder={tx("task_detail.jamoa_roli_placeholder", undefined, "Masalan: Frontend, Backend API, Sinov/QA...")}
+                  onChange={(e) => setTeamRole(e.target.value)}
+                />
+              </div>
+
+              <div className="row" style={{ gap: 12, marginBottom: 12 }}>
+                <div className="field" style={{ flex: 1 }}>
+                  <label>{tx("task_detail.boshlanish_vaqti", undefined, "Boshlanish sanasi va vaqti")}</label>
+                  <DateTimeField value={teamStartDate} onChange={setTeamStartDate} />
+                </div>
+                <div className="field" style={{ flex: 1 }}>
+                  <label>{tx("task_detail.tugash_vaqti", undefined, "Tugash muddati (sana va vaqt)")}</label>
+                  <DateTimeField value={teamDueDate} onChange={setTeamDueDate} />
+                </div>
+              </div>
+
+              <div className="field mb">
+                <label htmlFor={`${fid}-team-hours`}>
+                  {tx("task_detail.rejalashtirilgan_soat", undefined, "Rejalashtirilgan soat")}
+                </label>
+                <input
+                  id={`${fid}-team-hours`}
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={teamAllocatedHours}
+                  placeholder="Masalan: 12"
+                  onChange={(e) => setTeamAllocatedHours(e.target.value)}
+                />
+              </div>
+
+              <div className="field mb">
+                <label htmlFor={`${fid}-team-note`}>
+                  {tx("task_detail.eslatma_izoh", undefined, "Eslatma / Izoh")}
+                </label>
+                <input
+                  id={`${fid}-team-note`}
+                  value={teamNote}
+                  placeholder={tx("task_detail.eslatma_placeholder", undefined, "Masalan: Avtorizatsiya qismini bajaradi...")}
+                  onChange={(e) => setTeamNote(e.target.value)}
+                />
+              </div>
+
+              <div className="form-actions" style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => setTeamModalOpen(false)}
+                >
+                  {tx("common.bekor_qilish", undefined, "Bekor qilish")}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-sm btn-primary"
+                  disabled={busy || !teamMemberId}
+                >
+                  {busy ? tx("common.saqlanmoqda", undefined, "Saqlanmoqda...") : tx("task_detail.jamoa_saqlash", undefined, "Saqlash")}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

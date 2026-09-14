@@ -242,6 +242,21 @@ export interface Label {
   color: string;
 }
 
+export interface TaskAssignment {
+  id: number;
+  task: number;
+  user: UserBrief;
+  assigned_by: UserBrief | null;
+  start_date: string | null;
+  due_date: string | null;
+  allocated_hours: string | null;
+  role: string;
+  note: string;
+  assigned_at: string;
+  is_active: boolean;
+  unassigned_at?: string | null;
+}
+
 export interface Task {
   id: number;
   project: number;
@@ -269,6 +284,7 @@ export interface Task {
   subtasks_completed_count?: number;
   labels: Label[];
   assignees: UserBrief[];
+  assignments?: TaskAssignment[];
   start_date: string | null;
   due_date: string | null;
   estimate_hours: string | null;

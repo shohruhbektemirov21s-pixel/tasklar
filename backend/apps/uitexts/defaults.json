@@ -6154,5 +6154,137 @@
  "layout.tepaga_qaytish": {
   "value": "Yuqoriga qaytish",
   "note": "components/Layout.tsx"
+ },
+ "task_detail.jamoa_shaklida_ishlash": {
+  "value": "Jamoa shaklida ishlash",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_azolari": {
+  "value": "Jamoa a'zolari",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_azosi_qoshish": {
+  "value": "Jamoa a'zosi qo'shish",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_azosi_tahrirlash": {
+  "value": "Jamoa a'zosi ma'lumotlarini tahrirlash",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_roli": {
+  "value": "Jamoada roli / vazifasi",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_roli_placeholder": {
+  "value": "Masalan: Frontend, Backend API, Sinov/QA...",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.boshlanish_vaqti": {
+  "value": "Boshlanish sanasi va vaqti",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.tugash_vaqti": {
+  "value": "Tugash muddati (sana va vaqt)",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.rejalashtirilgan_soat": {
+  "value": "Rejalashtirilgan soat",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.eslatma_izoh": {
+  "value": "Eslatma / Izoh",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.eslatma_placeholder": {
+  "value": "Masalan: Avtorizatsiya qismini bajaradi...",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_chiqarish_tasdiq": {
+  "value": "Ushbu jamoa a'zosini vazifadan chiqarishni xohlaysizmi?",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_chiqarish": {
+  "value": "Chiqarish",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_bosh": {
+  "value": "Ushbu vazifada hali jamoa a'zolari biriktirilmagan. 3 kishi yoki bir nechta dasturchini birlashtirib ishlashingiz mumkin.",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.dasturchi_biriktirdi": {
+  "value": "tomonidan biriktirildi",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_saqlash": {
+  "value": "Saqlash",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_azosi_biriktirildi": {
+  "value": "Jamoa a'zosi muvaffaqiyatli biriktirildi",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_biriktirgan": {
+  "value": "Biriktirgan:",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.jamoa_orqali_birlashgan": {
+  "value": "ta dasturchi birgalikda ishlamoqda",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "my_work.loyiha": {
+  "value": "Loyiha",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.barcha_loyihalar": {
+  "value": "Barcha loyihalar",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.oy_yarmi": {
+  "value": "Oy yarmi",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.davr_hammasi": {
+  "value": "Barcha sanalar (1—30)",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.davr_1": {
+  "value": "1-davr: 1—15 sanalar (1)",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.davr_2": {
+  "value": "2-davr: 16—30 sanalar (2)",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.qamrov": {
+  "value": "Qamrov",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.boshliq_barchasi": {
+  "value": "Barcha loyihalar",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.boshliq_meniki": {
+  "value": "Mening vazifalarim",
+  "note": "pages/MyWork.tsx"
+ },
+ "my_work.izoh": {
+  "value": "Izoh",
+  "note": "pages/MyWork.tsx"
+ },
+ "dashboard.oy_yarmi": {
+  "value": "Oy yarmi",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.davr_hammasi": {
+  "value": "Barcha sanalar",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.davr_1": {
+  "value": "1 (1—15 sanalar)",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.davr_2": {
+  "value": "2 (16—30 sanalar)",
+  "note": "pages/Dashboard.tsx"
  }
 }

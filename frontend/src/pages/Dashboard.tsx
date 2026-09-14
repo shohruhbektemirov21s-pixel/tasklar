@@ -32,7 +32,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { PageHead } from "@/components/Layout";
 import {
-  AvatarStack, Card, Empty, ErrorMsg, Loading, Pager, Priority, StatusBadge, fmtDate,
+  AvatarStack, Card, Empty, ErrorMsg, Loading, Pager, Priority, StatusBadge, fmtDate, fmtDateTime,
 } from "@/components/ui";
 import { IconPlus } from "@/components/icons";
 import TaskDrawer from "@/components/TaskDrawer";
@@ -207,7 +207,7 @@ const DUE_OPTIONS = [
 ] as const;
 
 const EMPTY_FILTERS = {
-  search: "", due: "", status: "", project: "", assignee: "",
+  search: "", due: "", status: "", project: "", assignee: "", half: "",
 };
 type Filters = typeof EMPTY_FILTERS;
 type FilterKey = keyof Filters;
@@ -380,6 +380,7 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
             ))}
           </select>
         </div>
+
         <div className="f">
           <label htmlFor={fid + "-st"}>{tx("common.holat")}</label>
           <select id={fid + "-st"} value={f.status}
@@ -400,8 +401,8 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
         )}
         {/* Xodim (ijrochi) filtri: ismni yozganda yoki ro'yxatdan tanlaganda filtrlash */}
         <Combo id={fid + "-as"} label={tx("dashboard.xodim")} options={assigneeOptions}
-               value={f.assignee} onChange={(v) => set("assignee", v)}
-               placeholder={tx("dashboard.xodim_nomini_yozing")} />
+                value={f.assignee} onChange={(v) => set("assignee", v)}
+                placeholder={tx("dashboard.xodim_nomini_yozing")} />
         {filtered && (
           <button type="button" className="btn" onClick={clear}>{tx("common.tozalash")}</button>
         )}
@@ -431,6 +432,9 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
           <tbody>
             {tasks.map((t, idx) => {
               const rowNum = (data ? (data.page - 1) * data.page_size : 0) + idx + 1;
+              const day = t.due_date ? parseInt(fmtDate(t.due_date).split(".")[0], 10) : null;
+              const halfNum = day ? (day <= 15 ? 1 : 2) : null;
+
               return (
               /* Qator bosilganda SAHIFA ALMASHMAYDI - o'ng chetdan tortma
                  chiqadi (`components/TaskDrawer.tsx`). Sabab: bu ro'yxat
@@ -441,17 +445,33 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
                   {rowNum}
                 </td>
                 <td>
-                  {/* Havola `<a>` bo'lib qoladi: klaviatura yo'li ham,
-                      «yangi oynada ochish» ham shu yerdan o'tadi. Oddiy
-                      bosishda esa o'tish to'xtatiladi va tortma ochiladi -
-                      modifikator bosilgan bosish brauzerga tegilmaydi. */}
-                  <Link {...toTask(t.id)}
-                        onClick={(e) => {
-                          if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setOpen(t);
-                        }}>{t.title}</Link>
+                  <div className="row middle" style={{ gap: 6, flexWrap: "wrap", marginBottom: 2 }}>
+                    {t.project_name && (
+                      <span className="badge badge-subtle" style={{ fontSize: 11, padding: "1px 6px" }}>
+                        {t.project_name}
+                      </span>
+                    )}
+                    <Link {...toTask(t.id)}
+                          onClick={(e) => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setOpen(t);
+                          }}>{t.title}</Link>
+                  </div>
+                  {t.description && (
+                    <div className="muted" style={{
+                      fontSize: 12,
+                      marginTop: 2,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 1,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      maxWidth: 420,
+                    }}>
+                      {t.description}
+                    </div>
+                  )}
                 </td>
                 <td className="nowrap"><StatusBadge task={t} /></td>
                 <td className="nowrap"><Priority task={t} /></td>
@@ -470,7 +490,32 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
                     <span className="muted">—</span>
                   )}
                 </td>
-                <td className="nowrap muted right">{fmtDate(t.due_date)}</td>
+                <td className="nowrap muted right">
+                  {t.due_date ? (
+                    <span className="row middle" style={{ gap: 4, justifyContent: "flex-end" }}>
+                      {halfNum && (
+                        <span
+                          className="badge"
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            padding: "1px 5px",
+                            borderRadius: 4,
+                            background: halfNum === 1 ? "var(--accent-bg, #eff6ff)" : "var(--warning-bg, #fef3c7)",
+                            color: halfNum === 1 ? "var(--accent, #2563eb)" : "var(--warning, #d97706)",
+                            border: `1px solid ${halfNum === 1 ? "rgba(37,99,235,0.2)" : "rgba(217,119,6,0.2)"}`,
+                          }}
+                          title={halfNum === 1 ? tx("my_work.davr_1") : tx("my_work.davr_2")}
+                        >
+                          {halfNum}
+                        </span>
+                      )}
+                      <span>{fmtDateTime(t.due_date)}</span>
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
               </tr>
               );
             })}

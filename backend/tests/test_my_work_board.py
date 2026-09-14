@@ -27,7 +27,7 @@ from django.utils import timezone
 
 from apps.tasks.models import Task, TaskAssignment, TaskStatus
 
-from .base import ApiTestCase
+from .base import ApiTestCase, make_user
 
 
 def end_of_day(day):
@@ -162,15 +162,12 @@ class MyWorkDueBoardTest(ApiTestCase):
         self.assertEqual(data["managed_projects"], [self.project.id])
 
     def test_vazifani_tahrirlash_avvalgidek_menejerda_qoladi(self):
-        """Muddat eshigi ochilgani bilan TAHRIRLASH ochilmaydi.
-
-        Aks holda kartani surish uchun berilgan huquq bilan birga sarlavha,
-        prioritet va ijrochi ham ochilib ketardi.
-        """
+        """Muddat eshigi ochilgani bilan begona shaxslar uchun TAHRIRLASH ochilmaydi."""
         cols, _ = self.board()
         target = cols["TODAY"]["due_target"]
 
-        denied = self.client_for(self.dev).patch(
+        stranger = make_user("stranger@teamflow.uz", "Begona")
+        denied = self.client_for(stranger).patch(
             "/api/tasks/{}/".format(self.week_task.id), {"due_date": target}, format="json")
         self.assertEqual(denied.status_code, 403)
 
@@ -234,3 +231,34 @@ class MyWorkDueBoardTest(ApiTestCase):
             "/api/tasks/{}/due/".format(self.week_task.id),
             {"due_date": "kecha"}, format="json")
         self.assertEqual(r.status_code, 400)
+
+    # -------------------------------------------------------- oy yarmi va boshliq
+
+    def test_oy_yarmi_filtri(self):
+        """1-15 kunlar (half=1) va 16-30 kunlar (half=2) to'g'ri filtrlanadi."""
+        # 10-sana (1-15 kunlar oralig'ida)
+        task_half1 = self.assign("1-yarim oylik ish", "2026-09-10T14:00:00Z")
+        # 25-sana (16-30 kunlar oralig'ida)
+        task_half2 = self.assign("2-yarim oylik ish", "2026-09-25T17:00:00Z")
+
+        r1 = self.client_for(self.dev).get("/api/my-work/", {"board": "due", "half": "1"})
+        self.assertEqual(r1.status_code, 200)
+        ids1 = [t["id"] for g in r1.data["groups"] for t in g["tasks"] if g["status"] == "ALL"]
+        self.assertIn(task_half1.id, ids1)
+        self.assertNotIn(task_half2.id, ids1)
+
+        r2 = self.client_for(self.dev).get("/api/my-work/", {"board": "due", "half": "2"})
+        self.assertEqual(r2.status_code, 200)
+        ids2 = [t["id"] for g in r2.data["groups"] for t in g["tasks"] if g["status"] == "ALL"]
+        self.assertIn(task_half2.id, ids2)
+        self.assertNotIn(task_half1.id, ids2)
+
+    def test_boshliq_my_workda_barcha_loyihalarni_koradi(self):
+        """Boshliq `my-work` da barcha loyihalar ro'yxatini va vazifalarini ko'radi."""
+        from .base import make_user
+        boss = make_user("boshliq_test@sinov.uz", "Katta Boshliq", role="BOSS")
+        r = self.client_for(boss).get("/api/my-work/", {"board": "due"})
+        self.assertEqual(r.status_code, 200)
+        proj_ids = [p["id"] for p in r.data["projects"]]
+        self.assertIn(self.project.id, proj_ids)
+

@@ -8,7 +8,6 @@ import { useRealtime } from "@/realtime/RealtimeContext";
 import ErrorBoundary from "./ErrorBoundary";
 import { Logo } from "./Logo";
 import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
-import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar, SpecialtyTag } from "./ui";
 import { toFeed, toMessages, toNewProject, toSelfProfile, toUser, type NavTarget, useGo } from "@/nav";
@@ -462,10 +461,6 @@ export default function Layout() {
         </button>
 
         <ThemeToggle />
-        <NotificationBell />
-        <Link className="top-icon hide-sm" {...toMessages()} title={tx("layout.xabarlar")}>
-          <IconChat size={17} />
-        </Link>
         {/* Tekshiruv navbati - faqat ish qabul qiladigan odamga: loyiha
             menejeri va admin. Ijrochida bu navbat har doim bo'sh edi
             (server uni boshqariladigan loyihalar bo'yicha qirqadi), ya'ni
@@ -523,11 +518,11 @@ export default function Layout() {
           {/* 2. MULOQOT VA HAMKORLIK */}
           <div className="nav-section">
             <div className="nav-title">{tx("layout.bolim_muloqot")}</div>
-            {itemTo(toMessages(), <IconChat />, tx("layout.xabarlar"), undefined, false, tx("layout.tooltip_xabarlar"))}
             {item("/bildirishnomalar", <IconBell />, tx("common.bildirishnomalar"), notifCount, true, tx("layout.tooltip_bildirishnomalar"))}
             {manages && item("/tekshiruv", <IconReview />, tx("common.tekshiruv_navbati"), counts.reviews, true, tx("layout.tooltip_tekshiruv"))}
             {item("/takliflar", <IconIdea />, tx("layout.takliflar"), counts.suggestions, true, tx("layout.tooltip_takliflar"))}
             {user?.has_inquiries_access && item("/sorovlar", <IconInquiry />, tx("layout.sorovlar"), undefined, false, tx("layout.tooltip_sorovlar"))}
+            {itemTo(toMessages(), <IconChat />, tx("layout.xabarlar"), undefined, false, tx("layout.tooltip_xabarlar"))}
           </div>
 
           {/* 3. KUZATUV VA BOSHQARUV */}

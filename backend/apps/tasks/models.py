@@ -338,6 +338,12 @@ class TaskAssignment(models.Model):
                              related_name="assignments")
     assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                     null=True, blank=True, related_name="given_assignments")
+    start_date = models.DateTimeField("Boshlanish sanasi", null=True, blank=True)
+    due_date = models.DateTimeField("Muddat", null=True, blank=True)
+    allocated_hours = models.DecimalField("Rejalashtirilgan soat", max_digits=6, decimal_places=1,
+                                         null=True, blank=True)
+    role = models.CharField("Jamoada roli", max_length=120, blank=True)
+    note = models.CharField("Eslatma / Vazifa mazmuni", max_length=250, blank=True)
     assigned_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     unassigned_at = models.DateTimeField(null=True, blank=True)

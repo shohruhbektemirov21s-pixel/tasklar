@@ -96,3 +96,156 @@ class TaskSubtaskTests(ApiTestCase):
             "subtask_id": other_task.id
         })
         self.assertEqual(res.status_code, 403)
+
+
+class TaskTeamCollaborationTests(ApiTestCase):
+    def setUp(self):
+        super().setUp()
+        self.pm_user = make_user(
+            "pm_team@teamflow.uz", "Loyiha Menejeri",
+            role=GlobalRole.MANAGER, specialty=Specialty.PM
+        )
+        self.dev1 = make_user(
+            "dev1@teamflow.uz", "Dasturchi 1",
+            role=GlobalRole.DEVELOPER, specialty=Specialty.DEVELOPER
+        )
+        self.dev2 = make_user(
+            "dev2@teamflow.uz", "Dasturchi 2",
+            role=GlobalRole.DEVELOPER, specialty=Specialty.DEVELOPER
+        )
+        self.dev3 = make_user(
+            "dev3@teamflow.uz", "Dasturchi 3 (QA)",
+            role=GlobalRole.DEVELOPER, specialty=Specialty.DEVELOPER
+        )
+        self.stranger = make_user(
+            "stranger@teamflow.uz", "Begona odam",
+            role=GlobalRole.DEVELOPER, specialty=Specialty.DEVELOPER
+        )
+
+        self.workspace = Workspace.objects.create(name="Team Workspace", owner=self.pm_user)
+        self.project = Project.objects.create(
+            workspace=self.workspace,
+            name="Jamoaviy Loyiha", key="JTEAM", manager=self.pm_user, created_by=self.pm_user
+        )
+        for u in [self.pm_user, self.dev1, self.dev2, self.dev3]:
+            ProjectMember.objects.create(
+                project=self.project, user=u, role=ProjectRole.DEVELOPER if u != self.pm_user else ProjectRole.MANAGER,
+                is_active=True
+            )
+
+        self.task = Task.objects.create(
+            project=self.project, title="Katta modulni ishlab chiqish", created_by=self.pm_user
+        )
+
+    def test_developer_can_add_team_members_with_datetime(self):
+        """Dasturchi 1 vazifaga 3 kishini jamoa shaklida birlashtira oladi."""
+        client = APIClient()
+        client.force_authenticate(user=self.dev1)
+
+        # 1-a'zo (Backend)
+        res1 = client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": self.dev1.id,
+            "role": "Backend API",
+            "start_date": "2026-09-15T09:00:00Z",
+            "due_date": "2026-09-20T18:00:00Z",
+            "allocated_hours": "16.0",
+            "note": "Ma'lumotlar bazasi va API endpointlari",
+        })
+        self.assertEqual(res1.status_code, 200)
+
+        # 2-a'zo (Frontend)
+        res2 = client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": self.dev2.id,
+            "role": "Frontend UI",
+            "start_date": "2026-09-16T10:00:00Z",
+            "due_date": "2026-09-22T18:00:00Z",
+            "allocated_hours": "20.0",
+            "note": "React komponentlar va shakllar",
+        })
+        self.assertEqual(res2.status_code, 200)
+
+        # 3-a'zo (QA / Testlash)
+        res3 = client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": self.dev3.id,
+            "role": "QA Testlash",
+            "start_date": "2026-09-20T09:00:00Z",
+            "due_date": "2026-09-25T18:00:00Z",
+            "allocated_hours": "8.0",
+            "note": "Regressiya va integratsion sinovlar",
+        })
+        self.assertEqual(res3.status_code, 200)
+
+        # Vazifada 3 kishi biriktirilganini tekshirish
+        self.task.refresh_from_db()
+        active_assignments = list(self.task.assignments.filter(is_active=True).order_by("id"))
+        self.assertEqual(len(active_assignments), 3)
+
+        # Tafsilotlar
+        roles = [a.role for a in active_assignments]
+        self.assertIn("Backend API", roles)
+        self.assertIn("Frontend UI", roles)
+        self.assertIn("QA Testlash", roles)
+
+        # Har birining vaqti va sanasi saqlanganini tekshirish
+        backend_assign = self.task.assignments.get(user=self.dev1, is_active=True)
+        self.assertIsNotNone(backend_assign.start_date)
+        self.assertIsNotNone(backend_assign.due_date)
+        self.assertEqual(float(backend_assign.allocated_hours), 16.0)
+
+    def test_developer_can_update_team_member(self):
+        """Jamoa a'zosining muddati va roli yangilanishi."""
+        client = APIClient()
+        client.force_authenticate(user=self.dev1)
+
+        # Dastlab qo'shish
+        client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": self.dev2.id,
+            "role": "Dizayn",
+            "allocated_hours": "5.0",
+        })
+
+        # Keyin yangilash
+        res = client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": self.dev2.id,
+            "role": "Dizayn va Prototip",
+            "allocated_hours": "10.0",
+            "start_date": "2026-09-17T09:00:00Z",
+            "due_date": "2026-09-21T18:00:00Z",
+            "note": "Yangilangan vazifa",
+        })
+        self.assertEqual(res.status_code, 200)
+
+        assign = self.task.assignments.get(user=self.dev2, is_active=True)
+        self.assertEqual(assign.role, "Dizayn va Prototip")
+        self.assertEqual(float(assign.allocated_hours), 10.0)
+
+    def test_developer_can_remove_team_member(self):
+        """Jamoa a'zosini vazifadan chiqarish."""
+        client = APIClient()
+        client.force_authenticate(user=self.dev1)
+
+        # Qo'shish
+        client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": self.dev2.id,
+            "role": "Frontend",
+        })
+        self.assertTrue(self.task.assignments.filter(user=self.dev2, is_active=True).exists())
+
+        # Chiqarish
+        res = client.post(f"/api/tasks/{self.task.id}/team-remove/", {
+            "user_id": self.dev2.id,
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(self.task.assignments.filter(user=self.dev2, is_active=True).exists())
+
+    def test_cannot_add_non_project_member(self):
+        """Loyihada bo'lmagan begona shaxs jamoaga qo'shilmaydi."""
+        client = APIClient()
+        client.force_authenticate(user=self.dev1)
+
+        res = client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": self.stranger.id,
+            "role": "Begona",
+        })
+        self.assertEqual(res.status_code, 400)
+

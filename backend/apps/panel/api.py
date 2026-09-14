@@ -560,13 +560,19 @@ def panel_tasks(request):
         # bo'lsa ikkala solishtiruv ham NULL beradi va yozuv chetda qoladi.
         tasks = tasks.filter(due_date__gte=span[0], due_date__lt=span[1])
 
+    half = (p.get("half") or "").strip()
+    if half == "1":
+        tasks = tasks.filter(due_date__day__lte=15)
+    elif half == "2":
+        tasks = tasks.filter(due_date__day__gte=16)
+
     if p.get("status"):
         tasks = tasks.filter(status__in=p["status"].split(","))
     if p.get("project"):
         tasks = tasks.filter(project_id=int_param(p["project"], "project"))
 
     tasks = (tasks.for_display()
-             .order_by("-priority", "due_date", "-id"))
+             .order_by("due_date", "-priority", "-id"))
 
     # ------------------------------------------------------------ sahifalash
     #
@@ -744,39 +750,34 @@ def due_board(qs, ctx, params):
     week = due_span("", "week")
     today = due_span("", "today")
 
-    # `due_target` - kartani SHU USTUNGA tashlaganda qo'yiladigan muddat.
-    # Sanani frontend hisoblamaydi: «hafta oxiri» qaysi kun ekani shu
-    # yerda, `due_span` chegarasidan chiqadi va ustunning o'zi bilan bir
-    # xil qoidadan keladi. Mijozda hisoblansa ikkinchi kalendar paydo
-    # bo'lardi va karta o'zi tushgan ustunda turmay qolishi mumkin edi.
-    #
-    # Oxirgi LAHZA olinadi (chegara - 1 soniya): `due_span` yarim ochiq
-    # oraliq qaytaradi va `week[1]` allaqachon KEYINGI hafta.
+    half = (params.get("half") or "").strip()
+    if half == "1":
+        open_only = open_only.filter(due_date__day__lte=15)
+        done_qs = qs.filter(status=TaskStatus.DONE, due_date__day__lte=15)
+    elif half == "2":
+        open_only = open_only.filter(due_date__day__gte=16)
+        done_qs = qs.filter(status=TaskStatus.DONE, due_date__day__gte=16)
+    else:
+        done_qs = qs.filter(status=TaskStatus.DONE)
+
     second = timezone.timedelta(seconds=1)
     columns = [
         ("ALL", open_only, None),
         ("WEEK", open_only.filter(due_date__gte=week[0], due_date__lt=week[1]), week[1] - second),
         ("TODAY", open_only.filter(due_date__gte=today[0], due_date__lt=today[1]), today[1] - second),
-        ("DONE", qs.filter(status=TaskStatus.DONE), None),
+        ("DONE", done_qs, None),
     ]
 
     groups = []
     for key, column, due_target in columns:
         total = column.count()
         pages = max(1, ceil(total / DUE_PAGE))
-        # Yaroqsiz raqam 500 emas, 400 beradi (`int_param`), chegaradan
-        # chiqqani esa oxirgi mavjud sahifaga qisiladi: ro'yxat qisqarib
-        # qolsa odam bo'sh ustunga tushib qolmasin.
         asked = params.get("page_{}".format(key.lower())) or 1
         page = min(max(1, int_param(asked, "page_{}".format(key.lower()))), pages)
         start = (page - 1) * DUE_PAGE
-        items = column.order_by("-priority", "due_date")[start:start + DUE_PAGE]
+        items = column.order_by("due_date", "-priority", "-id")[start:start + DUE_PAGE]
         groups.append({
             "status": key,
-            # Yorliq bu yerdan KETMAYDI: ustun nomlari holat nomlari emas,
-            # ya'ni `TaskStatus` dan chiqmaydi. Sayt matni bazada turadi
-            # (`apps.uitexts`), shuning uchun frontend kalit bo'yicha
-            # o'zi oladi.
             "label": "",
             "count": total,
             "page": page,
@@ -805,18 +806,34 @@ def my_work(request):
             return Response(cached)
 
     ctx = {"request": request}
-    qs = (Task.objects.for_display().filter(Exists(TaskAssignment.objects.filter(
-              task=OuterRef("pk"), user=user, is_active=True)),
-              project__deleted_at__isnull=True))
+    mine_filter = Exists(TaskAssignment.objects.filter(
+        task=OuterRef("pk"), user=user, is_active=True))
 
     project_id = request.query_params.get("project")
-    if project_id:
-        # Yaroqsiz qiymat 500 emas, 400 (sababi `int_param` da).
-        qs = qs.filter(project_id=int_param(project_id, "project"))
+    scope = request.query_params.get("scope", "")
 
-    # Qidiruv va muddat kesimi - «Vazifalar» sahifasidagi bilan BIR XIL
-    # qoidadan: odam bir ro'yxatda «75» deb topgan ishini ikkinchisida ham
-    # topsin, «shu hafta» ikkovida bir xil hafta bo'lsin.
+    if user.is_boss or user.is_platform_admin:
+        projects = Project.objects.filter(deleted_at__isnull=True).order_by("name")
+        if scope == "mine":
+            qs = Task.objects.for_display().filter(mine_filter, project__deleted_at__isnull=True)
+        elif project_id:
+            qs = Task.objects.for_display().filter(project_id=int_param(project_id, "project"), project__deleted_at__isnull=True)
+        elif scope == "all":
+            qs = Task.objects.for_display().filter(project__deleted_at__isnull=True)
+        else:
+            has_my = Task.objects.filter(mine_filter, project__deleted_at__isnull=True).exists()
+            if has_my:
+                qs = Task.objects.for_display().filter(mine_filter, project__deleted_at__isnull=True)
+            else:
+                qs = Task.objects.for_display().filter(project__deleted_at__isnull=True)
+    else:
+        projects = (Project.objects.filter(Exists(ProjectMember.objects.filter(
+                        project=OuterRef("pk"), user=user, is_active=True)))
+                    .order_by("name"))
+        qs = Task.objects.for_display().filter(mine_filter, project__deleted_at__isnull=True)
+        if project_id:
+            qs = qs.filter(project_id=int_param(project_id, "project"))
+
     search = (request.query_params.get("search") or "").strip()
     if search:
         qs = qs.filter(task_search_q(search))
@@ -825,40 +842,24 @@ def my_work(request):
     if span:
         qs = qs.filter(due_date__gte=span[0], due_date__lt=span[1])
 
+    half = (request.query_params.get("half") or "").strip()
+    if half == "1":
+        qs = qs.filter(due_date__day__lte=15)
+    elif half == "2":
+        qs = qs.filter(due_date__day__gte=16)
+
     # DOSKA IKKI XIL YIG'ILADI - so'rov `board` bilan tanlaydi.
-    #
-    # Standarti HOLAT bo'yicha: «Vazifalarim» ro'yxati (`pages/Projects.tsx`)
-    # shu guruhlarni loyihalarga qayta taqsimlaydi va unga aynan holat
-    # kerak. Shuning uchun standart o'zgarmaydi.
-    #
-    # `board=due` esa MUDDAT bo'yicha yig'adi. Hafta va kun chegarasi bu
-    # yerda hisoblanmaydi - `due_span` dan keladi: «shu hafta» doskada
-    # ham, «Vazifalar» ro'yxatida ham, bosh panelda ham BIR XIL hafta
-    # bo'lsin (dushanbadan yakshanbagacha, «oxirgi 7 kun» emas).
     if (request.query_params.get("board") or "").strip() == "due":
         groups = due_board(qs, ctx, request.query_params)
     else:
         groups = status_board(qs, ctx)
 
-    projects = (Project.objects.filter(Exists(ProjectMember.objects.filter(
-                    project=OuterRef("pk"), user=user, is_active=True)))
-                .order_by("name"))
-    # Qaysi loyihada odam BOSHQARUVCHI. Doskada karta sudralganda muddat
-    # o'zgaradi, muddatni esa faqat loyiha menejeri va loyiha admini qo'ya
-    # oladi (`ProjectAccess.can_create_task`) - ya'ni ruxsat kartadan
-    # kartaga farq qiladi, chunki har biri o'z loyihasidan.
-    #
-    # Sanoq DOSKADAGI loyihalar bo'yicha, hammasi bo'yicha emas: boshliq
-    # va admin butun tizimni boshqaradi va ro'yxat minglab raqamga
-    # aylanib ketardi. Yuqoridagi `projects` ham yaramaydi - u faqat
-    # A'ZOLIKDAGI loyihalar, boshliq esa hech qayerda a'zo emas.
-    #
-    # Bu KO'RINISH uchun: haqiqiy tekshiruv baribir `/tasks/<id>/` da
-    # bo'ladi. Frontend faqat tashlab bo'lmaydigan ustunni ochiq
-    # ko'rsatmaydi - odam kartani tortib borib, keyin xato o'qimasin.
     on_board = {t["project"] for g in groups for t in g["tasks"]}
-    managed = (Project.objects.filter(managed_projects_q(user), id__in=on_board)
-               .values_list("id", flat=True) if on_board else [])
+    if user.is_boss or user.is_platform_admin:
+        managed = list(on_board)
+    else:
+        managed = (Project.objects.filter(managed_projects_q(user), id__in=on_board)
+                   .values_list("id", flat=True) if on_board else [])
     data = {
         "groups": groups,
         "projects": [{"id": p.id, "name": p.name, "key": p.key, "color": p.color}
