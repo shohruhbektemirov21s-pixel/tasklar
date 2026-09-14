@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { ApiError, api, listOf } from "@/api/client";
 import type { Activity, ProjectMember, Task } from "@/api/types";
@@ -141,12 +142,33 @@ function AccordionSection({
   );
 }
 
-export default function TaskDetail() {
+export interface TaskDetailProps {
+  taskId?: number | string;
+  onClose?: () => void;
+}
+
+export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailProps = {}) {
   const fid = useId();
-  const taskId = useEntityId("task");
+  const routeTaskId = useEntityId("task");
+  const taskId = propTaskId ?? routeTaskId;
+  const isModal = Boolean(onClose);
   const go = useGo();
   const { user, meta } = useAuth();
   const { subscribe } = useRealtime();
+
+  useEffect(() => {
+    if (!isModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [isModal, onClose]);
 
   const [task, setTask] = useState<Task | null>(null);
   const [history, setHistory] = useState<Activity[]>([]);
@@ -330,13 +352,49 @@ export default function TaskDetail() {
     });
   }
 
-  if (error && !task) return <div className="content"><div className="msg msg-error">{error}</div></div>;
-  if (!task) return <div className="content"><Loading /></div>;
+  if (error && !task) {
+    const errorBody = <div className="content"><div className="msg msg-error">{error}</div></div>;
+    if (isModal) {
+      return createPortal(
+        <div className="modal-overlay" style={{
+          position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(8, 11, 16, 0.72)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
+        }} onClick={onClose}>
+          <div className="modal-window card" style={{ padding: 24, maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
+            {errorBody}
+            <div style={{ textAlign: "right", marginTop: 12 }}>
+              <button type="button" className="btn" onClick={onClose}>{tx("common.yopish")}</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      );
+    }
+    return errorBody;
+  }
+
+  if (!task) {
+    const loadingBody = <div className="content"><Loading /></div>;
+    if (isModal) {
+      return createPortal(
+        <div className="modal-overlay" style={{
+          position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(8, 11, 16, 0.72)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
+        }} onClick={onClose}>
+          <div className="modal-window card" style={{ padding: 40 }} onClick={(e) => e.stopPropagation()}>
+            <Loading />
+          </div>
+        </div>,
+        document.body
+      );
+    }
+    return loadingBody;
+  }
 
   const acc = task.access!;
-  // Muddatni menejer (yoki ijrochining o'zi) qo'yadi - tahrirlash huquqi bilan bir xil.
-  // Vazifa mazmunini faqat menejer va admin o'zgartiradi (serverda ham shunday).
-  const canEdit = acc.can_create_task;
+  const isAssignee = task.assignees.some((a) => a.id === user?.id);
+  const isCreator = task.created_by?.id === user?.id;
+  const canEdit = Boolean(acc.can_manage || (acc.is_member && (isAssignee || isCreator)));
   const canManageSubtasks = Boolean(acc.can_create_subtask || acc.is_manager || acc.is_project_admin || acc.is_admin);
   const transitions = task.allowed_transitions || [];
 
@@ -360,43 +418,28 @@ export default function TaskDetail() {
     : transitions;
   const attachments = task.attachments || [];
 
-  return (
-    <>
-      <PageHead
-        title={
-          <>
-            <Link className="muted" {...toProject(task.project)}>{task.project_name}</Link>
-            <span className="muted"> / </span>
-            <span className="mono muted">{task.code}</span>{" "}
-            <strong>{task.title}</strong>
-          </>
-        }
-        actions={
-          <>
-            {canEdit && (
-              <Link className="btn btn-sm" {...toTaskEdit(task.id)}>{tx("common.tahrirlash")}</Link>
-            )}
-            {acc.can_manage && (
-              <button className="btn btn-sm btn-danger" onClick={() => void (async () => {
-                const ok = await confirmDialog({
-                  title: tx("task_detail.vazifa_ochirilsinmi", { kod: task.code }),
-                  body: tx("task_detail.vazifa_ochirish_izohi", { nom: task.title }),
-                  confirmText: tx("common.ochirish"),
-                  danger: true,
-                });
-                if (!ok) return;
-                await run(async () => {
-                  await api.delete(`/tasks/${task.id}/`);
-                  go(toProject(task.project, "vazifalar"));
-                });
-              })()}>{tx("common.ochirish_2")}</button>
-            )}
-          </>
-        }
-      />
+  async function handleDelete() {
+    if (!task) return;
+    const ok = await confirmDialog({
+      title: tx("task_detail.vazifa_ochirilsinmi", { kod: task.title }),
+      body: tx("task_detail.vazifa_ochirish_izohi", { nom: task.title }),
+      confirmText: tx("common.ochirish"),
+      danger: true,
+    });
+    if (!ok) return;
+    await run(async () => {
+      await api.delete(`/tasks/${task.id}/`);
+      if (isModal) {
+        onClose?.();
+      } else {
+        go(toProject(task.project, "vazifalar"));
+      }
+    });
+  }
 
-      <div className="content">
-        <ErrorMsg error={error} />
+  const bodyContent = (
+    <>
+      <ErrorMsg error={error} />
 
         {task.parent && (
           <div style={{ marginBottom: 12 }}>
@@ -531,7 +574,6 @@ export default function TaskDetail() {
                       <div className="subtask-main">
                         <StatusBadge task={s} />
                         <Link {...toTask(s.id)} className="subtask-title" title={s.title}>
-                          <span className="mono muted" style={{ marginRight: 6 }}>{s.code}</span>
                           <span>{s.title}</span>
                         </Link>
                       </div>
@@ -1130,7 +1172,6 @@ export default function TaskDetail() {
             )}
           </div>
         </div>
-      </div>
 
       {/* ------------------------------------------------ SUBTASK MODAL (FAQAT PM VA ADMIN) */}
       {subtaskModalOpen && canManageSubtasks && (
@@ -1304,7 +1345,6 @@ export default function TaskDetail() {
                               }}
                             >
                               <div style={{ minWidth: 0 }}>
-                                <span className="mono muted" style={{ marginRight: 6 }}>{t.code}</span>
                                 <strong>{t.title}</strong>
                               </div>
                               <StatusBadge task={t} />
@@ -1354,6 +1394,117 @@ export default function TaskDetail() {
           onClose={() => setPreviewFile(null)}
         />
       )}
+    </>
+  );
+
+  if (isModal) {
+    return createPortal(
+      <div
+        className="modal-overlay"
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 99999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px 16px",
+          background: "rgba(8, 11, 16, 0.72)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          overflow: "hidden",
+        }}
+        onClick={onClose}
+      >
+        <div
+          className="modal-window card"
+          style={{
+            width: "min(1420px, 96vw)",
+            height: "92vh",
+            display: "flex",
+            flexDirection: "column",
+            borderRadius: 12,
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            overflow: "hidden",
+            background: "var(--bg, #f8fafc)",
+            border: "1px solid var(--border)",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Modal Header */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 20px",
+              borderBottom: "1px solid var(--border)",
+              background: "var(--card-bg, #ffffff)",
+              flexShrink: 0,
+              gap: 12,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <Link className="muted" {...toProject(task.project)} onClick={onClose}>{task.project_name}</Link>
+              <span className="muted">/</span>
+              <strong style={{ fontSize: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {task.title}
+              </strong>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              {canEdit && (
+                <Link className="btn btn-sm" {...toTaskEdit(task.id)} onClick={onClose}>{tx("common.tahrirlash")}</Link>
+              )}
+              {acc.can_manage && (
+                <button className="btn btn-sm btn-danger" onClick={() => void handleDelete()}>{tx("common.ochirish_2")}</button>
+              )}
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={onClose}
+                style={{ fontSize: 18, lineHeight: 1, padding: "4px 8px" }}
+                title={tx("common.yopish")}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Scrollable Content */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+            {bodyContent}
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  }
+
+  return (
+    <>
+      <PageHead
+        title={
+          <>
+            <Link className="muted" {...toProject(task.project)}>{task.project_name}</Link>
+            <span className="muted"> / </span>
+            <strong>{task.title}</strong>
+          </>
+        }
+        actions={
+          <>
+            {canEdit && (
+              <Link className="btn btn-sm" {...toTaskEdit(task.id)}>{tx("common.tahrirlash")}</Link>
+            )}
+            {acc.can_manage && (
+              <button className="btn btn-sm btn-danger" onClick={() => void handleDelete()}>{tx("common.ochirish_2")}</button>
+            )}
+          </>
+        }
+      />
+
+      <div className="content">
+        {bodyContent}
+      </div>
     </>
   );
 }

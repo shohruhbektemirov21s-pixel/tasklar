@@ -143,6 +143,7 @@ def month_calendar(request):
              .prefetch_related("assignments__user"))
     for task in tasks:
         finish = as_date(task.due_date)
+        people = [a.user for a in task.assignments.all() if getattr(a, "is_active", True) and a.user]
 
         slot = by_day.setdefault(finish, {"todo": 0, "in_progress": 0, "done": 0})
         if task.status == TaskStatus.DONE:

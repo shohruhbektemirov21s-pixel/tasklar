@@ -23,7 +23,7 @@ from apps.workspaces.models import Workspace, WorkspaceMember, WorkspaceRole
 
 from .models import (JoinRequest, Project, ProjectBrief, ProjectFile,
                      ProjectFileVersion, ProjectMember,
-                     ProjectRole, ProjectSpecialty, RequestStatus)
+                     ProjectRole, ProjectSpecialty, ProjectStatus, RequestStatus)
 # Sanoq va foiz ifodalari `services.py` da: ularni PANEL ham ishlatadi va
 # u yerdan `api.py` ni import qilish view modulini kutubxonaga aylantirardi.
 from .services import progress_expr, project_counters
@@ -261,6 +261,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if ptype:
             qs = qs.filter(project_type=ptype)
 
+        status_param = self.request.query_params.get("status")
+        if status_param:
+            qs = qs.filter(status=status_param)
+
         # Qidiruv: nom, kalit, tavsif va LOYIHA HUJJATLARINING nomi. Odam
         # ko'pincha loyihani nomidan emas, undagi hujjatdan eslaydi -
         # "texnik topshiriq qaysi loyihada edi?" degan savolga javob beradi.
@@ -419,6 +423,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if order_id is None and "order_id" in self.request.data:
             order_id = self.request.data.get("order_id")
 
+        old_status = serializer.instance.status
+        new_status = serializer.validated_data.get("status")
+
         if manager_id and manager_id != serializer.instance.manager_id:
             access = ProjectAccess(self.request.user, serializer.instance)
             if not access.can_grant_role(ProjectRole.MANAGER):
@@ -447,8 +454,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
             except Exception:
                 pass
 
-
-
         brief_data = self.request.data.get("brief")
         if isinstance(brief_data, dict):
             brief_obj, _ = ProjectBrief.objects.get_or_create(project=project)
@@ -458,8 +463,66 @@ class ProjectViewSet(viewsets.ModelViewSet):
             brief_obj.updated_by = self.request.user
             brief_obj.save()
 
-        log(actor=self.request.user, verb="project.updated", project=project, target=project,
-            summary="Loyiha sozlamalari yangilandi")
+        if new_status and old_status != new_status:
+            if new_status == ProjectStatus.DONE:
+                log(actor=self.request.user, verb="project.completed", project=project, target=project,
+                    summary="Loyiha yakunlandi: " + project.name)
+                live_project(project, "completed", self.request.user)
+            elif old_status == ProjectStatus.DONE and new_status == ProjectStatus.ACTIVE:
+                log(actor=self.request.user, verb="project.reopened", project=project, target=project,
+                    summary="Loyiha qayta faollashtirildi: " + project.name)
+                live_project(project, "reopened", self.request.user)
+            else:
+                log(actor=self.request.user, verb="project.status_changed", project=project, target=project,
+                    summary="Loyiha holati o'zgartirildi: " + project.get_status_display())
+                live_project(project, "status_changed", self.request.user)
+        else:
+            log(actor=self.request.user, verb="project.updated", project=project, target=project,
+                summary="Loyiha sozlamalari yangilandi")
+
+    @action(detail=True, methods=["post"])
+    def complete(self, request, pk=None):
+        """Loyihani yakunlash (holatini DONE qilish)."""
+        project = self._manage_project(pk)
+        project.status = ProjectStatus.DONE
+        project.save(update_fields=["status", "updated_at"])
+
+        log(actor=request.user, verb="project.completed", project=project, target=project,
+            summary="Loyiha yakunlandi: " + project.name)
+        live_project(project, "completed", request.user)
+
+        try:
+            members = [m.user for m in project.memberships.filter(is_active=True).select_related("user")
+                       if m.user_id != request.user.id]
+            if members:
+                notify_many(
+                    members,
+                    NotificationKind.TASK_ASSIGNED,
+                    title="Loyiha yakunlandi",
+                    body=f"«{project.name}» loyihasi muvaffaqiyatli yakunlandi.",
+                    url=f"/loyiha/{project.pk}",
+                    actor=request.user,
+                    meta={"project": project.pk},
+                )
+        except Exception:
+            pass
+
+        serializer = self.get_serializer(project)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def reopen(self, request, pk=None):
+        """Loyihani qayta ochish (holatini ACTIVE qilish)."""
+        project = self._manage_project(pk)
+        project.status = ProjectStatus.ACTIVE
+        project.save(update_fields=["status", "updated_at"])
+
+        log(actor=request.user, verb="project.reopened", project=project, target=project,
+            summary="Loyiha qayta faollashtirildi: " + project.name)
+        live_project(project, "reopened", request.user)
+
+        serializer = self.get_serializer(project)
+        return Response(serializer.data)
 
 
     def destroy(self, request, *args, **kwargs):

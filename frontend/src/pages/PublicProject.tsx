@@ -61,7 +61,6 @@ export default function PublicProject() {
           <span className="muted">/</span>
           <span className="lang-dot" style={{ background: project.color }} />
           <h1 style={{ margin: 0 }}>{project.name}</h1>
-          <span className="badge mono">{project.key}</span>
           <span className="badge">{project.status_display}</span>
         </div>
 

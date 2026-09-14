@@ -1,4 +1,4 @@
-﻿import os
+import os
 import docx
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -49,11 +49,11 @@ for i, h in enumerate(headers):
 
 users = [
     ("Bosh Admin", "Tizim Administratori", "ADMIN", "admin@teamflow.uz", "admin12345"),
-    ("Akmal Boshliqov", "Kompaniya Rahbari / Boshliq", "BOSS", "boshliq@teamflow.uz", "password123"),
-    ("Sardor Menejerov", "Loyiha Menejeri (Lead PM)", "MANAGER", "pm@teamflow.uz", "password123"),
+    ("Akmal Saidov", "Kompaniya Rahbari / Boshliq", "BOSS", "boshliq@teamflow.uz", "password123"),
+    ("Sardor Rustamov", "Loyiha Menejeri (Lead PM)", "MANAGER", "pm@teamflow.uz", "password123"),
     ("Bobur Rahimov", "Loyiha Menejeri", "MANAGER", "menejer@teamflow.uz", "menejer123"),
-    ("Jasur Backendchi", "Senior Backend Dasturchi", "DEVELOPER", "backend@teamflow.uz", "password123"),
-    ("Malika Frontendchi", "Middle Frontend Dasturchi", "DEVELOPER", "frontend@teamflow.uz", "password123"),
+    ("Jasur Alimov", "Senior Backend Dasturchi", "DEVELOPER", "backend@teamflow.uz", "password123"),
+    ("Malika Karimova", "Middle Frontend Dasturchi", "DEVELOPER", "frontend@teamflow.uz", "password123"),
     ("Dilshod Karimov", "Tizim Operatori", "OPERATOR", "operator@teamflow.uz", "operator123"),
 ]
 

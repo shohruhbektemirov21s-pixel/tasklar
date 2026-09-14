@@ -497,20 +497,25 @@ def panel_tasks(request):
     # tanlagichdan yo'qotib qo'yardi va tanlovini ortga qaytara olmasdi.
     # Holat va muddat tanlovlari esa qat'iy ro'yxat, ular frontendda.
     #
-    # IJROCHI TANLAGICHI OLIB TASHLANDI. Panel ro'yxati odamning O'Z
-    # kesimida ochiladi va ijrochida u doim bitta ismdan iborat bo'lardi -
-    # o'zinikidan. Menejerga esa "kim nima qilyapti" uchun alohida sahifa
-    # bor («Vazifalar», `/team/workload/`) va u shu ish uchun ancha qulay:
-    # odamlar ro'yxati, ish yuki va kechikkanlari bilan. Facet bilan birga
-    # bitta qo'shimcha so'rov ham ketdi.
-    #
-    # Faqat ikki ustun olinadi: Db2 DISTINCT matn (CLOB) ustunini
-    # ko'tarmaydi, `values_list` esa uni so'rovga qo'shmaydi.
+    from apps.accounts.models import User
+
+    assignees_qs = User.objects.filter(
+        Exists(TaskAssignment.objects.filter(
+            task__in=base,
+            user=OuterRef("pk"),
+            is_active=True,
+        ))
+    ).values("id", "full_name").order_by("full_name")
+
     facets = {
         "projects": [
             {"id": pk, "name": name}
             for pk, name in base.values_list("project_id", "project__name")
                                 .order_by("project__name").distinct()
+        ],
+        "assignees": [
+            {"id": u["id"], "name": u["full_name"]}
+            for u in assignees_qs
         ],
     }
 
@@ -519,9 +524,31 @@ def panel_tasks(request):
 
     search = (p.get("search") or "").strip()
     if search:
-        # Matn ham, kod ham («HIR-75», «75») - shart `queries.task_search_q`
-        # da, «Vazifalar» sahifasi ham o'shani ishlatadi.
-        tasks = tasks.filter(task_search_q(search))
+        assignee_match = Exists(TaskAssignment.objects.filter(
+            task=OuterRef("pk"),
+            user__full_name__icontains=search,
+            is_active=True,
+        ))
+        tasks = tasks.filter(task_search_q(search) | assignee_match)
+
+    assignee = (p.get("assignee") or "").strip()
+    if assignee:
+        if assignee.isdigit():
+            tasks = tasks.filter(
+                Exists(TaskAssignment.objects.filter(
+                    task=OuterRef("pk"),
+                    user_id=int(assignee),
+                    is_active=True,
+                ))
+            )
+        else:
+            tasks = tasks.filter(
+                Exists(TaskAssignment.objects.filter(
+                    task=OuterRef("pk"),
+                    user__full_name__icontains=assignee,
+                    is_active=True,
+                ))
+            )
 
     due = p.get("due") or ""
     if due:

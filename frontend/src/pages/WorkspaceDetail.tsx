@@ -97,7 +97,6 @@ export default function WorkspaceDetail() {
                         <span className="lang-dot" style={{ background: p.color }} />{" "}
                         <Link {...toProject(p.id)}>{p.name}</Link>
                       </h3>
-                      <span className="badge mono">{p.key}</span>
                       {p.matches_my_specialty && <span className="badge badge-info">{tx("workspace_detail.sizga_mos")}</span>}
                       <span className="spacer" />
                       <Link className="btn btn-sm" {...toProject(p.id, "doska")}>{tx("workspace_detail.doska")}</Link>

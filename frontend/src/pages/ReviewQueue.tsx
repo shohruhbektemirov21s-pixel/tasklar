@@ -125,7 +125,6 @@ export default function ReviewQueue() {
                         <td>
                           <Link {...toTask(t.id)} style={{ fontWeight: 600 }}>{t.title}</Link>
                           <div className="row" style={{ gap: 6, marginTop: 3 }}>
-                            <span className="mono muted" style={{ fontSize: 11.5 }}>{t.code}</span>
                             <Priority task={t} />
                             {t.specialty_label && (
                               <span className="badge badge-brand">{t.specialty_label}</span>

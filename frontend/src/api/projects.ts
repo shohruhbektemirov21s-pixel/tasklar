@@ -76,3 +76,41 @@ export async function deleteProject(id: number | string, name: string): Promise<
     return true;
   }
 }
+
+/**
+ * Loyihani yakunlash (tasdiq bilan).
+ */
+export async function completeProject(id: number | string, name: string, openTasksCount?: number): Promise<boolean> {
+  const warning = openTasksCount && openTasksCount > 0
+    ? tx("project_detail.yakunlash_ochiq_ishlar_ogohlantirish", { soni: openTasksCount })
+    : undefined;
+
+  const ok = await confirmDialog({
+    title: tx("project_detail.loyihani_yakunlash"),
+    warning,
+    body: tx("project_detail.yakunlash_tasdiq"),
+    confirmText: tx("project_detail.loyihani_yakunlash"),
+    cancelText: tx("common.bekor_qilish"),
+  });
+  if (!ok) return false;
+
+  await api.post(`/projects/${id}/complete/`);
+  return true;
+}
+
+/**
+ * Loyihani qayta faollashtirish (reopen).
+ */
+export async function reopenProject(id: number | string): Promise<boolean> {
+  const ok = await confirmDialog({
+    title: tx("project_detail.loyihani_qayta_ochish"),
+    body: tx("project_detail.qayta_ochish_tasdiq"),
+    confirmText: tx("project_detail.loyihani_qayta_ochish"),
+    cancelText: tx("common.bekor_qilish"),
+  });
+  if (!ok) return false;
+
+  await api.post(`/projects/${id}/reopen/`);
+  return true;
+}
+

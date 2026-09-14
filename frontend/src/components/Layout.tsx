@@ -102,10 +102,11 @@ export default function Layout() {
     user?.can_create_project ||
     user?.manages_projects
   );
-  const { subscribe, connected, reload: reloadRealtime } = useRealtime();
+  const { subscribe, connected, reload: reloadRealtime, unread } = useRealtime();
   const go = useGo();
   const loc = useLocation();
   const [counts, setCounts] = useState({ open: 0, reviews: 0, joins: 0, orders: 0, suggestions: 0 });
+  const notifCount = typeof unread === "number" && unread > 0 ? unread : 0;
   const [q, setQ] = useState("");
   const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null);
   const [tick, setTick] = useState(0);
@@ -197,13 +198,15 @@ export default function Layout() {
 
   // Sanoq navigatsiyada emas, HODISADA yangilanadi.
   useEffect(() => subscribe((data) => {
+    const isNotif = data.event === "notification";
     const isOrderNotif =
-      data.event === "notification" && Boolean(data.notification?.kind?.startsWith("order."));
+      isNotif && Boolean(data.notification?.kind?.startsWith("order."));
     const isSuggestionNotif =
-      data.event === "notification" && Boolean(data.notification?.kind?.startsWith("suggestion."));
+      isNotif && Boolean(data.notification?.kind?.startsWith("suggestion."));
     const joinRequest =
-      data.event === "notification" && data.notification?.kind === "join.request";
+      isNotif && data.notification?.kind === "join.request";
     if (
+      isNotif ||
       joinRequest ||
       isOrderNotif ||
       isSuggestionNotif ||
@@ -502,7 +505,7 @@ export default function Layout() {
           <div className="nav-section">
             <div className="nav-title">{tx("layout.bolim_muloqot")}</div>
             {itemTo(toMessages(), <IconChat />, tx("layout.xabarlar"), undefined, false, tx("layout.tooltip_xabarlar"))}
-            {item("/bildirishnomalar", <IconBell />, tx("common.bildirishnomalar"), undefined, false, tx("layout.tooltip_bildirishnomalar"))}
+            {item("/bildirishnomalar", <IconBell />, tx("common.bildirishnomalar"), notifCount, true, tx("layout.tooltip_bildirishnomalar"))}
             {manages && item("/tekshiruv", <IconReview />, tx("common.tekshiruv_navbati"), counts.reviews, true, tx("layout.tooltip_tekshiruv"))}
             {item("/takliflar", <IconIdea />, tx("layout.takliflar"), counts.suggestions, true, tx("layout.tooltip_takliflar"))}
             {user?.has_inquiries_access && item("/sorovlar", <IconInquiry />, tx("layout.sorovlar"), undefined, false, tx("layout.tooltip_sorovlar"))}

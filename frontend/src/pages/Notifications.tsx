@@ -43,18 +43,23 @@ export default function Notifications() {
   const [selectedNotif, setSelectedNotif] = useState<AppNotification | null>(null);
   const nav = useNavigate();
 
-  const tabs: [Tab, string][] = useMemo(() => {
-    const list: [Tab, string][] = [
-      ["all", tx("notifications.barchasi")],
-      ["unread", tx("notifications.oqilmaganlar")],
-      ["tasks", tx("common.vazifalar")],
-      ["comments", tx("notifications.izohlar")],
+  const tabs: [Tab, string, number?][] = useMemo(() => {
+    const unreadCount = notifications.filter((n) => !n.is_read).length || unread;
+    const taskCount = notifications.filter((n) => n.kind.startsWith("task.") && n.kind !== "task.comment").length;
+    const commentCount = notifications.filter((n) => n.kind === "task.comment").length;
+    const orderCount = notifications.filter((n) => n.kind.startsWith("order.")).length;
+
+    const list: [Tab, string, number?][] = [
+      ["all", tx("notifications.barchasi"), notifications.length],
+      ["unread", tx("notifications.oqilmaganlar"), unreadCount],
+      ["tasks", tx("common.vazifalar"), taskCount],
+      ["comments", tx("notifications.izohlar"), commentCount],
     ];
     if (user?.can_access_orders || user?.is_sohaviy_boshqarma || user?.is_platform_admin) {
-      list.push(["orders", "Buyurtmalar"]);
+      list.push(["orders", "Buyurtmalar", orderCount]);
     }
     return list;
-  }, [user]);
+  }, [user, notifications, unread]);
 
   const items = useMemo(() => notifications.filter((n) => {
     if (tab === "unread") return !n.is_read;
@@ -79,7 +84,12 @@ export default function Notifications() {
   return (
     <>
       <PageHead
-        title={<strong>{tx("common.bildirishnomalar")}</strong>}
+        title={
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <strong>{tx("common.bildirishnomalar")}</strong>
+            {unread > 0 && <span className="badge badge-danger">{unread}</span>}
+          </span>
+        }
         actions={
           <>
             <span className={`live-tag ${connected ? "on" : ""}`}>
@@ -95,11 +105,11 @@ export default function Notifications() {
             </button>
           </>
         }
-        tabs={tabs.map(([v, l]) => (
+        tabs={tabs.map(([v, l, count]) => (
           <button key={v} type="button" className={`tab ${tab === v ? "active" : ""}`}
                   onClick={() => setTab(v)}>
             {l}
-            {v === "unread" && !!unread && <span className="n">{unread}</span>}
+            {typeof count === "number" && count > 0 && <span className="n">{count}</span>}
           </button>
         ))}
       />

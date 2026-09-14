@@ -115,7 +115,6 @@ export default function Search() {
               <div className="row wrap" style={{ gap: 8 }}>
                 <span className="lang-dot" style={{ background: p.color }} />
                 <h3 style={{ margin: 0 }}>{p.name}</h3>
-                <span className="badge mono">{p.key}</span>
                 <span className="spacer" />
                 <span className="badge">{p.status_display}</span>
               </div>

@@ -139,7 +139,6 @@ export default function DeveloperReport() {
                 <tbody>
                   {d.done_tasks.map((t) => (
                     <tr key={t.id}>
-                      <td className="mono muted nowrap">{t.code}</td>
                       <td><Link {...toTask(t.id)}>{t.title}</Link></td>
                       <td className="nowrap muted">{fmtDate(t.completed_at)}</td>
                     </tr>
@@ -156,7 +155,6 @@ export default function DeveloperReport() {
                 <tbody>
                   {d.open_tasks.map((t) => (
                     <tr key={t.id}>
-                      <td className="mono muted nowrap">{t.code}</td>
                       <td><Link {...toTask(t.id)}>{t.title}</Link></td>
                       <td><StatusBadge task={t} /></td>
                       <td><Priority task={t} /></td>

@@ -182,10 +182,10 @@ function SuggestionRow({ item, rank, open, onToggle, onEdit, onDelete, onQuickVo
             <span>{item.author ? item.author.full_name : tx("suggestions.anonim_muallif")}</span>
             <span>•</span>
             <span>{timeAgo(item.created_at)}</span>
-            {(item.author?.job_title || item.author?.specialty_display || (item.scope === "CLOSED" ? item.scope_display : null)) && (
+            {item.scope === "CLOSED" && (
               <>
                 <span>•</span>
-                <span>{item.author?.job_title || item.author?.specialty_display || (item.scope === "CLOSED" ? item.scope_display : "")}</span>
+                <span>{item.scope_display}</span>
               </>
             )}
           </div>

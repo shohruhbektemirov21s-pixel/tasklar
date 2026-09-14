@@ -209,10 +209,6 @@ export default function MyWork() {
                   ))}
                 </select>
               </div>
-              <span className="spacer" />
-              <div className="muted" style={{ fontSize: 12.5, alignSelf: "center" }}>
-                ⇄ {tx("my_work.sudrab_otkazish_tavsif")}
-              </div>
             </div>
 
             {hasAny ? (
@@ -256,7 +252,6 @@ export default function MyWork() {
                                   dragRef.current = null; setDragId(null); setOver(null);
                                 }}>
                             <div className="title" style={{ margin: 0 }}>{t.title}</div>
-                            <div className="code">{t.project_name}</div>
                             <div className="foot" style={{ marginTop: 9 }}>
                               {/* HOLAT, prioritet emas. Bu doskada ustun -
                                   muddat kesimi, ya'ni ish qaysi bosqichda

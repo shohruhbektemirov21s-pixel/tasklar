@@ -127,7 +127,7 @@ def _open_work(project):
 
     lines, by_user = [], {}
     for task in tasks:
-        label = "{} {}".format(task.code, _short(task.title))
+        label = _short(task.title)
         for user in task.assignee_list:
             lines.append("{} - {}".format(user.full_name, label))
             by_user.setdefault(user, []).append(label)
@@ -175,7 +175,7 @@ def send_due_reminders(today=None, dry_run=False):
         touched += 1
         label = _stage_label(days)
         title = "{} tugashiga {} qoldi".format(project.name, label)
-        due = "Muddat: {}.".format(project.due_date)
+        due = "Muddat: {} [{}].".format(project.due_date, project.key)
 
         lines, by_user = _open_work(project)
         bosses = _managers(project)

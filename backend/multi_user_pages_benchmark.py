@@ -84,10 +84,10 @@ def run_benchmark(requests_per_user=200_000, workers_per_user=6):
 
     # Foydalanuvchilar profillari
     user_configs = [
-        {"email": "boshliq@teamflow.uz", "role_title": "Boshliq (BOSS)", "name": "Akmal Boshliqov"},
-        {"email": "pm@teamflow.uz", "role_title": "Loyiha Menejeri (PM)", "name": "Sardor Menejerov"},
-        {"email": "backend@teamflow.uz", "role_title": "Backend Dasturchi", "name": "Jasur Backendchi"},
-        {"email": "frontend@teamflow.uz", "role_title": "Frontend Dasturchi", "name": "Malika Frontendchi"},
+        {"email": "boshliq@teamflow.uz", "role_title": "Boshliq (BOSS)", "name": "Akmal Saidov"},
+        {"email": "pm@teamflow.uz", "role_title": "Loyiha Menejeri (PM)", "name": "Sardor Rustamov"},
+        {"email": "backend@teamflow.uz", "role_title": "Backend Dasturchi", "name": "Jasur Alimov"},
+        {"email": "frontend@teamflow.uz", "role_title": "Frontend Dasturchi", "name": "Malika Karimova"},
         {"email": "operator@teamflow.uz", "role_title": "Operator", "name": "Dilshod Karimov"},
     ]
 

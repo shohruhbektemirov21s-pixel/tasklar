@@ -1135,12 +1135,12 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                         actor=user,
                         verb="task.assigned",
                         task=task,
-                        summary=f"{task.code}: {', '.join(u.full_name for u in added_users)} biriktirildi",
+                        summary=f"{task.title}: {', '.join(u.full_name for u in added_users)} biriktirildi",
                     )
                     notify_many(
                         added_users,
                         NotificationKind.TASK_ASSIGNED,
-                        title=f"{task.code} sizga biriktirildi",
+                        title=f"Sizga vazifa biriktirildi: {task.title}",
                         body=task.title[:150],
                         url=f"/vazifa/{task.pk}",
                         actor=user,

@@ -7,7 +7,7 @@ import type { Choice, MyWorkData, Project, Task } from "@/api/types";
 import { PageHead } from "@/components/Layout";
 import { IconCalendar, IconPlus } from "@/components/icons";
 import { DUE_PERIODS, DateField, Empty, ErrorMsg, Loading, Pager, Progress, RowMenu, fmtDate } from "@/components/ui";
-import { deleteProject } from "@/api/projects";
+import { completeProject, deleteProject } from "@/api/projects";
 import { toNewProject, toProject, toProjectEdit, toTask, useGo } from "@/nav";
 import { tx } from "@/i18n";
 
@@ -68,6 +68,7 @@ function ManagerProjects() {
   // bosilganda: matn har harfda so'rov yubormasin, tanlov esa bitta
   // harakat va uni yana tasdiqlatish ortiqcha bosish bo'lardi.
   const [period, setPeriod] = useState("");
+  const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
 
   // Ilgari bu yerda `catch` yo'q edi: server xato bersa va'da rad etilib,
@@ -76,7 +77,7 @@ function ManagerProjects() {
   // loyihada JIMGINA kesilardi - 101-loyiha hech qanday belgisiz
   // yo'qolardi. Endi sahifa raqamlari bor va jami son serverdan keladi.
   const { data, error: loadError, loading, reload } =
-    useFetch<any>("/projects/", { scope: "visible", search: applied, period,
+    useFetch<any>("/projects/", { scope: "visible", search: applied, period, status,
                                   page, page_size: PER_PAGE });
   const projects = useMemo(() => (data ? listOf<Project>(data) : null), [data]);
   const total = totalOf(data);
@@ -102,6 +103,16 @@ function ManagerProjects() {
       if (await deleteProject(id, name)) reload();
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : tx("projects.loyihani_ochirib_bolmadi"));
+    }
+  }
+
+  /** Loyihani yakunlash */
+  async function handleCompleteProject(p: Project) {
+    setActionError(null);
+    try {
+      if (await completeProject(p.id, p.name, p.open_tasks)) reload();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : tx("common.saqlashda_xatolik"));
     }
   }
 
@@ -136,9 +147,7 @@ function ManagerProjects() {
             <input id={`${fid}-0`} value={q} onChange={(e) => setQ(e.target.value)}
                    placeholder={tx("projects.nom_tavsif_yoki_hujjat_nomi")} />
           </div>
-          {/* Loyihaning MUDDATI bo'yicha. Davrlar kalendar bo'yicha va
-              hisob serverda (`due_date_span`) - «shu hafta» bu yerda ham,
-              vazifalar ro'yxatida ham bitta hafta bo'lsin. */}
+          {/* Loyihaning MUDDATI bo'yicha */}
           <div className="f">
             <label htmlFor={`${fid}-r`}>{tx("common.muddat")}</label>
             <select id={`${fid}-r`} value={period}
@@ -149,10 +158,22 @@ function ManagerProjects() {
               ))}
             </select>
           </div>
+          {/* Loyihaning HOLATI bo'yicha */}
+          <div className="f">
+            <label htmlFor={`${fid}-st`}>{tx("projects.holat")}</label>
+            <select id={`${fid}-st`} value={status}
+                    onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+              <option value="">{tx("projects.barcha_holatlar")}</option>
+              <option value="ACTIVE">{tx("projects.holat_active")}</option>
+              <option value="DONE">{tx("projects.holat_done")}</option>
+              <option value="PAUSED">{tx("projects.holat_paused")}</option>
+              <option value="PLANNING">{tx("projects.holat_planning")}</option>
+            </select>
+          </div>
           <button className="btn">{tx("projects.qidirish")}</button>
-          {(!!applied || !!period) && (
+          {(!!applied || !!period || !!status) && (
             <button type="button" className="btn btn-ghost"
-                    onClick={() => { setQ(""); setApplied(""); setPeriod(""); setPage(1); }}>
+                    onClick={() => { setQ(""); setApplied(""); setPeriod(""); setStatus(""); setPage(1); }}>
               {tx("common.tozalash")}
             </button>
           )}
@@ -219,7 +240,6 @@ function ManagerProjects() {
                   {p.manager
                     ? <>{p.manager.full_name} · {tx("projects.loyiha_menejeri")}</>
                     : tx("projects.menejer_tayinlanmagan")}
-                  {" · "}<span className="mono">{p.key}</span>
                 </div>
 
                 <div className="pcard-prog">
@@ -264,6 +284,12 @@ function ManagerProjects() {
                           takrorlanardi. Bu yerda o'sha yerda yo'q
                           amallar qoladi. */}
                       <Link {...toProjectEdit(p.id)}>{tx("common.tahrirlash")}</Link>
+                      {p.status !== "DONE" && (
+                        <button type="button"
+                                onClick={() => void handleCompleteProject(p)}>
+                          {tx("projects.loyihani_yakunlash")}
+                        </button>
+                      )}
                       {/* O'chirish TAHRIRLASHDAN tor: loyiha admini
                           sozlamalarni o'zgartiradi, lekin butun loyihani
                           yo'q qila olmaydi. Ilgari ikkovi bitta shartda
@@ -499,7 +525,6 @@ function MyProjectTasks() {
               <div className="card-body wl-tasks">
                 {g.shown.map((t) => (
                   <Link className={`tline ${t.is_overdue ? "overdue" : ""}`} {...toTask(t.id)} key={t.id}>
-                    <span className="tline-code mono muted">{t.code}</span>
                     <span className="tline-title">{t.title}</span>
                     {t.due_date && (
                       <span className={t.is_overdue ? "badge badge-danger" : "wl-due"}>

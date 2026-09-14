@@ -1025,18 +1025,6 @@ export default function OrderDetail() {
                   >
                     {item.project_detail.name}
                   </Link>
-                  <span
-                    style={{
-                      background: "#f3e8ff",
-                      color: "#7c3aed",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      padding: "2px 7px",
-                      borderRadius: 6,
-                    }}
-                  >
-                    {item.project_detail.key}
-                  </span>
                 </div>
               )}
             </div>

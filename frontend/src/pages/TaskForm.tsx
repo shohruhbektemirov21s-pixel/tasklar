@@ -32,7 +32,7 @@ export default function TaskForm() {
   const storedTask = useEntityId("task");
   const taskId = creating ? null : storedTask;
   const go = useGo();
-  const { meta } = useAuth();
+  const { user, meta } = useAuth();
   const editing = Boolean(taskId);
 
   const [project, setProject] = useState<Project | null>(null);
@@ -139,6 +139,13 @@ export default function TaskForm() {
       // ignore
     }
   }, [editing, draftKey]);
+
+  // Yangi vazifada dastlab foydalanuvchining o'zini tanlab qo'yish (keyin sheriklar qo'shilishi mumkin)
+  useEffect(() => {
+    if (!editing && user?.id && assignees.length === 0 && !draftRestored) {
+      setAssignees([user.id]);
+    }
+  }, [editing, user?.id, draftRestored]);
 
   // Qoralamani avtomatik saqlash
   useEffect(() => {
@@ -385,7 +392,6 @@ export default function TaskForm() {
                         fontSize: 13
                       }}>
                         <div>
-                          <span className="mono muted" style={{ marginRight: 6 }}>{parentTask.code}</span>
                           <strong>{parentTask.title}</strong>
                         </div>
                         <button

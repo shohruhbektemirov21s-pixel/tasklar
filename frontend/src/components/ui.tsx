@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import type { Access, Task, UserBrief } from "@/api/types";
 import { confirmDialog } from "./Confirm";
@@ -23,8 +24,13 @@ export function Avatar({
   placement?: "auto" | "top" | "bottom";
 }) {
   const [hovered, setHovered] = useState(false);
-  const [computedPlacement, setComputedPlacement] = useState<"top" | "bottom">("bottom");
-  const [computedAlign, setComputedAlign] = useState<"center" | "left" | "right">("center");
+  const [coords, setCoords] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    arrowX: number;
+    isBottom: boolean;
+  } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const hoverTimer = useRef<number | null>(null);
 
@@ -41,18 +47,36 @@ export function Avatar({
   const updatePosition = () => {
     if (wrapRef.current) {
       const rect = wrapRef.current.getBoundingClientRect();
-      // Tepada joy yetarli bo'lmasa (260px dan kam) yoki placement="bottom" bo'lsa pastga ochiladi
-      const isBottom = placement === "bottom" || (placement === "auto" && rect.top < 260);
-      setComputedPlacement(isBottom ? "bottom" : "top");
+      const popWidth = 230;
 
-      // Gorizontal holat: popover ekrandan chiqib ketmasligi uchun
-      const midX = rect.left + rect.width / 2;
-      if (midX + 125 > window.innerWidth) {
-        setComputedAlign("right");
-      } else if (midX - 125 < 0) {
-        setComputedAlign("left");
+      // Agar tepada 240px dan kam joy bo'lsa yoki placement === "bottom", pastga ochiladi
+      const isBottom = placement === "bottom" || (placement === "auto" && rect.top < 240);
+
+      let left = rect.left + rect.width / 2 - popWidth / 2;
+      if (left + popWidth > window.innerWidth - 12) {
+        left = window.innerWidth - popWidth - 12;
+      }
+      if (left < 12) {
+        left = 12;
+      }
+
+      const avatarCenterX = rect.left + rect.width / 2;
+      const arrowX = Math.max(14, Math.min(popWidth - 14, avatarCenterX - left));
+
+      if (isBottom) {
+        setCoords({
+          top: Math.round(rect.bottom + 8),
+          left: Math.round(left),
+          arrowX: Math.round(arrowX),
+          isBottom: true,
+        });
       } else {
-        setComputedAlign("center");
+        setCoords({
+          bottom: Math.round(window.innerHeight - rect.top + 8),
+          left: Math.round(left),
+          arrowX: Math.round(arrowX),
+          isBottom: false,
+        });
       }
     }
   };
@@ -60,15 +84,23 @@ export function Avatar({
   const handleMouseEnter = () => {
     if (!shouldHover) return;
     updatePosition();
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
     hoverTimer.current = window.setTimeout(() => {
       updatePosition();
       setHovered(true);
-    }, 140);
+    }, 120);
   };
 
   const handleMouseLeave = () => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
-    setHovered(false);
+    hoverTimer.current = window.setTimeout(() => {
+      setHovered(false);
+    }, 120);
+  };
+
+  const handlePopoverEnter = () => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    setHovered(true);
   };
 
   const avatarElement = user.avatar ? (
@@ -98,9 +130,17 @@ export function Avatar({
       onMouseLeave={handleMouseLeave}
     >
       {avatarElement}
-      {hovered && (
+      {hovered && coords && createPortal(
         <div
-          className={`avatar-hover-popover placement-${computedPlacement} align-${computedAlign}`}
+          className={`avatar-hover-popover is-portal placement-${coords.isBottom ? "bottom" : "top"}`}
+          style={{
+            top: coords.top !== undefined ? `${coords.top}px` : "auto",
+            bottom: coords.bottom !== undefined ? `${coords.bottom}px` : "auto",
+            left: `${coords.left}px`,
+            ["--arrow-x" as any]: `${coords.arrowX}px`,
+          }}
+          onMouseEnter={handlePopoverEnter}
+          onMouseLeave={handleMouseLeave}
           onClick={(e) => e.stopPropagation()}
         >
           {user.avatar ? (
@@ -122,7 +162,8 @@ export function Avatar({
           {user.email && (
             <div className="avatar-hover-email">{user.email}</div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -591,8 +632,6 @@ export function TaskCard({
       onDragEnd={onDragEnd}
     >
       <div className="row">
-        <span className="code">{task.code}</span>
-        <span className="spacer" />
         <Priority task={task} />
       </div>
       <div className="title" title={task.title}>{task.title}</div>
@@ -624,7 +663,7 @@ export function TaskCard({
         {/* Yorliq ko'rinmaydi, lekin ekran o'qigichga kerak: "Ko'chirish"
             degan maydon qaysi vazifaga tegishli ekani aytilsin. */}
         <label className="sr-only" htmlFor={moveId}>
-          {task.code} {tx("ui.boshqa_ustunga_kochirish")}
+          {task.title} {tx("ui.boshqa_ustunga_kochirish")}
         </label>
         <select
           id={moveId}
@@ -707,7 +746,6 @@ export function TaskRow({ task }: { task: Task }) {
     /* Qatorning istalgan yeriga bosilsa vazifa ochiladi - sarlavhani
        aniq nishonga olish shart emas. */
     <tr className="clickable" onClick={() => go(toTask(task.id))}>
-      <td className="nowrap mono muted">{task.code}</td>
       <td>
         <Link {...toTask(task.id)} style={{ color: "var(--text)", fontWeight: 500 }}
               onClick={(e) => e.stopPropagation()}>

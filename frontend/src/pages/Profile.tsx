@@ -312,12 +312,10 @@ export default function Profile() {
                     /* Bosh paneldagi ro'yxat bilan bir xil: qatorning
                        istalgan yeri vazifani ochadi. */
                     <tr className="clickable" key={t.id} onClick={() => go(toTask(t.id))}>
-                      <td className="mono muted nowrap">{t.code}</td>
                       <td>
                         {/* Hodisa qatorga o'tmasin - vazifa ikki marta
                             ochilib ketmasin. */}
                         <Link {...toTask(t.id)} onClick={(e) => e.stopPropagation()}>{t.title}</Link>
-                        <br /><small className="muted">{t.project_name}</small>
                       </td>
                       <td><StatusBadge task={t} /></td>
                       <td><Priority task={t} /></td>

@@ -17,7 +17,7 @@ def run_seed():
     users_data = [
         {
             "email": "boshliq@teamflow.uz",
-            "full_name": "Akmal Boshliqov",
+            "full_name": "Akmal Saidov",
             "job_title": "Boshliq / Kompaniya direktori",
             "global_role": GlobalRole.BOSS,
             "specialty": Specialty.PM,
@@ -28,7 +28,7 @@ def run_seed():
         },
         {
             "email": "pm@teamflow.uz",
-            "full_name": "Sardor Menejerov",
+            "full_name": "Sardor Rustamov",
             "job_title": "Loyiha Menejeri (PM)",
             "global_role": GlobalRole.MANAGER,
             "specialty": Specialty.PM,
@@ -39,7 +39,7 @@ def run_seed():
         },
         {
             "email": "backend@teamflow.uz",
-            "full_name": "Jasur Backendchi",
+            "full_name": "Jasur Alimov",
             "job_title": "Senior Backend Dasturchi",
             "global_role": GlobalRole.DEVELOPER,
             "specialty": Specialty.DEVELOPER,
@@ -50,7 +50,7 @@ def run_seed():
         },
         {
             "email": "frontend@teamflow.uz",
-            "full_name": "Malika Frontendchi",
+            "full_name": "Malika Karimova",
             "job_title": "Middle Frontend Dasturchi",
             "global_role": GlobalRole.DEVELOPER,
             "specialty": Specialty.DEVELOPER,

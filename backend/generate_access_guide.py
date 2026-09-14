@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 from datetime import datetime
 import docx
@@ -145,10 +145,10 @@ def create_guide_document():
 
     user_rows = [
         ("Bosh Admin", "Tizim Admini / Superuser", "ADMIN", "admin@teamflow.uz", "admin12345"),
-        ("Akmal Boshliqov", "Boshliq / Kompaniya direktori", "BOSS", "boshliq@teamflow.uz", "password123"),
-        ("Sardor Menejerov", "Loyiha Menejeri (Lead PM)", "MANAGER", "pm@teamflow.uz", "password123"),
-        ("Jasur Backendchi", "Senior Backend Dasturchi", "DEVELOPER", "backend@teamflow.uz", "password123"),
-        ("Malika Frontendchi", "Middle Frontend Dasturchi", "DEVELOPER", "frontend@teamflow.uz", "password123"),
+        ("Akmal Saidov", "Boshliq / Kompaniya direktori", "BOSS", "boshliq@teamflow.uz", "password123"),
+        ("Sardor Rustamov", "Loyiha Menejeri (Lead PM)", "MANAGER", "pm@teamflow.uz", "password123"),
+        ("Jasur Alimov", "Senior Backend Dasturchi", "DEVELOPER", "backend@teamflow.uz", "password123"),
+        ("Malika Karimova", "Middle Frontend Dasturchi", "DEVELOPER", "frontend@teamflow.uz", "password123"),
         ("Bobur Rahimov", "Loyiha Menejeri", "MANAGER", "menejer@teamflow.uz", "menejer123"),
         ("Dilshod Karimov", "Tizim Operatori", "OPERATOR", "operator@teamflow.uz", "operator123"),
     ]

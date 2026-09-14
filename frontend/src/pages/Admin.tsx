@@ -604,8 +604,7 @@ export default function Admin() {
                     <tr key={p.id}>
                       <td>
                         <span className="lang-dot" style={{ background: p.color }} />{" "}
-                        <Link {...toProject(p.id)}>{p.name}</Link>{" "}
-                        <span className="badge mono">{p.key}</span>
+                        <Link {...toProject(p.id)}>{p.name}</Link>
                       </td>
                       <td className="muted">{p.workspace_name}</td>
                       <td>{p.manager?.full_name || "—"}</td>

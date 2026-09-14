@@ -323,7 +323,6 @@ function DeveloperRow({ row, filtered, open, onToggle }: {
             <>
               {row.tasks.map((t) => (
                 <Link className={`tline ${t.is_overdue ? "overdue" : ""}`} {...toTask(t.id)} key={t.id}>
-                  <span className="tline-code mono muted">{t.code}</span>
                   <span className="tline-title">{t.title}</span>
                   {t.due_date && (
                     <span className={t.is_overdue ? "badge badge-danger" : "wl-due"}>

@@ -52,7 +52,7 @@ class DashboardNumbersTest(ApiTestCase):
 
     # ------------------------------------------------------------ nazoratda
     def test_nazoratda_shu_davrda_ochilgan_yopilmagan_ish(self):
-        self.make(TaskStatus.TODO, created=at(1))
+        self.make(TaskStatus.TODO, created=at(0))
         d = self.panel()
         self.assertEqual(self.period(d, "week")["todo"], 1)
         self.assertEqual(self.period(d, "year")["todo"], 1)
@@ -85,7 +85,7 @@ class DashboardNumbersTest(ApiTestCase):
 
     # ---------------------------------------------------------- bajarilganlar
     def test_bajarilganlar_yakunlangan_sana_boyicha(self):
-        self.make(TaskStatus.DONE, created=at(10), completed=at(1))
+        self.make(TaskStatus.DONE, created=at(10), completed=at(0))
         d = self.panel()
         self.assertEqual(self.period(d, "week")["done"], 1)
         self.assertEqual(self.period(d, "year")["done"], 1)

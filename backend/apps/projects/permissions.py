@@ -406,9 +406,10 @@ class ProjectAccess:
 
     @property
     def can_create_task(self):
+        """Vazifa yaratish: menejer, admin yoki loyihaning faol a'zosi (dasturchi, QA)."""
         if self.is_sohaviy and not self.is_admin and not self.is_boss:
             return False
-        return self.can_manage
+        return bool(self.can_manage or self.is_member)
 
     @property
     def can_create_subtask(self):

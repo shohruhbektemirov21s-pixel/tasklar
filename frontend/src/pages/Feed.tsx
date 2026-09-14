@@ -233,7 +233,6 @@ export default function Feed() {
                           <Link {...toProject(r.id)}
                                 onClick={(e) => e.stopPropagation()}>{r.name}</Link>
                         </h3>
-                        <span className="badge mono">{r.key}</span>
                         <span className="badge">{r.status_display}</span>
                         {!r.is_public && <span className="badge badge-warn">{tx("feed.yopiq")}</span>}
                         <span className="spacer" />

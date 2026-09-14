@@ -138,7 +138,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         _, _, skipped = sync_assignees(task, assignee_ids, request.user)
 
         log(actor=request.user, verb="task.created", task=task,
-            summary="{} yaratildi: {}".format(task.code, task.title),
+            summary="Vazifa yaratildi: {}".format(task.title),
             detail=task.description[:500],
             meta={"priority": task.priority_label, "type": task.get_task_type_display(),
                   "specialty": task.required_specialty or None})
@@ -151,13 +151,15 @@ class TaskViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         task = self.get_object()
         access = ProjectAccess(request.user, task.project)
-        # Vazifa mazmunini (sarlavha, tavsif, muddat, ijrochi) faqat menejer
-        # va admin o'zgartiradi. Ijrochi ishni bajaradi: holatni suradi, izoh
-        # yozadi, fayl biriktiradi va ishni topshiradi - lekin topshiriqning
-        # o'zini qayta yozmaydi.
-        if not access.can_create_task:
+        # Vazifa mazmunini menejer, admin hamda vazifani yaratgan jamoa a'zosi
+        # (sheriklar qo'shish/tahrirlash uchun) o'zgartira oladi.
+        can_edit = bool(
+            access.can_manage
+            or (access.is_member and task.created_by_id == request.user.id)
+        )
+        if not can_edit:
             raise PermissionDenied(
-                "Vazifani faqat loyiha menejeri yoki admin ozgartira oladi.")
+                "Vazifani faqat loyiha menejeri, admin yoki vazifani yaratgan a'zo ozgartira oladi.")
 
         tracked = ["title", "description", "acceptance_criteria", "priority", "due_date",
                    "task_type", "estimate_hours", "branch_name", "pr_url"]
@@ -219,7 +221,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         # bo'lsa, xatolik qaytadi; efirga yolg'on "o'chirildi" signali ketmaydi.
         task.soft_delete(request.user)
         log(actor=request.user, verb="task.deleted", project=task.project,
-            summary="{} ochirildi: {}".format(task.code, task.title))
+            summary="Vazifa ochirildi: {}".format(task.title))
         live_task(task, "deleted", request.user)
         return Response(status=204)
 
@@ -443,7 +445,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         task = self.get_object()
         access = ProjectAccess(request.user, task.project)
-        if not access.can_create_task:
+        if not access.can_manage:
             raise PermissionDenied(
                 "Vazifani boshqa odamga faqat loyiha menejeri yoki admin otkaza oladi.")
         # Tugagan ishni otkazishning ma'nosi yoq: yangi odam uchun bu ish emas,
@@ -492,14 +494,14 @@ class TaskViewSet(viewsets.ModelViewSet):
         if note:
             detail.append("Sabab: " + note)
         log(actor=request.user, verb="task.reassigned", task=task,
-            summary="{}: {} ga otkazildi".format(task.code, target.full_name),
+            summary="{}: {} ga otkazildi".format(task.title, target.full_name),
             detail=" · ".join(detail),
             meta={"task": task.pk, "to": target.pk, "from": [u.pk for u in gone]})
 
         # Yangi ijrochi uchun bu - yangi ish, shuning uchun odatdagi
         # "biriktirildi" turi: ish royxatlari va filtrlar ozgarmaydi.
         notify_many([target], NotificationKind.TASK_ASSIGNED,
-                    title="{} sizga otkazildi".format(task.code),
+                    title="{} sizga otkazildi".format(task.title),
                     body=(note or task.title)[:150],
                     url="/vazifa/{}".format(task.pk), actor=request.user,
                     meta={"task": task.pk, "project": task.project_id})
@@ -507,7 +509,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         # ishlab yuraveradi.
         if gone:
             notify_many(gone, NotificationKind.TASK_REASSIGNED,
-                        title="{} boshqa ijrochiga otkazildi".format(task.code),
+                        title="{} boshqa ijrochiga otkazildi".format(task.title),
                         body="Endi ustida {} ishlaydi".format(target.full_name),
                         url="/vazifa/{}".format(task.pk), actor=request.user,
                         meta={"task": task.pk, "project": task.project_id})
@@ -525,10 +527,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         s.is_valid(raise_exception=True)
         comment = s.save(task=task, author=request.user)
         log(actor=request.user, verb="task.commented", task=task,
-            summary="{} ga izoh qoldirdi".format(task.code), detail=comment.body[:500])
+            summary="{} ga izoh qoldirdi".format(task.title), detail=comment.body[:500])
         # `collapse=True`: ketma-ket izohlar bitta qo'ng'iroqqa yig'iladi.
         notify_many(task_watchers(task), NotificationKind.TASK_COMMENT,
-                    title="{} ga yangi izoh".format(task.code),
+                    title="{} ga yangi izoh".format(task.title),
                     body="{}: {}".format(request.user.full_name, comment.body[:120]),
                     url="/vazifa/{}".format(task.pk), actor=request.user,
                     meta={"task": task.pk}, collapse=True)
@@ -543,7 +545,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         s.is_valid(raise_exception=True)
         wl = s.save(task=task, user=request.user)
         log(actor=request.user, verb="task.worklog", task=task,
-            summary="{}: {} soat ish qayd etildi".format(task.code, wl.hours),
+            summary="{}: {} soat ish qayd etildi".format(task.title, wl.hours),
             detail=wl.note[:500], meta={"hours": str(wl.hours)})
         return Response(WorkLogSerializer(wl, context={"request": request}).data, status=201)
 
@@ -593,12 +595,12 @@ class TaskViewSet(viewsets.ModelViewSet):
                 submission.round_no = task.review_round
                 submission.save(update_fields=["round_no"])
                 log(actor=request.user, verb="task.submitted", task=task,
-                    summary="{}: {} -> {}".format(task.code, old_label,
+                    summary="{}: {} -> {}".format(task.title, old_label,
                                                   task.get_status_display()),
                     meta={"from": old_label, "to": task.get_status_display()})
 
         log(actor=request.user, verb="task.handover", task=task,
-            summary="{}: ish topshirildi ({}-aylana)".format(task.code, submission.round_no),
+            summary="{}: ish topshirildi ({}-aylana)".format(task.title, submission.round_no),
             detail=submission.text[:1000],
             meta={"files": len(uploads), "moved_to_review": moved})
 
@@ -607,7 +609,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             is_active=True, role__in=[ProjectRole.MANAGER, ProjectRole.ADMIN])
             .select_related("user")]
         notify_many(reviewers, NotificationKind.TASK_REVIEW,
-                    title="{} tekshiruvga topshirildi".format(task.code),
+                    title="{} tekshiruvga topshirildi".format(task.title),
                     body="{}: {}".format(request.user.full_name, task.title[:100]),
                     url="/vazifa/{}".format(task.pk), actor=request.user)
 
@@ -642,7 +644,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             # qilingan ishning isboti, matn ochirilgani bilan ular kerak boladi.
             kept = list(submission.files.values_list("original_name", flat=True))
             log(actor=request.user, verb="task.handover_deleted", task=task,
-                summary="{}: ish topshirigi ochirildi".format(task.code),
+                summary="{}: ish topshirigi ochirildi".format(task.title),
                 detail="{}{}".format(
                     submission.text[:500],
                     "\n\nFayllar vazifada qoldirildi: " + ", ".join(kept) if kept else ""))
@@ -667,7 +669,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             # ham korinib tursin: ish qaysi fayl bilan topshirilgani muhim.
             names = list(submission.files.values_list("original_name", flat=True))
             log(actor=request.user, verb="task.handover_edited", task=task,
-                summary="{}: ish topshirigi tahrirlandi".format(task.code),
+                summary="{}: ish topshirigi tahrirlandi".format(task.title),
                 detail="Eski: {}\nYangi: {}{}".format(
                     old_text[:400], new_text[:400],
                     "\nFayllar (ozgarmadi): " + ", ".join(names) if names else ""))
@@ -704,7 +706,7 @@ class TaskViewSet(viewsets.ModelViewSet):
                                   content_type=(getattr(f, "content_type", "") or "")[:120]))
 
         log(actor=request.user, verb="task.attachment", task=task,
-            summary="{}: {} ta fayl biriktirildi".format(task.code, len(created)),
+            summary="{}: {} ta fayl biriktirildi".format(task.title, len(created)),
             detail=", ".join(a.original_name for a in created),
             meta={"files": [{"name": a.original_name, "size": a.size} for a in created]})
 
@@ -724,7 +726,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         # baytlar ham o'chirilardi - xato bosilgan tugmani tiklab bo'lmasdi.
         att.soft_delete(request.user)
         log(actor=request.user, verb="task.attachment_deleted", task=task,
-            summary="{}: fayl ochirildi ({})".format(task.code, name))
+            summary="{}: fayl ochirildi ({})".format(task.title, name))
         return Response(status=204)
 
     # ------------------------------------------------------------ tekshiruv
@@ -858,7 +860,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         _, _, skipped = sync_assignees(subtask, assignee_ids, request.user)
 
         log(actor=request.user, verb="task.created", task=subtask,
-            summary="{} ostki vazifasi yaratildi: {}".format(subtask.code, subtask.title),
+            summary="Ostki vazifa yaratildi: {}".format(subtask.title),
             detail=subtask.description[:500],
             meta={"priority": subtask.priority_label, "type": subtask.get_task_type_display(),
                   "parent_code": task.code})
@@ -900,7 +902,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         subtask.save(update_fields=["parent", "updated_at"])
 
         log(actor=request.user, verb="task.updated", task=subtask,
-            summary="{} vazifasi {} ning ostki vazifasi qilib biriktirildi".format(subtask.code, task.code))
+            summary="«{}» vazifasi «{}» ning ostki vazifasi qilib biriktirildi".format(subtask.title, task.title))
         live_task(task, "updated", request.user, title=task.title[:120])
         live_task(subtask, "updated", request.user, title=subtask.title[:120])
 
@@ -926,7 +928,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         subtask.save(update_fields=["parent", "updated_at"])
 
         log(actor=request.user, verb="task.updated", task=subtask,
-            summary="{} ostki vazifasi {} dan ajratildi".format(subtask.code, task.code))
+            summary="«{}» ostki vazifasi «{}» dan ajratildi".format(subtask.title, task.title))
         live_task(task, "updated", request.user, title=task.title[:120])
         live_task(subtask, "updated", request.user, title=subtask.title[:120])
 

@@ -1,5 +1,7 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState } from "react";
 import { Link, NavLink, useParams } from "react-router-dom";
+import { ApiError } from "@/api/client";
+import { completeProject } from "@/api/projects";
 import { useFetch } from "@/api/useFetch";
 import type { Project } from "@/api/types";
 import { PageHead } from "@/components/Layout";
@@ -51,6 +53,9 @@ export default function ProjectDetail() {
   // emas, lekin orqaga qaytish va sahifani yangilash uchun kerak.
   const id = useEntityId("project");
   const { tab } = useParams();
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+
   const { data: project, error, loading, reload } = useFetch<Project>(
     id ? `/projects/${id}/` : null);
 
@@ -79,6 +84,21 @@ export default function ProjectDetail() {
   const acc = project.access;
   const active = tab || "";
 
+  async function handleComplete() {
+    if (!project) return;
+    setStatusBusy(true);
+    setStatusError(null);
+    try {
+      if (await completeProject(project.id, project.name, project.open_tasks)) {
+        reload();
+      }
+    } catch (err) {
+      setStatusError(err instanceof ApiError ? err.message : tx("common.saqlashda_xatolik"));
+    } finally {
+      setStatusBusy(false);
+    }
+  }
+
   return (
     <>
       <PageHead
@@ -88,8 +108,7 @@ export default function ProjectDetail() {
             <Link to="/loyihalar" className="muted">{tx("project_detail.loyihalar")}</Link>
             <span className="muted"> / </span>
             <strong>{project.name}</strong>{" "}
-            <span className="badge mono">{project.key}</span>{" "}
-            <span className={`badge ${project.status === "ACTIVE" ? "badge-ok" : ""}`}>
+            <span className={`badge ${project.status === "ACTIVE" ? "badge-info" : project.status === "DONE" ? "badge-ok" : ""}`}>
               {project.status_display}
             </span>
             <span className="badge">{acc.role_label}</span>
@@ -113,7 +132,20 @@ export default function ProjectDetail() {
               </>
             )}
             {acc.can_manage && (
-              <Link className="btn btn-sm" {...toProjectEdit(id)}>{tx("project_detail.sozlamalar")}</Link>
+              <>
+                {project.status !== "DONE" && (
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    disabled={statusBusy}
+                    onClick={() => void handleComplete()}
+                    title={tx("project_detail.loyihani_yakunlash")}
+                  >
+                    ✓ {tx("project_detail.loyihani_yakunlash")}
+                  </button>
+                )}
+                <Link className="btn btn-sm" {...toProjectEdit(id)}>{tx("project_detail.sozlamalar")}</Link>
+              </>
             )}
           </>
         }
@@ -133,6 +165,10 @@ export default function ProjectDetail() {
       />
 
       <div className="content">
+        <ErrorMsg error={statusError} />
+
+
+
         <div className="row mb">
           <div style={{ flex: 1, maxWidth: 320 }}>
             <Progress value={project.progress} />

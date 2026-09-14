@@ -322,7 +322,7 @@ export default function TaskSubmission({ task, canWork, onChange, isOpen, onTogg
       </div>
 
       <p className="muted" style={{ fontSize: 12.5, marginTop: 12, marginBottom: 0 }}>
-        {tx("task_submission.vazifa")} <Link {...toTask(task.id)}>{task.code}</Link> {tx("task_submission.holat")} {task.status_display}
+        {tx("task_submission.vazifa")} <Link {...toTask(task.id)}>{task.title}</Link> {tx("task_submission.holat")} {task.status_display}
       </p>
         </div>
       )}

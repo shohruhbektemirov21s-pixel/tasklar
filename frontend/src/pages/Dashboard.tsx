@@ -207,7 +207,7 @@ const DUE_OPTIONS = [
 ] as const;
 
 const EMPTY_FILTERS = {
-  search: "", due: "", status: "", project: "",
+  search: "", due: "", status: "", project: "", assignee: "",
 };
 type Filters = typeof EMPTY_FILTERS;
 type FilterKey = keyof Filters;
@@ -229,6 +229,7 @@ interface PanelTasksData {
    */
   facets: {
     projects: { id: number; name: string }[];
+    assignees?: { id: number; name: string }[];
   };
 }
 
@@ -263,7 +264,7 @@ function Combo({ id, label, options, value, onChange, placeholder }: {
 
   const chosen = options.find((o) => o.value === value) || null;
   // Yopiq turganda maydonda TANLANGANI ko'rinadi, ochilganda - yozilgani.
-  const text = open ? q : (chosen?.name || "");
+  const text = open ? q : (chosen?.name || value || "");
 
   const needle = q.trim().toLowerCase();
   const hits = needle
@@ -288,6 +289,13 @@ function Combo({ id, label, options, value, onChange, placeholder }: {
              onBlur={() => setOpen(false)}
              onKeyDown={(e) => {
                if (e.key === "Escape") { setQ(""); setOpen(false); }
+               if (e.key === "Enter") {
+                 if (hits.length > 0) {
+                   pick(hits[0].value);
+                 } else if (q.trim()) {
+                   pick(q.trim());
+                 }
+               }
              }} />
       {open && (
         // `mousedown` to'xtatiladi: aks holda bosish paytida maydon fokusni
@@ -337,6 +345,8 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
 
   const projectOptions: ComboOption[] = (data?.facets.projects || [])
     .map((p) => ({ value: String(p.id), name: p.name }));
+  const assigneeOptions: ComboOption[] = (data?.facets.assignees || [])
+    .map((u) => ({ value: String(u.id), name: u.name }));
   const set = (k: FilterKey, v: string) => {
     setPage(1);
     setF((prev) => ({ ...prev, [k]: v }));
@@ -388,10 +398,10 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
                  value={f.project} onChange={(v) => set("project", v)}
                  placeholder={tx("dashboard.loyiha_nomini_yozing")} />
         )}
-        {/* IJROCHI tanlagichi yo'q. Ro'yxat odamning O'Z kesimida ochiladi:
-            ijrochida u doim bitta ismdan - o'zinikidan - iborat bo'lardi.
-            Menejerga «kim nima qilyapti» uchun alohida sahifa bor
-            («Vazifalar»), u shu ish uchun ancha qulay. */}
+        {/* Xodim (ijrochi) filtri: ismni yozganda yoki ro'yxatdan tanlaganda filtrlash */}
+        <Combo id={fid + "-as"} label={tx("dashboard.xodim")} options={assigneeOptions}
+               value={f.assignee} onChange={(v) => set("assignee", v)}
+               placeholder={tx("dashboard.xodim_nomini_yozing")} />
         {filtered && (
           <button type="button" className="btn" onClick={clear}>{tx("common.tozalash")}</button>
         )}
@@ -408,14 +418,28 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
         </Empty>
       ) : (
         <div className="table-wrap"><table className="table">
+          <thead>
+            <tr>
+              <th style={{ width: 44, textAlign: "center" }}>№</th>
+              <th>{tx("common.vazifalar")}</th>
+              <th className="nowrap">{tx("common.holat")}</th>
+              <th className="nowrap">{tx("common.muhimlik")}</th>
+              <th className="nowrap">{tx("common.ijrochilar")}</th>
+              <th className="nowrap right">{tx("common.muddat")}</th>
+            </tr>
+          </thead>
           <tbody>
-            {tasks.map((t) => (
+            {tasks.map((t, idx) => {
+              const rowNum = (data ? (data.page - 1) * data.page_size : 0) + idx + 1;
+              return (
               /* Qator bosilganda SAHIFA ALMASHMAYDI - o'ng chetdan tortma
                  chiqadi (`components/TaskDrawer.tsx`). Sabab: bu ro'yxat
                  kesim, filtr va sahifa raqami bilan yig'ilgan; boshqa
                  sahifaga o'tib qaytilsa, hammasi qaytadan tanlanardi. */
               <tr className="clickable" key={t.id} onClick={() => setOpen(t)}>
-                <td className="nowrap mono muted">{t.code}</td>
+                <td style={{ textAlign: "center", color: "var(--muted)", fontWeight: 600, fontSize: 13, width: 44 }}>
+                  {rowNum}
+                </td>
                 <td>
                   {/* Havola `<a>` bo'lib qoladi: klaviatura yo'li ham,
                       «yangi oynada ochish» ham shu yerdan o'tadi. Oddiy
@@ -428,17 +452,28 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
                           e.stopPropagation();
                           setOpen(t);
                         }}>{t.title}</Link>
-                  <br /><small className="muted">{t.project_name}</small>
                 </td>
                 <td className="nowrap"><StatusBadge task={t} /></td>
                 <td className="nowrap"><Priority task={t} /></td>
                 {/* Kim qilayotgani ro'yxatning o'zida ko'rinsin: ilgari buni
                     bilish uchun har bir vazifani birma-bir ochish kerak edi.
                     Ijrochisi yo'q bo'lsa `AvatarStack` chiziqcha qo'yadi. */}
-                <td className="nowrap"><AvatarStack users={t.assignees} /></td>
+                <td className="nowrap">
+                  {t.assignees?.length ? (
+                    <span className="row middle" style={{ gap: 8 }}>
+                      <AvatarStack users={t.assignees} />
+                      <span style={{ fontSize: 13, fontWeight: 500 }}>
+                        {t.assignees.map((u) => u.full_name).join(", ")}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
+                </td>
                 <td className="nowrap muted right">{fmtDate(t.due_date)}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table></div>
       )}

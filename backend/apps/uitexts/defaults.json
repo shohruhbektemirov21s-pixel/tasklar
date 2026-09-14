@@ -963,6 +963,14 @@
   "value": "Mas'ul PM",
   "note": "pages/Dashboard.tsx"
  },
+ "dashboard.xodim": {
+  "value": "Xodim",
+  "note": "pages/Dashboard.tsx"
+ },
+ "dashboard.xodim_nomini_yozing": {
+  "value": "Xodim ismini yozing...",
+  "note": "pages/Dashboard.tsx"
+ },
  "dashboard.muddati": {
   "value": "Muddati",
   "note": "pages/Dashboard.tsx"
@@ -5986,5 +5994,73 @@
  "calendar.batafsil": {
   "value": "Batafsil",
   "note": "pages/Calendar.tsx"
+ },
+ "projects.loyihani_yakunlash": {
+  "value": "Loyihani yakunlash",
+  "note": "pages/Projects.tsx"
+ },
+ "projects.loyihani_qayta_ochish": {
+  "value": "Loyihani qayta ochish",
+  "note": "pages/Projects.tsx"
+ },
+ "projects.holat": {
+  "value": "Holat",
+  "note": "pages/Projects.tsx"
+ },
+ "project_detail.loyihani_yakunlash": {
+  "value": "Loyihani yakunlash",
+  "note": "pages/ProjectDetail.tsx"
+ },
+ "project_detail.loyihani_qayta_ochish": {
+  "value": "Loyihani qayta ochish",
+  "note": "pages/ProjectDetail.tsx"
+ },
+ "project_detail.yakunlash_tasdiq": {
+  "value": "Haqiqatan ham bu loyihani yakunlamoqchimisiz?",
+  "note": "pages/ProjectDetail.tsx"
+ },
+ "project_detail.yakunlash_ochiq_ishlar_ogohlantirish": {
+  "value": "Loyihada hali {soni} ta ochiq vazifa mavjud. Shunda ham loyihani yakunlamoqchimisiz?",
+  "note": "pages/ProjectDetail.tsx"
+ },
+ "project_detail.qayta_ochish_tasdiq": {
+  "value": "Ushbu loyihani qayta faollashtirmoqchimisiz?",
+  "note": "pages/ProjectDetail.tsx"
+ },
+ "project_detail.loyiha_yakunlandi": {
+  "value": "Loyiha muvaffaqiyatli yakunlandi",
+  "note": "pages/ProjectDetail.tsx"
+ },
+ "project_detail.loyiha_qayta_ochildi": {
+  "value": "Loyiha qayta faollashtirildi",
+  "note": "pages/ProjectDetail.tsx"
+ },
+ "project_detail.loyiha_yakunlangan_xabar": {
+  "value": "Ushbu loyiha yakunlangan.",
+  "note": "pages/ProjectDetail.tsx"
+ },
+ "task_modal.vazifa_malumotlari": {
+  "value": "Vazifa ma'lumotlari",
+  "note": "components/TaskModal.tsx"
+ },
+ "task_modal.vazifa_sahifasiga_otish": {
+  "value": "Vazifa sahifasiga o'tish",
+  "note": "components/TaskModal.tsx"
+ },
+ "task_modal.vazifa_matni": {
+  "value": "Vazifa matni",
+  "note": "components/TaskModal.tsx"
+ },
+ "task_modal.ijrochilar": {
+  "value": "Ijrochilar",
+  "note": "components/TaskModal.tsx"
+ },
+ "task_modal.tekshiruvchi": {
+  "value": "Tekshiruvchi",
+  "note": "components/TaskModal.tsx"
+ },
+ "task_modal.loyiha": {
+  "value": "Loyiha",
+  "note": "components/TaskModal.tsx"
  }
 }

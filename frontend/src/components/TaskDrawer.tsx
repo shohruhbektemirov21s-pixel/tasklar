@@ -16,13 +16,15 @@
  * Bu yerda hech narsa qattiq yozilmagan — hammasi backenddan kelgan
  * yozuvdan olinadi.
  */
-import { useEffect, useRef } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Task } from "@/api/types";
 import { fmtDate } from "@/components/dates";
 import { Avatar, Priority, StatusBadge } from "@/components/ui";
 import { toProject, toTask } from "@/nav";
 import { tx } from "@/i18n";
+
+const TaskDetailModal = lazy(() => import("@/pages/TaskDetail"));
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -35,6 +37,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export default function TaskDrawer({ task, onClose }: { task: Task | null; onClose: () => void }) {
   const closeBtn = useRef<HTMLButtonElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     if (!task) return;
@@ -70,7 +73,6 @@ export default function TaskDrawer({ task, onClose }: { task: Task | null; onClo
              /* Panel ichidagi bosish tortmani yopmasin. */
              onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
-          <span className="mono muted">{task.code}</span>
           <h3>{task.title}</h3>
         </div>
 
@@ -138,14 +140,20 @@ export default function TaskDrawer({ task, onClose }: { task: Task | null; onClo
         </div>
 
         <div className="drawer-foot">
-          <Link className="btn btn-primary" {...toTask(task.id)}>
+          <button type="button" className="btn btn-primary" onClick={() => setModalOpen(true)}>
             {tx("task_drawer.toliq_ochish")}
-          </Link>
+          </button>
           <button ref={closeBtn} type="button" className="btn" onClick={onClose}>
             {tx("common.yopish")}
           </button>
         </div>
       </aside>
+
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <TaskDetailModal taskId={task.id} onClose={() => setModalOpen(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }

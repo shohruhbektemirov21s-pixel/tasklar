@@ -80,7 +80,6 @@ export default function Discover() {
                           <Link {...toProject(p.id)}
                                 onClick={(e) => e.stopPropagation()}>{p.name}</Link>
                         </h3>
-                        <span className="badge mono">{p.key}</span>
                         {p.auto_accept && <span className="badge badge-ok">{tx("discover.avtomatik_qabul")}</span>}
                         <span className="spacer" />
                         {/* Ochiq loyihani qo'shilmasdan ham ko'rish mumkin:

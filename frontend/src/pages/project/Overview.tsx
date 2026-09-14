@@ -88,7 +88,6 @@ export default function Overview({ project }: { project: Project; onChange: () =
               <tbody>
                 {myTasks.map((t) => (
                   <tr key={t.id}>
-                    <td className="mono muted nowrap">{t.code}</td>
                     <td><Link {...toTask(t.id)}>{t.title}</Link></td>
                     <td><StatusBadge task={t} /></td>
                     <td className="right"><Priority task={t} /></td>

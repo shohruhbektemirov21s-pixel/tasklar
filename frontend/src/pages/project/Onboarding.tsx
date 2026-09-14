@@ -190,7 +190,6 @@ export default function Onboarding({ project }: { project: Project }) {
               <tbody>
                 {d.open_now.map((t) => (
                   <tr key={t.id}>
-                    <td className="mono muted nowrap">{t.code}</td>
                     <td><Link {...toTask(t.id)}>{t.title}</Link></td>
                     <td><Priority task={t} /></td>
                   </tr>
@@ -208,7 +207,6 @@ export default function Onboarding({ project }: { project: Project }) {
               <tbody>
                 {d.recent_done.map((t) => (
                   <tr key={t.id}>
-                    <td className="mono muted nowrap">{t.code}</td>
                     <td><Link {...toTask(t.id)}>{t.title}</Link></td>
                     <td><StatusBadge task={t} /></td>
                   </tr>

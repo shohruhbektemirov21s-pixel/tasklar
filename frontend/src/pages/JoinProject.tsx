@@ -107,7 +107,6 @@ export default function JoinProject() {
               <p className="muted">{project.description || tx("join_project.tavsif_kiritilmagan")}</p>
               <div className="divider" />
               <div className="row wrap" style={{ gap: 6 }}>
-                <span className="badge mono">{project.key}</span>
                 <span className="badge">{project.member_count} {tx("common.azo")}</span>
                 <span className="badge">{project.open_tasks} {tx("common.ochiq_vazifa")}</span>
               </div>

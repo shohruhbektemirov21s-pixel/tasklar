@@ -76,7 +76,14 @@ export default function NotificationBell() {
       {open && (
         <div className="popover">
           <div className="popover-head">
-            <strong>{tx("common.bildirishnomalar")}</strong>
+            <strong style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              {tx("common.bildirishnomalar")}
+              {unread > 0 && (
+                <span className="badge badge-danger" style={{ fontSize: 11, padding: "1px 6px" }}>
+                  {unread}
+                </span>
+              )}
+            </strong>
             <span className="spacer" />
             {!!unread && (
               <button className="btn btn-sm btn-ghost" onClick={() => void markAllRead()}>

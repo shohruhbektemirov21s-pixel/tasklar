@@ -596,7 +596,7 @@ export default function OrderForm() {
                     <option value="">-- Loyihani tanlang (ixtiyoriy) --</option>
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} ({p.key})
+                        {p.name}
                       </option>
                     ))}
                   </select>
