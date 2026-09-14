@@ -151,15 +151,20 @@ class TaskViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         task = self.get_object()
         access = ProjectAccess(request.user, task.project)
-        # Vazifa mazmunini menejer, admin hamda vazifani yaratgan jamoa a'zosi
-        # (sheriklar qo'shish/tahrirlash uchun) o'zgartira oladi.
+        # Vazifa mazmunini loyiha menejeri, admin, boshliq, vazifani yaratgan shaxs,
+        # vazifa biriktirilgan ijrochilar hamda loyiha a'zolari tahrirlay oladi.
+        is_assignee = task.assignments.filter(user_id=request.user.id, is_active=True).exists()
         can_edit = bool(
             access.can_manage
-            or (access.is_member and task.created_by_id == request.user.id)
+            or access.is_member
+            or is_assignee
+            or task.created_by_id == request.user.id
+            or getattr(request.user, "is_boss", False)
+            or getattr(request.user, "is_platform_admin", False)
         )
         if not can_edit:
             raise PermissionDenied(
-                "Vazifani faqat loyiha menejeri, admin yoki vazifani yaratgan a'zo ozgartira oladi.")
+                "Vazifani faqat loyiha menejeri, admin, boshliq yoki jamoa a'zosi tahrirlay oladi.")
 
         tracked = ["title", "description", "acceptance_criteria", "priority", "due_date",
                    "task_type", "estimate_hours", "branch_name", "pr_url"]
@@ -175,9 +180,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Ota vazifa tekshiruvi: faqat PM va loyiha admini biriktira yoki ajrata oladi.
         parent = serializer.validated_data.get("parent")
         if "parent" in serializer.validated_data and serializer.validated_data["parent"] != task.parent:
-            if not access.can_create_subtask:
+            if not (access.can_create_subtask or access.can_manage or getattr(request.user, "is_boss", False)):
                 raise PermissionDenied(
-                    "Vazifa ichiga ostki vazifa joylash yoki ajratish faqat loyiha menejeri (PM) yoki loyiha adminiga ruxsat etilgan."
+                    "Vazifa ichiga ostki vazifa joylash yoki ajratish faqat loyiha menejeri (PM), admin yoki boshliqqa ruxsat etilgan."
                 )
             if parent is not None:
                 if parent.project_id != task.project_id:

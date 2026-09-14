@@ -17,6 +17,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { tx } from "@/i18n";
+import { lockScroll, unlockScroll } from "./scrollLock";
 
 interface ConfirmOptions {
   title: string;
@@ -75,11 +76,10 @@ export default function ConfirmHost() {
       }
     };
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
   }, [pending]);
 

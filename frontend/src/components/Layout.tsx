@@ -7,12 +7,13 @@ import { useAuth } from "@/auth/AuthContext";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import ErrorBoundary from "./ErrorBoundary";
 import { Logo } from "./Logo";
-import { IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
+import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar, SpecialtyTag } from "./ui";
 import { toFeed, toMessages, toNewProject, toSelfProfile, toUser, type NavTarget, useGo } from "@/nav";
 import { tx } from "@/i18n";
+import { lockScroll, unlockScroll, resetScrollLock } from "./scrollLock";
 
 /**
  * Sahifa nomi turadigan UYA - yuqori paneldagi bo'sh tugun.
@@ -236,19 +237,34 @@ export default function Layout() {
     return () => window.clearTimeout(timer);
   }, [q]);
 
-  // Sahifa almashsa qidiruv oynasi ham, tortma ham yopilsin.
-  useEffect(() => { setOpenHits(false); setMenu(false); }, [loc.pathname]);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Sahifa skrollini kuzatish (tepaga qaytish tugmasi uchun)
+  useEffect(() => {
+    const onScroll = () => {
+      setShowScrollTop(window.scrollY > 280);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Sahifa almashsa qidiruv oynasi ham, tortma ham yopilsin, skroll holati tozalansin.
+  useEffect(() => {
+    setOpenHits(false);
+    setMenu(false);
+    resetScrollLock();
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  }, [loc.pathname]);
 
   // Tortma ochiq turganda: Esc yopadi va orqadagi sahifa siljimaydi.
   useEffect(() => {
     if (!menu) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenu(false); };
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
   }, [menu]);
 
@@ -460,12 +476,15 @@ export default function Layout() {
             {!!counts.reviews && <span className="dot">{counts.reviews}</span>}
           </Link>
         )}
-        {/* Loyiha ochish - faqat menejer va admin */}
-        {user?.can_create_project && (
-          <Link className="top-icon hide-sm" {...toNewProject()} title={tx("common.yangi_loyiha")}>
-            <IconPlus size={17} />
-          </Link>
-        )}
+        {/* Yangi vazifa yaratish - barcha foydalanuvchilar uchun */}
+        <Link
+          className="top-icon hide-sm"
+          to="/loyiha/vazifa-yaratish"
+          title={tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+          aria-label={tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+        >
+          <IconPlus size={17} />
+        </Link>
         <Link {...toSelfProfile()} aria-label={user?.full_name}>
           <Avatar user={user} placement="bottom" />
         </Link>
@@ -575,6 +594,17 @@ export default function Layout() {
             </ErrorBoundary>
           </div>
         </div>
+        {showScrollTop && (
+          <button
+            type="button"
+            className="scroll-top-float"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            title={tx("layout.tepaga_qaytish")}
+            aria-label={tx("layout.tepaga_qaytish")}
+          >
+            <IconArrowUp size={18} />
+          </button>
+        )}
       </div>
     </>
   );

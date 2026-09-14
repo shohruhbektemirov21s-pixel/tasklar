@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ApiError, api } from "@/api/client";
+import { ApiError, api, listOf } from "@/api/client";
 import type { Project, Task, UserBrief } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
@@ -36,6 +36,7 @@ export default function TaskForm() {
   const editing = Boolean(taskId);
 
   const [project, setProject] = useState<Project | null>(null);
+  const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [assignees, setAssignees] = useState<number[]>([]);
   // Jamoa kattalashganda uzun ro'yxatdan odam topib bo'lmaydi - shuning uchun qidiruv.
@@ -64,6 +65,14 @@ export default function TaskForm() {
     let alive = true;
     void (async () => {
       let pid = id;
+      let pList: Project[] = [];
+      try {
+        pList = listOf<Project>(await api.get<any>("/projects/"));
+        if (alive) setUserProjects(pList);
+      } catch {
+        // ignore
+      }
+
       if (editing) {
         const t = await api.get<Task>(`/tasks/${taskId}/`);
         if (!alive) return;
@@ -78,14 +87,19 @@ export default function TaskForm() {
         });
         setAssignees(t.assignees.map((a) => a.id));
         if (t.parent) setParentTaskId(String(t.parent));
+      } else if (!pid && pList.length > 0) {
+        pid = String(pList[0].id);
       }
-      const p = await api.get<Project>(`/projects/${pid}/`);
-      if (!alive) return;
-      setProject(p);
+
+      if (pid) {
+        const p = await api.get<Project>(`/projects/${pid}/`);
+        if (!alive) return;
+        setProject(p);
+      }
       setReady(true);
     })().catch((e) => {
       // Xato ushlanmasa sahifa abadiy "Yuklanmoqda" da qolardi.
-      if (alive) setError(e instanceof ApiError ? e.message : tx("task_form.vazifani_ochib_bolmadi"));
+      if (alive) setError(e instanceof ApiError ? e.message : tx("task_form.vazifani_ochib_bolmadi", undefined, "Vazifani ochib bo'lmadi"));
     });
     return () => { alive = false; };
   }, [id, taskId, editing]);
@@ -229,13 +243,21 @@ export default function TaskForm() {
 
   if (!ready || !project) return <div className="content"><Loading /></div>;
 
-  // URL orqali kirib qolmasin: vazifa yaratish/tahrirlash - menejer va admin ishi.
-  if (!project.access?.can_create_task) {
+  // URL orqali kirib qolmasin: vazifa yaratish/tahrirlash - menejer, admin, boshliq va jamoa a'zolari
+  const canAct = Boolean(
+    project.access?.can_create_task ||
+    project.access?.can_manage ||
+    project.access?.is_member ||
+    user?.is_boss ||
+    user?.is_platform_admin ||
+    editing
+  );
+  if (!canAct) {
     return (
       <div className="content">
-        <Card title={tx("task_form.ruxsat_yoq")}>
+        <Card title={tx("task_form.ruxsat_yoq", undefined, "Ruxsat yo'q")}>
           <p className="muted" style={{ margin: 0 }}>
-            {tx("task_form.vazifa_yaratish_va_tahrirlash_faqat")}
+            {tx("task_form.vazifa_yaratish_va_tahrirlash_faqat", undefined, "Vazifa yaratish va tahrirlash faqat jamoa a'zolariga ruxsat etilgan.")}
           </p>
         </Card>
       </div>
@@ -298,6 +320,30 @@ export default function TaskForm() {
           <div className="split">
             <div>
               <Card title={tx("task_form.vazifa_mazmuni")}>
+                {!editing && userProjects.length > 1 && (
+                  <div className="field">
+                    <label htmlFor={`${fid}-project`}>{tx("common.loyiha", undefined, "Loyiha")} *</label>
+                    <select
+                      id={`${fid}-project`}
+                      value={project?.id || ""}
+                      onChange={async (e) => {
+                        const pid = e.target.value;
+                        if (!pid) return;
+                        try {
+                          const p = await api.get<Project>(`/projects/${pid}/`);
+                          setProject(p);
+                        } catch {
+                          // ignore
+                        }
+                      }}
+                      required
+                    >
+                      {userProjects.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="field">
                   <label htmlFor={`${fid}-0`}>{tx("task_form.sarlavha")}</label>
                   <input id={`${fid}-0`} value={f.title} required autoFocus

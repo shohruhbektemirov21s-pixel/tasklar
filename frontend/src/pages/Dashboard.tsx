@@ -1559,7 +1559,14 @@ export default function Dashboard() {
 
   return (
     <>
-      <PageHead title={name} />
+      <PageHead
+        title={name}
+        actions={
+          <Link className="btn btn-sm btn-primary" to="/loyiha/vazifa-yaratish">
+            + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+          </Link>
+        }
+      />
 
       <div className="content">
         <div className="period-grid">

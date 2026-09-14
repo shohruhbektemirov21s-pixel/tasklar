@@ -15,6 +15,7 @@ import { toProject, toTask, toTaskEdit, useEntityId, useGo } from "@/nav";
 import { createSubtask, getAvailableSubtasks, linkSubtask, unlinkSubtask } from "@/api/tasks";
 import { tx } from "@/i18n";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
+import { lockScroll, unlockScroll } from "@/components/scrollLock";
 
 const FILE_ICON: Record<string, string> = {
   pdf: "PDF", doc: "DOC", docx: "DOC", xls: "XLS", xlsx: "XLS",
@@ -162,11 +163,10 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
       if (e.key === "Escape") onClose?.();
     };
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
   }, [isModal, onClose]);
 
@@ -394,8 +394,15 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
   const acc = task.access!;
   const isAssignee = task.assignees.some((a) => a.id === user?.id);
   const isCreator = task.created_by?.id === user?.id;
-  const canEdit = Boolean(acc.can_manage || (acc.is_member && (isAssignee || isCreator)));
-  const canManageSubtasks = Boolean(acc.can_create_subtask || acc.is_manager || acc.is_project_admin || acc.is_admin);
+  const canEdit = Boolean(
+    acc.can_manage ||
+    acc.is_member ||
+    isAssignee ||
+    isCreator ||
+    user?.is_boss ||
+    user?.is_platform_admin
+  );
+  const canManageSubtasks = Boolean(acc.can_create_subtask || acc.is_manager || acc.is_project_admin || acc.is_admin || user?.is_boss);
   const transitions = task.allowed_transitions || [];
 
   /**
@@ -440,13 +447,13 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
   const taskActions = (
     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
       {canEdit && (
-        <Link className="btn btn-sm" {...toTaskEdit(task.id)} onClick={isModal ? onClose : undefined}>
-          {tx("common.tahrirlash")}
+        <Link className="btn btn-sm btn-primary" {...toTaskEdit(task.id)} onClick={isModal ? onClose : undefined}>
+          ✏️ {tx("common.tahrirlash", undefined, "Tahrirlash")}
         </Link>
       )}
       {acc.can_manage && (
         <button className="btn btn-sm btn-danger" onClick={() => void handleDelete()}>
-          {tx("common.ochirish_2")}
+          {tx("common.ochirish_2", undefined, "O'chirish")}
         </button>
       )}
     </div>
@@ -460,7 +467,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
           <div style={{ marginBottom: 12 }}>
             <Link {...toTask(task.parent)} className="parent-task-badge">
               <span>↖</span>
-              <span>{tx("task_detail.asosiy_ota_vazifa")}: <strong>{task.parent_code || `#${task.parent}`}</strong> {task.parent_title ? `— ${task.parent_title}` : ""}</span>
+              <span>{tx("task_detail.asosiy_ota_vazifa", undefined, "Ota vazifa")}: <strong>{task.parent_title || `#${task.parent}`}</strong></span>
             </Link>
           </div>
         )}
@@ -479,11 +486,11 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
             <span className="badge">{task.type_display}</span>
             {task.specialty_label && <span className="badge badge-brand">{task.specialty_label}</span>}
             {task.start_date && (
-              <span className="badge">{tx("task_detail.boshlanish")} {fmtDateTime(task.start_date)}</span>
+              <span className="badge">{tx("task_detail.boshlanish", undefined, "Boshlanish")} {fmtDateTime(task.start_date)}</span>
             )}
             {task.due_date && !editDue && (
               <span className={`badge ${task.is_overdue ? "badge-danger" : ""}`}>
-                {tx("task_detail.muddat")} {fmtDateTime(task.due_date)}
+                {tx("task_detail.muddat", undefined, "Muddat")} {fmtDateTime(task.due_date)}
               </span>
             )}
             {/* Muddatni shu yerning o'zida qo'yish - vazifa formasiga o'tmasdan.
@@ -550,7 +557,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
             <AccordionSection
               id="section-subtasks"
               icon="⚡"
-              title="Subtasklar"
+              title={tx("task_detail.ostki_vazifalar")}
               badge={<span className="badge">{task.subtasks?.length || 0}</span>}
               statusText={
                 task.subtasks?.length
@@ -560,7 +567,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                       const pct = Math.round((done / total) * 100);
                       return `${done}/${total} bajarildi (${pct}%)`;
                     })()
-                  : "Hozircha subtasklar yo'q"
+                  : tx("task_detail.ostki_vazifalar_yoq")
               }
               action={canManageSubtasks && (
                 <button
@@ -569,7 +576,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                   onClick={() => setSubtaskModalOpen(true)}
                   disabled={busy}
                 >
-                  + Subtask qo'shish
+                  + {tx("task_detail.ostki_vazifa_qoshish")}
                 </button>
               )}
               isOpen={openLeft === "subtasks"}
@@ -1066,32 +1073,132 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
             <AccordionSection
               id="section-info"
               icon="ℹ️"
-              title={tx("task_detail.malumotlar")}
-              statusText={task.assignees?.length ? task.assignees.map((u) => u.full_name).join(", ") : "Ijrochi belgilanmagan"}
+              title={tx("task_detail.malumotlar", undefined, "Ma'lumotlar")}
+              statusText={task.assignees?.length ? task.assignees.map((u) => u.full_name).join(", ") : tx("task_detail.ijrochi_belgilanmagan", undefined, "Ijrochi belgilanmagan")}
               isOpen={openRight === "info"}
               onToggle={() => toggleRight("info")}
             >
               <ul className="list-plain" style={{ fontSize: 13 }}>
                 <li className="row">
-                  <span className="muted">{tx("common.ijrochilar")}</span><span className="spacer" />
+                  <span className="muted">{tx("task_detail.loyiha", undefined, "Loyiha")}</span><span className="spacer" />
+                  <Link {...toProject(task.project)}><strong>{task.project_name}</strong></Link>
+                </li>
+                <li className="row">
+                  <span className="muted">{tx("common.holat", undefined, "Holat")}</span><span className="spacer" />
+                  <StatusBadge task={task} />
+                </li>
+                <li className="row">
+                  <span className="muted">{tx("common.muhimlik", undefined, "Muhimlik")}</span><span className="spacer" />
+                  <Priority task={task} />
+                </li>
+                <li className="row">
+                  <span className="muted">{tx("task_detail.vazifa_turi", undefined, "Vazifa turi")}</span><span className="spacer" />
+                  <span className="badge">{task.type_display}</span>
+                </li>
+                {task.specialty_label && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.mutaxassislik", undefined, "Mutaxassislik")}</span><span className="spacer" />
+                    <span className="badge badge-brand">{task.specialty_label}</span>
+                  </li>
+                )}
+                {task.parent && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.ota_vazifa", undefined, "Ota vazifa")}</span><span className="spacer" />
+                    <Link {...toTask(task.parent)}>{task.parent_title || `#${task.parent}`}</Link>
+                  </li>
+                )}
+                {task.order_request_no && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.buyurtma_tz", undefined, "Buyurtma (TZ)")}</span><span className="spacer" />
+                    <span className="mono">#{task.order_request_no}</span>
+                  </li>
+                )}
+                <li className="row">
+                  <span className="muted">{tx("common.ijrochilar", undefined, "Ijrochilar")}</span><span className="spacer" />
                   <AvatarStack users={task.assignees} />
                 </li>
                 <li className="row">
-                  <span className="muted">{tx("task_detail.tekshiruvchi")}</span><span className="spacer" />
-                  <span>{task.reviewer?.full_name || tx("task_detail.menejer")}</span>
+                  <span className="muted">{tx("task_detail.tekshiruvchi", undefined, "Tekshiruvchi")}</span><span className="spacer" />
+                  <span>{task.reviewer?.full_name || tx("task_detail.menejer", undefined, "Loyiha menejeri")}</span>
                 </li>
                 <li className="row">
-                  <span className="muted">{tx("task_detail.yaratgan")}</span><span className="spacer" />
+                  <span className="muted">{tx("task_detail.yaratgan", undefined, "Yaratgan")}</span><span className="spacer" />
                   <span>{task.created_by?.full_name || "—"}</span>
                 </li>
+                {task.start_date && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.boshlanish", undefined, "Boshlanish")}</span><span className="spacer" />
+                    <span>{fmtDateTime(task.start_date)}</span>
+                  </li>
+                )}
+                {task.due_date && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.muddat", undefined, "Muddat")}</span><span className="spacer" />
+                    <span className={task.is_overdue ? "badge badge-danger" : ""}>{fmtDateTime(task.due_date)}</span>
+                  </li>
+                )}
+                {task.estimate_hours && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.baholangan_vaqt", undefined, "Baholangan vaqt")}</span><span className="spacer" />
+                    <span>{task.estimate_hours} {tx("task_detail.soat", undefined, "soat")}</span>
+                  </li>
+                )}
+                {task.logged_hours && Number(task.logged_hours) > 0 && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.sarflangan_vaqt", undefined, "Sarflangan vaqt")}</span><span className="spacer" />
+                    <span>{task.logged_hours} {tx("task_detail.soat", undefined, "soat")}</span>
+                  </li>
+                )}
                 <li className="row">
-                  <span className="muted">{tx("task_detail.yaratilgan")}</span><span className="spacer" />
+                  <span className="muted">{tx("task_detail.yaratilgan", undefined, "Yaratilgan")}</span><span className="spacer" />
                   <span>{fmtDateTime(task.created_at)}</span>
                 </li>
+                {task.started_at && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.haqiqiy_boshlangan", undefined, "Boshlangan")}</span><span className="spacer" />
+                    <span>{fmtDateTime(task.started_at)}</span>
+                  </li>
+                )}
+                {task.submitted_at && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.topshirilgan", undefined, "Topshirilgan")}</span><span className="spacer" />
+                    <span>{fmtDateTime(task.submitted_at)}</span>
+                  </li>
+                )}
                 {task.completed_at && (
                   <li className="row">
-                    <span className="muted">{tx("task_detail.yakunlangan")}</span><span className="spacer" />
+                    <span className="muted">{tx("task_detail.yakunlangan", undefined, "Yakunlangan")}</span><span className="spacer" />
                     <span>{fmtDateTime(task.completed_at)}</span>
+                  </li>
+                )}
+                {task.updated_at && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.oxirgi_ozgarish", undefined, "Oxirgi o'zgarish")}</span><span className="spacer" />
+                    <span>{fmtDateTime(task.updated_at)}</span>
+                  </li>
+                )}
+                {task.branch_name && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.git_filiali", undefined, "Git filiali")}</span><span className="spacer" />
+                    <code style={{ fontSize: 12 }}>{task.branch_name}</code>
+                  </li>
+                )}
+                {task.pr_url && (
+                  <li className="row">
+                    <span className="muted">{tx("task_detail.pr_havolasi", undefined, "Pull Request")}</span><span className="spacer" />
+                    <a href={task.pr_url} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>PR havolasi ↗</a>
+                  </li>
+                )}
+                {task.labels && task.labels.length > 0 && (
+                  <li className="row" style={{ alignItems: "flex-start" }}>
+                    <span className="muted">{tx("task_detail.yorliqlar", undefined, "Yorliqlar")}</span><span className="spacer" />
+                    <div className="row wrap" style={{ gap: 4, justifyContent: "flex-end" }}>
+                      {task.labels.map((l) => (
+                        <span key={l.id} className="badge" style={{ backgroundColor: l.color ? `${l.color}22` : undefined, color: l.color || undefined, borderColor: l.color || undefined }}>
+                          {l.name}
+                        </span>
+                      ))}
+                    </div>
                   </li>
                 )}
               </ul>
@@ -1105,8 +1212,8 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
               <AccordionSection
                 id="section-reassign"
                 icon="👤"
-                title={tx("task_detail.boshqa_odamga_otkazish")}
-                statusText="Ijrochini almashtirish"
+                title={tx("task_detail.boshqa_odamga_otkazish", undefined, "Boshqa odamga o'tkazish")}
+                statusText={tx("task_detail.ijrochini_almashtirish", undefined, "Ijrochini almashtirish")}
                 isOpen={openRight === "reassign"}
                 onToggle={() => toggleRight("reassign")}
               >
@@ -1121,31 +1228,31 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                   });
                 }}>
                   <div className="field">
-                    <label htmlFor={`${fid}-5`}>{tx("task_detail.kimga")}</label>
+                    <label htmlFor={`${fid}-5`}>{tx("task_detail.kimga", undefined, "Kimga")}</label>
                     <select id={`${fid}-5`} value={handTo} required
                             onChange={(e) => setHandTo(e.target.value)}>
-                      <option value="">{tx("task_detail.jamoadan_tanlang")}</option>
+                      <option value="">{tx("task_detail.jamoadan_tanlang", undefined, "Jamoadan tanlang")}</option>
                       {members.map((m) => {
                         const now = task.assignees.some((a) => a.id === m.user.id);
                         return (
                           <option key={m.id} value={m.user.id}>
                             {m.user.full_name} — {m.role_display}
-                            {now ? tx("task_detail.hozirgi_ijrochi") : ""}
+                            {now ? tx("task_detail.hozirgi_ijrochi", undefined, " (hozirgi)") : ""}
                           </option>
                         );
                       })}
                     </select>
                   </div>
                   <div className="field">
-                    <label htmlFor={`${fid}-6`}>{tx("task_detail.sabab_ixtiyoriy")}</label>
-                    <input id={`${fid}-6`} value={handNote} placeholder={tx("task_detail.masalan_tatilga_chiqdi")}
+                    <label htmlFor={`${fid}-6`}>{tx("task_detail.sabab_ixtiyoriy", undefined, "Sabab (ixtiyoriy)")}</label>
+                    <input id={`${fid}-6`} value={handNote} placeholder={tx("task_detail.masalan_tatilga_chiqdi", undefined, "Masalan: ta'tilga chiqdi...")}
                            onChange={(e) => setHandNote(e.target.value)} />
                   </div>
                   <button className="btn btn-primary btn-block" disabled={busy || !handTo}>
-                    {tx("task_detail.otkazish")}
+                    {tx("task_detail.otkazish", undefined, "O'tkazish")}
                   </button>
                   <small className="muted">
-                    {tx("task_detail.ish_bitta_odamga_otadi_oldingi")}
+                    {tx("task_detail.ish_bitta_odamga_otadi_oldingi", undefined, "Ish bitta odamga o'tadi, oldingisi xabar oladi.")}
                   </small>
                 </form>
               </AccordionSection>
@@ -1156,8 +1263,8 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
               <AccordionSection
                 id="section-mismatch"
                 icon="⚠️"
-                title={tx("task_detail.diqqat")}
-                statusText="Nomutanosiblik"
+                title={tx("task_detail.diqqat", undefined, "Diqqat")}
+                statusText={tx("task_detail.nomutanosiblik", undefined, "Nomutanosiblik")}
                 isOpen={openRight === "mismatch"}
                 onToggle={() => toggleRight("mismatch")}
               >
@@ -1174,7 +1281,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                 icon="📑"
                 title={tx("task_detail.tekshiruvlar_tarixi")}
                 badge={<span className="badge">{task.reviews.length}</span>}
-                statusText={`${task.reviews.length} ta sharh`}
+                statusText={tx("task_detail.ta_sharh", { count: task.reviews.length })}
                 isOpen={openRight === "reviews_history"}
                 onToggle={() => toggleRight("reviews_history")}
               >
@@ -1397,7 +1504,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                   className="btn btn-sm btn-primary"
                   disabled={busy || !stTitle.trim()}
                 >
-                  {busy ? "Saqlanmoqda..." : tx("common.saqlash")}
+                  {busy ? tx("common.saqlanmoqda") : tx("common.saqlash")}
                 </button>
               ) : (
                 <button
@@ -1406,7 +1513,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                   className="btn btn-sm btn-primary"
                   disabled={busy || !selectedSubtaskId}
                 >
-                  {busy ? "Biriktirilmoqda..." : tx("task_detail.biriktirish")}
+                  {busy ? tx("task_detail.biriktirilmoqda") : tx("task_detail.biriktirish")}
                 </button>
               )}
             </div>
@@ -1511,6 +1618,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
             <strong>{task.title}</strong>
           </>
         }
+        actions={taskActions}
       />
 
       <div className="content">

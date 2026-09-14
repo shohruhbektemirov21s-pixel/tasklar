@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import type { Access, Task, UserBrief } from "@/api/types";
 import { confirmDialog } from "./Confirm";
 import { IconClose, IconDownload, IconEye, IconEyeOff, IconFile, IconZoomIn, IconZoomOut } from "./icons";
+import { lockScroll, unlockScroll } from "./scrollLock";
 // Sana funksiyalari endi o'z modulida - `TaskCard` va `TaskRow` muddatni
 // shu yerdan oladi (pastda ular qayta ham eksport qilinadi).
 import { fmtDateTime } from "./dates";
@@ -205,11 +206,10 @@ export function PhotoView({
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
   }, [onClose]);
 

@@ -247,6 +247,8 @@ export interface Task {
   project: number;
   project_name: string;
   project_key: string;
+  order?: number | null;
+  order_request_no?: string | null;
   number: number;
   code: string;
   title: string;

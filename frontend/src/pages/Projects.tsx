@@ -8,7 +8,7 @@ import { PageHead } from "@/components/Layout";
 import { IconCalendar, IconPlus } from "@/components/icons";
 import { DUE_PERIODS, DateField, Empty, ErrorMsg, Loading, Pager, Progress, RowMenu, fmtDate } from "@/components/ui";
 import { completeProject, deleteProject } from "@/api/projects";
-import { toNewProject, toProject, toProjectEdit, toTask, useGo } from "@/nav";
+import { toBulkTasks, toNewProject, toNewTask, toProject, toProjectEdit, toTask, useGo } from "@/nav";
 import { tx } from "@/i18n";
 
 /**
@@ -434,8 +434,17 @@ function MyProjectTasks() {
   return (
     <>
       <PageHead
-        title={<strong>{tx("projects.vazifalarim")}</strong>}
-        actions={!!total && <span className="badge">{total} {tx("projects.ta_vazifa")}</span>}
+        title={<strong>{tx("projects.vazifalarim", undefined, "Vazifalarim")}</strong>}
+        actions={
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {!!total && <span className="badge">{total} {tx("projects.ta_vazifa", undefined, "ta vazifa")}</span>}
+            {groups && groups.length > 0 && (
+              <Link className="btn btn-sm btn-primary" {...toNewTask(groups[0][0])}>
+                + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+              </Link>
+            )}
+          </div>
+        }
       />
       {/* Filtr qatori «Vazifalar» sahifasidagi bilan bir xil: qidiruv
           chapda, tanlovlar o'ngda. Shu sabab `wl` sinfi ham shu yerda -
@@ -520,7 +529,12 @@ function MyProjectTasks() {
                   <span key={status} className={`badge st-${status}`}>{c.n} {c.label}</span>
                 ))}
                 <span className="spacer" />
-                <Link className="btn btn-sm" {...toProject(id)}>{tx("projects.loyihaga_kirish")}</Link>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Link className="btn btn-sm btn-primary" {...toNewTask(id)}>
+                    + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+                  </Link>
+                  <Link className="btn btn-sm" {...toProject(id)}>{tx("projects.loyihaga_kirish", undefined, "Loyihaga kirish")}</Link>
+                </div>
               </div>
               <div className="card-body wl-tasks">
                 {g.shown.map((t) => (

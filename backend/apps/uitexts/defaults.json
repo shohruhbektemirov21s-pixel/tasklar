@@ -4739,6 +4739,86 @@
   "value": "Yozuv yoq.",
   "note": "pages/TaskDetail.tsx"
  },
+ "task_detail.loyiha": {
+  "value": "Loyiha",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.vazifa_kodi": {
+  "value": "Vazifa kodi",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.vazifa_turi": {
+  "value": "Vazifa turi",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.mutaxassislik": {
+  "value": "Mutaxassislik",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.baholangan_vaqt": {
+  "value": "Baholangan vaqt",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.sarflangan_vaqt": {
+  "value": "Sarflangan vaqt",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.soat": {
+  "value": "soat",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.haqiqiy_boshlangan": {
+  "value": "Haqiqiy boshlangan",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.topshirilgan": {
+  "value": "Topshirilgan",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.oxirgi_ozgarish": {
+  "value": "Oxirgi o'zgarish",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.git_filiali": {
+  "value": "Git filiali",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.pr_havolasi": {
+  "value": "Pull Request",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.buyurtma_tz": {
+  "value": "Buyurtma (TZ)",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.yorliqlar": {
+  "value": "Yorliqlar",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.ijrochi_belgilanmagan": {
+  "value": "Ijrochi belgilanmagan",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.ijrochini_almashtirish": {
+  "value": "Ijrochini almashtirish",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.nomutanosiblik": {
+  "value": "Nomutanosiblik",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.biriktirilmoqda": {
+  "value": "Biriktirilmoqda...",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.ta_sharh": {
+  "value": "{count} ta sharh",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.ota_vazifa": {
+  "value": "Ota vazifa",
+  "note": "pages/TaskDetail.tsx"
+ },
  "task_drawer.muddat_qoyilmagan": {
   "value": "Muddat qo'yilmagan",
   "note": "components/TaskDrawer.tsx"
@@ -6070,5 +6150,9 @@
  "task_modal.loyiha": {
   "value": "Loyiha",
   "note": "components/TaskModal.tsx"
+ },
+ "layout.tepaga_qaytish": {
+  "value": "Yuqoriga qaytish",
+  "note": "components/Layout.tsx"
  }
 }

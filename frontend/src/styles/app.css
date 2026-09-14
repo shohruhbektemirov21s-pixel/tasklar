@@ -180,7 +180,11 @@
 }
 
 * { box-sizing: border-box; }
-html { background: var(--canvas); scroll-behavior: smooth; }
+html {
+  background: var(--canvas);
+  scroll-behavior: smooth;
+  overflow-x: clip;
+}
 html, body, #root { margin: 0; padding: 0; min-height: 100%; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
@@ -384,14 +388,46 @@ html, body { transition: background-color .18s ease, color .18s ease; }
 }
 
 /* ============ LAYOUT ============ */
-.layout { display: flex; min-height: 100dvh; align-items: flex-start; }
+.layout { display: flex; min-height: 100dvh; align-items: stretch; position: relative; }
+.scroll-top-float {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 70;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-backdrop-filter: var(--glass-blur, blur(10px));
+  backdrop-filter: var(--glass-blur, blur(10px));
+}
+.scroll-top-float:hover {
+  background: var(--surface-3);
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: var(--sh-raised-hover);
+}
+.scroll-top-float:active {
+  transform: translateY(0);
+}
 .sidebar {
   width: var(--sidebar-w); flex: 0 0 var(--sidebar-w);
   background: var(--surface);
   -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
-  border-right: 1px solid var(--border); position: sticky; top: 0;
-  height: 100dvh; overflow-y: auto;
+  border-right: 1px solid var(--border);
+  position: fixed; top: 0; left: 0; bottom: 0;
+  height: 100dvh; overflow-y: auto; overflow-x: hidden;
   display: flex; flex-direction: column; padding: 18px 12px 14px;
+  z-index: 50;
 }
 .nav-section { padding: 6px 0; }
 .nav-section + .nav-section { border-top: 1px solid var(--border-muted); margin-top: 8px; padding-top: 12px; }
@@ -456,7 +492,11 @@ html, body { transition: background-color .18s ease, color .18s ease; }
   color: var(--danger); transform: none; box-shadow: none;
 }
 
-.main { flex: 1; min-width: 0; }
+.main {
+  flex: 1; min-width: 0;
+  margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
+}
 .content { padding: 24px 32px 64px; width: 100%; }
 
 /* Sahifa sarlavhasi: dizaynda u tuval ustida turadi va tagida chiziq yo'q -
@@ -2201,6 +2241,7 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 @media (max-width: 900px) {
   .menu-btn { display: grid; }
   .scrim { display: block; }
+  .main { margin-left: 0; width: 100%; }
   /* Tortma endi butun balandlikni egallaydi: logotip ham uning ichida
      (sarlavha yon panelning o'ng tomonida, `.main` ustunida turadi). */
   .sidebar {

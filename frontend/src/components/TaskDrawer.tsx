@@ -19,10 +19,12 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Task } from "@/api/types";
+import { useAuth } from "@/auth/AuthContext";
 import { fmtDate } from "@/components/dates";
 import { Avatar, Priority, StatusBadge } from "@/components/ui";
-import { toProject, toTask } from "@/nav";
+import { toProject, toTask, toTaskEdit } from "@/nav";
 import { tx } from "@/i18n";
+import { lockScroll, unlockScroll } from "./scrollLock";
 
 const TaskDetailModal = lazy(() => import("@/pages/TaskDetail"));
 
@@ -36,8 +38,20 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 export default function TaskDrawer({ task, onClose }: { task: Task | null; onClose: () => void }) {
+  const { user } = useAuth();
   const closeBtn = useRef<HTMLButtonElement>(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  const isAssignee = task ? task.assignees.some((a) => a.id === user?.id) : false;
+  const isCreator = task ? task.created_by?.id === user?.id : false;
+  const canEdit = Boolean(
+    task?.access?.can_manage ||
+    task?.access?.is_member ||
+    isAssignee ||
+    isCreator ||
+    user?.is_boss ||
+    user?.is_platform_admin
+  );
 
   useEffect(() => {
     if (!task) return;
@@ -56,11 +70,10 @@ export default function TaskDrawer({ task, onClose }: { task: Task | null; onClo
     if (!overlay) return () => document.removeEventListener("keydown", onKey);
 
     closeBtn.current?.focus();
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
   }, [task, onClose]);
 
@@ -140,11 +153,16 @@ export default function TaskDrawer({ task, onClose }: { task: Task | null; onClo
         </div>
 
         <div className="drawer-foot">
-          <button type="button" className="btn btn-primary" onClick={() => setModalOpen(true)}>
-            {tx("task_drawer.toliq_ochish")}
+          {canEdit && (
+            <Link className="btn btn-primary" {...toTaskEdit(task.id)} onClick={onClose}>
+              {tx("common.tahrirlash", undefined, "Tahrirlash")}
+            </Link>
+          )}
+          <button type="button" className="btn" onClick={() => setModalOpen(true)}>
+            {tx("task_drawer.toliq_ochish", undefined, "Batafsil")}
           </button>
           <button ref={closeBtn} type="button" className="btn" onClick={onClose}>
-            {tx("common.yopish")}
+            {tx("common.yopish", undefined, "Yopish")}
           </button>
         </div>
       </aside>

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import * as docx from "docx-preview";
 import { IconClose, IconDownload, IconFile } from "./icons";
 import { Loading } from "./ui";
+import { lockScroll, unlockScroll } from "./scrollLock";
 
 export interface PreviewFile {
   url: string;
@@ -24,11 +25,15 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
 
   useEffect(() => {
     if (!file) return;
+    lockScroll();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      unlockScroll();
+    };
   }, [file, onClose]);
 
   const ext = file ? file.name.split(".").pop()?.toLowerCase() || "" : "";

@@ -297,6 +297,12 @@ export const IconChevron = ({ size = 16 }: P) => (
   </svg>
 );
 
+export const IconArrowUp = ({ size = 16, className }: P) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </svg>
+);
+
 /** Tashqi havola (External link) */
 export const IconExternalLink = ({ size = 16 }: P) => (
   <svg {...base(size)}>
