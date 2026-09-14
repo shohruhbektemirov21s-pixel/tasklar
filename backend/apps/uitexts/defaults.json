@@ -6095,6 +6095,22 @@
   "value": "Holat",
   "note": "pages/Projects.tsx"
  },
+ "projects.holat_active": {
+  "value": "Faol",
+  "note": "pages/Projects.tsx"
+ },
+ "projects.holat_done": {
+  "value": "Yakunlangan",
+  "note": "pages/Projects.tsx"
+ },
+ "projects.holat_paused": {
+  "value": "To'xtatilgan",
+  "note": "pages/Projects.tsx"
+ },
+ "projects.holat_planning": {
+  "value": "Rejalashtirilgan",
+  "note": "pages/Projects.tsx"
+ },
  "project_detail.loyihani_yakunlash": {
   "value": "Loyihani yakunlash",
   "note": "pages/ProjectDetail.tsx"
