@@ -5299,6 +5299,14 @@
   "value": "Keyingi sahifa",
   "note": "components/ui.tsx"
  },
+ "ui.kattalashtirish": {
+  "value": "Kattalashtirish",
+  "note": "components/ui.tsx"
+ },
+ "ui.kichraytirish": {
+  "value": "Kichraytirish",
+  "note": "components/ui.tsx"
+ },
  "ui.kk_oo_yyyy_soat_daq": {
   "value": "kk.oo.yyyy soat:daq",
   "note": "components/ui.tsx"

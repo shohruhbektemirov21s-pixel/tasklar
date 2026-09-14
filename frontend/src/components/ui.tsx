@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import type { Access, Task, UserBrief } from "@/api/types";
 import { confirmDialog } from "./Confirm";
-import { IconEye, IconEyeOff, IconFile } from "./icons";
+import { IconClose, IconDownload, IconEye, IconEyeOff, IconFile, IconZoomIn, IconZoomOut } from "./icons";
 // Sana funksiyalari endi o'z modulida - `TaskCard` va `TaskRow` muddatni
 // shu yerdan oladi (pastda ular qayta ham eksport qilinadi).
 import { fmtDateTime } from "./dates";
@@ -170,25 +170,40 @@ export function Avatar({
 }
 
 /**
- * Rasmni to'liq holda ko'rsatuvchi oyna.
+ * Rasmni to'liq holda ko'rsatuvchi oyna (Telegram uslubida).
  *
- * Odam profilga kirgach rasmni ko'rmoqchi bo'lsa **bitta bosish yetadi** -
- * alohida sahifaga o'tish yoki yuklab olish shart emas. Esc yoki fon bosilsa
- * yopiladi; ochiq turganda sahifa orqada siljib ketmaydi.
+ * Telegram Desktop / Web kabi:
+ * - Butun ekranni egallaydi va body ga portal orqali ulanadi;
+ * - Qorong'i xira fon, markazda tabiiy o'lchamdagi rasm;
+ * - Tepada kichik avatar, ism, lavozim va boshqaruv (zoom, yuklab olish, yopish);
+ * - Bosish yoki g'ildirak orqali kattalashtirish (zoom);
+ * - Esc yoki bo'sh joyga bosganda silliq yopiladi.
  */
 export function PhotoView({
-  src, alt, title, subtitle, onClose,
+  src,
+  alt,
+  title,
+  subtitle,
+  user,
+  onClose,
 }: {
   src: string;
   alt?: string;
-  /** Pastda chapda: nima ochilgani ("Profil rasmi") */
+  /** Sarlavha (masalan: "Profil rasmi") */
   title?: string;
-  /** Uning ostida: kimniki */
+  /** Kimniki (masalan to'liq ism) */
   subtitle?: string;
+  /** Foydalanuvchi ma'lumoti (agar profil rasmi bo'lsa) */
+  user?: UserBrief | null;
   onClose: () => void;
 }) {
+  const [scale, setScale] = useState(1);
+  const isZoomed = scale > 1;
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -198,23 +213,104 @@ export function PhotoView({
     };
   }, [onClose]);
 
-  return (
-    <div className="photo-view" onClick={onClose} role="dialog" aria-modal="true"
-         aria-label={alt || tx("ui.rasm")}>
-      <div className="photo-bar" onClick={(e) => e.stopPropagation()}>
-        <div className="photo-meta">
-          {title && <strong>{title}</strong>}
-          {subtitle && <span>{subtitle}</span>}
+  const toggleZoom = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setScale((s) => (s > 1 ? 1 : 1.8));
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.stopPropagation();
+    if (e.deltaY < 0) {
+      setScale((s) => Math.min(s + 0.25, 3));
+    } else {
+      setScale((s) => Math.max(s - 0.25, 1));
+    }
+  };
+
+  const displayName = user?.full_name || subtitle || title || tx("ui.profil_rasmi");
+  const displaySub = user?.job_title
+    ? (user?.department_name ? `${user.job_title} • ${user.department_name}` : user.job_title)
+    : (title || tx("ui.profil_rasmi"));
+
+  return createPortal(
+    <div
+      className="tg-photo-viewer"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={alt || tx("ui.rasm")}
+    >
+      {/* Telegram yuqori boshqaruv paneli */}
+      <div className="tg-photo-bar" onClick={(e) => e.stopPropagation()}>
+        <div className="tg-photo-user">
+          {user ? (
+            <Avatar user={user} size="sm" showHoverCard={false} />
+          ) : (
+            <img src={src} alt="" className="tg-photo-user-mini" />
+          )}
+          <div className="tg-photo-user-info">
+            <strong className="tg-photo-user-name">{displayName}</strong>
+            <span className="tg-photo-user-sub">{displaySub}</span>
+          </div>
         </div>
-        <span className="spacer" />
-        <a className="photo-btn" href={src} download target="_blank" rel="noreferrer"
-           title={tx("ui.yuklab_olish")} aria-label={tx("ui.yuklab_olish")}>↓</a>
-        <button className="photo-btn" type="button" onClick={onClose}
-                title={tx("ui.yopish_esc")} aria-label={tx("common.yopish")}>×</button>
+
+        <div className="tg-photo-actions">
+          <button
+            type="button"
+            className="tg-photo-btn"
+            onClick={toggleZoom}
+            title={isZoomed ? tx("ui.kichraytirish") : tx("ui.kattalashtirish")}
+            aria-label={isZoomed ? tx("ui.kichraytirish") : tx("ui.kattalashtirish")}
+          >
+            {isZoomed ? <IconZoomOut size={18} /> : <IconZoomIn size={18} />}
+          </button>
+          <a
+            className="tg-photo-btn"
+            href={src}
+            download
+            target="_blank"
+            rel="noreferrer"
+            title={tx("ui.yuklab_olish")}
+            aria-label={tx("ui.yuklab_olish")}
+          >
+            <IconDownload size={18} />
+          </a>
+          <button
+            type="button"
+            className="tg-photo-btn"
+            onClick={onClose}
+            title={tx("ui.yopish_esc")}
+            aria-label={tx("common.yopish")}
+          >
+            <IconClose size={20} />
+          </button>
+        </div>
       </div>
-      {/* Rasmning o'ziga bosilganda yopilmasin - odam kattalashtirib qarayotgan bo'lishi mumkin */}
-      <img src={src} alt={alt || ""} onClick={(e) => e.stopPropagation()} />
-    </div>
+
+      {/* Markaziy rasm sahnasi */}
+      <div
+        className="tg-photo-stage"
+        onClick={onClose}
+        onWheel={handleWheel}
+      >
+        <div
+          className={`tg-photo-wrap ${isZoomed ? "is-zoomed" : ""}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <img
+            src={src}
+            alt={alt || ""}
+            className="tg-photo-img"
+            style={{
+              transform: `scale(${scale})`,
+            }}
+            onClick={toggleZoom}
+            title={isZoomed ? tx("ui.kichraytirish") : tx("ui.kattalashtirish")}
+          />
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -224,14 +320,23 @@ export function AvatarViewable({ user, size = "" }: { user?: UserBrief | null; s
   if (!user?.avatar) return <Avatar user={user} size={size} showHoverCard={false} />;
   return (
     <>
-      <button type="button" className="avatar-btn" onClick={() => setOpen(true)}
-              title={tx("ui.rasmni_toliq_korish")}>
+      <button
+        type="button"
+        className="avatar-btn"
+        onClick={() => setOpen(true)}
+        title={tx("ui.rasmni_toliq_korish")}
+      >
         <Avatar user={user} size={size} showHoverCard={false} />
       </button>
       {open && (
-        <PhotoView src={user.avatar} alt={user.full_name}
-                   title={tx("ui.profil_rasmi")} subtitle={user.full_name}
-                   onClose={() => setOpen(false)} />
+        <PhotoView
+          src={user.avatar}
+          alt={user.full_name}
+          title={tx("ui.profil_rasmi")}
+          subtitle={user.full_name}
+          user={user}
+          onClose={() => setOpen(false)}
+        />
       )}
     </>
   );
