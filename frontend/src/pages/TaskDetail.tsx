@@ -437,6 +437,21 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
     });
   }
 
+  const taskActions = (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+      {canEdit && (
+        <Link className="btn btn-sm" {...toTaskEdit(task.id)} onClick={isModal ? onClose : undefined}>
+          {tx("common.tahrirlash")}
+        </Link>
+      )}
+      {acc.can_manage && (
+        <button className="btn btn-sm btn-danger" onClick={() => void handleDelete()}>
+          {tx("common.ochirish_2")}
+        </button>
+      )}
+    </div>
+  );
+
   const bodyContent = (
     <>
       <ErrorMsg error={error} />
@@ -450,42 +465,53 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
           </div>
         )}
 
-        <div className="row wrap mb">
-          <StatusBadge task={task} />
-          <Priority task={task} />
-          <span className="badge">{task.type_display}</span>
-          {task.specialty_label && <span className="badge badge-brand">{task.specialty_label}</span>}
-          {task.start_date && (
-            <span className="badge">{tx("task_detail.boshlanish")} {fmtDateTime(task.start_date)}</span>
-          )}
-          {task.due_date && !editDue && (
-            <span className={`badge ${task.is_overdue ? "badge-danger" : ""}`}>
-              {tx("task_detail.muddat")} {fmtDateTime(task.due_date)}
-            </span>
-          )}
-          {/* Muddatni shu yerning o'zida qo'yish - vazifa formasiga o'tmasdan.
-              Soat bilan: "13.08.2026 13:00 gacha tugatilsin". */}
-          {canEdit && (editDue ? (
-            <span className="row" style={{ gap: 6 }}>
-              <DateTimeField style={{ width: 210 }} value={due} onChange={setDue} />
-              <button className="btn btn-sm btn-primary" onClick={() => void run(async () => {
-                await api.patch(`/tasks/${task.id}/`, { due_date: fromDateTimeInput(due) });
-                setEditDue(false);
-              })}>{tx("common.saqlash")}</button>
-              <button className="btn btn-sm" onClick={() => setEditDue(false)}>{tx("task_detail.bekor")}</button>
-            </span>
-          ) : (
-            <button className="btn btn-sm" onClick={() => {
-              setDue(toDateTimeInput(task.due_date));
-              setEditDue(true);
-            }}>
-              {task.due_date ? tx("task_detail.muddatni_ozgartirish") : tx("task_detail.muddat_qoyish")}
-            </button>
-          ))}
-          {task.review_round > 0 && (
-            <span className="badge badge-info">{task.review_round}{tx("task_detail.tekshiruv_aylanasi")}</span>
-          )}
-          {!!attachments.length && <span className="badge">{attachments.length} {tx("task_detail.fayl")}</span>}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 10,
+          marginBottom: 16,
+        }}>
+          <div className="row wrap" style={{ alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+            <StatusBadge task={task} />
+            <Priority task={task} />
+            <span className="badge">{task.type_display}</span>
+            {task.specialty_label && <span className="badge badge-brand">{task.specialty_label}</span>}
+            {task.start_date && (
+              <span className="badge">{tx("task_detail.boshlanish")} {fmtDateTime(task.start_date)}</span>
+            )}
+            {task.due_date && !editDue && (
+              <span className={`badge ${task.is_overdue ? "badge-danger" : ""}`}>
+                {tx("task_detail.muddat")} {fmtDateTime(task.due_date)}
+              </span>
+            )}
+            {/* Muddatni shu yerning o'zida qo'yish - vazifa formasiga o'tmasdan.
+                Soat bilan: "13.08.2026 13:00 gacha tugatilsin". */}
+            {canEdit && (editDue ? (
+              <span className="row" style={{ gap: 6 }}>
+                <DateTimeField style={{ width: 210 }} value={due} onChange={setDue} />
+                <button className="btn btn-sm btn-primary" onClick={() => void run(async () => {
+                  await api.patch(`/tasks/${task.id}/`, { due_date: fromDateTimeInput(due) });
+                  setEditDue(false);
+                })}>{tx("common.saqlash")}</button>
+                <button className="btn btn-sm" onClick={() => setEditDue(false)}>{tx("task_detail.bekor")}</button>
+              </span>
+            ) : (
+              <button className="btn btn-sm" onClick={() => {
+                setDue(toDateTimeInput(task.due_date));
+                setEditDue(true);
+              }}>
+                {task.due_date ? tx("task_detail.muddatni_ozgartirish") : tx("task_detail.muddat_qoyish")}
+              </button>
+            ))}
+            {task.review_round > 0 && (
+              <span className="badge badge-info">{task.review_round}{tx("task_detail.tekshiruv_aylanasi")}</span>
+            )}
+            {!!attachments.length && <span className="badge">{attachments.length} {tx("task_detail.fayl")}</span>}
+          </div>
+
+          {!isModal && taskActions}
         </div>
 
         {task.status === "CHANGES_REQUESTED" && task.reviews?.[0] && (
@@ -1452,12 +1478,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
               </strong>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-              {canEdit && (
-                <Link className="btn btn-sm" {...toTaskEdit(task.id)} onClick={onClose}>{tx("common.tahrirlash")}</Link>
-              )}
-              {acc.can_manage && (
-                <button className="btn btn-sm btn-danger" onClick={() => void handleDelete()}>{tx("common.ochirish_2")}</button>
-              )}
+              {taskActions}
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
@@ -1488,16 +1509,6 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
             <Link className="muted" {...toProject(task.project)}>{task.project_name}</Link>
             <span className="muted"> / </span>
             <strong>{task.title}</strong>
-          </>
-        }
-        actions={
-          <>
-            {canEdit && (
-              <Link className="btn btn-sm" {...toTaskEdit(task.id)}>{tx("common.tahrirlash")}</Link>
-            )}
-            {acc.can_manage && (
-              <button className="btn btn-sm btn-danger" onClick={() => void handleDelete()}>{tx("common.ochirish_2")}</button>
-            )}
           </>
         }
       />
