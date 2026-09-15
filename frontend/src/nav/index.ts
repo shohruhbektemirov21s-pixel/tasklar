@@ -316,3 +316,5 @@ export function useNavParams(): [
 export function useIsPath(path: string): boolean {
   return useLocation().pathname === path;
 }
+
+export * from "./history";

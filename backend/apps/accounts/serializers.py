@@ -147,9 +147,10 @@ class UserAdminSerializer(UserSerializer):
     can_access_inquiries = serializers.BooleanField(required=False)
     project_count = serializers.IntegerField(read_only=True)
     open_tasks = serializers.IntegerField(read_only=True)
+    done_tasks = serializers.IntegerField(read_only=True)
 
     class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + ["project_count", "open_tasks"]
+        fields = UserSerializer.Meta.fields + ["project_count", "open_tasks", "done_tasks"]
         read_only_fields = ["email", "date_joined"]
 
 
@@ -170,11 +171,12 @@ class UserListSerializer(UserBriefSerializer):
                                                 read_only=True)
     project_count = serializers.IntegerField(read_only=True)
     open_tasks = serializers.IntegerField(read_only=True)
+    done_tasks = serializers.IntegerField(read_only=True)
 
     class Meta(UserBriefSerializer.Meta):
         fields = UserBriefSerializer.Meta.fields + [
             "global_role", "global_role_display", "years_experience",
-            "is_active", "date_joined", "project_count", "open_tasks",
+            "is_active", "date_joined", "project_count", "open_tasks", "done_tasks",
         ]
 
 

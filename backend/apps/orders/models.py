@@ -182,6 +182,15 @@ class ChangeRequest(models.Model):
     completed_at = models.DateTimeField("Tugatishga topshirilgan sana", null=True, blank=True)
 
     client_feedback_note = models.TextField("Boshqarma fikri / qaytarishdagi xatolik izohi", blank=True, default="")
+    client_feedback_file = models.FileField(
+        "Kamchilik / Tuzatish TZ hujjati",
+        upload_to="orders/feedback/",
+        null=True,
+        blank=True,
+        help_text="Boshqarma tomonidan qaytarishda ilova qilingan kamchiliklar yoki yangilangan TZ hujjati",
+    )
+    client_feedback_file_name = models.CharField("Kamchilik fayli nomi", max_length=255, blank=True, default="")
+    client_feedback_file_size = models.PositiveBigIntegerField("Kamchilik fayl hajmi", default=0)
     client_approved_at = models.DateTimeField("Boshqarma tasdiqlagan sana", null=True, blank=True)
     client_approved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -217,6 +226,15 @@ class ChangeRequest(models.Model):
     @property
     def completion_file_size_display(self):
         size = float(self.completion_file_size or 0)
+        for unit in ("B", "KB", "MB", "GB"):
+            if size < 1024 or unit == "GB":
+                return "{:.0f} {}".format(size, unit) if unit == "B" else "{:.1f} {}".format(size, unit)
+            size /= 1024
+        return "{:.1f} GB".format(size)
+
+    @property
+    def client_feedback_file_size_display(self):
+        size = float(self.client_feedback_file_size or 0)
         for unit in ("B", "KB", "MB", "GB"):
             if size < 1024 or unit == "GB":
                 return "{:.0f} {}".format(size, unit) if unit == "B" else "{:.1f} {}".format(size, unit)

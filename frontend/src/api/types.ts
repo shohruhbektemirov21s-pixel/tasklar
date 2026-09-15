@@ -72,6 +72,7 @@ export interface User extends UserBrief {
   manages_projects?: boolean;
   project_count?: number;
   open_tasks?: number;
+  done_tasks?: number;
 }
 
 export interface Access {
@@ -1078,6 +1079,11 @@ export interface ChangeRequestItem {
   completion_note?: string;
   completed_at?: string | null;
   client_feedback_note?: string;
+  client_feedback_file?: string | null;
+  client_feedback_file_url?: string | null;
+  client_feedback_file_name?: string;
+  client_feedback_file_size?: number;
+  client_feedback_file_size_display?: string;
   client_approved_at?: string | null;
   client_approved_by?: number | null;
   client_approved_by_name?: string;

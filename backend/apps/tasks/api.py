@@ -136,6 +136,7 @@ class TaskViewSet(viewsets.ModelViewSet):
                                reviewer_id=reviewer_id)
         if label_ids:
             task.labels.set(Label.objects.filter(project=project, id__in=label_ids))
+
         _, _, skipped = sync_assignees(task, assignee_ids, request.user)
 
         log(actor=request.user, verb="task.created", task=task,
@@ -463,11 +464,19 @@ class TaskViewSet(viewsets.ModelViewSet):
         user_id = int_param(request.data.get("user_id"), "user_id")
         note = (request.data.get("note") or "").strip()[:250]
 
-        # Faqat loyiha a'zosiga - `sync_assignees` dagi qoida bilan bir xil.
+        # Faqat loyiha a'zosiga - boshqaruvchi (boshliq/admin) bo'lsa yangi ijrochini loyihaga avtomatik a'zo qiladi.
         member = (task.project.memberships.filter(is_active=True, user_id=user_id)
                   .select_related("user").first())
         if member is None:
-            raise ValidationError({"user_id": "Vazifani faqat loyiha a'zosiga otkazish mumkin."})
+            if access.can_manage:
+                from apps.projects.services import add_to_project
+                from apps.projects.models import ProjectRole
+                target_user = User.objects.filter(pk=user_id).first()
+                if not target_user:
+                    raise ValidationError({"user_id": "Foydalanuvchi topilmadi."})
+                member = add_to_project(request.user, task.project, target_user, ProjectRole.DEVELOPER)
+            else:
+                raise ValidationError({"user_id": "Vazifani faqat loyiha a'zosiga otkazish mumkin."})
         target = member.user
 
         active = list(task.assignments.filter(is_active=True).select_related("user"))

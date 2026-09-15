@@ -636,16 +636,25 @@ class OrdersSeniorDevTests(ApiTestCase):
         self.assertEqual(order.completion_file_name, "Bajarilgan_ishlar_dasturi.pdf")
         self.assertTrue(order.completed_at)
 
-        # 2. Boshqarma tekshiradi va kamchilik/xatolik topadi -> Qayta tugatishga yuboradi
+        # 2. Boshqarma tekshiradi va kamchilik/xatolik topadi -> Qayta tugatishga fayl/hujjat bilan yuboradi
+        defect_file = SimpleUploadedFile("Kamchiliklar_royxati.docx", b"Xatoliklar ro'yxati...", content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
         res2 = sohaviy_client.post(
             f"/api/orders/{order.id}/client-reject-completion/",
-            {"feedback_note": "Hisobotning 2-bo'limida ma'lumotlar to'liq emas, qayta ko'rilsin."},
-            format="json",
+            {
+                "feedback_note": "Hisobotning 2-bo'limida ma'lumotlar to'liq emas, ilova qilingan hujjat bo'yicha tuzatilsin.",
+                "feedback_file": defect_file,
+                "is_new_tz": "true",
+            },
+            format="multipart",
         )
         self.assertEqual(res2.status_code, status.HTTP_200_OK, res2.content)
         order.refresh_from_db()
         self.assertEqual(order.status, ChangeRequestStatus.IN_PROGRESS)
-        self.assertEqual(order.client_feedback_note, "Hisobotning 2-bo'limida ma'lumotlar to'liq emas, qayta ko'rilsin.")
+        self.assertEqual(order.client_feedback_note, "Hisobotning 2-bo'limida ma'lumotlar to'liq emas, ilova qilingan hujjat bo'yicha tuzatilsin.")
+        self.assertEqual(order.client_feedback_file_name, "Kamchiliklar_royxati.docx")
+        self.assertTrue(order.client_feedback_file)
+        self.assertGreater(order.client_feedback_file_size, 0)
+        self.assertTrue(order.attachments.filter(original_name="Kamchiliklar_royxati.docx").exists())
 
         # 3. PM kamchilikni tuzatib, yangilangan hisobot bilan yana topshiradi
         res3 = pm_client.post(
@@ -669,6 +678,34 @@ class OrdersSeniorDevTests(ApiTestCase):
         self.assertEqual(order.client_approved_by, self.sohaviy_user)
         self.assertTrue(order.client_approved_at)
         self.assertEqual(order.client_signer, "Sobirov (Moliya)")
+
+    def test_cannot_approve_or_reject_unless_ready_for_review(self):
+        """PM ishni topshirmasdan (READY_FOR_REVIEW bo'lmasdan) tasdiqlab yoki qaytarib bo'lmasligi."""
+        order = ChangeRequest.objects.create(
+            project=self.project,
+            system_name="Smart CRM",
+            department="Moliya",
+            responsible_person="Sobirov",
+            created_by=self.sohaviy_user,
+            status=ChangeRequestStatus.IN_PROGRESS,
+            assigned_pm=self.pm_user,
+        )
+
+        sohaviy_client = APIClient()
+        sohaviy_client.force_authenticate(user=self.sohaviy_user)
+
+        # Hali PM topshirmagan holatda tasdiqlash taqiqlangan
+        app_res = sohaviy_client.post(f"/api/orders/{order.id}/client-approve/", format="json")
+        self.assertEqual(app_res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Boshqarma tasdig'ida", app_res.json().get("detail", ""))
+
+        # Hali PM topshirmagan holatda qaytarish taqiqlangan
+        rej_res = sohaviy_client.post(
+            f"/api/orders/{order.id}/client-reject-completion/",
+            {"feedback_note": "Hali topshirilmagan"},
+            format="json",
+        )
+        self.assertEqual(rej_res.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_draft_order_save_and_send_workflow(self):
         """Buyurtmani yubormasdan qoralama (DRAFT) sifatida saqlash va keyinchalik rasman yuborish."""

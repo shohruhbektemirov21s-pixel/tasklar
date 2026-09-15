@@ -263,10 +263,26 @@ export async function clientApprove(id: number | string): Promise<ChangeRequestI
 /**
  * Boshqarma tomonidan kamchilik / xatolik bilan qaytarish.
  */
-export async function clientReject(id: number | string, feedbackNote: string): Promise<ChangeRequestItem> {
-  return api.post<ChangeRequestItem>(`/orders/${id}/client-reject-completion/`, {
-    feedback_note: feedbackNote.trim(),
-  });
+export async function clientReject(
+  id: number | string,
+  payload: string | { feedback_note?: string; file?: File | null; is_new_tz?: boolean }
+): Promise<ChangeRequestItem> {
+  if (typeof payload === "string") {
+    return api.post<ChangeRequestItem>(`/orders/${id}/client-reject-completion/`, {
+      feedback_note: payload.trim(),
+    });
+  }
+  const formData = new FormData();
+  if (payload.feedback_note) {
+    formData.append("feedback_note", payload.feedback_note.trim());
+  }
+  if (payload.file) {
+    formData.append("feedback_file", payload.file);
+  }
+  if (payload.is_new_tz) {
+    formData.append("is_new_tz", "true");
+  }
+  return api.post<ChangeRequestItem>(`/orders/${id}/client-reject-completion/`, formData);
 }
 
 /**

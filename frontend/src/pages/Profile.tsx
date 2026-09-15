@@ -12,7 +12,7 @@ import {
   StatusBadge, fmtDate,
 } from "@/components/ui";
 import { confirmDialog } from "@/components/Confirm";
-import { toMessages, toProject, toTask, useEntityId, useGo } from "@/nav";
+import { toMessages, toProject, toTask, useEntityId, useGo, useNavParams } from "@/nav";
 import PasswordCard from "@/components/PasswordCard";
 import TelegramCard from "@/components/TelegramCard";
 import { tx } from "@/i18n";
@@ -49,11 +49,10 @@ export default function Profile() {
    * deb yiqilardi: birinchi renderda sahifa hali yuklanmagan va erta
    * `return` bu qatorgacha yetib bormasdi.
    */
-  const [pickedStat, setPickedStat] = useState<string | null>(null);
-  // Vazifalar kartasi o'ntadan sahifalanadi. Sahifa BRAUZERDA almashadi:
-  // ro'yxat profil javobi bilan birga allaqachon kelgan, ya'ni server bilan
-  // yana gaplashishning hojati yo'q va o'tish bir zumda bo'ladi.
-  const [taskPage, setTaskPage] = useState(1);
+  const [params, setParams] = useNavParams();
+  const pickedStat = params.get("stat") || null;
+  // Vazifalar kartasi o'ntadan sahifalanadi.
+  const taskPage = Math.max(1, Number(params.get("tpage")) || 1);
 
   useEffect(() => {
     // Bir profildan boshqasiga tez o'tilsa eski javob kelib qolmasin.
@@ -156,8 +155,28 @@ export default function Profile() {
   const page = Math.min(taskPage, taskPages);
   const pageTasks = tasks.slice((page - 1) * TASKS_PER_PAGE, page * TASKS_PER_PAGE);
   const pickStat = (key: string) => {
-    setTaskPage(1);
-    setPickedStat((v) => (v === key ? null : key));
+    const next = new URLSearchParams(params);
+    if (pickedStat === key) {
+      next.delete("stat");
+    } else {
+      next.set("stat", key);
+    }
+    next.delete("tpage");
+    setParams(next, { replace: true });
+  };
+
+  const setTaskPage = (p: number) => {
+    const next = new URLSearchParams(params);
+    if (p > 1) next.set("tpage", String(p));
+    else next.delete("tpage");
+    setParams(next, { replace: true });
+  };
+
+  const clearStat = () => {
+    const next = new URLSearchParams(params);
+    next.delete("stat");
+    next.delete("tpage");
+    setParams(next, { replace: true });
   };
 
   return (
@@ -302,7 +321,7 @@ export default function Profile() {
                   badge={<span className="badge">{tasks.length}</span>}
                   action={pickedStat && (
                     <button type="button" className="btn btn-sm"
-                            onClick={() => { setTaskPage(1); setPickedStat(null); }}>
+                            onClick={clearStat}>
                       {tx("common.filtrni_tozalash")}
                     </button>
                   )}>

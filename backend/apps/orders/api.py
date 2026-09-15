@@ -743,6 +743,11 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         user = request.user
         order = self.get_object()
 
+        if order.status != ChangeRequestStatus.READY_FOR_REVIEW:
+            raise ValidationError(
+                {"detail": "Faqat loyiha menejeri topshirgan va «Boshqarma tasdig'ida» bo'lgan buyurtmani tasdiqlab yopish mumkin."}
+            )
+
         can_approve = bool(
             getattr(user, "is_sohaviy_boshqarma", False)
             or user.is_platform_admin
@@ -779,6 +784,11 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         user = request.user
         order = self.get_object()
 
+        if order.status != ChangeRequestStatus.READY_FOR_REVIEW:
+            raise ValidationError(
+                {"detail": "Faqat «Boshqarma tasdig'ida» bo'lgan buyurtmani kamchilik bilan qaytarish mumkin."}
+            )
+
         can_reject = bool(
             getattr(user, "is_sohaviy_boshqarma", False)
             or user.is_platform_admin
@@ -792,16 +802,67 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             )
 
         feedback_note = (request.data.get("feedback_note") or "").strip()
-        if not feedback_note:
-            raise ValidationError({"feedback_note": "Qaytarish sababi yoki aniqlangan kamchilik/xatolikni yozing."})
+        feedback_file = request.FILES.get("feedback_file") or request.FILES.get("tz_file") or request.FILES.get("file")
+
+        if not feedback_note and not feedback_file:
+            raise ValidationError({"feedback_note": "Kamchilik yoki xatolik haqida izoh yozing yoki yangilangan TZ/kamchilik faylini yuklang."})
+
+        if feedback_file:
+            from apps.core.uploads import check_upload
+            check_upload(feedback_file)
+
+        is_new_tz = str(request.data.get("is_new_tz", "")).lower() in ("true", "1", "yes")
 
         with transaction.atomic():
             order.status = ChangeRequestStatus.IN_PROGRESS
-            order.client_feedback_note = feedback_note
+            order.client_feedback_note = feedback_note or "Kamchiliklar aniqlandi, ilova qilingan TZ/fayl asosida qayta tuzatilsin."
+            if feedback_file:
+                order.client_feedback_file = feedback_file
+                order.client_feedback_file_name = getattr(feedback_file, "name", "")[:255]
+                order.client_feedback_file_size = getattr(feedback_file, "size", 0)
+
+                OrderAttachment.objects.create(
+                    order=order,
+                    file=feedback_file,
+                    original_name=getattr(feedback_file, "name", "")[:255],
+                    size=getattr(feedback_file, "size", 0),
+                    uploaded_by=user,
+                )
+
+                if is_new_tz:
+                    last_ver = ChangeRequestVersion.objects.filter(order=order).order_by("-version").values_list("version", flat=True).first()
+                    if last_ver is None:
+                        if order.tz_file:
+                            ChangeRequestVersion.objects.create(
+                                order=order,
+                                version=1,
+                                tz_file=order.tz_file,
+                                tz_file_name=order.tz_file_name or "Dastlabki_TZ.pdf",
+                                tz_file_size=order.tz_file_size or 0,
+                                change_note="Dastlabki tasdiqlangan TZ (v1)",
+                                status=order.status if order.status != ChangeRequestStatus.NEW else ChangeRequestStatus.ACCEPTED,
+                                uploaded_by=order.created_by,
+                            )
+                            next_ver = 2
+                        else:
+                            next_ver = 1
+                    else:
+                        next_ver = last_ver + 1
+
+                    ChangeRequestVersion.objects.create(
+                        order=order,
+                        version=next_ver,
+                        tz_file=feedback_file,
+                        tz_file_name=getattr(feedback_file, "name", "")[:255],
+                        tz_file_size=getattr(feedback_file, "size", 0),
+                        change_note=f"Qaytarilgan buyurtma bo'yicha yangi TZ: {feedback_note[:200]}",
+                        status=ChangeRequestStatus.NEW,
+                        uploaded_by=user,
+                    )
             order.save()
 
         try:
-            notify_order_completion_rejected(order, user, feedback_note)
+            notify_order_completion_rejected(order, user, order.client_feedback_note)
         except Exception:
             logger.exception("Qaytarish bildirishnomasini yuborishda xatolik: %s", order.pk)
 

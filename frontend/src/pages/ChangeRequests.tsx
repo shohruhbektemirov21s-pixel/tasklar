@@ -649,6 +649,8 @@ export default function ChangeRequests() {
   // Boshqarma kamchilik/xatolik bilan qaytarish modali
   const [rejectModalItem, setRejectModalItem] = useState<ChangeRequestItem | null>(null);
   const [rejectFeedbackNote, setRejectFeedbackNote] = useState("");
+  const [rejectFeedbackFile, setRejectFeedbackFile] = useState<File | null>(null);
+  const [rejectIsNewTz, setRejectIsNewTz] = useState(false);
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
   const [rejectError, setRejectError] = useState<string | null>(null);
 
@@ -1002,22 +1004,34 @@ export default function ChangeRequests() {
   const handleClientReject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rejectModalItem) return;
-    if (!rejectFeedbackNote.trim()) {
-      setRejectError("Kamchilik yoki xatolik haqida izoh yozish shart.");
+    if (!rejectFeedbackNote.trim() && !rejectFeedbackFile) {
+      setRejectError("Kamchilik yoki xatolik haqida izoh yozing yoki yangilangan TZ/hujjat faylini yuklang.");
       return;
     }
     setRejectSubmitting(true);
     setRejectError(null);
     try {
+      const formData = new FormData();
+      if (rejectFeedbackNote.trim()) {
+        formData.append("feedback_note", rejectFeedbackNote.trim());
+      }
+      if (rejectFeedbackFile) {
+        formData.append("feedback_file", rejectFeedbackFile);
+      }
+      if (rejectIsNewTz) {
+        formData.append("is_new_tz", "true");
+      }
       const updated = await api.post<ChangeRequestItem>(
         `/orders/${rejectModalItem.id}/client-reject-completion/`,
-        { feedback_note: rejectFeedbackNote.trim() }
+        formData
       );
       if (viewingItem && viewingItem.id === rejectModalItem.id) {
         setViewingItem(updated);
       }
       setRejectModalItem(null);
       setRejectFeedbackNote("");
+      setRejectFeedbackFile(null);
+      setRejectIsNewTz(false);
       reload();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : tx("orders.qaytarishda_xatolik");
@@ -1925,7 +1939,7 @@ export default function ChangeRequests() {
                                 </button>
                               )}
 
-                              {item.status === "READY_FOR_REVIEW" && isSohaviyOrAdmin && (
+                              {item.status === "READY_FOR_REVIEW" && (isSohaviyOrAdmin || (user && item.created_by === user.id)) && (
                                 <>
                                   <button
                                     className="btn btn-ghost btn-sm"
@@ -2797,7 +2811,7 @@ export default function ChangeRequests() {
                         Loyiha menejeri hisobot hujjatini yuklagan. Boshqarma ko'rib chiqib qabul qilgach, buyurtma yopiladi.
                       </div>
                     </div>
-                    {isSohaviyOrAdmin && (
+                    {(isSohaviyOrAdmin || (user && viewingItem.created_by === user.id)) && (
                       <div className="row middle" style={{ gap: 8 }}>
                         <button
                           className="btn btn-sm btn-ok"
@@ -2811,6 +2825,8 @@ export default function ChangeRequests() {
                           onClick={() => {
                             setRejectModalItem(viewingItem);
                             setRejectFeedbackNote("");
+                            setRejectFeedbackFile(null);
+                            setRejectIsNewTz(false);
                             setRejectError(null);
                           }}
                         >
@@ -2840,6 +2856,24 @@ export default function ChangeRequests() {
                   <div style={{ marginTop: 6, fontSize: 13, color: "#78350f", whiteSpace: "pre-wrap" }}>
                     {viewingItem.client_feedback_note}
                   </div>
+                  {viewingItem.client_feedback_file_url && (
+                    <div style={{ marginTop: 8 }}>
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-outline"
+                        onClick={() => setPreviewFile({
+                          url: viewingItem.client_feedback_file_url!,
+                          name: viewingItem.client_feedback_file_name || "Tuzatish_hujjati",
+                          size: viewingItem.client_feedback_file_size_display,
+                        })}
+                        style={{ background: "#ffffff", borderColor: "#fcd34d", color: "#92400e", gap: 6, fontWeight: 600 }}
+                      >
+                        <span>📎</span>
+                        <span>{tx("orders.tuzatish_hujjati_fayli")}: {viewingItem.client_feedback_file_name || "Fayl"}</span>
+                        {viewingItem.client_feedback_file_size_display && <span style={{ opacity: 0.7 }}>({viewingItem.client_feedback_file_size_display})</span>}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -3544,16 +3578,42 @@ export default function ChangeRequests() {
 
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 13 }}>
-                    Aniqlangan kamchilik yoki xatolik tavsifi *
+                    Aniqlangan kamchilik yoki xatolik tavsifi
                   </label>
                   <textarea
                     rows={4}
-                    required
                     placeholder="Qaysi qismda xatolik aniqlandi yoki nimani qo'shimcha to'g'rilash kerak..."
                     value={rejectFeedbackNote}
                     onChange={(e) => setRejectFeedbackNote(e.target.value)}
                   />
                 </div>
+
+                <div className="field" style={{ marginTop: 12 }}>
+                  <label style={{ fontWeight: 600, fontSize: 13 }}>
+                    Kamchilik hujjati, skrinshot yoki yangilangan TZ fayli
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+                    onChange={(e) => setRejectFeedbackFile(e.target.files?.[0] || null)}
+                  />
+                  <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>
+                    Word (.docx, .doc), PDF, Excel yoki rasm skrinshotlari (maksimal 20 MB)
+                  </div>
+                </div>
+
+                {rejectFeedbackFile && (
+                  <div style={{ marginTop: 10, padding: "8px 12px", background: "var(--surface-2, #f8fafc)", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12.5, color: "var(--text)" }}>
+                      <input
+                        type="checkbox"
+                        checked={rejectIsNewTz}
+                        onChange={(e) => setRejectIsNewTz(e.target.checked)}
+                      />
+                      <span>Ushbu fayl yangi Texnik topshiriq (TZ) sifatida ham saqlansin</span>
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
@@ -3568,7 +3628,7 @@ export default function ChangeRequests() {
                 <button
                   type="submit"
                   className="btn btn-warning"
-                  disabled={rejectSubmitting || !rejectFeedbackNote.trim()}
+                  disabled={rejectSubmitting || (!rejectFeedbackNote.trim() && !rejectFeedbackFile)}
                 >
                   {rejectSubmitting ? "Qaytarilmoqda..." : "Qayta ishlashga qaytarish"}
                 </button>

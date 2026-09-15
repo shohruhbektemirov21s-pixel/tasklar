@@ -178,6 +178,9 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     completion_file = serializers.FileField(required=False, allow_null=True)
     completion_file_url = serializers.SerializerMethodField(read_only=True)
     completion_file_size_display = serializers.SerializerMethodField(read_only=True)
+    client_feedback_file = serializers.FileField(required=False, allow_null=True)
+    client_feedback_file_url = serializers.SerializerMethodField(read_only=True)
+    client_feedback_file_size_display = serializers.SerializerMethodField(read_only=True)
     client_approved_by_name = serializers.CharField(source="client_approved_by.full_name", read_only=True, default="")
 
     assigned_pm = serializers.PrimaryKeyRelatedField(
@@ -263,6 +266,11 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "completion_note",
             "completed_at",
             "client_feedback_note",
+            "client_feedback_file",
+            "client_feedback_file_url",
+            "client_feedback_file_name",
+            "client_feedback_file_size",
+            "client_feedback_file_size_display",
             "client_approved_at",
             "client_approved_by",
             "client_approved_by_name",
@@ -447,6 +455,13 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
 
     def get_completion_file_size_display(self, obj):
         return obj.completion_file_size_display
+
+    def get_client_feedback_file_url(self, obj):
+        from apps.core.media import media_url
+        return media_url(obj.client_feedback_file)
+
+    def get_client_feedback_file_size_display(self, obj):
+        return obj.client_feedback_file_size_display
 
     def get_project_detail(self, obj):
         if not obj.project:

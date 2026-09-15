@@ -2407,8 +2407,60 @@
   "value": "Boshqarma e'tirozi",
   "note": "pages/OrderDetail.tsx"
  },
+ "orders.boshqarma_kamchilik_bildirdi": {
+  "value": "Boshqarma kamchiliklarni ko'rsatib qaytargan",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.boshqarma_tasdigiga_topshirilgan": {
+  "value": "Bajarilgan ish boshqarma tasdig'iga topshirilgan",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.boshqarma_tasdigi_desc": {
+  "value": "Loyiha menejeri hisobot hujjatini yuklagan. Boshqarma ko'rib chiqib qabul qilgach, buyurtma yopiladi.",
+  "note": "pages/OrderDetail.tsx"
+ },
  "orders.boshqarma_tasdigi_kutilmoqda": {
   "value": "Boshqarma tasdig'i kutilmoqda",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.kamchilik_bilan_qaytarish": {
+  "value": "Kamchilik bilan qaytarish",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.kamchilik_tavsifi": {
+  "value": "Aniqlangan kamchilik yoki xatolik tavsifi",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.kamchilik_hujjati_tz": {
+  "value": "Kamchilik hujjati, skrinshot yoki yangilangan TZ fayli",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.kamchilik_hujjati_izoh": {
+  "value": "Word (.docx), PDF, Excel yoki rasm skrinshotlari (maksimal 20 MB)",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.qayta_topshirish": {
+  "value": "Qayta topshirish (Hisobot yuklash)",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.qaytarish_sababi_yoki_tz": {
+  "value": "Aniqlangan kamchilik izohi yoki yangilangan TZ hujjati",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.tasdiqlash_va_yakunlash": {
+  "value": "Ishni tasdiqlash va yakunlash",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.tugatilgan_ishni_topshirish": {
+  "value": "Tugatilgan ish hisobotini topshirish",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.tuzatish_hujjati_fayli": {
+  "value": "Biriktirilgan tuzatish / TZ hujjati",
+  "note": "pages/OrderDetail.tsx"
+ },
+ "orders.yangi_tz_sifatida_saqlash": {
+  "value": "Ushbu fayl yangi Texnik topshiriq (TZ) sifatida ham saqlansin",
   "note": "pages/OrderDetail.tsx"
  },
  "orders.buyurtma_nomi": {
@@ -5859,6 +5911,74 @@
   "value": "Jamoa — tashkilot xodimlari",
   "note": "components/Layout.tsx"
  },
+ "layout.xodimlar": {
+  "value": "Xodimlar",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_xodimlar": {
+  "value": "Xodimlar — tashkilot xodimlari",
+  "note": "components/Layout.tsx"
+ },
+ "common.xodimlar": {
+  "value": "Xodimlar",
+  "note": "components/Layout.tsx"
+ },
+ "people.foydalanuvchilar": {
+  "value": "Xodimlar",
+  "note": "pages/People.tsx"
+ },
+ "people.bajarilmagan_vazifalar": {
+  "value": "Bajarilmagan vazifalar",
+  "note": "pages/People.tsx"
+ },
+ "people.bajarilgan_vazifalar": {
+  "value": "Bajarilgan vazifalar",
+  "note": "pages/People.tsx"
+ },
+ "people.vazifa_berish": {
+  "value": "Vazifa berish",
+  "note": "pages/People.tsx"
+ },
+ "people.vazifalarni_otkazish": {
+  "value": "Vazifalarni o'tkazish",
+  "note": "pages/People.tsx"
+ },
+ "people.vazifani_otkazish": {
+  "value": "Boshqaga o'tkazish",
+  "note": "pages/People.tsx"
+ },
+ "people.yangi_vazifa_nomi": {
+  "value": "Vazifa nomi",
+  "note": "pages/People.tsx"
+ },
+ "people.loyiha_tanlang": {
+  "value": "Loyiha tanlang",
+  "note": "pages/People.tsx"
+ },
+ "people.yangi_ijrochi": {
+  "value": "Yangi ijrochi",
+  "note": "pages/People.tsx"
+ },
+ "people.otkazish_sababi": {
+  "value": "O'tkazish sababi (ixtiyoriy)",
+  "note": "pages/People.tsx"
+ },
+ "people.muvaffaqiyatli_otkazildi": {
+  "value": "Vazifa muvaffaqiyatli o'tkazildi",
+  "note": "pages/People.tsx"
+ },
+ "people.vazifa_berildi": {
+  "value": "Vazifa muvaffaqiyatli yuklandi",
+  "note": "pages/People.tsx"
+ },
+ "people.ochiq_vazifalar_yoq": {
+  "value": "Ushbu xodimda ochiq vazifalar mavjud emas",
+  "note": "pages/People.tsx"
+ },
+ "people.bajarilmagan_tasklar": {
+  "value": "Bajarilmagan tasklar",
+  "note": "pages/People.tsx"
+ },
  "layout.tooltip_tekshiruv": {
   "value": "Tekshiruv navbati — topshirilgan ishlarni qabul qilish",
   "note": "components/Layout.tsx"
@@ -6406,5 +6526,37 @@
  "file_preview.izlash_placeholder": {
   "value": "Jadvaldan izlash...",
   "note": "components/FilePreviewModal.tsx"
+ },
+ "layout.qadamlar_tarixi": {
+  "value": "Bosilgan qadamlar tarixi",
+  "note": "components/Layout.tsx"
+ },
+ "layout.ta_qadam": {
+  "value": "ta qadam",
+  "note": "components/Layout.tsx"
+ },
+ "layout.qadam_orqaga": {
+  "value": "{n} qadam orqaga",
+  "note": "components/Layout.tsx"
+ },
+ "layout.qadam_oldinga": {
+  "value": "{n} qadam oldinga",
+  "note": "components/Layout.tsx"
+ },
+ "layout.hozirgi_sahifa": {
+  "value": "Hozirgi sahifa",
+  "note": "components/Layout.tsx"
+ },
+ "layout.oldinga_qadamlar": {
+  "value": "Oldinga qadamlar",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tarixni_tozalash": {
+  "value": "Tarixni tozalash",
+  "note": "components/Layout.tsx"
+ },
+ "layout.oldingi_qadamlar_mavjud_emas": {
+  "value": "Oldingi qadamlar mavjud emas",
+  "note": "components/Layout.tsx"
  }
 }

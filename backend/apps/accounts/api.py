@@ -308,14 +308,24 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         from apps.core.queries import related_count
         from apps.projects.models import ProjectMember
-        from apps.tasks.models import TaskAssignment
+        from apps.tasks.models import TaskAssignment, TaskStatus
+
+        open_statuses = [
+            TaskStatus.TODO,
+            TaskStatus.IN_PROGRESS,
+            TaskStatus.IN_REVIEW,
+            TaskStatus.CHANGES_REQUESTED,
+            TaskStatus.BLOCKED,
+        ]
 
         qs = User.objects.annotate(
             project_count=related_count(ProjectMember, group_by="user", is_active=True),
             open_tasks=related_count(
                 TaskAssignment, group_by="user", is_active=True,
-                task__status__in=[TaskStatus.TODO, TaskStatus.IN_PROGRESS,
-                                  TaskStatus.IN_REVIEW]),
+                task__status__in=open_statuses),
+            done_tasks=related_count(
+                TaskAssignment, group_by="user", is_active=True,
+                task__status=TaskStatus.DONE),
         )
         # O'chirilgan hisoblar ro'yxatda turmaydi - ular na qidiruvda, na
         # odam tanlash oynasida kerak. Adminga kerak bo'lsa `?inactive=1`.

@@ -33,6 +33,7 @@ import {
   getOrder,
   sendOrder,
   setPmDecision,
+  submitCompletion,
   uploadVersion,
   approveVersion,
   rejectVersion,
@@ -146,7 +147,16 @@ export default function OrderDetail() {
   // Kamchilik bilan qaytarish modali
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [rejectFile, setRejectFile] = useState<File | null>(null);
+  const [rejectIsNewTz, setRejectIsNewTz] = useState(false);
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
+
+  // PM Tugatilgan ish hisobotini topshirish modali
+  const [completionModalOpen, setCompletionModalOpen] = useState(false);
+  const [completionFile, setCompletionFile] = useState<File | null>(null);
+  const [completionNote, setCompletionNote] = useState("");
+  const [completionSubmitting, setCompletionSubmitting] = useState(false);
+  const [completionError, setCompletionError] = useState<string | null>(null);
 
   // Tavsifni to'liq ochish / qisqartirish holati
   const [expandDesc, setExpandDesc] = useState(false);
@@ -271,6 +281,20 @@ export default function OrderDetail() {
     user?.is_sohaviy_boshqarma ||
       user?.is_platform_admin ||
       user?.is_boss
+  );
+
+  const canClientReview = Boolean(
+    isSohaviyOrAdmin || (item && user && item.created_by === user.id)
+  );
+
+  const canSubmitCompletion = Boolean(
+    isPMOrAdmin &&
+      (user?.is_platform_admin || user?.is_boss || item?.assigned_pm === user?.id) &&
+      item &&
+      item.status !== "COMPLETED" &&
+      item.status !== "READY_FOR_REVIEW" &&
+      item.status !== "REJECTED" &&
+      item.status !== "DRAFT"
   );
 
   const canEdit = false;
@@ -407,24 +431,74 @@ export default function OrderDetail() {
   // Boshqarma qaytarishi (modal ochish)
   function handleOpenReject() {
     setRejectReason("");
+    setRejectFile(null);
+    setRejectIsNewTz(false);
     setRejectModalOpen(true);
   }
 
   async function handleRejectSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!item || !rejectReason.trim()) return;
+    if (!item) return;
+    if (!rejectReason.trim() && !rejectFile) {
+      setActionError("Kamchilik izohini yozing yoki yangilangan TZ/kamchilik faylini biriktiring.");
+      return;
+    }
     setRejectSubmitting(true);
     setActionError(null);
     try {
-      const updated = await clientReject(item.id, rejectReason.trim());
+      const updated = await clientReject(item.id, {
+        feedback_note: rejectReason.trim(),
+        file: rejectFile,
+        is_new_tz: rejectIsNewTz,
+      });
       setItem(updated);
       setRejectModalOpen(false);
       setRejectReason("");
-      setActionOk("Buyurtma kamchiliklar bilan qaytarildi.");
+      setRejectFile(null);
+      setRejectIsNewTz(false);
+      setActionOk("Buyurtma kamchiliklar ko'rsatilib, qayta ishlash uchun qaytarildi.");
     } catch (err: any) {
       setActionError(err?.message || "Qaytarishda xatolik yuz berdi.");
     } finally {
       setRejectSubmitting(false);
+    }
+  }
+
+  // PM tugatilgan ish hisobotini topshirish (modal ochish)
+  function handleOpenSubmitCompletion() {
+    setCompletionFile(null);
+    setCompletionNote("");
+    setCompletionError(null);
+    setCompletionModalOpen(true);
+  }
+
+  async function handleSubmitCompletion(e: React.FormEvent) {
+    e.preventDefault();
+    if (!item) return;
+    if (!completionFile && !completionNote.trim()) {
+      setCompletionError("Tugatilgan ish haqidagi hujjatni (fayl/rasm) yoki hisobot izohini kiriting.");
+      return;
+    }
+    setCompletionSubmitting(true);
+    setCompletionError(null);
+    try {
+      const fd = new FormData();
+      if (completionFile) {
+        fd.append("completion_file", completionFile);
+      }
+      if (completionNote.trim()) {
+        fd.append("completion_note", completionNote.trim());
+      }
+      const updated = await submitCompletion(item.id, fd);
+      setItem(updated);
+      setCompletionModalOpen(false);
+      setCompletionFile(null);
+      setCompletionNote("");
+      setActionOk("Bajarilgan ish boshqarma tasdig'iga muvaffaqiyatli topshirildi.");
+    } catch (err: any) {
+      setCompletionError(err?.message || "Hisobotni topshirishda xatolik yuz berdi.");
+    } finally {
+      setCompletionSubmitting(false);
     }
   }
 
@@ -649,6 +723,17 @@ export default function OrderDetail() {
 
             {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
               <>
+                {canSubmitCompletion && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary"
+                    onClick={handleOpenSubmitCompletion}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                  >
+                    <span>📁</span>
+                    <span>{tx("orders.tugatilgan_ishni_topshirish")}</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   className="btn btn-sm btn-outline"
@@ -912,36 +997,134 @@ export default function OrderDetail() {
         {item.status === "READY_FOR_REVIEW" && (
           <div
             style={{
-              background: "var(--surface-2, #f8fafc)",
-              border: "1px solid var(--border-color, #e2e8f0)",
-              borderRadius: 8,
-              padding: "12px 14px",
+              background: "rgba(168, 85, 247, 0.08)",
+              border: "1.5px solid #a855f7",
+              borderRadius: 12,
+              padding: "16px 18px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              gap: 12,
+              gap: 16,
               flexWrap: "wrap",
             }}
           >
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 13.5, color: "var(--text)" }}>
-                {tx("orders.boshqarma_tasdigi_kutilmoqda")}
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 20 }}>📑</span>
+                <span style={{ fontWeight: 700, fontSize: 14.5, color: "#6b21a8" }}>
+                  {tx("orders.boshqarma_tasdigiga_topshirilgan")}
+                </span>
+              </div>
+              <div style={{ fontSize: 12.5, color: "#581c87", marginTop: 4 }}>
+                {tx("orders.boshqarma_tasdigi_desc")}
               </div>
               {item.completion_note && (
-                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                  {tx("orders.pm_izohi")}: {item.completion_note}
+                <div style={{ fontSize: 12.5, color: "var(--text)", marginTop: 6, background: "rgba(255,255,255,0.7)", padding: "6px 10px", borderRadius: 6, borderLeft: "3px solid #a855f7" }}>
+                  <strong>{tx("orders.hisobot_izohi")}:</strong> {item.completion_note}
+                </div>
+              )}
+              {item.completion_file_url && (
+                <div style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-outline"
+                    onClick={() => setPreviewFile({
+                      url: item.completion_file_url!,
+                      name: item.completion_file_name || "Hisobot_hujjati",
+                      size: item.completion_file_size_display,
+                    })}
+                    style={{ background: "#ffffff", borderColor: "#c084fc", color: "#7e22ce", gap: 6, fontWeight: 600 }}
+                  >
+                    <span>📁</span>
+                    <span>{item.completion_file_name || tx("orders.hisobot_fayli")}</span>
+                    {item.completion_file_size_display && <span style={{ opacity: 0.7 }}>({item.completion_file_size_display})</span>}
+                  </button>
                 </div>
               )}
             </div>
-            {isSohaviyOrAdmin && (
-              <div className="row middle" style={{ gap: 8 }}>
-                <button type="button" className="btn btn-xs btn-ok" onClick={handleClientApprove}>
-                  {tx("common.tasdiqlash")}
+            {canClientReview ? (
+              <div className="row middle" style={{ gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ok"
+                  onClick={handleClientApprove}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+                >
+                  <span>✓</span>
+                  <span>{tx("orders.tasdiqlash_va_yakunlash")}</span>
                 </button>
-                <button type="button" className="btn btn-xs btn-warning" onClick={handleOpenReject}>
-                  {tx("common.qaytarish")}
+                <button
+                  type="button"
+                  className="btn btn-sm btn-warning"
+                  onClick={handleOpenReject}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+                >
+                  <span>⚠️</span>
+                  <span>{tx("orders.kamchilik_bilan_qaytarish")}</span>
                 </button>
               </div>
+            ) : (
+              <div style={{ fontSize: 12.5, color: "#6b21a8", fontWeight: 600, background: "rgba(255,255,255,0.6)", padding: "6px 12px", borderRadius: 8 }}>
+                ⏳ {tx("orders.boshqarma_tasdigi_kutilmoqda")}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Boshqarma kamchiliklarni ko'rsatib qaytargan holat banneri */}
+        {item.client_feedback_note && item.status !== "COMPLETED" && item.status !== "READY_FOR_REVIEW" && (
+          <div
+            style={{
+              background: "#fffbeb",
+              border: "1.5px solid #f59e0b",
+              borderRadius: 12,
+              padding: "16px 18px",
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 20 }}>⚠️</span>
+                <span style={{ fontWeight: 700, fontSize: 14.5, color: "#92400e" }}>
+                  {tx("orders.boshqarma_kamchilik_bildirdi")}
+                </span>
+              </div>
+              <div style={{ fontSize: 13, color: "#78350f", marginTop: 6, whiteSpace: "pre-wrap", background: "rgba(255,255,255,0.7)", padding: "8px 12px", borderRadius: 6, borderLeft: "3px solid #f59e0b" }}>
+                {item.client_feedback_note}
+              </div>
+              {item.client_feedback_file_url && (
+                <div style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-outline"
+                    onClick={() => setPreviewFile({
+                      url: item.client_feedback_file_url!,
+                      name: item.client_feedback_file_name || "Tuzatish_hujjati",
+                      size: item.client_feedback_file_size_display,
+                    })}
+                    style={{ background: "#ffffff", borderColor: "#fcd34d", color: "#92400e", gap: 6, fontWeight: 600 }}
+                  >
+                    <span>📎</span>
+                    <span>{tx("orders.tuzatish_hujjati_fayli")}: {item.client_feedback_file_name || "Fayl"}</span>
+                    {item.client_feedback_file_size_display && <span style={{ opacity: 0.7 }}>({item.client_feedback_file_size_display})</span>}
+                  </button>
+                </div>
+              )}
+            </div>
+            {canSubmitCompletion && (
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                onClick={handleOpenSubmitCompletion}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+              >
+                <span>📁</span>
+                <span>{tx("orders.qayta_topshirish")}</span>
+              </button>
             )}
           </div>
         )}
@@ -1942,7 +2125,7 @@ export default function OrderDetail() {
         <div className="modal-overlay" onClick={() => !rejectSubmitting && setRejectModalOpen(false)}>
           <div
             className="modal-card"
-            style={{ maxWidth: 500, width: "95%" }}
+            style={{ maxWidth: 520, width: "95%" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
@@ -1964,7 +2147,7 @@ export default function OrderDetail() {
                   ⚠️
                 </div>
                 <div>
-                  <strong style={{ fontSize: 15, color: "var(--text)" }}>Kamchilik yoki e'tiroz sababini kiriting</strong>
+                  <strong style={{ fontSize: 15, color: "var(--text)" }}>{tx("orders.kamchilik_bilan_qaytarish")}</strong>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
                     {item.request_no} — {item.project_detail?.name || item.system_name}
                   </div>
@@ -1986,32 +2169,58 @@ export default function OrderDetail() {
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div
                   style={{
-                    background: "var(--danger-soft)",
-                    border: "1px solid rgba(239, 68, 68, 0.25)",
-                    borderRadius: 10,
+                    background: "#fffbeb",
+                    border: "1px solid #fde68a",
+                    borderRadius: 8,
                     padding: "10px 14px",
                     fontSize: 12.5,
-                    color: "var(--danger)",
+                    color: "#92400e",
                     lineHeight: 1.45,
                   }}
                 >
-                  Buyurtmachi tomonidan aniqlangan kamchiliklar qayd etiladi va vazifa qayta ishlash uchun qaytariladi.
+                  Buyurtma holati «Jarayonda»ga o'tkaziladi va loyiha menejeri ko'rsatilgan kamchiliklarni yoki ilova qilingan TZ asosida tuzatishlarni amalga oshiradi.
                 </div>
 
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
-                    E'tiroz va kamchilik tavsifi <span style={{ color: "var(--danger)" }}>*</span>
+                    {tx("orders.kamchilik_tavsifi")}
                   </label>
                   <textarea
                     rows={4}
-                    required
                     className="textarea"
-                    placeholder="Qaysi qismda kamchilik yoki xatolik aniqlandi..."
+                    placeholder="Qaysi qismda kamchilik yoki xatolik aniqlandi, nima tuzatilishi kerak..."
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
                     style={{ width: "100%", resize: "vertical" }}
                   />
                 </div>
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                    {tx("orders.kamchilik_hujjati_tz")}
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+                    onChange={(e) => setRejectFile(e.target.files?.[0] || null)}
+                  />
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                    {tx("orders.kamchilik_hujjati_izoh")}
+                  </div>
+                </div>
+
+                {rejectFile && (
+                  <div style={{ padding: "8px 12px", background: "var(--surface-2, #f8fafc)", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12.5, color: "var(--text)" }}>
+                      <input
+                        type="checkbox"
+                        checked={rejectIsNewTz}
+                        onChange={(e) => setRejectIsNewTz(e.target.checked)}
+                      />
+                      <span>{tx("orders.yangi_tz_sifatida_saqlash")}</span>
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
@@ -2025,10 +2234,124 @@ export default function OrderDetail() {
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-danger"
-                  disabled={rejectSubmitting || !rejectReason.trim()}
+                  className="btn btn-warning"
+                  disabled={rejectSubmitting || (!rejectReason.trim() && !rejectFile)}
                 >
-                  {rejectSubmitting ? "Yuborilmoqda..." : "Kamchilik bilan qaytarish"}
+                  {rejectSubmitting ? "Yuborilmoqda..." : tx("orders.kamchilik_bilan_qaytarish")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* PM TUGATILGAN ISH HISOBOTINI TOPSHIRISH MODALI */}
+      {completionModalOpen && item && (
+        <div className="modal-overlay" onClick={() => !completionSubmitting && setCompletionModalOpen(false)}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: 540, width: "95%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
+              <div className="row middle" style={{ gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "rgba(59, 130, 246, 0.1)",
+                    color: "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 16,
+                    flexShrink: 0,
+                  }}
+                >
+                  📁
+                </div>
+                <div>
+                  <strong style={{ fontSize: 15, color: "var(--text)" }}>{tx("orders.tugatilgan_ishni_topshirish")}</strong>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                    {item.request_no} — {item.project_detail?.name || item.system_name}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost"
+                onClick={() => setCompletionModalOpen(false)}
+                disabled={completionSubmitting}
+                style={{ width: 28, height: 28, padding: 0 }}
+                title={tx("common.bekor_qilish")}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitCompletion}>
+              <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+                <div
+                  style={{
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    fontSize: 12.5,
+                    color: "#166534",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  Bajarilgan ish bo'yicha hisobot hujjati (Word, PDF, Excel) yoki natija skrinshotini yuklang. Boshqarma ko'rib chiqib tasdiqlagach, buyurtma yakunlanadi.
+                </div>
+
+                {completionError && <ErrorMsg error={completionError} />}
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                    Tugatilgan ish hujjati / Skrinshot (fayl yoki rasm)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+                    onChange={(e) => setCompletionFile(e.target.files?.[0] || null)}
+                  />
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                    Word (.docx, .doc), PDF, Excel, Rasmlar (PNG, JPG, WEBP). Maksimal: 20 MB
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                    Bajarilgan ish bo'yicha hisobot izohi
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="textarea"
+                    placeholder="Qanday ishlar amalga oshirildi, qaysi modullar yangilandi va sinov natijalari..."
+                    value={completionNote}
+                    onChange={(e) => setCompletionNote(e.target.value)}
+                    style={{ width: "100%", resize: "vertical" }}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setCompletionModalOpen(false)}
+                  disabled={completionSubmitting}
+                >
+                  {tx("common.bekor_qilish")}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={completionSubmitting || (!completionFile && !completionNote.trim())}
+                >
+                  {completionSubmitting ? "Topshirilmoqda..." : "Topshirish"}
                 </button>
               </div>
             </form>

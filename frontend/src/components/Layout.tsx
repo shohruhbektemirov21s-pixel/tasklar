@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, listOf } from "@/api/client";
@@ -7,10 +7,10 @@ import { useAuth } from "@/auth/AuthContext";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import ErrorBoundary from "./ErrorBoundary";
 import { Logo } from "./Logo";
-import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
+import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconChevron, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar, SpecialtyTag } from "./ui";
-import { toFeed, toMessages, toNewProject, toSelfProfile, toUser, type NavTarget, useGo } from "@/nav";
+import { toFeed, toMessages, toNewProject, toSelfProfile, toUser, type NavTarget, useGo, useHistoryTracker, useNavHistory } from "@/nav";
 import { tx } from "@/i18n";
 import { lockScroll, unlockScroll, resetScrollLock } from "./scrollLock";
 
@@ -69,27 +69,180 @@ function toPageTop() {
 function BackButton() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { history, currentIdx, goBackTo, clearHistory } = useNavHistory();
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   // `location` o'zgarganda qayta hisoblanadi - shuning uchun u bog'liqlikda.
-  //
-  // ESLint buni "keraksiz bog'liqlik" deb hisoblaydi va HAQ: hisob ichida
-  // `location` ishlatilmaydi. Lekin `window.history.state` REAKTIV EMAS -
-  // React uning o'zgarganini bilmaydi. `location.key` esa har navigatsiyada
-  // yangilanadi, ya'ni u qiymat emas, TURTKI: "endi qayta o'qi". Usiz tugma
-  // birinchi sahifadagi holatida qotib qolardi.
   const canGoBack = useMemo(() => {
     const idx = (window.history.state as { idx?: number } | null)?.idx;
     return typeof idx === "number" ? idx > 0 : window.history.length > 1;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);
 
+  // Oldingi qadamlar (eng oxirgi bosilgan qadam eng yuqorida turadi)
+  const previousSteps = useMemo(() => {
+    return history.filter((h) => h.idx < currentIdx).sort((a, b) => b.idx - a.idx);
+  }, [history, currentIdx]);
+
+  // Hozirgi qadam
+  const currentStep = useMemo(() => {
+    return history.find((h) => h.idx === currentIdx);
+  }, [history, currentIdx]);
+
+  // Oldinga qadamlar (agar orqaga qaytilgan bo'lsa)
+  const forwardSteps = useMemo(() => {
+    return history.filter((h) => h.idx > currentIdx).sort((a, b) => a.idx - b.idx);
+  }, [history, currentIdx]);
+
+  // Tashqariga yoki Esc bosilganda yopish
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const onContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (previousSteps.length > 0 || forwardSteps.length > 0) {
+      setOpen((v) => !v);
+    }
+  };
+
   return (
-    <button type="button" className="top-icon top-back" disabled={!canGoBack}
-            onClick={() => navigate(-1)}
-            title={canGoBack ? tx("layout.orqaga_qaytish") : tx("layout.orqaga_qaytadigan_sahifa_yoq")}
-            aria-label={tx("layout.orqaga_qaytish")}>
-      <IconBack size={17} />
-    </button>
+    <div className="top-back-wrap" ref={wrapRef}>
+      <div className="top-back-btn-group">
+        <button
+          type="button"
+          className="top-icon top-back"
+          disabled={!canGoBack}
+          onClick={() => navigate(-1)}
+          onContextMenu={onContextMenu}
+          title={canGoBack ? tx("layout.orqaga_qaytish") : tx("layout.orqaga_qaytadigan_sahifa_yoq")}
+          aria-label={tx("layout.orqaga_qaytish")}
+        >
+          <IconBack size={17} />
+        </button>
+        {previousSteps.length > 0 && (
+          <button
+            type="button"
+            className={`top-back-caret ${open ? "open" : ""}`}
+            onClick={() => setOpen((v) => !v)}
+            title={tx("layout.qadamlar_tarixi")}
+            aria-label={tx("layout.qadamlar_tarixi")}
+            aria-expanded={open}
+          >
+            <IconChevron size={11} />
+          </button>
+        )}
+      </div>
+
+      {open && (
+        <div className="top-back-dropdown" role="menu">
+          <div className="top-back-head">
+            <div className="top-back-head-title">
+              <IconHistory size={14} />
+              <span>{tx("layout.qadamlar_tarixi")}</span>
+            </div>
+            <span className="badge badge-sm">{previousSteps.length} {tx("layout.ta_qadam")}</span>
+          </div>
+
+          <div className="top-back-list">
+            {previousSteps.map((step) => {
+              const delta = currentIdx - step.idx;
+              return (
+                <button
+                  key={step.key || `${step.idx}-${step.pathname}`}
+                  type="button"
+                  className="top-back-item"
+                  onClick={() => {
+                    setOpen(false);
+                    goBackTo(step);
+                  }}
+                >
+                  <span className="top-back-step-num">-{delta}</span>
+                  <div className="top-back-item-info">
+                    <div className="top-back-item-title">{step.title}</div>
+                    <div className="top-back-item-sub">
+                      <span>{step.pathname}</span>
+                      <span className="bullet">·</span>
+                      <span>{tx("layout.qadam_orqaga", { n: delta })}</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+
+            {currentStep && (
+              <div className="top-back-item current">
+                <span className="top-back-step-num dot">•</span>
+                <div className="top-back-item-info">
+                  <div className="top-back-item-title">
+                    {currentStep.title} <span className="badge badge-subtle">{tx("layout.hozirgi_sahifa")}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {forwardSteps.length > 0 && (
+              <>
+                <div className="top-back-divider" />
+                <div className="top-back-section-label">{tx("layout.oldinga_qadamlar")}</div>
+                {forwardSteps.map((step) => {
+                  const delta = step.idx - currentIdx;
+                  return (
+                    <button
+                      key={step.key || `${step.idx}-${step.pathname}`}
+                      type="button"
+                      className="top-back-item forward"
+                      onClick={() => {
+                        setOpen(false);
+                        goBackTo(step);
+                      }}
+                    >
+                      <span className="top-back-step-num">+{delta}</span>
+                      <div className="top-back-item-info">
+                        <div className="top-back-item-title">{step.title}</div>
+                        <div className="top-back-item-sub">
+                          <span>{step.pathname}</span>
+                          <span className="bullet">·</span>
+                          <span>{tx("layout.qadam_oldinga", { n: delta })}</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </>
+            )}
+          </div>
+
+          <div className="top-back-foot">
+            <button
+              type="button"
+              className="top-back-clear"
+              onClick={() => {
+                clearHistory();
+                setOpen(false);
+              }}
+            >
+              {tx("layout.tarixni_tozalash")}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -109,6 +262,7 @@ export default function Layout() {
   const notifCount = typeof unread === "number" && unread > 0 ? unread : 0;
   const [q, setQ] = useState("");
   const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null);
+  useHistoryTracker(titleSlot);
   const [tick, setTick] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -253,7 +407,7 @@ export default function Layout() {
     setMenu(false);
     resetScrollLock();
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
-  }, [loc.pathname]);
+  }, [loc.pathname, loc.key]);
 
   // Tortma ochiq turganda: Esc yopadi va orqadagi sahifa siljimaydi.
   useEffect(() => {
@@ -282,6 +436,7 @@ export default function Layout() {
    */
   const NAV_FAMILY: Record<string, string[]> = {
     "/loyihalar": ["/loyiha", "/vazifa"],
+    "/jamoa": ["/xodimlar"],
   };
 
   const inFamily = (to: string) =>
@@ -511,7 +666,8 @@ export default function Layout() {
             {!user?.is_sohaviy_boshqarma &&
               (user?.can_access_orders || user?.is_platform_admin || user?.is_manager || user?.is_boss) &&
               item("/buyurtmalar", <IconOrder />, tx("orders.sarlavha"), counts.orders, true, tx("layout.tooltip_buyurtmalar"))}
-            {manages && item("/vazifalar", <IconLayers />, tx("common.vazifalar"), undefined, false, tx("layout.tooltip_vazifalar"))}
+            {manages && !user?.is_boss && item("/vazifalar", <IconLayers />, tx("common.vazifalar"), undefined, false, tx("layout.tooltip_vazifalar"))}
+            {user?.is_boss && item("/jamoa", <IconUsers />, tx("layout.xodimlar", undefined, "Xodimlar"), undefined, false, tx("layout.tooltip_xodimlar", undefined, "Xodimlar — tashkilot xodimlari"))}
             {item("/taqvim", <IconCalendar />, tx("layout.taqvim"), undefined, false, tx("layout.tooltip_taqvim"))}
           </div>
 
@@ -528,8 +684,6 @@ export default function Layout() {
           {/* 3. KUZATUV VA BOSHQARUV */}
           <div className="nav-section">
             <div className="nav-title">{tx("layout.bolim_boshqaruv")}</div>
-            {user?.is_boss &&
-              item("/jamoa", <IconUsers />, tx("common.jamoa") || "Jamoa", undefined, false, tx("layout.tooltip_jamoa"))}
             {item("/tarix", <IconHistory />, tx("layout.umumiy_tarix"), undefined, false, tx("layout.tooltip_tarix"))}
             {user?.is_platform_admin &&
               item("/admin", <IconSettings />, tx("common.admin_panel") || "Admin panel", undefined, false, tx("layout.tooltip_admin"))}

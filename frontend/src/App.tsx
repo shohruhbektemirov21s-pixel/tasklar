@@ -93,7 +93,7 @@ function ManagerOnly({ children }: { children: React.ReactNode }) {
 function ManagesOnly({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
-  if (!user?.can_create_project && !user?.manages_projects) {
+  if (user?.is_boss || (!user?.can_create_project && !user?.manages_projects)) {
     return <Navigate to="/loyihalar" replace />;
   }
   return <>{children}</>;
@@ -172,6 +172,7 @@ export default function App() {
         <Route path="/tarix" element={<Feed />} />
         <Route path="/taqvim" element={<CalendarPage />} />
         <Route path="/jamoa" element={<BossOnly><People /></BossOnly>} />
+        <Route path="/xodimlar" element={<BossOnly><People /></BossOnly>} />
         <Route path="/ish-maydonlari" element={<Workspaces />} />
         <Route path="/ish-maydoni/yangi" element={<ManagerOnly><WorkspaceForm /></ManagerOnly>} />
         <Route path="/ish-maydoni/chat" element={<WorkspaceChat />} />
