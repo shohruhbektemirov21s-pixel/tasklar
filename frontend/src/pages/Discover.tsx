@@ -34,7 +34,7 @@ export default function Discover() {
 
   // `page_size: 100` ilgari shift edi - yuzinchidan keyingi ochiq loyiha
   // hech qanday belgisiz yo'qolardi.
-  const { data, error, loading } = useFetch<any>(
+  const { data, error, loading } = useFetch<unknown>(
     "/projects/", { scope: "discover", search: applied, page, page_size: PER_PAGE });
   const projects = useMemo(() => (data ? listOf<Project>(data) : null), [data]);
   const pages = pagesOf(data, PER_PAGE);

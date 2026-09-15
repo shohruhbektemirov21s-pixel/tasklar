@@ -112,10 +112,27 @@ def specialties(request, item_id=None):
     })
 
 
+def set_auth_cookies(response, refresh_token=None):
+    """Xavfsizlik: refresh tokenni HttpOnly, Secure va SameSite cookie sifatida o'rnatish."""
+    if refresh_token:
+        from django.conf import settings
+        secure = not getattr(settings, "DEBUG", False)
+        response.set_cookie(
+            "tf_refresh",
+            refresh_token,
+            max_age=14 * 24 * 3600,
+            httponly=True,
+            secure=secure,
+            samesite="Lax",
+            path="/api/auth/",
+        )
+
+
 class LoginView(TokenObtainPairView):
     """POST /api/auth/login/  -> {access, refresh, user}
 
     Parol topishga urinishlarni cheklaymiz: throttle_scope="auth".
+    Shuningdek refresh tokenni HttpOnly cookie sifatida ham biriktiramiz.
     """
 
     permission_classes = [AllowAny]
@@ -123,15 +140,38 @@ class LoginView(TokenObtainPairView):
     throttle_scope = "auth"
     throttle_classes = [ScopedRateThrottle]
 
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200 and "refresh" in response.data:
+            set_auth_cookies(response, refresh_token=response.data["refresh"])
+        return response
+
 
 class RefreshView(TokenRefreshView):
     """POST /api/auth/refresh/ - muddati o'tgan access o'rniga yangisini beradi.
 
-    Standart view emas, chunki seriyalizator almashtirilgan - sababi
-    `RefreshSerializer` da.
+    Mijozdan kelgan refresh token so'rov tanasida yoki HttpOnly cookie da bo'lishi mumkin.
     """
 
     serializer_class = RefreshSerializer
+
+    def post(self, request, *args, **kwargs):
+        from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+
+        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        if not data.get("refresh") and request.COOKIES.get("tf_refresh"):
+            data["refresh"] = request.COOKIES.get("tf_refresh")
+
+        serializer = self.get_serializer(data=data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as e:
+            raise InvalidToken(e.args[0])
+
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
+        if "refresh" in serializer.validated_data:
+            set_auth_cookies(response, refresh_token=serializer.validated_data["refresh"])
+        return response
 
 
 class RegisterView(generics.CreateAPIView):
@@ -247,21 +287,29 @@ class LogoutView(APIView):
         from rest_framework_simplejwt.tokens import RefreshToken
 
         if str(request.data.get("all", "")).lower() in ("1", "true"):
-            return Response({"revoked": revoke_refresh_tokens(request.user)})
+            resp = Response({"revoked": revoke_refresh_tokens(request.user)})
+            resp.delete_cookie("tf_refresh", path="/api/auth/")
+            return resp
 
-        raw = request.data.get("refresh")
+        raw = request.data.get("refresh") or request.COOKIES.get("tf_refresh")
         if not raw:
             # Token yuborilmasa ham chiqish muvaffaqiyatli hisoblanadi:
             # brauzer tomonda tozalash allaqachon bo'lgan, serverga esa
             # ayta olmadi. Xato qaytarish foydalanuvchini "chiqa olmadim"
             # degan holatda qoldirardi.
-            return Response({"revoked": 0})
+            resp = Response({"revoked": 0})
+            resp.delete_cookie("tf_refresh", path="/api/auth/")
+            return resp
         try:
             RefreshToken(raw).blacklist()
         except TokenError:
             # Muddati o'tgan yoki allaqachon bekor qilingan - natija bir xil.
-            return Response({"revoked": 0})
-        return Response({"revoked": 1})
+            resp = Response({"revoked": 0})
+            resp.delete_cookie("tf_refresh", path="/api/auth/")
+            return resp
+        resp = Response({"revoked": 1})
+        resp.delete_cookie("tf_refresh", path="/api/auth/")
+        return resp
 
 
 class ChangePasswordView(generics.GenericAPIView):

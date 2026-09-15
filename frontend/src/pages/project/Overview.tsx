@@ -39,10 +39,10 @@ export default function Overview({ project }: { project: Project; onChange: () =
     // Ikkovi ham yordamchi ro'yxat: kelmasa sahifa baribir ishlaydi,
     // shuning uchun xato bo'sh ro'yxatga aylanadi va konsolga chiqadi.
     let alive = true;
-    void api.get<any>("/activity/", { project: project.id, page_size: 12 })
+    void api.get<{ results?: Activity[] }>("/activity/", { project: project.id, page_size: 12 })
       .then((d) => { if (alive) setFeed(d.results || []); })
       .catch(() => { if (alive) setFeed([]); });
-    void api.get<any>("/tasks/", { project: project.id, assignee: "me", open: "1", page_size: 6 })
+    void api.get<{ results?: Task[] }>("/tasks/", { project: project.id, assignee: "me", open: "1", page_size: 6 })
       .then((d) => { if (alive) setMyTasks(d.results || []); })
       .catch(() => { if (alive) setMyTasks([]); });
     return () => { alive = false; };

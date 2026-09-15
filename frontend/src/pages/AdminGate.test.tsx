@@ -8,7 +8,7 @@
  *   4. Tizimga kirmagan holatda login va parol formasi ko'rsatilishi.
  *   5. Kirish formasida xato yuz berganda xatolik xabari aks etishi.
  */
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -120,9 +120,13 @@ describe("AdminGate — Senior QA ruxsatlar va ko'rinish testi", () => {
 
     fireEvent.change(usernameInput, { target: { value: "admin@teamflow.uz" } });
     fireEvent.change(passwordInput, { target: { value: "admin12345" } });
-    fireEvent.click(submitBtn);
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
 
-    expect(mockLogin).toHaveBeenCalledWith("admin@teamflow.uz", "admin12345");
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledWith("admin@teamflow.uz", "admin12345");
+    });
   });
 
   it("login xatosi bo'lganda foydalanuvchiga xatolik matnini chiqaradi", async () => {

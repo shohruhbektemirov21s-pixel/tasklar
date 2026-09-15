@@ -53,7 +53,7 @@ export default function TaskList({ project }: { project: Project }) {
   // 200 - serverdagi eng katta ruxsat etilgan sahifa
   // (`config/pagination.py`), ya'ni u SHIFT edi: 201-vazifa loyiha
   // ro'yxatida hech qanday belgisiz ko'rinmay qolardi. Endi sahifalanadi.
-  const { data, error, loading, reload } = useFetch<any>(
+  const { data, error, loading, reload } = useFetch<unknown>(
     "/tasks/", { project: project.id, ...f, page, page_size: PER_PAGE },
     { debounceMs: 300 });
   const tasks = useMemo(() => (data ? listOf<Task>(data) : null), [data]);

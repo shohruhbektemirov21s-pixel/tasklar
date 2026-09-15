@@ -126,6 +126,13 @@ class ProjectFileDateTest(ApiTestCase):
         self.assertEqual(local_stamp(doc.doc_date), "2026-05-05 16:20")
         self.assertEqual(local_stamp(doc.versions.get().doc_date), "2026-01-01 10:00")
 
+    def test_xavfli_fayllar_bloklanadi(self):
+        """Executable va script fayllari (exe, php, sh) qat'iy bloklanadi."""
+        for bad_name in ["script.php", "virus.exe", "exploit.sh", "page.html"]:
+            res = self.upload([SimpleUploadedFile(bad_name, b"payload")])
+            self.assertEqual(res.status_code, 400, f"{bad_name} qabul qilinmasligi kerak")
+        self.assertEqual(ProjectFile.objects.count(), 0)
+
 
 class ProjectFileEditTest(ApiTestCase):
     """Hujjatni kim tahrirlay va o'chira oladi.

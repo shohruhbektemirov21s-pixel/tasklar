@@ -27,7 +27,7 @@ import type {
   OrderStats,
   Task,
 } from "@/api/types";
-import { ORDER_STATUS_CONFIG, ORDER_TYPE_CONFIG, type PaginatedResponse } from "@/api/orders";
+import type { PaginatedResponse } from "@/api/orders";
 import { useAuth } from "@/auth/AuthContext";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { PageHead } from "@/components/Layout";
@@ -531,58 +531,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
   );
 }
 
-/** Boshqarma buyurtmalari turi nishoni */
-function DashboardOrderTypeBadge({ type }: { type?: string }) {
-  const cfg = ORDER_TYPE_CONFIG[type || "NEW"] || ORDER_TYPE_CONFIG.NEW;
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        padding: "3px 8px",
-        borderRadius: 6,
-        fontSize: 12,
-        fontWeight: 600,
-        background: cfg.bg,
-        color: cfg.color,
-        border: `1px solid ${cfg.border}`,
-        whiteSpace: "nowrap",
-      }}
-      title={cfg.desc}
-    >
-      <span>{cfg.icon}</span>
-      <span>{cfg.label}</span>
-    </span>
-  );
-}
-
-/** Boshqarma buyurtmalari holati nishoni */
-function DashboardOrderStatusBadge({ status }: { status: ChangeRequestItem["status"] }) {
-  const cfg = ORDER_STATUS_CONFIG[status] || ORDER_STATUS_CONFIG.NEW;
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        padding: "3px 8px",
-        borderRadius: 6,
-        fontSize: 12,
-        fontWeight: 600,
-        background: cfg.bg,
-        color: cfg.color,
-        border: `1px solid ${cfg.border}`,
-        whiteSpace: "nowrap",
-      }}
-      title={cfg.desc}
-    >
-      <span>{cfg.icon}</span>
-      <span>{cfg.label}</span>
-    </span>
-  );
-}
-
 function CalendarIcon({ size = 20, color = "currentColor" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -689,7 +637,7 @@ const PERIOD_THEMES: Record<
 };
 
 /** Boshqarma foydalanuvchisi uchun to'liq bosh panel ko'rinishi (yangi UX dizayn) */
-function DepartmentDashboard({ user }: { user: any }) {
+function DepartmentDashboard() {
   const { meta } = useAuth();
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod | null>(null);
@@ -1564,7 +1512,7 @@ export default function Dashboard() {
       <>
         <PageHead title={name} />
         <div className="content">
-          <DepartmentDashboard user={user} />
+          <DepartmentDashboard />
         </div>
       </>
     );

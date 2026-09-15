@@ -10,7 +10,7 @@ import { Logo } from "./Logo";
 import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconChevron, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar, SpecialtyTag } from "./ui";
-import { toFeed, toMessages, toNewProject, toSelfProfile, toUser, type NavTarget, useGo, useHistoryTracker, useNavHistory } from "@/nav";
+import { toFeed, toMessages, toSelfProfile, toUser, type NavTarget, useGo, useHistoryTracker, useNavHistory } from "@/nav";
 import { tx } from "@/i18n";
 import { lockScroll, unlockScroll, resetScrollLock } from "./scrollLock";
 
@@ -383,7 +383,7 @@ export default function Layout() {
       return;
     }
     const timer = window.setTimeout(() => {
-      void api.get<any>("/users/", { search: needle, page_size: 6 })
+      void api.get<unknown>("/users/", { search: needle, page_size: 6 })
         .then((d) => setPeople(listOf<UserBrief>(d)))
         .catch(() => setPeople([]));
     }, 250);

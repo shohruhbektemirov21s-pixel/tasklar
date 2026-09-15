@@ -21,7 +21,7 @@ export default function Members({ project, onChange }: { project: Project; onCha
   const [version, setVersion] = useState(0);
 
   const load = useCallback(async () => {
-    setMembers(listOf<ProjectMember>(await api.get<any>(`/projects/${project.id}/members/`)));
+    setMembers(listOf<ProjectMember>(await api.get<unknown>(`/projects/${project.id}/members/`)));
     if (acc.can_manage) {
       try {
         setRequests(await api.get<JoinRequest[]>(`/projects/${project.id}/requests/`));

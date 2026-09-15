@@ -210,6 +210,41 @@ async function request<T>(path: string, opts: RequestOptions = {}, retry = true)
   return data as T;
 }
 
+async function requestBlob(path: string, opts: RequestOptions = {}, retry = true): Promise<Blob> {
+  const url = new URL(`${BASE}${path}`, window.location.origin);
+  if (opts.params) {
+    for (const [k, v] of Object.entries(opts.params)) {
+      if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
+    }
+  }
+
+  const headers: Record<string, string> = {};
+  if (tokens.access) headers["Authorization"] = `Bearer ${tokens.access}`;
+
+  const res = await fetch(url.toString().replace(window.location.origin, ""), {
+    method: opts.method || "GET",
+    headers,
+    signal: opts.signal,
+  });
+
+  if (res.status === 401 && retry) {
+    if (tokens.refresh && (await tryRefresh())) return requestBlob(path, opts, false);
+    if (tokens.access || tokens.refresh) sessionEnded();
+  }
+
+  if (!res.ok) {
+    let errData: unknown = null;
+    try {
+      errData = await res.json();
+    } catch {
+      errData = await res.text();
+    }
+    throw new ApiError(res.status, errData);
+  }
+
+  return await res.blob();
+}
+
 /**
  * O'qish shlyuzi — hamma o'qish shu manzilga POST bo'lib ketadi.
  *
@@ -234,6 +269,18 @@ export const api = {
   patch: <T,>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
   put: <T,>(path: string, body?: unknown) => request<T>(path, { method: "PUT", body }),
   delete: <T,>(path: string) => request<T>(path, { method: "DELETE" }),
+  blob: (path: string, opts?: RequestOptions) => requestBlob(path, opts),
+  download: async (path: string, filename: string, opts?: RequestOptions) => {
+    const blob = await requestBlob(path, opts);
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  },
 };
 
 /** Sahifalangan javobdan ro'yxatni oladi (paginated yoki oddiy massiv) */

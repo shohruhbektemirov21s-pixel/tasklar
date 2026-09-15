@@ -10,30 +10,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, listOf, pagesOf, totalOf } from "@/api/client";
-import { claimOrder, uploadVersion, approveVersion, rejectVersion, deleteOrder, sendOrder } from "@/api/orders";
-import type { ChangeRequestItem, OrderStats, Project, UserBrief } from "@/api/types";
+import { claimOrder, uploadVersion, approveVersion, rejectVersion, deleteOrder, sendOrder, downloadOrderDocx } from "@/api/orders";
+import type { ChangeRequestItem, OrderStats, UserBrief } from "@/api/types";
 import { useFetch } from "@/api/useFetch";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import {
-  IconCalendar,
   IconDownload,
-  IconOrder,
   IconPaperclip,
   IconPlus,
-  IconProject,
   IconSearch,
 } from "@/components/icons";
 import { toEditOrder, toNewOrder, toOrder, useGo } from "@/nav";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 import {
-  Card,
-  Empty,
   ErrorMsg,
-  Loading,
-  Pager,
-  Progress,
   fmtDate,
   fmtDateTime,
   timeAgo,
@@ -43,465 +35,10 @@ import { tx } from "@/i18n";
 
 const PER_PAGE = 15;
 
-export const ORDER_TYPE_CONFIG: Record<
-  string,
-  { label: string; icon: string; bg: string; color: string; border: string; desc: string }
-> = {
-  NEW: {
-    get label() { return tx("orders.yangi_loyiha"); },
-    icon: "🚀",
-    bg: "rgba(16, 185, 129, 0.12)",
-    color: "#059669",
-    border: "rgba(16, 185, 129, 0.3)",
-    desc: "Noldan boshlanadigan yangi dasturiy ta'minot yoki axborot tizimi",
-  },
-  CONTINUATION: {
-    get label() { return tx("orders.davom_ettiriladigan"); },
-    icon: "🔄",
-    bg: "rgba(37, 99, 235, 0.12)",
-    color: "#2563eb",
-    border: "rgba(37, 99, 235, 0.3)",
-    desc: "Mavjud tizimni davom ettirish / navbatdagi bosqich",
-  },
-  NEEDS_CLASSIFICATION: {
-    get label() { return tx("orders.turlash_kerak"); },
-    icon: "🏷️",
-    bg: "rgba(217, 119, 6, 0.12)",
-    color: "#d97706",
-    border: "rgba(217, 119, 6, 0.3)",
-    desc: "Boshqarma taklifi / PM tomonidan tahlil va turlash talab etiladi",
-  },
-  MODERNIZATION: {
-    get label() { return tx("orders.modernizatsiya"); },
-    icon: "⚡",
-    bg: "rgba(139, 92, 246, 0.12)",
-    color: "#7c3aed",
-    border: "rgba(139, 92, 246, 0.3)",
-    desc: "Amaldagi funksionallikni kengaytirish va yangilash",
-  },
-  MAINTENANCE: {
-    get label() { return tx("orders.texnik_xizmat"); },
-    icon: "🛠️",
-    bg: "rgba(100, 116, 139, 0.12)",
-    color: "#475569",
-    border: "rgba(100, 116, 139, 0.3)",
-    desc: "Xatoliklarni tuzatish va tizimni qo'llab-quvvatlash",
-  },
-};
-
-export function OrderTypeBadge({ type }: { type?: string }) {
-  const cfg = ORDER_TYPE_CONFIG[type || "NEW"] || ORDER_TYPE_CONFIG.NEW;
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        padding: "3px 8px",
-        borderRadius: 6,
-        fontSize: 11.5,
-        fontWeight: 600,
-        background: cfg.bg,
-        color: cfg.color,
-        border: `1px solid ${cfg.border}`,
-        whiteSpace: "nowrap",
-      }}
-      title={cfg.desc}
-    >
-      <span>{cfg.icon}</span>
-      <span>{cfg.label}</span>
-    </span>
-  );
-}
-
-export const ORDER_STATUS_CONFIG: Record<
-  ChangeRequestItem["status"],
-  {
-    label: string;
-    icon: string;
-    bg: string;
-    color: string;
-    border: string;
-    badgeClass: string;
-    desc: string;
-    step: number;
-  }
-> = {
-  DRAFT: {
-    get label() { return tx("orders.status_draft"); },
-    icon: "📝",
-    bg: "rgba(100, 116, 139, 0.12)",
-    color: "#475569",
-    border: "rgba(100, 116, 139, 0.35)",
-    badgeClass: "badge-ghost",
-    desc: "Talabnoma qoralama sifatida saqlangan, hali yuborilmagan",
-    step: 0,
-  },
-  NEW: {
-    label: "Yangi (Yuborilgan)",
-    icon: "📝",
-    bg: "rgba(234, 179, 8, 0.12)",
-    color: "#b45309",
-    border: "rgba(234, 179, 8, 0.35)",
-    badgeClass: "badge-warning",
-    desc: "Talabnoma boshqarma tomonidan yuborilgan, PM ko'rib chiqishi kutilmoqda",
-    step: 1,
-  },
-  ACCEPTED: {
-    label: "Qabul qilindi",
-    icon: "📋",
-    bg: "rgba(59, 130, 246, 0.12)",
-    color: "#1d4ed8",
-    border: "rgba(59, 130, 246, 0.35)",
-    badgeClass: "badge-brand",
-    desc: "Loyiha menejeri (PM) talabnomani qabul qildi va o'rganmoqda",
-    step: 2,
-  },
-  ASSIGNED_TO_DEV: {
-    label: "Dasturchiga yo'naltirildi",
-    icon: "💻",
-    bg: "rgba(99, 102, 241, 0.14)",
-    color: "#4338ca",
-    border: "rgba(99, 102, 241, 0.38)",
-    badgeClass: "badge-brand",
-    desc: "Vazifa dasturchiga yo'naltirildi va amaliy ijroga biriktirildi",
-    step: 3,
-  },
-  IN_PROGRESS: {
-    label: "Jarayonda",
-    icon: "⚙️",
-    bg: "rgba(14, 165, 233, 0.12)",
-    color: "#0369a1",
-    border: "rgba(14, 165, 233, 0.35)",
-    badgeClass: "badge-brand",
-    desc: "Dasturchi va jamoa amaliy ish olib bormoqda / kod yozilmoqda",
-    step: 4,
-  },
-  TESTING: {
-    label: "Test qilinmoqda",
-    icon: "🧪",
-    bg: "rgba(217, 119, 6, 0.12)",
-    color: "#c2410c",
-    border: "rgba(217, 119, 6, 0.35)",
-    badgeClass: "badge-warning",
-    desc: "O'zgartirish testdan o'tkazilmoqda va buyurtmachi sinoviga tayyorlanmoqda",
-    step: 5,
-  },
-  READY_FOR_REVIEW: {
-    label: "Boshqarma tasdig'ida",
-    icon: "📑",
-    bg: "rgba(168, 85, 247, 0.12)",
-    color: "#7e22ce",
-    border: "rgba(168, 85, 247, 0.35)",
-    badgeClass: "badge-brand",
-    desc: "PM ishni yakunladi va hisobot hujjatini topshirdi. Boshqarma tasdiqlashi kutilmoqda",
-    step: 6,
-  },
-  COMPLETED: {
-    label: "Bajarildi (Tasdiqlangan)",
-    icon: "✅",
-    bg: "rgba(16, 185, 129, 0.12)",
-    color: "#047857",
-    border: "rgba(16, 185, 129, 0.35)",
-    badgeClass: "badge-ok",
-    desc: "Ish muvaffaqiyatli yakunlandi va boshqarma tomonidan tasdiqlandi",
-    step: 7,
-  },
-  REJECTED: {
-    label: "Rad etildi",
-    icon: "❌",
-    bg: "rgba(239, 68, 68, 0.12)",
-    color: "#b91c1c",
-    border: "rgba(239, 68, 68, 0.35)",
-    badgeClass: "badge-danger",
-    desc: "Talabnoma asosli sabablarga ko'ra rad etildi",
-    step: -1,
-  },
-  CANCELLED: {
-    label: "Bekor qilingan (Atmen)",
-    icon: "🚫",
-    bg: "rgba(100, 116, 139, 0.12)",
-    color: "#475569",
-    border: "rgba(100, 116, 139, 0.35)",
-    badgeClass: "badge-ghost",
-    desc: "Yangi versiya tasdiqlangani sababli ushbu eski TZ bekor qilingan (atmen)",
-    step: -2,
-  },
-};
-
-export function OrderStatusBadge({
-  status,
-  label,
-}: {
-  status: ChangeRequestItem["status"];
-  label?: string;
-}) {
-  const cfg = ORDER_STATUS_CONFIG[status] || ORDER_STATUS_CONFIG.NEW;
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        padding: "3px 9px",
-        borderRadius: 6,
-        fontSize: 12,
-        fontWeight: 600,
-        background: cfg.bg,
-        color: cfg.color,
-        border: `1px solid ${cfg.border}`,
-        whiteSpace: "nowrap",
-      }}
-      title={cfg.desc}
-    >
-      <span>{cfg.icon}</span>
-      <span>{label || cfg.label}</span>
-    </span>
-  );
-}
-
-export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
-  if (item.status === "REJECTED") {
-    return (
-      <div
-        style={{
-          background: "#fef2f2",
-          border: "1px solid #fecaca",
-          borderRadius: 8,
-          padding: "14px 16px",
-          marginBottom: 16,
-        }}
-      >
-        <div className="row middle" style={{ gap: 8, color: "#991b1b", fontWeight: 700, fontSize: 13.5 }}>
-          <span style={{ fontSize: 18 }}>❌</span>
-          <span>Ushbu talabnoma rad etilgan</span>
-        </div>
-        {item.pm_notes && (
-          <div style={{ marginTop: 6, fontSize: 12.5, color: "#7f1d1d", whiteSpace: "pre-wrap" }}>
-            <strong>Sabab / Izoh:</strong> {item.pm_notes}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  const currentStep = item.stage_index && item.stage_index > 0
-    ? item.stage_index
-    : (ORDER_STATUS_CONFIG[item.status]?.step || 1);
-
-  const steps = [
-    {
-      num: 1,
-      title: "Yuborildi",
-      icon: "📝",
-      sub: item.department || "Boshqarma",
-    },
-    {
-      num: 2,
-      title: "PM ko'rib chiqdi",
-      icon: "📋",
-      sub: item.assigned_pm_name ? `PM: ${item.assigned_pm_name}` : "Loyiha menejeri",
-    },
-    {
-      num: 3,
-      title: "Dasturchiga yo'naltirildi",
-      icon: "💻",
-      sub: item.assigned_developer_name ? `👨‍💻 ${item.assigned_developer_name}` : "Ijrochi tayinlanmoqda",
-    },
-    {
-      num: 4,
-      title: "Jarayonda",
-      icon: "⚙️",
-      sub: item.pm_estimated_duration ? `⏱ ${item.pm_estimated_duration}` : "Amaliy ishlab chiqish",
-    },
-    {
-      num: 5,
-      title: "Testda",
-      icon: "🧪",
-      sub: "Sinov va tekshirish",
-    },
-    {
-      num: 6,
-      title: "Tasdiqlashda",
-      icon: "📑",
-      sub: "Boshqarma tasdig'i",
-    },
-    {
-      num: 7,
-      title: "Bajarildi",
-      icon: "✅",
-      sub: "Qabul qilindi va yopildi",
-    },
-  ];
-
-  return (
-    <div
-      style={{
-        background: "var(--surface, #f8fafc)",
-        border: "1px solid var(--border-color, #e2e8f0)",
-        borderRadius: 8,
-        padding: "14px 16px",
-        marginBottom: 16,
-      }}
-    >
-      <div className="row between middle" style={{ marginBottom: 12 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text)" }}>
-          📌 Ishning joriy holati va bosqichlari:{" "}
-          <span style={{ color: ORDER_STATUS_CONFIG[item.status]?.color }}>
-            {item.status_display || ORDER_STATUS_CONFIG[item.status]?.label}
-          </span>
-        </div>
-        <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--brand, #2563eb)" }}>
-          Bosqich {Math.min(currentStep, 6)} / 6
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(6, 1fr)",
-          gap: 6,
-        }}
-      >
-        {steps.map((st) => {
-          const isPassed = currentStep > st.num;
-          const isCurrent = currentStep === st.num;
-
-          const stepBg = isCurrent
-            ? "#eff6ff"
-            : isPassed
-            ? "#f0fdf4"
-            : "#f8fafc";
-          const stepBorder = isCurrent
-            ? "#3b82f6"
-            : isPassed
-            ? "#86efac"
-            : "var(--border-color, #e2e8f0)";
-          const stepColor = isCurrent
-            ? "#1d4ed8"
-            : isPassed
-            ? "#15803d"
-            : "var(--muted, #64748b)";
-
-          return (
-            <div
-              key={st.num}
-              style={{
-                background: stepBg,
-                border: `1.5px solid ${stepBorder}`,
-                borderRadius: 6,
-                padding: "8px 6px",
-                textAlign: "center",
-                transition: "all 0.2s ease",
-              }}
-            >
-              <div style={{ fontSize: 16, marginBottom: 2 }}>
-                {isPassed ? "✓" : st.icon}
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: isCurrent || isPassed ? 700 : 500,
-                  color: stepColor,
-                  lineHeight: 1.2,
-                }}
-              >
-                {st.title}
-              </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: "var(--muted, #64748b)",
-                  marginTop: 3,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-                title={st.sub}
-              >
-                {st.sub}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function KpiCardSkeleton() {
-  return (
-    <div
-      style={{
-        background: "#ffffff",
-        border: "1px solid #e2e8f0",
-        borderRadius: 14,
-        padding: "16px 20px",
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-      }}
-    >
-      <div
-        className="skeleton-box"
-        style={{ width: 46, height: 46, borderRadius: "50%", flexShrink: 0 }}
-      />
-      <div style={{ flex: 1 }}>
-        <div className="skeleton-box" style={{ width: "65%", height: 14, marginBottom: 8 }} />
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <div className="skeleton-box" style={{ width: 48, height: 26 }} />
-          <div className="skeleton-box" style={{ width: 36, height: 14 }} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TableRowSkeleton({ rowNum }: { rowNum: number }) {
-  return (
-    <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-      <td style={{ textAlign: "center", padding: "16px 18px" }}>
-        <span style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 600 }}>{rowNum}</span>
-      </td>
-      <td style={{ padding: "16px 18px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div className="skeleton-box" style={{ width: 36, height: 36, borderRadius: 8, flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            <div className="skeleton-box" style={{ width: "80%", height: 15, marginBottom: 6 }} />
-            <div className="skeleton-box" style={{ width: "50%", height: 12 }} />
-          </div>
-        </div>
-      </td>
-      <td style={{ padding: "16px 18px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div className="skeleton-box" style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            <div className="skeleton-box" style={{ width: "75%", height: 14, marginBottom: 6 }} />
-            <div className="skeleton-box" style={{ width: "55%", height: 12 }} />
-          </div>
-        </div>
-      </td>
-      <td style={{ padding: "16px 18px" }}>
-        <div className="skeleton-box" style={{ width: 110, height: 14, marginBottom: 5 }} />
-        <div className="skeleton-box" style={{ width: 70, height: 12 }} />
-      </td>
-      <td style={{ padding: "16px 18px" }}>
-        <div className="skeleton-box" style={{ width: "90%", height: 14 }} />
-      </td>
-      <td style={{ padding: "16px 18px" }}>
-        <div className="skeleton-box" style={{ width: 85, height: 14, marginBottom: 5 }} />
-        <div className="skeleton-box" style={{ width: 65, height: 12 }} />
-      </td>
-      <td style={{ padding: "16px 18px" }}>
-        <div className="skeleton-box" style={{ width: 95, height: 24, borderRadius: 9999 }} />
-      </td>
-      <td style={{ textAlign: "right", padding: "16px 18px" }}>
-        <div className="skeleton-box" style={{ width: 28, height: 20, marginLeft: "auto", borderRadius: 4 }} />
-      </td>
-    </tr>
-  );
-}
+export { ORDER_TYPE_CONFIG, OrderTypeBadge, ORDER_STATUS_CONFIG, OrderStatusBadge } from "./orders/OrderBadges";
+export { OrderProgressStepper } from "./orders/OrderProgressStepper";
+import { OrderStatusBadge } from "./orders/OrderBadges";
+import { KpiCardSkeleton, TableRowSkeleton } from "./orders/OrderSkeletons";
 
 export default function ChangeRequests() {
   const { user, meta } = useAuth();
@@ -530,19 +67,6 @@ export default function ChangeRequests() {
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
-
-  const getRemainingDaysText = (deadline?: string | null, status?: string): { text: string; isOverdue: boolean } | null => {
-    if (!deadline || status === "COMPLETED" || status === "REJECTED") return null;
-    const target = new Date(deadline);
-    const now = new Date();
-    const targetDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
-    const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const diffDays = Math.round((targetDate.getTime() - nowDate.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffDays > 0) return { text: `(${diffDays} kun qoldi)`, isOverdue: false };
-    if (diffDays === 0) return { text: "(Bugun oxirgi kun)", isOverdue: false };
-    return { text: "(Muddati o'tgan)", isOverdue: true };
-  };
 
   // Modal oynasi (faqat batafsil ko'rish va PM qarori uchun)
   const [viewingItem, setViewingItem] = useState<ChangeRequestItem | null>(null);
@@ -601,12 +125,10 @@ export default function ChangeRequests() {
     const timer = setInterval(() => setTick((t) => t + 1), 30000);
     return () => clearInterval(timer);
   }, []);
-  const { data: projectsData } = useFetch<{ count: number; results: Project[] } | Project[]>("/projects/", { scope: "visible" });
   const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>("/users/", { is_active: true });
 
   const items: ChangeRequestItem[] = useMemo(() => (data ? listOf<ChangeRequestItem>(data) : []), [data]);
   const displayItems = items;
-  const projects: Project[] = useMemo(() => (projectsData ? listOf<Project>(projectsData) : []), [projectsData]);
   const usersList: UserBrief[] = useMemo(() => (usersData ? listOf<UserBrief>(usersData) : []), [usersData]);
   const developersList = useMemo(
     () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY" && u.global_role !== "ADMIN" && u.global_role !== "BOSS" && !u.is_platform_admin && !u.is_boss),
@@ -701,8 +223,9 @@ export default function ChangeRequests() {
       }
       setUploadVersionModalItem(null);
       alert(tx("orders.version_uploaded_success"));
-    } catch (err: any) {
-      setVersionError(err?.message || "Yangi versiyani yuklashda xatolik yuz berdi");
+    } catch (err: unknown) {
+      const msg = err && typeof err === "object" && "message" in err ? String(err.message) : "Yangi versiyani yuklashda xatolik yuz berdi";
+      setVersionError(msg);
     } finally {
       setVersionSubmitting(false);
     }
@@ -747,8 +270,8 @@ export default function ChangeRequests() {
       }
       setApproveVersionModalItem(null);
       alert(tx("orders.version_approved_success"));
-    } catch (err: any) {
-      setApproveError(err?.message || "Versiyani tasdiqlashda xatolik yuz berdi");
+    } catch (err: unknown) {
+      setApproveError((err as { message?: string })?.message || "Versiyani tasdiqlashda xatolik yuz berdi");
     } finally {
       setApproveSubmitting(false);
     }
@@ -788,8 +311,8 @@ export default function ChangeRequests() {
       }
       setRejectVersionModalItem(null);
       alert(tx("orders.version_rejected_success"));
-    } catch (err: any) {
-      setRejectVersionError(err?.message || "Versiyani rad etishda xatolik yuz berdi");
+    } catch (err: unknown) {
+      setRejectVersionError((err as { message?: string })?.message || "Versiyani rad etishda xatolik yuz berdi");
     } finally {
       setRejectVersionSubmitting(false);
     }
@@ -799,7 +322,6 @@ export default function ChangeRequests() {
   const [claimModalItem, setClaimModalItem] = useState<ChangeRequestItem | null>(null);
   const [claimDuration, setClaimDuration] = useState("");
   const [claimDeadline, setClaimDeadline] = useState("");
-  const [claimDeveloper, setClaimDeveloper] = useState<number | null>(null);
   const [claimNotes, setClaimNotes] = useState("");
   const [claimSubmitting, setClaimSubmitting] = useState(false);
   const claimingId = claimSubmitting && claimModalItem ? claimModalItem.id : null;
@@ -808,7 +330,6 @@ export default function ChangeRequests() {
     setClaimModalItem(item);
     setClaimDuration(item.pm_estimated_duration || "");
     setClaimDeadline(item.pm_deadline || item.due_date || "");
-    setClaimDeveloper(item.assigned_developer || null);
     setClaimNotes("");
   };
 
@@ -856,25 +377,9 @@ export default function ChangeRequests() {
 
   // Word (.docx) yuklab olish
   const handleDownloadDocx = (id: number, requestNo: string) => {
-    const token = localStorage.getItem("tf_access");
-    fetch(`/api/orders/${id}/export-docx/`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Faylni yuklab bo'lmadi");
-        return res.blob();
-      })
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Buyurtma_TZ_${requestNo}.docx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      })
-      .catch((e) => alert("Word faylini yuklab olishda xatolik: " + e.message));
+    downloadOrderDocx(id, requestNo).catch((e: unknown) =>
+      alert("Word faylini yuklab olishda xatolik: " + (e instanceof Error ? e.message : String(e)))
+    );
   };
 
   // Batafsil ko'rishni ochish — yangi sodda tafsilotlar sahifasiga o'tadi
@@ -1589,7 +1094,7 @@ export default function ChangeRequests() {
                   Ma'lumotlarni yuklashda xatolik yuz berdi
                 </div>
                 <div style={{ color: "#b91c1c", fontSize: 12.5, marginTop: 2 }}>
-                  {typeof error === "string" ? error : (error as any)?.message || String(error)}
+                  {error ? String(error) : ""}
                 </div>
               </div>
             </div>
@@ -2069,6 +1574,19 @@ export default function ChangeRequests() {
                                   }}
                                 >
                                   ✏️ Tahrirlash
+                                </button>
+                              )}
+
+                              {item.status === "DRAFT" && (
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#059669" }}
+                                  onClick={() => {
+                                    setActiveActionMenuId(null);
+                                    void handleSendOrder(item);
+                                  }}
+                                >
+                                  🚀 {tx("orders.yuborish") || "Yuborish"}
                                 </button>
                               )}
 

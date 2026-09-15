@@ -30,7 +30,7 @@ export default function ReviewQueue() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const { data, error: loadError, loading, reload } =
-    useFetch<any>("/tasks/review-queue/", { page, page_size: PER_PAGE });
+    useFetch<unknown>("/tasks/review-queue/", { page, page_size: PER_PAGE });
   const error = actionError || loadError;
 
   // Ish topshirilsa navbat darrov to'ldiriladi (debounce bilan himoyalangan).

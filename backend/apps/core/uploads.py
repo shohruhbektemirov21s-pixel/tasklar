@@ -21,11 +21,27 @@ from rest_framework.serializers import ValidationError
 # saqlash xizmatining ishi.
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 
-# Brauzerda kod ishga tushira oladigan kengaytmalar.
+# Brauzerda kod ishga tushira oladigan yoki serverga xavf tug'diradigan kengaytmalar.
 BLOCKED_EXTENSIONS = {
     "html", "htm", "xhtml", "shtml", "mhtml", "mht",
     "svg", "svgz", "xml", "xsl", "xslt",
     "js", "mjs", "jsx", "wasm",
+    # Bajariluvchi va skript fayllari (server va mijoz xavfsizligi)
+    "exe", "dll", "so", "bin", "elf",
+    "sh", "bash", "zsh", "csh",
+    "bat", "cmd", "ps1", "vbs", "com", "scr", "pif", "msi",
+    "php", "phtml", "php3", "php4", "php5", "phps",
+    "asp", "aspx", "jsp", "jspx", "cgi", "pl",
+    "htaccess", "htpasswd",
+}
+
+BLOCKED_MIME_TYPES = {
+    "text/html",
+    "application/x-msdownload",
+    "application/x-executable",
+    "application/x-sh",
+    "application/x-bat",
+    "application/x-php",
 }
 
 
@@ -37,6 +53,7 @@ def check_upload(upload):
     """Bitta faylni tekshiradi. Yaroqsiz bo'lsa `ValidationError` beradi."""
     name = getattr(upload, "name", "") or ""
     size = getattr(upload, "size", 0) or 0
+    content_type = (getattr(upload, "content_type", "") or "").lower().split(";")[0].strip()
 
     # Nomsiz yoki bo'sh fayl - odatda uzatishdagi nosozlik. Uni saqlasak
     # ro'yxatda nomsiz, ochib bo'lmaydigan qator paydo bo'ladi.
@@ -47,9 +64,10 @@ def check_upload(upload):
         raise ValidationError({"file": "Fayl juda katta: {} MB dan oshmasin ({}).".format(
             MAX_UPLOAD_BYTES // (1024 * 1024), name)})
 
-    if _extension(name) in BLOCKED_EXTENSIONS:
+    ext = _extension(name)
+    if ext in BLOCKED_EXTENSIONS or content_type in BLOCKED_MIME_TYPES:
         raise ValidationError({"file": "Bu turdagi fayl qabul qilinmaydi: {}. "
-                                       "U brauzerda ochilganda kod ishga tushira oladi.".format(name)})
+                                       "Xavfsizlik talablariga ko'ra ushbu format taqiqlangan.".format(name)})
     return upload
 
 

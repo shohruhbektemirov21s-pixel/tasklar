@@ -23,8 +23,8 @@ export default function History({ project }: { project: Project }) {
     // A'zolar ro'yxati - filtr uchun yordamchi. Kelmasa filtr bo'sh qoladi,
     // tarixning o'zi baribir ochiladi.
     let alive = true;
-    void api.get<any>(`/projects/${project.id}/members/`)
-      .then((d) => { if (alive) setMembers(d); })
+    void api.get<ProjectMember[]>(`/projects/${project.id}/members/`)
+      .then((d) => { if (alive) setMembers(d || []); })
       .catch(() => { if (alive) setMembers([]); });
     return () => { alive = false; };
   }, [project.id]);
@@ -34,7 +34,7 @@ export default function History({ project }: { project: Project }) {
     let alive = true;
     setItems(null);
     setError(null);
-    void api.get<any>("/activity/", { project: project.id, ...f, page, page_size: 50 })
+    void api.get<{ results?: Activity[]; count?: number }>("/activity/", { project: project.id, ...f, page, page_size: 50 })
       .then((d) => { if (!alive) return; setItems(d.results || []); setCount(d.count || 0); })
       .catch((e) => {
         if (!alive) return;

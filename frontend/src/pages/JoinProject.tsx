@@ -37,7 +37,7 @@ export default function JoinProject() {
     setBusy(true);
     setError(null);
     try {
-      const res = await api.post<any>(`/projects/${id}/join/`, {
+      const res = await api.post<{ joined?: boolean }>(`/projects/${id}/join/`, {
         message, desired_role: role, code,
       });
       if (res.joined) go(toProject(id, "brif"));

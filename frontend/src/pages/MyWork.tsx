@@ -93,14 +93,6 @@ export default function MyWork() {
     setParams(next, { replace: true });
   };
 
-  const setHalf = (v: string) => {
-    const next = new URLSearchParams(params);
-    if (v) next.set("half", v);
-    else next.delete("half");
-    COLUMNS.forEach((c) => next.delete(`page_${c.key.toLowerCase()}`));
-    setParams(next, { replace: true });
-  };
-
   const setScope = (v: string) => {
     const next = new URLSearchParams(params);
     if (v) next.set("scope", v);

@@ -17,8 +17,8 @@ export default function Workspaces() {
   const [code, setCode] = useState("");
 
   async function load() {
-    setMine(listOf<Workspace>(await api.get<any>("/workspaces/", { scope: "mine" })));
-    setOthers(listOf<Workspace>(await api.get<any>("/workspaces/", { scope: "open" })));
+    setMine(listOf<Workspace>(await api.get<unknown>("/workspaces/", { scope: "mine" })));
+    setOthers(listOf<Workspace>(await api.get<unknown>("/workspaces/", { scope: "open" })));
   }
 
   useEffect(() => { void load(); }, []);

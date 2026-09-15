@@ -1,14 +1,15 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api, listOf, pagesOf, totalOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
-import type { User } from "@/api/types";
+import type { User, Project, Task } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { Avatar, Card, ErrorMsg, Loading, Pager } from "@/components/ui";
 import { toUser, useNavParams } from "@/nav";
 import { tx } from "@/i18n";
 import { IconClose } from "@/components/icons";
+import FilePicker, { uploadFiles } from "@/components/FilePicker";
 
 /** Bir sahifada nechta odam. */
 const PER_PAGE = 30;
@@ -35,7 +36,7 @@ export default function People() {
   }, [f.search]);
 
   /** Filtr o'zgarganda birinchi sahifaga qaytamiz va holatni saqlaymiz. */
-  const setFilter = (patch: Partial<typeof f>) => {
+  const setFilter = useCallback((patch: Partial<typeof f>) => {
     const next = new URLSearchParams(params);
     const updated = { ...f, ...patch };
     for (const [k, v] of Object.entries(updated)) {
@@ -44,7 +45,7 @@ export default function People() {
     }
     next.delete("page");
     setParams(next, { replace: true });
-  };
+  }, [f, params, setParams]);
 
   const setPage = (p: number) => {
     const next = new URLSearchParams(params);
@@ -60,7 +61,7 @@ export default function People() {
       }
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [searchVal, f.search]);
+  }, [searchVal, f.search, setFilter]);
 
   const canManageTasks = Boolean(
     user?.is_boss || user?.is_platform_admin || user?.can_create_project || user?.manages_projects
@@ -70,7 +71,7 @@ export default function People() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const { data, error: loadError, loading, reload } =
-    useFetch<any>("/users/", { ...f, page, page_size: PER_PAGE }, { debounceMs: 300 });
+    useFetch<{ results: User[]; count: number } | User[]>("/users/", { ...f, page, page_size: PER_PAGE }, { debounceMs: 300 });
   const users = useMemo(() => (data ? listOf<User>(data) : null), [data]);
   const total = totalOf(data);
   const pages = pagesOf(data, PER_PAGE);
@@ -80,27 +81,32 @@ export default function People() {
     "/users/specialty-stats/", f, { debounceMs: 300 });
 
   // Loyihalar va hamma foydalanuvchilar (vazifa berish va o'tkazish uchun)
-  const { data: projectsData } = useFetch<any>("/projects/", { page_size: 100 });
-  const projects = useMemo(() => (projectsData ? listOf<any>(projectsData) : []), [projectsData]);
+  const { data: projectsData } = useFetch<{ results: Project[]; count: number } | Project[]>("/projects/", { page_size: 100 });
+  const projects = useMemo(() => (projectsData ? listOf<Project>(projectsData) : []), [projectsData]);
 
-  const { data: allUsersData } = useFetch<any>("/users/", { page_size: 100 });
+  const { data: allUsersData } = useFetch<{ results: User[]; count: number } | User[]>("/users/", { page_size: 100 });
   const allUsers = useMemo(() => (allUsersData ? listOf<User>(allUsersData) : []), [allUsersData]);
 
+  // Jadvalda ko'p xodimlarni belgilash (multi-select)
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+
   // Vazifa berish modali holati
-  const [assignTarget, setAssignTarget] = useState<User | null>(null);
+  const [assignTargets, setAssignTargets] = useState<User[]>([]);
   const [assignProject, setAssignProject] = useState<number | "">("");
   const [assignTitle, setAssignTitle] = useState("");
   const [assignDesc, setAssignDesc] = useState("");
-  const [assignPriority, setAssignPriority] = useState<number>(2);
+  const [assignPriority, setAssignPriority] = useState(2);
   const [assignDueDate, setAssignDueDate] = useState("");
+  const [separateTasks, setSeparateTasks] = useState(false);
+  const [assignFiles, setAssignFiles] = useState<File[]>([]);
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
 
   // Vazifalarni o'tkazish modali holati
   const [reassignTarget, setReassignTarget] = useState<User | null>(null);
-  const [reassignTasks, setReassignTasks] = useState<any[]>([]);
+  const [reassignTasks, setReassignTasks] = useState<Task[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
-  const [activeTaskToReassign, setActiveTaskToReassign] = useState<any | null>(null);
+  const [activeTaskToReassign, setActiveTaskToReassign] = useState<Task | null>(null);
   const [newAssigneeId, setNewAssigneeId] = useState<number | "">("");
   const [reassignNote, setReassignNote] = useState("");
   const [reassignLoading, setReassignLoading] = useState(false);
@@ -116,8 +122,8 @@ export default function People() {
       return;
     }
     setLoadingTasks(true);
-    api.get<any>("/tasks/", { assignee: reassignTarget.id, open: 1, page_size: 100 })
-      .then((d) => setReassignTasks(listOf<any>(d)))
+    api.get<{ results: Task[] } | Task[]>("/tasks/", { assignee: reassignTarget.id, open: 1, page_size: 100 })
+      .then((d) => setReassignTasks(listOf<Task>(d)))
       .catch((e) => setReassignError(e instanceof ApiError ? e.message : "Vazifalarni yuklab bo'lmadi"))
       .finally(() => setLoadingTasks(false));
   }, [reassignTarget]);
@@ -130,25 +136,63 @@ export default function People() {
 
   async function handleAssignTask(e: React.FormEvent) {
     e.preventDefault();
-    if (!assignTarget || !assignProject || !assignTitle.trim()) return;
+    if (!assignTargets.length) {
+      setAssignError(tx("people.kamida_bitta_ijrochi", undefined, "Kamida bitta ijrochi tanlanishi shart"));
+      return;
+    }
+    if (!assignProject || !assignTitle.trim()) return;
     setAssignLoading(true);
     setAssignError(null);
     try {
-      await api.post("/tasks/", {
-        project: assignProject,
-        title: assignTitle.trim(),
-        description: assignDesc.trim(),
-        priority: assignPriority,
-        due_date: assignDueDate || null,
-        assignee_ids: [assignTarget.id],
-      });
-      setAssignTarget(null);
+      // 1. Agar foydalanuvchilar loyiha jamoasida bo'lmasa, ularni a'zo qilishga harakat qilamiz
+      for (const targetUser of assignTargets) {
+        try {
+          await api.post(`/projects/${assignProject}/members/add/`, { user_id: targetUser.id });
+        } catch {
+          // allaqachon a'zo bo'lsa yoki qo'shib bo'lmasa e'tiborsiz qoldiriladi
+        }
+      }
+
+      if (separateTasks && assignTargets.length > 1) {
+        // Har bir ijrochiga alohida vazifa yaratish
+        for (const targetUser of assignTargets) {
+          const res = await api.post<Task>("/tasks/", {
+            project: assignProject,
+            title: assignTitle.trim(),
+            description: assignDesc.trim(),
+            priority: assignPriority,
+            due_date: assignDueDate || null,
+            assignee_ids: [targetUser.id],
+          });
+          if (assignFiles.length > 0 && res?.id) {
+            await uploadFiles(`/tasks/${res.id}/attachments/`, assignFiles);
+          }
+        }
+      } else {
+        // Bitta vazifaga barcha ijrochilarni biriktirish
+        const res = await api.post<Task>("/tasks/", {
+          project: assignProject,
+          title: assignTitle.trim(),
+          description: assignDesc.trim(),
+          priority: assignPriority,
+          due_date: assignDueDate || null,
+          assignee_ids: assignTargets.map((u) => u.id),
+        });
+        if (assignFiles.length > 0 && res?.id) {
+          await uploadFiles(`/tasks/${res.id}/attachments/`, assignFiles);
+        }
+      }
+
+      setAssignTargets([]);
       setAssignTitle("");
       setAssignDesc("");
       setAssignDueDate("");
+      setAssignFiles([]);
+      setSeparateTasks(false);
+      setSelectedUserIds([]);
       reload();
     } catch (err) {
-      setAssignError(err instanceof ApiError ? err.message : "Vazifa yuklashda xatolik yuz berdi");
+      setAssignError(err instanceof ApiError ? err.message : tx("people.vazifa_yuklashda_xatolik", undefined, "Vazifa berishda xatolik yuz berdi"));
     } finally {
       setAssignLoading(false);
     }
@@ -238,111 +282,193 @@ export default function People() {
         <div className="split">
           <div className="card">
             {loading ? <Loading /> : !users ? null : (
-              <div className="table-wrap"><table className="table">
-                <thead>
-                  <tr>
-                    <th>{tx("people.foydalanuvchi")}</th>
-                    <th>{tx("people.bajarilmagan_vazifalar", undefined, "Bajarilmagan vazifalar")}</th>
-                    <th>{tx("people.tizim_roli")}</th>
-                    <th>{tx("common.loyihalar")}</th>
-                    <th>{tx("people.bajarilgan_vazifalar", undefined, "Bajarilgan vazifalar")}</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <tr key={u.id}>
-                      <td>
-                        <div className="row">
-                          <Avatar user={u} size="sm" />
-                          <div>
-                            <Link {...toUser(u.id)}>{u.full_name}</Link>
-                            {!u.is_active && <span className="badge badge-danger">{tx("people.bloklangan")}</span>}
-                            <br /><small className="muted">{u.email}</small>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        {u.open_tasks && u.open_tasks > 0 ? (
-                          <button
-                            type="button"
-                            className="badge badge-warning"
-                            style={{
-                              fontWeight: 600,
-                              color: "#b45309",
-                              background: "rgba(245, 158, 11, 0.15)",
-                              cursor: canManageTasks ? "pointer" : "default",
-                              border: "none",
-                              padding: "4px 8px",
+              <>
+                {canManageTasks && selectedUserIds.length > 0 && (
+                  <div
+                    style={{
+                      padding: "8px 16px",
+                      background: "var(--accent-soft, rgba(99, 102, 241, 0.1))",
+                      borderBottom: "1px solid var(--border)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 10,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 500 }}>
+                      <span className="badge badge-primary">{selectedUserIds.length}</span>
+                      <span>{tx("people.tanlangan_xodimlar", undefined, "ta xodim tanlandi")}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        style={{ fontSize: 12 }}
+                        onClick={() => {
+                          const pool = allUsers.length ? allUsers : (users || []);
+                          const picked = pool.filter((u) => selectedUserIds.includes(u.id));
+                          setAssignTargets(picked.length ? picked : (users || []).filter((u) => selectedUserIds.includes(u.id)));
+                          setAssignFiles([]);
+                          setAssignError(null);
+                        }}
+                      >
+                        + {tx("people.vazifa_berish", undefined, "Vazifa berish")}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline"
+                        style={{ fontSize: 12 }}
+                        onClick={() => setSelectedUserIds([])}
+                      >
+                        {tx("people.tanlovni_tozalash", undefined, "Tanlovni tozalash")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="table-wrap"><table className="table">
+                  <thead>
+                    <tr>
+                      {canManageTasks && (
+                        <th style={{ width: 36, textAlign: "center", padding: "8px 4px" }}>
+                          <input
+                            type="checkbox"
+                            style={{ width: "auto", minHeight: 0, cursor: "pointer" }}
+                            checked={Boolean(users.length && users.every((u) => selectedUserIds.includes(u.id)))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                const idsOnPage = users.map((u) => u.id);
+                                setSelectedUserIds((prev) => Array.from(new Set([...prev, ...idsOnPage])));
+                              } else {
+                                const idsOnPage = new Set(users.map((u) => u.id));
+                                setSelectedUserIds((prev) => prev.filter((id) => !idsOnPage.has(id)));
+                              }
                             }}
-                            title={canManageTasks ? tx("people.vazifalarni_otkazish", undefined, "Vazifalarni o'tkazish") : undefined}
-                            onClick={() => canManageTasks && setReassignTarget(u)}
-                          >
-                            {u.open_tasks} {tx("common.ta", undefined, "ta")}
-                          </button>
-                        ) : (
-                          <span className="muted">0</span>
-                        )}
-                      </td>
-                      <td>
-                        {isAdmin ? (
-                          <select defaultValue={u.global_role} style={{ width: 150 }}
-                                  onChange={(e) => void change(u, { global_role: e.target.value })}>
-                            {(meta?.global_role || []).map((s) => (
-                              <option key={s.value} value={String(s.value)}>{s.label}</option>
-                            ))}
-                          </select>
-                        ) : <span className="badge">{u.global_role_display}</span>}
-                      </td>
-                      <td>{u.project_count ?? 0}</td>
-                      <td>
-                        {u.done_tasks && u.done_tasks > 0 ? (
-                          <span className="badge badge-success" style={{ fontWeight: 600, color: "#15803d", background: "rgba(34, 197, 94, 0.15)" }}>
-                            {u.done_tasks} {tx("common.ta", undefined, "ta")}
-                          </span>
-                        ) : (
-                          <span className="muted">0</span>
-                        )}
-                      </td>
-                      <td className="right" style={{ whiteSpace: "nowrap" }}>
+                            aria-label="Hammasini tanlash"
+                          />
+                        </th>
+                      )}
+                      <th>{tx("people.foydalanuvchi")}</th>
+                      <th>{tx("people.bajarilmagan_vazifalar", undefined, "Bajarilmagan vazifalar")}</th>
+                      <th>{tx("people.tizim_roli")}</th>
+                      <th>{tx("common.loyihalar")}</th>
+                      <th>{tx("people.bajarilgan_vazifalar", undefined, "Bajarilgan vazifalar")}</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id}>
                         {canManageTasks && (
-                          <>
+                          <td style={{ textAlign: "center", width: 36, padding: "8px 4px" }}>
+                            <input
+                              type="checkbox"
+                              style={{ width: "auto", minHeight: 0, cursor: "pointer" }}
+                              checked={selectedUserIds.includes(u.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedUserIds((prev) => [...prev, u.id]);
+                                } else {
+                                  setSelectedUserIds((prev) => prev.filter((id) => id !== u.id));
+                                }
+                              }}
+                              aria-label={u.full_name}
+                            />
+                          </td>
+                        )}
+                        <td>
+                          <div className="row">
+                            <Avatar user={u} size="sm" />
+                            <div>
+                              <Link {...toUser(u.id)}>{u.full_name}</Link>
+                              {!u.is_active && <span className="badge badge-danger">{tx("people.bloklangan")}</span>}
+                              <br /><small className="muted">{u.email}</small>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          {u.open_tasks && u.open_tasks > 0 ? (
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline"
-                              style={{ marginRight: 6, fontSize: 12, padding: "3px 8px" }}
-                              onClick={() => {
-                                setAssignTarget(u);
-                                setAssignError(null);
+                              className="badge badge-warning"
+                              style={{
+                                fontWeight: 600,
+                                color: "#b45309",
+                                background: "rgba(245, 158, 11, 0.15)",
+                                cursor: canManageTasks ? "pointer" : "default",
+                                border: "none",
+                                padding: "4px 8px",
                               }}
-                              title={tx("people.vazifa_berish", undefined, "Vazifa berish")}
+                              title={canManageTasks ? tx("people.vazifalarni_otkazish", undefined, "Vazifalarni o'tkazish") : undefined}
+                              onClick={() => canManageTasks && setReassignTarget(u)}
                             >
-                              + {tx("people.vazifa_berish", undefined, "Vazifa berish")}
+                              {u.open_tasks} {tx("common.ta", undefined, "ta")}
                             </button>
-                            {Boolean(u.open_tasks && u.open_tasks > 0) && (
+                          ) : (
+                            <span className="muted">0</span>
+                          )}
+                        </td>
+                        <td>
+                          {isAdmin ? (
+                            <select defaultValue={u.global_role} style={{ width: 150 }}
+                                    onChange={(e) => void change(u, { global_role: e.target.value })}>
+                              {(meta?.global_role || []).map((s) => (
+                                <option key={s.value} value={String(s.value)}>{s.label}</option>
+                              ))}
+                            </select>
+                          ) : <span className="badge">{u.global_role_display}</span>}
+                        </td>
+                        <td>{u.project_count ?? 0}</td>
+                        <td>
+                          {u.done_tasks && u.done_tasks > 0 ? (
+                            <span className="badge badge-success" style={{ fontWeight: 600, color: "#15803d", background: "rgba(34, 197, 94, 0.15)" }}>
+                              {u.done_tasks} {tx("common.ta", undefined, "ta")}
+                            </span>
+                          ) : (
+                            <span className="muted">0</span>
+                          )}
+                        </td>
+                        <td className="right" style={{ whiteSpace: "nowrap" }}>
+                          {canManageTasks && (
+                            <>
                               <button
                                 type="button"
                                 className="btn btn-sm btn-outline"
                                 style={{ marginRight: 6, fontSize: 12, padding: "3px 8px" }}
-                                onClick={() => setReassignTarget(u)}
-                                title={tx("people.vazifalarni_otkazish", undefined, "Vazifalarni o'tkazish")}
+                                onClick={() => {
+                                  setAssignTargets([u]);
+                                  setAssignFiles([]);
+                                  setAssignError(null);
+                                }}
+                                title={tx("people.vazifa_berish", undefined, "Vazifa berish")}
                               >
-                                ⇄ {tx("people.vazifani_otkazish", undefined, "Boshqaga o'tkazish")}
+                                + {tx("people.vazifa_berish", undefined, "Vazifa berish")}
                               </button>
-                            )}
-                          </>
-                        )}
-                        {isAdmin && u.id !== user?.id && (
-                          <button className={`btn btn-sm ${u.is_active ? "btn-danger" : ""}`}
-                                  onClick={() => void change(u, { is_active: !u.is_active })}>
-                            {u.is_active ? tx("people.bloklash") : tx("people.faollashtirish")}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table></div>
+                              {Boolean(u.open_tasks && u.open_tasks > 0) && (
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline"
+                                  style={{ marginRight: 6, fontSize: 12, padding: "3px 8px" }}
+                                  onClick={() => setReassignTarget(u)}
+                                  title={tx("people.vazifalarni_otkazish", undefined, "Vazifalarni o'tkazish")}
+                                >
+                                  ⇄ {tx("people.vazifani_otkazish", undefined, "Boshqaga o'tkazish")}
+                                </button>
+                              )}
+                            </>
+                          )}
+                          {isAdmin && u.id !== user?.id && (
+                            <button className={`btn btn-sm ${u.is_active ? "btn-danger" : ""}`}
+                                    onClick={() => void change(u, { is_active: !u.is_active })}>
+                              {u.is_active ? tx("people.bloklash") : tx("people.faollashtirish")}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table></div>
+              </>
             )}
             {pages > 1 && (
               <div className="card-body">
@@ -366,7 +492,7 @@ export default function People() {
       </div>
 
       {/* VAZIFA BERISH MODALI */}
-      {assignTarget && (
+      {assignTargets.length > 0 && (
         <div
           style={{
             position: "fixed",
@@ -379,7 +505,7 @@ export default function People() {
             zIndex: 9999,
             padding: 16,
           }}
-          onClick={() => !assignLoading && setAssignTarget(null)}
+          onClick={() => !assignLoading && setAssignTargets([])}
         >
           <div
             style={{
@@ -388,7 +514,7 @@ export default function People() {
               borderRadius: "var(--radius-lg, 12px)",
               boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.4)",
               width: "100%",
-              maxWidth: 520,
+              maxWidth: 580,
               maxHeight: "90vh",
               overflowY: "auto",
               padding: 24,
@@ -397,18 +523,41 @@ export default function People() {
           >
             <div className="row between middle" style={{ marginBottom: 16 }}>
               <div className="row middle" style={{ gap: 10 }}>
-                <Avatar user={assignTarget} size="sm" />
+                {assignTargets.length === 1 ? (
+                  <Avatar user={assignTargets[0]} size="sm" />
+                ) : (
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      background: "var(--primary-soft, rgba(99, 102, 241, 0.15))",
+                      color: "var(--primary)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 700,
+                      fontSize: 13,
+                    }}
+                  >
+                    {assignTargets.length}
+                  </div>
+                )}
                 <div>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
                     {tx("people.vazifa_berish", undefined, "Vazifa berish")}
                   </h3>
-                  <small className="muted">{assignTarget.full_name} ({assignTarget.email})</small>
+                  <small className="muted">
+                    {assignTargets.length === 1
+                      ? `${assignTargets[0].full_name} (${assignTargets[0].email})`
+                      : `${assignTargets.length} ${tx("people.tanlangan_xodimlar", undefined, "ta xodim tanlandi")}`}
+                  </small>
                 </div>
               </div>
               <button
                 type="button"
                 className="top-icon"
-                onClick={() => setAssignTarget(null)}
+                onClick={() => !assignLoading && setAssignTargets([])}
                 aria-label="Yopish"
               >
                 <IconClose size={16} />
@@ -418,6 +567,108 @@ export default function People() {
             <ErrorMsg error={assignError} />
 
             <form onSubmit={handleAssignTask}>
+              {/* IJROCHILARNI TANLASH VA BOSHQARISH */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
+                  {tx("people.ijrochilar", undefined, "Ijrochilar")} *
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  {assignTargets.map((u) => (
+                    <span
+                      key={u.id}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "3px 8px 3px 6px",
+                        background: "var(--surface-hover, rgba(0, 0, 0, 0.05))",
+                        border: "1px solid var(--border)",
+                        borderRadius: 16,
+                        fontSize: 12,
+                      }}
+                    >
+                      <Avatar user={u} size="sm" />
+                      <span style={{ fontWeight: 500 }}>{u.full_name}</span>
+                      {assignTargets.length > 1 && (
+                        <button
+                          type="button"
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            cursor: "pointer",
+                            padding: 0,
+                            marginLeft: 2,
+                            lineHeight: 1,
+                            color: "var(--text-muted)",
+                            fontSize: 13,
+                          }}
+                          onClick={() => setAssignTargets(assignTargets.filter((x) => x.id !== u.id))}
+                          title={tx("common.ochirish", undefined, "O'chirish")}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const uid = Number(e.target.value);
+                    if (!uid) return;
+                    const found = allUsers.find((au) => au.id === uid);
+                    if (found && !assignTargets.some((x) => x.id === found.id)) {
+                      setAssignTargets([...assignTargets, found]);
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "7px 10px",
+                    borderRadius: 6,
+                    border: "1px dashed var(--border)",
+                    background: "var(--surface)",
+                    fontSize: 13,
+                  }}
+                >
+                  <option value="">+ {tx("people.ijrochi_qoshish", undefined, "Yana ijrochi qo'shish...")}</option>
+                  {allUsers
+                    .filter((au) => au.is_active && !assignTargets.some((x) => x.id === au.id))
+                    .map((au) => (
+                      <option key={au.id} value={au.id}>
+                        {au.full_name} ({au.email}) {au.specialty_display ? `— ${au.specialty_display}` : ""}
+                      </option>
+                    ))}
+                </select>
+
+                {assignTargets.length > 1 && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      padding: "8px 10px",
+                      background: "rgba(99, 102, 241, 0.05)",
+                      borderRadius: 6,
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, margin: 0, userSelect: "none" }}>
+                      <input
+                        type="checkbox"
+                        checked={separateTasks}
+                        onChange={(e) => setSeparateTasks(e.target.checked)}
+                        style={{ width: "auto", minHeight: 0 }}
+                      />
+                      <span>{tx("people.har_biriga_alohida_vazifa", undefined, "Har bir ijrochi uchun alohida vazifa yaratilsin")}</span>
+                    </label>
+                    <small className="muted" style={{ display: "block", marginTop: 4, marginLeft: 22, fontSize: 11 }}>
+                      {separateTasks
+                        ? tx("people.har_biriga_alohida_tavsif", undefined, "Har bir xodimga alohida shaxsiy vazifa ochiladi")
+                        : tx("people.bitta_vazifaga_biriktirish_tavsif", undefined, "Barcha tanlangan xodimlar bitta umumiy vazifaga biriktiriladi")}
+                    </small>
+                  </div>
+                )}
+              </div>
+
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
                   {tx("people.loyiha_tanlang", undefined, "Loyiha tanlang")} *
@@ -462,7 +713,7 @@ export default function People() {
                 />
               </div>
 
-              <div className="row" style={{ gap: 12, marginBottom: 20 }}>
+              <div className="row" style={{ gap: 12, marginBottom: 14 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
                     {tx("common.muhimlik", undefined, "Muhimlik")}
@@ -491,11 +742,19 @@ export default function People() {
                 </div>
               </div>
 
+              {/* FAYLLAR BIRIKTIRISH */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
+                  {tx("people.fayllar", undefined, "Fayllar")}
+                </label>
+                <FilePicker files={assignFiles} onChange={setAssignFiles} />
+              </div>
+
               <div className="row right" style={{ gap: 8 }}>
                 <button
                   type="button"
                   className="btn btn-outline"
-                  onClick={() => setAssignTarget(null)}
+                  onClick={() => !assignLoading && setAssignTargets([])}
                   disabled={assignLoading}
                 >
                   {tx("common.bekor_qilish", undefined, "Bekor qilish")}
@@ -503,7 +762,7 @@ export default function People() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={assignLoading || !assignTitle.trim() || !assignProject}
+                  disabled={assignLoading || !assignTitle.trim() || !assignProject || assignTargets.length === 0}
                 >
                   {assignLoading ? tx("common.yuklanmoqda", undefined, "Yuklanmoqda...") : tx("people.vazifa_berish", undefined, "Vazifa berish")}
                 </button>

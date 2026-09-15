@@ -378,18 +378,5 @@ export async function createOrderTask(
  * Buyurtmaning rasmiy Word (.docx) blankini yuklab olish.
  */
 export async function downloadOrderDocx(id: number | string, requestNo: string): Promise<void> {
-  const token = localStorage.getItem("tf_access");
-  const res = await fetch(`/api/orders/${id}/export-docx/`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) throw new Error("Word faylini yuklab bo'lmadi");
-  const blob = await res.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Buyurtma_${requestNo}.docx`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  window.URL.revokeObjectURL(url);
+  await api.download(`/orders/${id}/export-docx/`, `Buyurtma_${requestNo}.docx`);
 }

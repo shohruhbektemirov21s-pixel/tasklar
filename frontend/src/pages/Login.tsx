@@ -49,7 +49,7 @@ export default function Login() {
       // Telegramdagi «Ochish» tugmasi bosilganda. Aks holda u har safar
       // «Bosh panel» ga tushib, qidirgan ishini qo'lda topishi kerak edi.
       nav(next || "/panel", { replace: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       const msg = err instanceof ApiError ? err.message : tx("login.kirishda_xatolik");
       // Agar backend qolgan soniyani yuborgan bo'lsa
       const match = msg.match(/(\d+)\s+soniyadan/);

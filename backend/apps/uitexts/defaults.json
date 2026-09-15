@@ -880,7 +880,7 @@
   "note": "pages/Dashboard.tsx"
  },
  "dashboard.davr_hammasi": {
-  "value": "{davr} — hammasi",
+  "value": "Barcha sanalar",
   "note": "pages/Dashboard.tsx"
  },
  "dashboard.davr_kesimi_izohi": {
@@ -2676,7 +2676,7 @@
   "note": "pages/People.tsx"
  },
  "people.foydalanuvchilar": {
-  "value": "Foydalanuvchilar",
+  "value": "Xodimlar",
   "note": "pages/People.tsx"
  },
  "people.ism_email_yoki_konikma": {
@@ -6015,10 +6015,6 @@
   "value": "Xodimlar",
   "note": "components/Layout.tsx"
  },
- "people.foydalanuvchilar": {
-  "value": "Xodimlar",
-  "note": "pages/People.tsx"
- },
  "people.bajarilmagan_vazifalar": {
   "value": "Bajarilmagan vazifalar",
   "note": "pages/People.tsx"
@@ -6503,10 +6499,6 @@
   "value": "Oy yarmi",
   "note": "pages/Dashboard.tsx"
  },
- "dashboard.davr_hammasi": {
-  "value": "Barcha sanalar",
-  "note": "pages/Dashboard.tsx"
- },
  "dashboard.davr_1": {
   "value": "1 (1—15 sanalar)",
   "note": "pages/Dashboard.tsx"
@@ -6650,5 +6642,45 @@
  "layout.oldingi_qadamlar_mavjud_emas": {
   "value": "Oldingi qadamlar mavjud emas",
   "note": "components/Layout.tsx"
+ },
+ "people.ijrochilar": {
+  "value": "Ijrochilar",
+  "note": "pages/People.tsx"
+ },
+ "people.ijrochi_qoshish": {
+  "value": "Yana ijrochi qo'shish...",
+  "note": "pages/People.tsx"
+ },
+ "people.har_biriga_alohida_vazifa": {
+  "value": "Har bir ijrochi uchun alohida vazifa yaratilsin",
+  "note": "pages/People.tsx"
+ },
+ "people.har_biriga_alohida_tavsif": {
+  "value": "Har bir tanlangan xodimga alohida shaxsiy vazifa ochiladi",
+  "note": "pages/People.tsx"
+ },
+ "people.bitta_vazifaga_biriktirish_tavsif": {
+  "value": "Barcha tanlangan xodimlar bitta umumiy vazifaga biriktiriladi",
+  "note": "pages/People.tsx"
+ },
+ "people.tanlangan_xodimlar": {
+  "value": "ta xodim tanlandi",
+  "note": "pages/People.tsx"
+ },
+ "people.tanlovni_tozalash": {
+  "value": "Tanlovni tozalash",
+  "note": "pages/People.tsx"
+ },
+ "people.fayllar": {
+  "value": "Fayllar",
+  "note": "pages/People.tsx"
+ },
+ "people.vazifa_yuklashda_xatolik": {
+  "value": "Vazifa berishda xatolik yuz berdi",
+  "note": "pages/People.tsx"
+ },
+ "people.kamida_bitta_ijrochi": {
+  "value": "Kamida bitta ijrochi tanlanishi shart",
+  "note": "pages/People.tsx"
  }
 }

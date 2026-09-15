@@ -20,7 +20,7 @@ export default function WorkspaceDetail() {
   const load = useCallback(async () => {
     try {
       setWs(await api.get<Workspace>(`/workspaces/${slug}/`));
-      setProjects(listOf<Project>(await api.get<any>("/projects/", {
+      setProjects(listOf<Project>(await api.get<unknown>("/projects/", {
         workspace: slug, scope: "discover",
       })));
     } catch (err) {

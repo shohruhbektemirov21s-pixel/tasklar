@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { api } from "@/api/client";
 import type { AppNotification } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
@@ -7,7 +6,7 @@ import { PageHead } from "@/components/Layout";
 import {
   IconBell, IconChat, IconCheck, IconClock, IconOrder, IconReview, IconTasks, IconUserPlus,
 } from "@/components/icons";
-import { Card, Empty, safePath, timeAgo } from "@/components/ui";
+import { Card, Empty, timeAgo } from "@/components/ui";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import { tx } from "@/i18n";
 import NotificationModal from "@/components/NotificationModal";
@@ -41,7 +40,6 @@ export default function Notifications() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("all");
   const [selectedNotif, setSelectedNotif] = useState<AppNotification | null>(null);
-  const nav = useNavigate();
 
   const tabs: [Tab, string, number?][] = useMemo(() => {
     const unreadCount = notifications.filter((n) => !n.is_read).length || unread;

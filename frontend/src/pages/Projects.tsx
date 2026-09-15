@@ -8,7 +8,7 @@ import { PageHead } from "@/components/Layout";
 import { IconCalendar, IconPlus } from "@/components/icons";
 import { DUE_PERIODS, DateField, Empty, ErrorMsg, Loading, Pager, Progress, RowMenu, fmtDate, fmtDateTime } from "@/components/ui";
 import { completeProject, deleteProject } from "@/api/projects";
-import { toBulkTasks, toNewProject, toNewTask, toProject, toProjectEdit, toTask, useGo } from "@/nav";
+import { toNewProject, toNewTask, toProject, toProjectEdit, toTask, useGo } from "@/nav";
 import { tx } from "@/i18n";
 
 /**
@@ -77,7 +77,7 @@ function ManagerProjects() {
   // loyihada JIMGINA kesilardi - 101-loyiha hech qanday belgisiz
   // yo'qolardi. Endi sahifa raqamlari bor va jami son serverdan keladi.
   const { data, error: loadError, loading, reload } =
-    useFetch<any>("/projects/", { scope: "visible", search: applied, period, status,
+    useFetch<{ count: number; results: Project[] } | Project[]>("/projects/", { scope: "visible", search: applied, period, status,
                                   page, page_size: PER_PAGE });
   const projects = useMemo(() => (data ? listOf<Project>(data) : null), [data]);
   const total = totalOf(data);

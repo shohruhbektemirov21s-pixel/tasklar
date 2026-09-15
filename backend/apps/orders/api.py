@@ -565,18 +565,20 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 status=403,
             )
 
-        order = self.get_object()
-        if order.status == ChangeRequestStatus.DRAFT:
-            raise ValidationError({"detail": "Qoralama (draft) holatidagi buyurtmani qabul qilib bo'lmaydi. Avval yuborilishi kerak."})
-
-        # Agar bu buyurtmani allaqachon boshqa PM olgan bo'lsa:
-        if order.assigned_pm_id and order.assigned_pm_id != user.id:
-            if not (user.is_platform_admin or getattr(user, "is_boss", False)):
-                raise ValidationError(
-                    {"detail": f"Ushbu buyurtmani allaqachon boshqa loyiha menejeri ({order.assigned_pm.full_name}) o'z zimmasiga olgan. Boshqa PM bu ishni ololmaydi."}
-                )
-
+        target_pk = self.get_object().pk
         with transaction.atomic():
+            order = ChangeRequest.objects.select_for_update().select_related("assigned_pm").get(pk=target_pk)
+            if order.status == ChangeRequestStatus.DRAFT:
+                raise ValidationError({"detail": "Qoralama (draft) holatidagi buyurtmani qabul qilib bo'lmaydi. Avval yuborilishi kerak."})
+
+            # Agar bu buyurtmani allaqachon boshqa PM olgan bo'lsa:
+            if order.assigned_pm_id and order.assigned_pm_id != user.id:
+                if not (user.is_platform_admin or getattr(user, "is_boss", False)):
+                    pm_name = order.assigned_pm.full_name if order.assigned_pm else "Boshqa PM"
+                    raise ValidationError(
+                        {"detail": f"Ushbu buyurtmani allaqachon boshqa loyiha menejeri ({pm_name}) o'z zimmasiga olgan. Boshqa PM bu ishni ololmaydi."}
+                    )
+
             order.assigned_pm = user
             role_label = getattr(user, "get_global_role_display", lambda: "PM")()
             order.executor_signer = f"{user.full_name} ({role_label})"
@@ -627,17 +629,6 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 status=403,
             )
 
-        order = self.get_object()
-        if order.status == ChangeRequestStatus.DRAFT:
-            raise ValidationError({"detail": "Qoralama (draft) holatidagi buyurtmaga qaror chiqarib bo'lmaydi. Avval yuborilishi kerak."})
-
-        # Agar bu buyurtmani allaqachon boshqa PM olgan bo'lsa:
-        if order.assigned_pm_id and order.assigned_pm_id != user.id:
-            if not (user.is_platform_admin or getattr(user, "is_boss", False)):
-                raise ValidationError(
-                    {"detail": f"Ushbu buyurtmani {order.assigned_pm.full_name} o'z zimmasiga olgan. Boshqa PM unga qaror yoki muddat belgilay olmaydi."}
-                )
-
         serializer = PMDecisionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -647,7 +638,20 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 {"status": "Ishni to'g'ridan-to'g'ri yakunlab bo'lmaydi. Tugatilgan ish haqidagi hujjatni yuklab, boshqarma tasdig'iga yuborishingiz kerak."}
             )
 
+        target_pk = self.get_object().pk
         with transaction.atomic():
+            order = ChangeRequest.objects.select_for_update().select_related("assigned_pm").get(pk=target_pk)
+            if order.status == ChangeRequestStatus.DRAFT:
+                raise ValidationError({"detail": "Qoralama (draft) holatidagi buyurtmaga qaror chiqarib bo'lmaydi. Avval yuborilishi kerak."})
+
+            # Agar bu buyurtmani allaqachon boshqa PM olgan bo'lsa:
+            if order.assigned_pm_id and order.assigned_pm_id != user.id:
+                if not (user.is_platform_admin or getattr(user, "is_boss", False)):
+                    pm_name = order.assigned_pm.full_name if order.assigned_pm else "Boshqa PM"
+                    raise ValidationError(
+                        {"detail": f"Ushbu buyurtmani {pm_name} o'z zimmasiga olgan. Boshqa PM unga qaror yoki muddat belgilay olmaydi."}
+                    )
+
             order.status = data["status"]
             if "pm_estimated_duration" in data:
                 order.pm_estimated_duration = data["pm_estimated_duration"]

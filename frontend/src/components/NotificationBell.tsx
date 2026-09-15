@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import type { AppNotification } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import { IconBell } from "./icons";
-import { Avatar, safePath, timeAgo } from "./ui";
+import { Avatar, timeAgo } from "./ui";
 import { tx } from "@/i18n";
 import NotificationModal from "./NotificationModal";
 
@@ -31,7 +31,6 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState<AppNotification | null>(null);
   const box = useRef<HTMLDivElement>(null);
-  const nav = useNavigate();
 
   useEffect(() => {
     if (!open) return;

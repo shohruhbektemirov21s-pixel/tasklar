@@ -50,7 +50,7 @@ function ProjectDocuments({ projectId }: { projectId: number }) {
     let alive = true;
     setFiles(null);
     setDenied(false);
-    void api.get<any>(`/projects/${projectId}/files/`)
+    void api.get<unknown>(`/projects/${projectId}/files/`)
       .then((d) => { if (alive) setFiles(listOf<ProjectFile>(d)); })
       .catch(() => { if (alive) { setFiles([]); setDenied(true); } });
     return () => { alive = false; };
@@ -107,7 +107,7 @@ function ProjectFeed({ projectId }: { projectId: number }) {
     // tushmasin - kechikkan so'rov bekor qilinadi.
     let alive = true;
     setItems(null);
-    void api.get<any>("/activity/", {
+    void api.get<{ results?: Activity[]; count?: number }>("/activity/", {
       project: projectId, search: f.search, category: f.category, days: f.days,
       page, page_size: 50,
     })

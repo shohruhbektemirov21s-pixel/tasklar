@@ -491,23 +491,24 @@ class TaskViewSet(viewsets.ModelViewSet):
             raise ValidationError({"user_id": "Vazifa allaqachon shu odamda."})
 
         now = timezone.now()
-        for a in active:
-            if a.user_id == target.id:
-                continue
-            a.is_active = False
-            a.unassigned_at = now
-            a.save(update_fields=["is_active", "unassigned_at"])
+        with transaction.atomic():
+            for a in active:
+                if a.user_id == target.id:
+                    continue
+                a.is_active = False
+                a.unassigned_at = now
+                a.save(update_fields=["is_active", "unassigned_at"])
 
-        # Odam ilgari shu vazifada bolgan bolsa yangi qator ochilmaydi -
-        # eskisi qayta faollashadi (bir odam bir vazifada ikki marta turmasin).
-        current = task.assignments.filter(user=target).first()
-        if current is None:
-            TaskAssignment.objects.create(task=task, user=target, assigned_by=request.user)
-        else:
-            current.is_active = True
-            current.unassigned_at = None
-            current.assigned_by = request.user
-            current.save(update_fields=["is_active", "unassigned_at", "assigned_by"])
+            # Odam ilgari shu vazifada bolgan bolsa yangi qator ochilmaydi -
+            # eskisi qayta faollashadi (bir odam bir vazifada ikki marta turmasin).
+            current = task.assignments.filter(user=target).first()
+            if current is None:
+                TaskAssignment.objects.create(task=task, user=target, assigned_by=request.user)
+            else:
+                current.is_active = True
+                current.unassigned_at = None
+                current.assigned_by = request.user
+                current.save(update_fields=["is_active", "unassigned_at", "assigned_by"])
 
         gone = [a.user for a in active if a.user_id != target.id]
         detail = []
@@ -667,33 +668,36 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         access = check_access(request.user, task.project, "work")
 
-        ser = SubmissionSerializer(data={"text": request.data.get("text", "")},
-                                   context=self.get_serializer_context())
-        ser.is_valid(raise_exception=True)
-        submission = ser.save(task=task, author=request.user,
-                              round_no=max(task.review_round, 1))
+        with transaction.atomic():
+            ser = SubmissionSerializer(data={"text": request.data.get("text", "")},
+                                       context=self.get_serializer_context())
+            ser.is_valid(raise_exception=True)
+            submission = ser.save(task=task, author=request.user,
+                                  round_no=max(task.review_round, 1))
 
-        uploads = check_uploads(
-            request.FILES.getlist("file") or request.FILES.getlist("files"))
-        for f in uploads:
-            fs = AttachmentSerializer(data={"file": f, "description": "Ish topshirigi"},
-                                      context={"request": request})
-            fs.is_valid(raise_exception=True)
-            fs.save(task=task, submission=submission, uploaded_by=request.user,
-                    content_type=(getattr(f, "content_type", "") or "")[:120])
+            uploads = check_uploads(
+                request.FILES.getlist("file") or request.FILES.getlist("files"))
+            for f in uploads:
+                fs = AttachmentSerializer(data={"file": f, "description": "Ish topshirigi"},
+                                          context={"request": request})
+                fs.is_valid(raise_exception=True)
+                fs.save(task=task, submission=submission, uploaded_by=request.user,
+                        content_type=(getattr(f, "content_type", "") or "")[:120])
 
-        moved = False
-        old_label = task.get_status_display()
-        wants_review = str(request.data.get("submit_for_review", "1")).lower() not in ("0", "false")
-        if wants_review:
-            moved = send_to_review(task, access)
-            if moved:
-                submission.round_no = task.review_round
-                submission.save(update_fields=["round_no"])
-                log(actor=request.user, verb="task.submitted", task=task,
-                    summary="{}: {} -> {}".format(task.title, old_label,
-                                                  task.get_status_display()),
-                    meta={"from": old_label, "to": task.get_status_display()})
+            moved = False
+            old_label = task.get_status_display()
+            wants_review = str(request.data.get("submit_for_review", "1")).lower() not in ("0", "false")
+            if wants_review:
+                moved = send_to_review(task, access)
+                if moved:
+                    submission.round_no = task.review_round
+                    submission.save(update_fields=["round_no"])
+
+        if moved:
+            log(actor=request.user, verb="task.submitted", task=task,
+                summary="{}: {} -> {}".format(task.title, old_label,
+                                              task.get_status_display()),
+                meta={"from": old_label, "to": task.get_status_display()})
 
         log(actor=request.user, verb="task.handover", task=task,
             summary="{}: ish topshirildi ({}-aylana)".format(task.title, submission.round_no),

@@ -56,7 +56,7 @@ export default function Board({ project }: { project: Project }) {
   // tasma umuman chizilmaydi.
   useEffect(() => {
     let alive = true;
-    void api.get<any>(`/projects/${project.id}/files/`)
+    void api.get<unknown>(`/projects/${project.id}/files/`)
       .then((d) => { if (alive) setFiles(listOf<ProjectFile>(d)); })
       .catch(() => { if (alive) setFiles([]); });
     return () => { alive = false; };

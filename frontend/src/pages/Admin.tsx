@@ -44,6 +44,15 @@ const EMPTY_SPEC_FORM = {
   name: "", code: "", color: "#2563eb", icon: "*", skills: "",
 };
 
+interface SpecialtyItem {
+  id?: number;
+  value: string;
+  label: string;
+  color?: string;
+  icon?: string;
+  skills?: string;
+}
+
 export default function Admin() {
   const { user: me, meta } = useAuth();
   const [tab, setTab] = useState<Tab>("users");
@@ -68,7 +77,7 @@ export default function Admin() {
   // (`config/pagination.py`). 201-yozuv hech qanday belgisiz yo'qolardi
   // va aynan admin panelida bu eng xavfli: bu yerda odam «hammasini
   // ko'ryapman» deb ishonadi.
-  const { data: userData, loading, reload } = useFetch<any>(
+  const { data: userData, loading, reload } = useFetch<unknown>(
     tab === "users" ? "/users/" : null,
     { search: q, role, inactive: statusFilter === "pending" ? "1" : statusFilter === "all" ? "all" : "",
       page: userPage, page_size: PER_PAGE },
@@ -77,17 +86,17 @@ export default function Admin() {
   const users = useMemo(() => (userData ? listOf<User>(userData) : null), [userData]);
   const userPages = pagesOf(userData, PER_PAGE);
 
-  const { data: projectData, reload: reloadProjects } = useFetch<any>(
+  const { data: projectData, reload: reloadProjects } = useFetch<unknown>(
     tab === "projects" ? "/projects/" : null,
     { scope: "all", page: projectPage, page_size: PER_PAGE });
   const projects = useMemo(
     () => (projectData ? listOf<Project>(projectData) : null), [projectData]);
   const projectPages = pagesOf(projectData, PER_PAGE);
 
-  const { data: specData, reload: reloadSpecs, loading: specsLoading } = useFetch<any>(
+  const { data: specData, reload: reloadSpecs, loading: specsLoading } = useFetch<{ specialties?: SpecialtyItem[] }>(
     tab === "specialties" ? "/auth/specialties/" : null);
   const specialties = useMemo(
-    () => (specData?.specialties || []) as any[], [specData]);
+    () => (specData?.specialties || []) as SpecialtyItem[], [specData]);
 
   function done(message: string) {
     setError(null);
@@ -117,7 +126,7 @@ export default function Admin() {
     }
   }
 
-  async function deleteSpecialty(specItem: any) {
+  async function deleteSpecialty(specItem: SpecialtyItem) {
     if (!(await confirmDelete(`«${specItem.label}» mutaxassisligini o'chirish`))) return;
     setBusy(true);
     try {
@@ -239,7 +248,7 @@ export default function Admin() {
               </div>
               <div className="f">
                 <label htmlFor="adm-status">{tx("common.holat")}</label>
-                <select id="adm-status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as any); setUserPage(1); }}>
+                <select id="adm-status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as "active" | "pending" | "all"); setUserPage(1); }}>
                   <option value="all">{tx("admin.barcha_hisoblar") || "Barcha hisoblar"}</option>
                   <option value="active">{tx("admin.faol_hisoblar") || "Faol hisoblar"}</option>
                   <option value="pending">{tx("admin.tasdiqlash_kutilayotganlar") || "Tasdiqlash kutilmoqda (Nofaol)"}</option>
@@ -289,7 +298,7 @@ export default function Admin() {
                       <select id="nu-spec" value={form.specialty}
                               onChange={(e) => setForm({ ...form, specialty: e.target.value })}>
                         <option value="">{tx("admin.tanlanmagan")}</option>
-                        {((specialties && specialties.length ? specialties : meta?.specialties) || []).map((s: any) => (
+                        {((specialties && specialties.length ? specialties : meta?.specialties) || []).map((s: { value: string | number; label: string }) => (
                           <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
                         ))}
                       </select>
@@ -299,7 +308,7 @@ export default function Admin() {
                       <select id="nu-dept" value={form.department}
                               onChange={(e) => setForm({ ...form, department: e.target.value })}>
                         <option value="">{tx("admin.bolim_tanlanmagan") || "Bo'lim tanlanmagan"}</option>
-                        {(meta?.departments || []).map((d: any) => (
+                        {(meta?.departments || []).map((d: { id: string | number; name: string }) => (
                           <option key={String(d.id)} value={String(d.id)}>{d.name}</option>
                         ))}
                       </select>
@@ -380,8 +389,8 @@ export default function Admin() {
                             <span className={`badge ${ROLE_TONE.ADMIN}`}> {tx("admin.admin")}</span>
                           )}
                         </td>
-                        <td className="right">{(u as any).project_count ?? 0}</td>
-                        <td className="right">{(u as any).open_tasks ?? 0}</td>
+                        <td className="right">{u.project_count ?? 0}</td>
+                        <td className="right">{u.open_tasks ?? 0}</td>
                         <td className="nowrap muted">{fmtDate(u.date_joined)}</td>
                         <td className="right nowrap">
                           {!u.is_active ? (
@@ -524,7 +533,7 @@ export default function Admin() {
                       </tr>
                     </thead>
                     <tbody>
-                      {specialties.map((s: any) => (
+                      {specialties.map((s: SpecialtyItem) => (
                         <tr key={s.value}>
                           <td>
                             <div className="row" style={{ gap: 8, alignItems: "center" }}>

@@ -22,7 +22,7 @@ import type { Task } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { fmtDate } from "@/components/dates";
 import { Avatar, Priority, StatusBadge } from "@/components/ui";
-import { toProject, toTask, toTaskEdit } from "@/nav";
+import { toProject, toTaskEdit } from "@/nav";
 import { tx } from "@/i18n";
 import { lockScroll, unlockScroll } from "./scrollLock";
 

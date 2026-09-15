@@ -204,8 +204,9 @@ export default function Profile() {
       await clientApprove(o.id);
       setSaved(tx("profile.buyurtma_yakunlandi"));
       if (target) await reloadWork(target.id);
-    } catch (err: any) {
-      setError(err instanceof ApiError ? err.message : (err?.message || "Buyurtmani tasdiqlashda xatolik"));
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : (err && typeof err === "object" && "message" in err ? String(err.message) : "Buyurtmani tasdiqlashda xatolik");
+      setError(msg);
     } finally {
       setOrderActionBusy(null);
     }
@@ -237,8 +238,9 @@ export default function Profile() {
       setRejectFeedbackNote("");
       setRejectFile(null);
       if (target) await reloadWork(target.id);
-    } catch (err: any) {
-      setRejectError(err instanceof ApiError ? err.message : (err?.message || "Buyurtmani qaytarishda xatolik"));
+    } catch (err: unknown) {
+      const msg = err instanceof ApiError ? err.message : (err && typeof err === "object" && "message" in err ? String(err.message) : "Buyurtmani qaytarishda xatolik");
+      setRejectError(msg);
     } finally {
       setRejectSubmitting(false);
     }
@@ -430,7 +432,7 @@ export default function Profile() {
                              onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
                       {k === "department_name" && (
                         <datalist id={`${fid}-dept-list`}>
-                          {(meta?.departments || []).map((d: any) => (
+                          {(meta?.departments || []).map((d: { id?: string | number; name: string }) => (
                             <option key={d.id || d.name} value={d.name} />
                           ))}
                         </datalist>

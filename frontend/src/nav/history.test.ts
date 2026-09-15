@@ -6,7 +6,6 @@ import {
   readHistory,
   recordNavStep,
   updateStepTitle,
-  writeHistory,
 } from "./history";
 
 describe("Navigation History Tracker", () => {

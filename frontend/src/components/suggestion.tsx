@@ -25,7 +25,7 @@ import FilePicker, { uploadFiles } from "@/components/FilePicker";
 import {
   IconCheck, IconClose, IconFile, IconNeutral, IconThumbDown, IconThumbUp,
 } from "@/components/icons";
-import { Card, ErrorMsg, PhotoView, timeAgo } from "@/components/ui";
+import { Card, ErrorMsg, timeAgo } from "@/components/ui";
 import { tx } from "@/i18n";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 

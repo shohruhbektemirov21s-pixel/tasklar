@@ -38,7 +38,6 @@ import {
   approveVersion,
   rejectVersion,
   createOrderTask,
-  downloadOrderDocx,
 } from "@/api/orders";
 import type { ChangeRequestItem, UserBrief } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
@@ -46,13 +45,9 @@ import { tx } from "@/i18n";
 import { confirmDialog } from "@/components/Confirm";
 import { PageHead } from "@/components/Layout";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
-import {
-  IconBack,
-  IconDownload,
-} from "@/components/icons";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { Card, Empty, ErrorMsg, Loading, OkMsg, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
-import { toEditOrder, toOrders, toProject, toTask, useEntityNum, useGo } from "@/nav";
+import { toEditOrder, toOrders, toProject, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge } from "./ChangeRequests";
 
 const UserOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
@@ -172,7 +167,6 @@ export default function OrderDetail() {
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [claimDuration, setClaimDuration] = useState("");
   const [claimDeadlineInput, setClaimDeadlineInput] = useState("");
-  const [claimDeveloper, setClaimDeveloper] = useState<number | null>(null);
   const [claimNotesInput, setClaimNotesInput] = useState("");
   const [claimSubmitting, setClaimSubmitting] = useState(false);
 
@@ -218,7 +212,7 @@ export default function OrderDetail() {
       : item.tz_file_url ? 1 : 0;
     const comp = item.completion_file_url ? 1 : 0;
     return atts + comp + 1; // +1 Word (.docx) blanki
-  }, [item?.attachments, item?.tz_file_url, item?.completion_file_url]);
+  }, [item]);
 
   // Buyurtma bo'yicha yangi vazifa (Task) yaratish modali
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -318,8 +312,8 @@ export default function OrderDetail() {
       setActionError(null);
       const updated = await sendOrder(item.id);
       setItem(updated);
-    } catch (err: any) {
-      setActionError(err?.message || "Buyurtmani yuborishda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Buyurtmani yuborishda xatolik yuz berdi.");
     } finally {
       setSendingOrder(false);
     }
@@ -340,8 +334,8 @@ export default function OrderDetail() {
       setActionError(null);
       await deleteOrder(item.id);
       go(toOrders());
-    } catch (err: any) {
-      setActionError(err?.message || "O'chirishda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "O'chirishda xatolik yuz berdi.");
     }
   }
 
@@ -350,7 +344,6 @@ export default function OrderDetail() {
     if (!item) return;
     setClaimDuration(item.pm_estimated_duration || "");
     setClaimDeadlineInput(item.pm_deadline || item.due_date || "");
-    setClaimDeveloper(item.assigned_developer || null);
     setClaimNotesInput("");
     setClaimModalOpen(true);
   }
@@ -380,8 +373,8 @@ export default function OrderDetail() {
       setPmNotes(updated.pm_notes || "");
       setClaimModalOpen(false);
       setActionOk("Buyurtma muvaffaqiyatli qabul qilindi.");
-    } catch (err: any) {
-      setActionError(err?.message || "Qabul qilishda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Qabul qilishda xatolik yuz berdi.");
     } finally {
       setClaimSubmitting(false);
     }
@@ -402,8 +395,8 @@ export default function OrderDetail() {
       setItem(updated);
       setPmPanelOpen(false);
       setActionOk("PM qarori va muddatlar muvaffaqiyatli saqlandi.");
-    } catch (err: any) {
-      setActionError(err?.message || "Qarorni saqlashda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Qarorni saqlashda xatolik yuz berdi.");
     } finally {
       setPmSaving(false);
     }
@@ -423,8 +416,8 @@ export default function OrderDetail() {
       const updated = await clientApprove(item.id);
       setItem(updated);
       setActionOk("Buyurtma muvaffaqiyatli tasdiqlandi va yakunlandi.");
-    } catch (err: any) {
-      setActionError(err?.message || "Tasdiqlashda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Tasdiqlashda xatolik yuz berdi.");
     }
   }
 
@@ -457,8 +450,8 @@ export default function OrderDetail() {
       setRejectFile(null);
       setRejectIsNewTz(false);
       setActionOk("Buyurtma kamchiliklar ko'rsatilib, qayta ishlash uchun qaytarildi.");
-    } catch (err: any) {
-      setActionError(err?.message || "Qaytarishda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Qaytarishda xatolik yuz berdi.");
     } finally {
       setRejectSubmitting(false);
     }
@@ -495,8 +488,8 @@ export default function OrderDetail() {
       setCompletionFile(null);
       setCompletionNote("");
       setActionOk("Bajarilgan ish boshqarma tasdig'iga muvaffaqiyatli topshirildi.");
-    } catch (err: any) {
-      setCompletionError(err?.message || "Hisobotni topshirishda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setCompletionError((err as { message?: string })?.message || "Hisobotni topshirishda xatolik yuz berdi.");
     } finally {
       setCompletionSubmitting(false);
     }
@@ -518,8 +511,8 @@ export default function OrderDetail() {
       setVersionFile(null);
       setVersionNote("");
       setActionOk("Yangi versiya muvaffaqiyatli yuklandi!");
-    } catch (err: any) {
-      setActionError(err?.message || "Yuklashda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Yuklashda xatolik yuz berdi.");
     } finally {
       setVersionSubmitting(false);
     }
@@ -551,8 +544,8 @@ export default function OrderDetail() {
       setItem(updated);
       setApproveVersionModal(false);
       setActionOk("Yangi TZ versiyasi muvaffaqiyatli tasdiqlandi va amalda kuchga kirdi!");
-    } catch (err: any) {
-      setActionError(err?.message || "Versiyani tasdiqlashda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Versiyani tasdiqlashda xatolik yuz berdi.");
     } finally {
       setApproveSubmitting(false);
     }
@@ -578,8 +571,8 @@ export default function OrderDetail() {
       setItem(updated);
       setRejectVersionModal(false);
       setActionOk("Yangi TZ versiyasi rad etildi (avvalgi TZ amalda qoladi).");
-    } catch (err: any) {
-      setActionError(err?.message || "Versiyani rad etishda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Versiyani rad etishda xatolik yuz berdi.");
     } finally {
       setRejectVersionSubmitting(false);
     }
@@ -615,8 +608,8 @@ export default function OrderDetail() {
       setTaskTitle("");
       setTaskDescription("");
       setActionOk("Vazifa muvaffaqiyatli yaratildi va buyurtmaga biriktirildi!");
-    } catch (err: any) {
-      setActionError(err?.message || "Vazifa yaratishda xatolik yuz berdi.");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Vazifa yaratishda xatolik yuz berdi.");
     } finally {
       setTaskSubmitting(false);
     }

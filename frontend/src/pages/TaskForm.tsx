@@ -67,7 +67,7 @@ export default function TaskForm() {
       let pid = id;
       let pList: Project[] = [];
       try {
-        pList = listOf<Project>(await api.get<any>("/projects/"));
+        pList = listOf<Project>(await api.get<{ results: Project[] } | Project[]>("/projects/"));
         if (alive) setUserProjects(pList);
       } catch {
         // ignore
@@ -159,7 +159,7 @@ export default function TaskForm() {
     if (!editing && user?.id && assignees.length === 0 && !draftRestored) {
       setAssignees([user.id]);
     }
-  }, [editing, user?.id, draftRestored]);
+  }, [editing, user?.id, draftRestored, assignees.length]);
 
   // Qoralamani avtomatik saqlash
   useEffect(() => {
