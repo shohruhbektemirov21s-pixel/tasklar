@@ -445,20 +445,13 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
                   {rowNum}
                 </td>
                 <td>
-                  <div className="row middle" style={{ gap: 6, flexWrap: "wrap", marginBottom: 2 }}>
-                    {t.project_name && (
-                      <span className="badge badge-subtle" style={{ fontSize: 11, padding: "1px 6px" }}>
-                        {t.project_name}
-                      </span>
-                    )}
-                    <Link {...toTask(t.id)}
-                          onClick={(e) => {
-                            if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setOpen(t);
-                          }}>{t.title}</Link>
-                  </div>
+                  <Link {...toTask(t.id)}
+                        onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setOpen(t);
+                        }}>{t.title}</Link>
                   {t.description && (
                     <div className="muted" style={{
                       fontSize: 12,

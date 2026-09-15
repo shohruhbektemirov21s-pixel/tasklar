@@ -185,7 +185,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # yuklanmasa har biri alohida so'rov bo'lardi - ro'yxat uzayganda
         # so'rovlar soni loyihalar soniga ko'payib ketardi.
         qs = (Project.objects
-              .select_related("workspace", "manager", "created_by")
+              .select_related("workspace", "manager", "created_by", "updated_by")
               .prefetch_related("specialties", "memberships__user")
               # `progress_pct` faqat TARTIB uchun - javobga chiqmaydi
               # (seriyalizatorda bunday maydon yo'q). Ekrandagi foizni
@@ -315,7 +315,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # "50% bajarildi - ochiq - azo" kabi sonsiz satr chiqardi.
         project = object_or_404(
             Project.objects
-            .select_related("workspace", "manager", "created_by")
+            .select_related("workspace", "manager", "created_by", "updated_by")
             .prefetch_related("specialties", "memberships__user")
             .annotate(**project_counters(self.request.user)),
             pk=self.kwargs["pk"])
@@ -336,7 +336,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         manager_id = serializer.validated_data.pop("manager_id", None) or user.id
         # Forma ish maydonini so'ramaydi - yuborilmagan bo'lsa o'zimiz topamiz.
         workspace = serializer.validated_data.get("workspace") or resolve_workspace(user)
-        project = serializer.save(created_by=user, manager_id=manager_id,
+        project = serializer.save(created_by=user, updated_by=user, manager_id=manager_id,
                                   workspace=workspace)
 
         if order_id:
@@ -431,7 +431,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             if not access.can_grant_role(ProjectRole.MANAGER):
                 raise PermissionDenied(
                     "Loyiha menejerini almashtirish huquqi faqat amaldagi menejerda.")
-        project = serializer.save(**({"manager_id": manager_id} if manager_id else {}))
+        project = serializer.save(updated_by=self.request.user, **({"manager_id": manager_id} if manager_id else {}))
         if manager_id:
             ProjectMember.objects.update_or_create(
                 project=project, user_id=manager_id,
@@ -462,6 +462,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
                     setattr(brief_obj, k, brief_data[k])
             brief_obj.updated_by = self.request.user
             brief_obj.save()
+            project.updated_by = self.request.user
+            project.save(update_fields=["updated_by", "updated_at"])
 
         if new_status and old_status != new_status:
             if new_status == ProjectStatus.DONE:
@@ -485,7 +487,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """Loyihani yakunlash (holatini DONE qilish)."""
         project = self._manage_project(pk)
         project.status = ProjectStatus.DONE
-        project.save(update_fields=["status", "updated_at"])
+        project.updated_by = request.user
+        project.save(update_fields=["status", "updated_at", "updated_by"])
 
         log(actor=request.user, verb="project.completed", project=project, target=project,
             summary="Loyiha yakunlandi: " + project.name)
@@ -515,7 +518,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """Loyihani qayta ochish (holatini ACTIVE qilish)."""
         project = self._manage_project(pk)
         project.status = ProjectStatus.ACTIVE
-        project.save(update_fields=["status", "updated_at"])
+        project.updated_by = request.user
+        project.save(update_fields=["status", "updated_at", "updated_by"])
 
         log(actor=request.user, verb="project.reopened", project=project, target=project,
             summary="Loyiha qayta faollashtirildi: " + project.name)
@@ -603,6 +607,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
                                    context={"request": request})
         s.is_valid(raise_exception=True)
         s.save(updated_by=request.user)
+        project.updated_by = request.user
+        project.save(update_fields=["updated_by", "updated_at"])
         log(actor=request.user, verb="project.brief_updated", project=project, target=project,
             summary="Loyiha brifi yangilandi",
             detail="Toldirilganlik: {}%".format(brief.filled_ratio))

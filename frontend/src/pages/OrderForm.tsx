@@ -348,6 +348,14 @@ export default function OrderForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (f.due_date) {
+      const today = new Date().toISOString().split("T")[0];
+      if (f.due_date < today) {
+        setErrors((p) => ({ ...p, due_date: "Muddat bugungi kundan oldingi sana bo'lishi mumkin emas." }));
+        setError("Muddat bugungi kundan oldingi sana bo'lishi mumkin emas.");
+        return;
+      }
+    }
     setBusy(true);
     setError(null);
     setErrors({});
@@ -643,9 +651,11 @@ export default function OrderForm() {
                 <input
                   id={`${fid}-due`}
                   type="date"
+                  min={new Date().toISOString().split("T")[0]}
                   value={f.due_date}
                   onChange={(e) => set("due_date", e.target.value)}
                 />
+                {errors.due_date && <div className="err">{errors.due_date}</div>}
               </div>
 
               <div className="field" style={{ marginTop: 16 }}>

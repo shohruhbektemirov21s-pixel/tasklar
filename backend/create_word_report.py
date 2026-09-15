@@ -74,7 +74,7 @@ def create_report():
 
     clean_data = [
         ("Vazifalar (Tasks)", "37 964 ta yozuv (Yuklama vazifalari)", "6 ta toza demo vazifa"),
-        ("Loyihalar (Projects)", "2 ta asosiy loyiha", "2 ta faol loyiha (TeamFlow 2.0)"),
+        ("Loyihalar (Projects)", "2 ta asosiy loyiha", "2 ta faol loyiha (TeamFlow)"),
         ("Foydalanuvchilar (Users)", "10 ta akkaunt", "10 ta faol akkaunt (Boshliq, PM, Dev)"),
         ("Buyurtmalar (Change Requests / TZ)", "2 ta buyurtma", "2 ta rasmiy buyurtma (Sohaviy)"),
         ("Ish maydonlari (Workspaces)", "1 ta raqamli ish maydoni", "1 ta toza ish maydoni"),

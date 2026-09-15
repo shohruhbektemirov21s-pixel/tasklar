@@ -397,7 +397,7 @@ export default function Inquiries() {
                 text={tx("inquiries.topilmadi_matn")}
               >
                 <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
-                  {Boolean(filters.search || filters.status || filters.scope || filters.mine) ? (
+                  {filters.search || filters.status || filters.scope || filters.mine ? (
                     <button
                       type="button"
                       className="btn"

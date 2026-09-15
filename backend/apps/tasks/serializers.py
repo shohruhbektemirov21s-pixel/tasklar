@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.accounts.serializers import UserBriefSerializer
@@ -112,6 +113,11 @@ class TaskTeamMemberInputSerializer(serializers.Serializer):
         due = attrs.get("due_date")
         if start and due and start > due:
             raise serializers.ValidationError({"due_date": "Muddat boshlanish sanasidan oldin bolishi mumkin emas."})
+        if due:
+            today = timezone.localdate()
+            due_day = timezone.localdate(due) if timezone.is_aware(due) else due.date()
+            if due_day < today:
+                raise serializers.ValidationError({"due_date": "Muddat bugungi kundan oldingi sana bo'lishi mumkin emas."})
         return attrs
 
 
@@ -167,6 +173,13 @@ class TaskSerializer(serializers.ModelSerializer):
         if start and due and start > due:
             raise serializers.ValidationError({
                 "due_date": "Muddat boshlanish sanasidan oldin bolishi mumkin emas."})
+        if "due_date" in attrs and attrs["due_date"]:
+            new_due = attrs["due_date"]
+            today = timezone.localdate()
+            due_day = timezone.localdate(new_due) if timezone.is_aware(new_due) else new_due.date()
+            if due_day < today and (not self.instance or self.instance.due_date != new_due):
+                raise serializers.ValidationError({
+                    "due_date": "Muddat bugungi kundan oldingi sana bo'lishi mumkin emas."})
         return attrs
 
     def get_attachment_count(self, obj):

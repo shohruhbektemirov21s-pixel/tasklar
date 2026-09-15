@@ -29,9 +29,12 @@ class TaskReassignTest(ApiTestCase):
                                         status=TaskStatus.IN_PROGRESS, created_by=self.manager)
         TaskAssignment.objects.create(task=self.task, user=self.dev, assigned_by=self.manager)
 
-    def reassign(self, client, user_id, note=""):
+    def reassign(self, client, user_id, note="", auto_add_to_project=False):
+        data = {"user_id": user_id, "note": note}
+        if auto_add_to_project:
+            data["auto_add_to_project"] = True
         return client.post("/api/tasks/%d/reassign/" % self.task.pk,
-                           {"user_id": user_id, "note": note}, format="json")
+                           data, format="json")
 
     def active_ids(self):
         return set(self.task.assignments.filter(is_active=True).values_list("user_id", flat=True))
@@ -94,3 +97,10 @@ class TaskReassignTest(ApiTestCase):
         response = self.reassign(self.api, self.dev2.pk)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(self.active_ids(), {self.dev.pk})
+
+    def test_auto_add_to_project_agar_bayroq_berilsa(self):
+        response = self.reassign(self.api, self.outsider.pk, auto_add_to_project=True)
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(self.active_ids(), {self.outsider.pk})
+        self.assertTrue(self.project.memberships.filter(user=self.outsider, is_active=True).exists())
+

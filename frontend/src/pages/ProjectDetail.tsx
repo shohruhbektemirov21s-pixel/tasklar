@@ -5,7 +5,7 @@ import { completeProject } from "@/api/projects";
 import { useFetch } from "@/api/useFetch";
 import type { Project } from "@/api/types";
 import { PageHead } from "@/components/Layout";
-import { Empty, ErrorMsg, Loading, Progress } from "@/components/ui";
+import { Empty, ErrorMsg, Loading, Progress, fmtDateTime } from "@/components/ui";
 import { toBulkTasks, toNewTask, toProject, toProjectEdit, useEntityId } from "@/nav";
 import { tx } from "@/i18n";
 
@@ -169,13 +169,26 @@ export default function ProjectDetail() {
 
 
 
-        <div className="row mb">
-          <div style={{ flex: 1, maxWidth: 320 }}>
-            <Progress value={project.progress} />
+        <div className="row middle between mb" style={{ flexWrap: "wrap", gap: 10 }}>
+          <div className="row middle" style={{ gap: 12, flexWrap: "wrap" }}>
+            <div style={{ width: 220, maxWidth: "100%" }}>
+              <Progress value={project.progress} />
+            </div>
+            <span className="muted" style={{ fontSize: 12 }}>
+              {project.progress}{tx("project_detail.bajarildi")} • {project.open_tasks} {tx("project_detail.ochiq")} • {project.member_count} {tx("common.azo")}
+            </span>
           </div>
-          <span className="muted" style={{ fontSize: 12 }}>
-            {project.progress}{tx("project_detail.bajarildi")} {project.open_tasks} {tx("project_detail.ochiq")} {project.member_count} {tx("common.azo")}
-          </span>
+          {project.updated_at && (
+            <span className="muted" style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <span>🕒</span>
+              <span>
+                {tx("projects.tahrirlandi", undefined, "Tahrirlandi")}: {fmtDateTime(project.updated_at)}
+                {project.updated_by && (
+                  <strong style={{ marginLeft: 4 }}>({project.updated_by.full_name})</strong>
+                )}
+              </span>
+            </span>
+          )}
         </div>
 
         <Suspense fallback={<Loading />}>

@@ -33,7 +33,7 @@ def send_request(req_id: int):
 
 def main():
     print("=" * 70)
-    print("       TEAMFLOW PLATFORMASI: HTTP YUKLAMA VA STRESS BENCHMARK       ")
+    print("       TEAMFLOW: HTTP YUKLAMA VA STRESS BENCHMARK       ")
     print("=" * 70)
     print(f"Nishon URL: {TARGET_URL}")
     print(f"Jami yuboriladigan so'rovlar: {NUM_REQUESTS} ta")

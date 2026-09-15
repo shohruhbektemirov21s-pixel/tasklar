@@ -80,9 +80,9 @@ def run_seed():
 
     # 2. Ish maydoni (Workspace) yaratish
     ws, created = Workspace.objects.get_or_create(
-        name="TeamFlow Digital Workspace",
+        name="TeamFlow ish maydoni",
         defaults={
-            "description": "Kompaniyaning asosiy raqamli ish maydoni va loyihalar markazi.",
+            "description": "Kompaniyaning asosiy ish maydoni va loyihalar markazi.",
             "owner": boss,
             "is_open": True,
         }
@@ -104,9 +104,9 @@ def run_seed():
     if not project:
         project = Project.objects.create(
             workspace=ws,
-            name="TeamFlow Platforma 2.0",
+            name="TeamFlow",
             key="TF",
-            description="Jamoa vazifalarini va takliflarini boshqarish uchun zamonaviy platforma.",
+            description="Jamoa vazifalarini va takliflarini boshqarish tizimi.",
             status=ProjectStatus.ACTIVE,
             manager=pm,
             created_by=boss,
@@ -115,8 +115,8 @@ def run_seed():
             due_date=timezone.localdate() + timedelta(days=45),
         )
     else:
-        project.name = "TeamFlow Platforma 2.0"
-        project.description = "Jamoa vazifalarini va takliflarini boshqarish uchun zamonaviy platforma."
+        project.name = "TeamFlow"
+        project.description = "Jamoa vazifalarini va takliflarini boshqarish tizimi."
         project.manager = pm
         project.created_by = boss
         project.save()

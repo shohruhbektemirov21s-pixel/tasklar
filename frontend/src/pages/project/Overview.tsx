@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "@/api/client";
 import type { Activity, Project, Task, UserBrief } from "@/api/types";
 import Timeline from "@/components/Timeline";
-import { Avatar, Card, Empty, Priority, Stat, StatusBadge, fmtDate, formatMemberRole } from "@/components/ui";
+import { Avatar, Card, Empty, Priority, Stat, StatusBadge, fmtDate, fmtDateTime, formatMemberRole } from "@/components/ui";
 
 import { toDeveloper, toProject, toTask } from "@/nav";
 import { tx } from "@/i18n";
@@ -183,6 +183,13 @@ export default function Overview({ project }: { project: Project; onChange: () =
           <ul className="list-plain" style={{ fontSize: 13 }}>
             <li><span className="muted">{tx("common.menejer")}</span> {project.manager?.full_name || "—"}</li>
             <li><span className="muted">{tx("project_overview.muddat")}</span> {fmtDate(project.due_date)}</li>
+            {project.updated_at && (
+              <li>
+                <span className="muted">{tx("projects.tahrirlandi", undefined, "Tahrirlandi")}</span>{" "}
+                {fmtDateTime(project.updated_at)}
+                {project.updated_by && <strong> ({project.updated_by.full_name})</strong>}
+              </li>
+            )}
             {project.access.can_manage && (
               <li><span className="muted">{tx("project_overview.qoshilish_kodi")}</span> <code>{project.join_code}</code></li>
             )}

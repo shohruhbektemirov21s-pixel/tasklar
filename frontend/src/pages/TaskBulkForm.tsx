@@ -228,6 +228,7 @@ export default function TaskBulkForm() {
                 <div className="field">
                   <label htmlFor={`${fid}-3`}>{tx("task_bulk_form.umumiy_muddat")}</label>
                   <DateTimeField id={`${fid}-3`} value={f.due_date}
+                                 min={new Date().toISOString().split("T")[0] + "T00:00"}
                                  onChange={(v) => setF({ ...f, due_date: v })} />
                 </div>
                 <div className="field">

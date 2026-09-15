@@ -1,5 +1,6 @@
 import datetime
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.projects.models import Project
@@ -211,6 +212,20 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
         if "project_type" in data and "order_type" not in data:
             data["order_type"] = data["project_type"]
         return super().to_internal_value(data)
+
+    def validate_due_date(self, value):
+        if value:
+            today = timezone.localdate()
+            if value < today and (not self.instance or value != self.instance.due_date):
+                raise serializers.ValidationError("Muddat bugungi kundan oldingi sana bo'lishi mumkin emas.")
+        return value
+
+    def validate_pm_deadline(self, value):
+        if value:
+            today = timezone.localdate()
+            if value < today and (not self.instance or value != self.instance.pm_deadline):
+                raise serializers.ValidationError("PM muddati bugungi kundan oldingi sana bo'lishi mumkin emas.")
+        return value
 
     class Meta:
         model = ChangeRequest
@@ -563,6 +578,13 @@ class PMDecisionSerializer(serializers.Serializer):
         queryset=Task.objects.all(), required=False, allow_null=True
     )
 
+    def validate_pm_deadline(self, value):
+        if value:
+            today = timezone.localdate()
+            if value < today:
+                raise serializers.ValidationError("PM muddati bugungi kundan oldingi sana bo'lishi mumkin emas.")
+        return value
+
     def validate(self, attrs):
         status = attrs.get("status")
         pm_notes = attrs.get("pm_notes", "").strip()
@@ -572,3 +594,4 @@ class PMDecisionSerializer(serializers.Serializer):
                     {"pm_notes": "Buyurtmani rad etish (atkaz qilish) uchun nima sababdan rad etilganligi haqida izoh yozish majburiy!"}
                 )
         return attrs
+

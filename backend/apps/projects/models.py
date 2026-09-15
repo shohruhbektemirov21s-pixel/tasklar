@@ -121,6 +121,9 @@ class Project(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                   null=True, blank=True, related_name="updated_projects",
+                                   verbose_name="Kim tahrirlagan")
     # O'chirish "yumshoq": yozuv bazada qoladi, ro'yxatlarda ko'rinmaydi.
     deleted_at = models.DateTimeField("Ochirilgan", null=True, blank=True, db_index=True)
     deleted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,

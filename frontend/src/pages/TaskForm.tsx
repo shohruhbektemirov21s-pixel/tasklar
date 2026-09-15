@@ -195,6 +195,15 @@ export default function TaskForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (f.due_date) {
+      const today = new Date().toISOString().split("T")[0];
+      const dueDay = f.due_date.split("T")[0];
+      if (dueDay < today) {
+        setErrors({ due_date: "Muddat bugungi kundan oldingi sana bo'lishi mumkin emas." });
+        setError("Muddat bugungi kundan oldingi sana bo'lishi mumkin emas.");
+        return;
+      }
+    }
     setBusy(true);
     setError(null);
     setErrors({});
@@ -501,9 +510,9 @@ export default function TaskForm() {
                   </div>
                   <div className="field" style={{ flex: 1, minWidth: 190 }}>
                     <label htmlFor={`${fid}-9`}>{tx("common.muddat")}</label>
-                    {/* min: muddat boshlanishdan oldin bo'lib qolmasin */}
+                    {/* min: muddat boshlanishdan oldin va bugungi kundan oldin bo'lib qolmasin */}
                     <DateTimeField id={`${fid}-9`} value={f.due_date}
-                                   min={f.start_date || undefined}
+                                   min={f.start_date && f.start_date.split("T")[0] > new Date().toISOString().split("T")[0] ? f.start_date : (new Date().toISOString().split("T")[0] + "T00:00")}
                                    onChange={(v) => set("due_date", v)} />
                     {errors.due_date && <div className="err">{errors.due_date}</div>}
                   </div>

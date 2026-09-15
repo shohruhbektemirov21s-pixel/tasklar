@@ -286,7 +286,7 @@ def test_rate_limit_ddos_defense():
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
     print("\n" + "#" * 75)
-    print("  TEAMFLOW PLATFORMASI: MA'LUMOTLAR BAZASI VA TIZIMGA HUJUM SINOVLARI")
+    print("  TEAMFLOW: MA'LUMOTLAR BAZASI VA TIZIMGA HUJUM SINOVLARI")
     print("#" * 75)
 
     test_sql_injection()

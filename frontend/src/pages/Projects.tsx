@@ -6,7 +6,7 @@ import { useFetch } from "@/api/useFetch";
 import type { Choice, MyWorkData, Project, Task } from "@/api/types";
 import { PageHead } from "@/components/Layout";
 import { IconCalendar, IconPlus } from "@/components/icons";
-import { DUE_PERIODS, DateField, Empty, ErrorMsg, Loading, Pager, Progress, RowMenu, fmtDate } from "@/components/ui";
+import { DUE_PERIODS, DateField, Empty, ErrorMsg, Loading, Pager, Progress, RowMenu, fmtDate, fmtDateTime } from "@/components/ui";
 import { completeProject, deleteProject } from "@/api/projects";
 import { toBulkTasks, toNewProject, toNewTask, toProject, toProjectEdit, toTask, useGo } from "@/nav";
 import { tx } from "@/i18n";
@@ -263,6 +263,16 @@ function ManagerProjects() {
                     <strong>{p.my_tasks} {tx("common.ta")}</strong>
                   </span>
                 </div>
+
+                {p.updated_at && (
+                  <div className="muted" style={{ fontSize: 11, marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
+                    <span>🕒</span>
+                    <span>
+                      {tx("projects.tahrirlandi", undefined, "Tahrirlandi")}: {fmtDateTime(p.updated_at)}
+                      {p.updated_by && <strong style={{ marginLeft: 3 }}>({p.updated_by.full_name})</strong>}
+                    </span>
+                  </div>
+                )}
 
                 {/* «⋯» menyusi FAQAT loyihani boshqaradigan odamga -
                     ichida boshqaruv amallari turadi.

@@ -1524,7 +1524,7 @@
   "note": "pages/Landing.tsx"
  },
  "landing.ishlaydigan_platforma": {
-  "value": "ishlaydigan platforma",
+  "value": "ishlaydigan tizim",
   "note": "pages/Landing.tsx"
  },
  "landing.jahongir": {
@@ -2847,6 +2847,98 @@
   "value": "yil tajriba",
   "note": "pages/Profile.tsx"
  },
+ "profile.tasdiqlash_kutilayotgan_buyurtmalar": {
+  "value": "Tasdiqlash kutilayotgan buyurtmalar (Boshqarma tasdig'ida)",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.buyurtmalar_tz": {
+  "value": "Buyurtmalar (TZ)",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.pm_hisobot_izohi": {
+  "value": "PM hisobot izohi",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.topshirilgan_hujjat": {
+  "value": "Topshirilgan ish hujjati",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.tasdiqlash_va_yakunlash": {
+  "value": "Tasdiqlash va yakunlash",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.tuzatishga_qaytarish": {
+  "value": "Tuzatishga qaytarish",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.batafsil_korish": {
+  "value": "Batafsil ko'rish",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.tasdiqlash_tasdiq_matni": {
+  "value": "Ushbu buyurtma bo'yicha bajarilgan ishni qabul qilib, buyurtmani to'liq yakunlaysizmi?",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.tuzatish_modal_title": {
+  "value": "Buyurtmani kamchilik bilan tuzatishga qaytarish",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.tuzatish_izoh_label": {
+  "value": "Kamchilik yoki xatolik haqida izoh",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.tuzatish_fayl_label": {
+  "value": "Qo'shimcha kamchilik hujjati / skrinshot (ixtiyoriy)",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.tuzatish_yuborish": {
+  "value": "Tuzatishga yuborish",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.buyurtma_yakunlandi": {
+  "value": "Buyurtma muvaffaqiyatli tasdiqlandi va yakunlandi.",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.buyurtma_tuzatishga_qaytarildi": {
+  "value": "Buyurtma tuzatish uchun mas'ul PMga qaytarildi.",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.barcha_buyurtmalar": {
+  "value": "Barcha buyurtmalar",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.boshqarma_tasdigida": {
+  "value": "Boshqarma tasdig'ida",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.jarayonda": {
+  "value": "Jarayonda",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.yakunlangan": {
+  "value": "Yakunlangan",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.jami_buyurtmalar": {
+  "value": "Jami buyurtmalar",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.buyurtma_yoq": {
+  "value": "Hozircha buyurtmalar yo'q",
+  "note": "pages/Profile.tsx"
+ },
+ "profile.hujjatni_korish": {
+  "value": "Hujjatni ko'rish",
+  "note": "pages/Profile.tsx"
+ },
+ "projects.tahrirlandi": {
+  "value": "Tahrirlandi",
+  "note": "pages/ProjectDetail.tsx"
+ },
+ "projects.oxirgi_tahrir": {
+  "value": "Oxirgi tahrir",
+  "note": "pages/Overview.tsx"
+ },
  "project_board.bosh": {
   "value": "bo'sh",
   "note": "pages/project/Board.tsx"
@@ -3416,7 +3508,7 @@
   "note": "pages/project/Members.tsx"
  },
  "project_members.butun_platformada_hamma_huquqqa_ega": {
-  "value": "Butun platformada hamma huquqqa ega bo'ladi: ",
+  "value": "Butun tizimda hamma huquqqa ega bo'ladi: ",
   "note": "pages/project/Members.tsx"
  },
  "project_members.chiqarish": {

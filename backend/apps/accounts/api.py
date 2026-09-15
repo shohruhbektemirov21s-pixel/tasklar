@@ -147,7 +147,7 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         log(actor=user, verb="user.registered", target=user,
-            summary="{} platformada ro'yxatdan o'tdi (admin tasdig'i kutilmoqda)".format(user.full_name))
+            summary="{} tizimda ro'yxatdan o'tdi (admin tasdig'i kutilmoqda)".format(user.full_name))
 
         return Response({
             "message": "Ro'yxatdan o'tish muvaffaqiyatli qabul qilindi. Administrator hisobingizni tasdiqlagandan so'ng tizimga kirishingiz mumkin.",
@@ -443,6 +443,38 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
         activity = limit(Activity.objects.timeline().filter(actor=target), "project__")
 
+        # Buyurtmalar (Orders / TZ):
+        from apps.orders.models import ChangeRequest, ChangeRequestStatus
+        from apps.orders.serializers import ChangeRequestSerializer
+
+        order_q = Q(created_by=target) | Q(assigned_pm=target)
+        if getattr(target, "department_name", None):
+            order_q |= Q(department__iexact=target.department_name)
+        if getattr(target, "department_id", None) and target.department:
+            order_q |= Q(created_by__department=target.department)
+
+        if me.pk != target.pk and not (me.is_platform_admin or getattr(me, "is_boss", False)):
+            order_q &= ~Q(status=ChangeRequestStatus.DRAFT)
+
+        user_orders = list(
+            ChangeRequest.objects.filter(order_q)
+            .select_related("created_by", "project", "assigned_pm", "assigned_developer")
+            .prefetch_related("attachments")
+            .order_by("-updated_at")[:50]
+        )
+
+        order_stats = {
+            "total": len(user_orders),
+            "pending_review": sum(1 for o in user_orders if o.status == ChangeRequestStatus.READY_FOR_REVIEW),
+            "in_progress": sum(1 for o in user_orders if o.status in (
+                ChangeRequestStatus.IN_PROGRESS,
+                ChangeRequestStatus.ASSIGNED_TO_DEV,
+                ChangeRequestStatus.ACCEPTED,
+                ChangeRequestStatus.TESTING,
+            )),
+            "completed": sum(1 for o in user_orders if o.status == ChangeRequestStatus.COMPLETED),
+        }
+
         return Response({
             "user": UserBriefSerializer(target, context=ctx).data,
             "stats": {
@@ -454,6 +486,8 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
                 "changes": by_status.get(TaskStatus.CHANGES_REQUESTED, 0),
                 "hours": float(hours),
             },
+            "order_stats": order_stats,
+            "orders": ChangeRequestSerializer(user_orders, many=True, context=ctx).data,
             "projects": [{
                 "id": p.id, "name": p.name, "key": p.key, "color": p.color,
                 "workspace_name": p.workspace.name,

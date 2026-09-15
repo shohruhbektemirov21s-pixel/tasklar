@@ -3335,6 +3335,7 @@ export default function ChangeRequests() {
                         </label>
                         <input
                           type="date"
+                          min={new Date().toISOString().split("T")[0]}
                           value={pmDecisionForm.pm_deadline}
                           onChange={(e) =>
                             setPmDecisionForm({
@@ -3805,6 +3806,7 @@ export default function ChangeRequests() {
                     <label style={{ fontWeight: 600, fontSize: 12 }}>PM belgilagan yangi muddat</label>
                     <input
                       type="date"
+                      min={new Date().toISOString().split("T")[0]}
                       value={approveDeadline}
                       onChange={(e) => setApproveDeadline(e.target.value)}
                     />

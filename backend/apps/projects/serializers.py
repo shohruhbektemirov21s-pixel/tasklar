@@ -68,6 +68,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     manager = UserBriefSerializer(read_only=True)
     manager_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     created_by = UserBriefSerializer(read_only=True)
+    updated_by = UserBriefSerializer(read_only=True)
     workspace_name = serializers.CharField(source="workspace.name", read_only=True)
     workspace_slug = serializers.CharField(source="workspace.slug", read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
@@ -107,7 +108,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         fields = ["id", "workspace", "workspace_name", "workspace_slug", "name", "key",
                   "description", "status", "status_display", "project_type", "project_type_display",
                   "color", "manager", "manager_id",
-                  "created_by", "repo_url", "docs_url", "start_date", "due_date",
+                  "created_by", "updated_by", "repo_url", "docs_url", "start_date", "due_date",
                   "is_public", "is_listed", "join_code", "auto_accept",
                   "created_at", "updated_at",
                   "member_count", "open_tasks", "done_tasks", "my_tasks", "progress", "access",

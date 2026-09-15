@@ -1,4 +1,4 @@
-"""Senior QA Test Suite — TeamFlow platformasi uchun integratsion va xavfsizlik sinovlari.
+"""Senior QA Test Suite — TeamFlow tizimi uchun integratsion va xavfsizlik sinovlari.
 
 Bu test to'plami Senior Tester nigohi bilan tizimning eng nozik va kritik
 bo'g'inlarini tekshiradi:

@@ -1769,6 +1769,7 @@ export default function OrderDetail() {
                   <label style={{ fontSize: 11, fontWeight: 600 }}>PM yakuniy muddati</label>
                   <input
                     type="date"
+                    min={new Date().toISOString().split("T")[0]}
                     value={pmDeadline}
                     onChange={(e) => setPmDeadline(e.target.value)}
                   />
@@ -2468,6 +2469,7 @@ export default function OrderDetail() {
                   </label>
                   <input
                     type="date"
+                    min={new Date().toISOString().split("T")[0]}
                     className="input"
                     value={taskDueDate}
                     onChange={(e) => setTaskDueDate(e.target.value)}
@@ -2581,6 +2583,7 @@ export default function OrderDetail() {
                     </label>
                     <input
                       type="date"
+                      min={new Date().toISOString().split("T")[0]}
                       className="input"
                       value={approveDeadline}
                       onChange={(e) => setApproveDeadline(e.target.value)}

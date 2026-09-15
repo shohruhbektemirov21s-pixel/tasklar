@@ -565,8 +565,20 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                 Soat bilan: "13.08.2026 13:00 gacha tugatilsin". */}
             {canEdit && (editDue ? (
               <span className="row" style={{ gap: 6 }}>
-                <DateTimeField style={{ width: 210 }} value={due} onChange={setDue} />
+                <DateTimeField
+                  style={{ width: 210 }}
+                  value={due}
+                  min={new Date().toISOString().split("T")[0] + "T00:00"}
+                  onChange={setDue}
+                />
                 <button className="btn btn-sm btn-primary" onClick={() => void run(async () => {
+                  if (due) {
+                    const today = new Date().toISOString().split("T")[0];
+                    if (due.split("T")[0] < today) {
+                      setError("Muddat bugungi kundan oldingi sana bo'lishi mumkin emas.");
+                      return;
+                    }
+                  }
                   await api.patch(`/tasks/${task.id}/`, { due_date: fromDateTimeInput(due) });
                   setEditDue(false);
                 })}>{tx("common.saqlash")}</button>
@@ -838,7 +850,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                 );
               })()}
 
-              {Boolean(task.subtasks && task.subtasks.length > 0) ? (
+              {task.subtasks && task.subtasks.length > 0 ? (
                 <ul className="subtask-list">
                   {task.subtasks!.map((s) => (
                     <li key={s.id} className={`subtask-item ${s.status === "DONE" ? "done" : ""}`}>
@@ -1639,7 +1651,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
 
                   <div className="field">
                     <label htmlFor="st-due">{tx("task_detail.muddat")}</label>
-                    <DateTimeField id="st-due" value={stDueDate} onChange={setStDueDate} />
+                    <DateTimeField id="st-due" value={stDueDate} min={new Date().toISOString().split("T")[0] + "T00:00"} onChange={setStDueDate} />
                   </div>
 
                   <div className="field">
@@ -1856,7 +1868,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                 </div>
                 <div className="field" style={{ flex: 1 }}>
                   <label>{tx("task_detail.tugash_vaqti", undefined, "Tugash muddati (sana va vaqt)")}</label>
-                  <DateTimeField value={teamDueDate} onChange={setTeamDueDate} />
+                  <DateTimeField value={teamDueDate} min={teamStartDate || (new Date().toISOString().split("T")[0] + "T00:00")} onChange={setTeamDueDate} />
                 </div>
               </div>
 

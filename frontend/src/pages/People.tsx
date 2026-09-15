@@ -163,6 +163,7 @@ export default function People() {
       await api.post(`/tasks/${taskId}/reassign/`, {
         user_id: newAssigneeId,
         note: reassignNote.trim(),
+        auto_add_to_project: true,
       });
       setReassignSuccessMsg(tx("people.muvaffaqiyatli_otkazildi", undefined, "Vazifa muvaffaqiyatli o'tkazildi"));
       setActiveTaskToReassign(null);

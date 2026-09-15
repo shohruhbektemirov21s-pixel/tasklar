@@ -416,6 +416,12 @@ class TaskViewSet(viewsets.ModelViewSet):
             return Response(TaskDetailSerializer(
                 task, context=self.get_serializer_context()).data)
 
+        if due:
+            today = timezone.localdate()
+            due_day = timezone.localdate(due) if timezone.is_aware(due) else due.date()
+            if due_day < today and (not task.due_date or due != task.due_date):
+                raise ValidationError({"due_date": "Muddat bugungi kundan oldingi sana bo'lishi mumkin emas."})
+
         before = task.due_date
         task.due_date = due
         task.save(update_fields=["due_date", "updated_at"])
@@ -464,11 +470,12 @@ class TaskViewSet(viewsets.ModelViewSet):
         user_id = int_param(request.data.get("user_id"), "user_id")
         note = (request.data.get("note") or "").strip()[:250]
 
-        # Faqat loyiha a'zosiga - boshqaruvchi (boshliq/admin) bo'lsa yangi ijrochini loyihaga avtomatik a'zo qiladi.
+        auto_add = bool(request.data.get("auto_add_to_project") or request.data.get("auto_add_member"))
+        # Faqat loyiha a'zosiga - agar auto_add_to_project so'ralsa va ruxsat bo'lsa avtomatik a'zo qiladi.
         member = (task.project.memberships.filter(is_active=True, user_id=user_id)
                   .select_related("user").first())
         if member is None:
-            if access.can_manage:
+            if auto_add and access.can_manage:
                 from apps.projects.services import add_to_project
                 from apps.projects.models import ProjectRole
                 target_user = User.objects.filter(pk=user_id).first()

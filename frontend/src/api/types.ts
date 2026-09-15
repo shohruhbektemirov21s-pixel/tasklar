@@ -173,6 +173,7 @@ export interface Project {
   auto_accept: boolean;
   created_at: string;
   updated_at: string;
+  updated_by?: UserBrief | null;
   member_count: number;
   open_tasks: number;
   done_tasks: number;
@@ -1140,6 +1141,13 @@ export interface UserWork {
   }[];
   tasks: Task[];
   activity: Activity[];
+  orders?: ChangeRequestItem[];
+  order_stats?: {
+    total: number;
+    pending_review: number;
+    in_progress: number;
+    completed: number;
+  };
   /** true bo'lsa - ro'yxat so'rovchining huquqi bilan cheklangan */
   limited: boolean;
 }
