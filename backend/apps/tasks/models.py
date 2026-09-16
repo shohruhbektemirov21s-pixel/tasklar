@@ -369,9 +369,10 @@ class TaskAssignment(models.Model):
                 is_pm = u.global_role == GlobalRole.MANAGER or u.specialty == Specialty.PM
                 if is_pm:
                     actor = getattr(self, "assigned_by", None)
-                    is_boss = actor and (actor.global_role == GlobalRole.BOSS or getattr(actor, "is_boss", False))
-                    if not is_boss:
-                        raise ValidationError("PM (Loyiha menejeri)ga faqat Boshliq vazifa bera oladi.")
+                    if actor:
+                        is_boss = actor.global_role == GlobalRole.BOSS or getattr(actor, "is_boss", False)
+                        if not is_boss:
+                            raise ValidationError("PM (Loyiha menejeri)ga faqat Boshliq vazifa bera oladi.")
 
     def save(self, *args, **kwargs):
         self.clean()

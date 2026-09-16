@@ -264,65 +264,18 @@ export default function Layout() {
   const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null);
   useHistoryTracker(titleSlot);
   const [tick, setTick] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const [countdown, setCountdown] = useState<number | null>(null);
-
-  const triggerRefresh = useCallback(() => {
-    window.dispatchEvent(new CustomEvent("teamflow:refresh"));
-  }, []);
 
   useEffect(() => {
-    let intervalId: number | null = null;
-
-    const onScheduled = (e: Event) => {
-      const customEvent = e as CustomEvent<{ delayMs?: number }>;
-      let remaining = Math.round((customEvent.detail?.delayMs ?? 5000) / 1000);
-      setCountdown(remaining);
-
-      if (intervalId) window.clearInterval(intervalId);
-      intervalId = window.setInterval(() => {
-        remaining -= 1;
-        if (remaining <= 0) {
-          if (intervalId) window.clearInterval(intervalId);
-          intervalId = null;
-          setCountdown(null);
-        } else {
-          setCountdown(remaining);
-        }
-      }, 1000);
-    };
-
     const onRefresh = () => {
-      if (intervalId) {
-        window.clearInterval(intervalId);
-        intervalId = null;
-      }
-      setCountdown(null);
       setTick((t) => t + 1);
       void reloadRealtime();
-      setRefreshing(true);
-      window.setTimeout(() => setRefreshing(false), 600);
     };
 
-    window.addEventListener("teamflow:change-scheduled", onScheduled);
     window.addEventListener("teamflow:refresh", onRefresh);
     return () => {
-      window.removeEventListener("teamflow:change-scheduled", onScheduled);
       window.removeEventListener("teamflow:refresh", onRefresh);
-      if (intervalId) window.clearInterval(intervalId);
     };
   }, [reloadRealtime]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r") {
-        e.preventDefault();
-        triggerRefresh();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [triggerRefresh]);
   // Tepadagi qidiruv odamni ham topadi: ism, familiya yoki email bo'yicha.
   const [people, setPeople] = useState<UserBrief[]>([]);
   const [openHits, setOpenHits] = useState(false);
@@ -552,68 +505,6 @@ export default function Layout() {
             </div>
           )}
         </div>
-
-        {/* Real-time yangilash (Ctrl+R) va 5 soniyalik avto-yangilanish nishoni */}
-        <button
-          type="button"
-          className="top-icon"
-          onClick={triggerRefresh}
-          title={
-            countdown !== null
-              ? `O'zgarish saqlandi · ${countdown} soniyadan so'ng yangilanadi (yoki hoziroq bosing / Ctrl+R)`
-              : connected
-              ? "Jonli ulanish faol · Sahifani yangilash (Ctrl+R)"
-              : "Sahifani yangilash (Ctrl+R)"
-          }
-          aria-label="Sahifani yangilash"
-          style={{ position: "relative" }}
-        >
-          <svg
-            width="17"
-            height="17"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              transition: "transform 0.5s ease, color 0.3s ease",
-              transform: refreshing ? "rotate(360deg)" : "none",
-              color: countdown !== null ? "#f59e0b" : "currentColor",
-            }}
-          >
-            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-          </svg>
-          {countdown !== null ? (
-            <span
-              style={{
-                position: "absolute",
-                top: 4,
-                right: 3,
-                fontSize: 9,
-                fontWeight: 700,
-                color: "#f59e0b",
-                lineHeight: 1,
-              }}
-            >
-              {countdown}s
-            </span>
-          ) : connected ? (
-            <span
-              style={{
-                position: "absolute",
-                top: 7,
-                right: 7,
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                backgroundColor: "#10b981",
-                boxShadow: "0 0 4px #10b981",
-              }}
-            />
-          ) : null}
-        </button>
 
         <ThemeToggle />
         {/* Tekshiruv navbati - faqat ish qabul qiladigan odamga: loyiha

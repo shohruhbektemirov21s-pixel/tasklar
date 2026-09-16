@@ -128,12 +128,8 @@ describe("401 - token yangilash BIR MARTA yuboriladi", () => {
   });
 });
 
-describe("scheduleRefreshAfterChange — foydalanuvchi o'zgarishidan 5s keyin Ctrl+R", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  it("o'zgarishdan keyin teamflow:change-scheduled va 5 soniyadan keyin teamflow:refresh yuboriladi", async () => {
+describe("scheduleRefreshAfterChange — foydalanuvchi talabi bilan 5s avto-yangilanish o'chirilgan", () => {
+  it("chaqirilganda hech qanday taymer yoki hodisa ishga tushmaydi (no-op)", async () => {
     const { scheduleRefreshAfterChange } = await import("./client");
     const scheduledSpy = vi.fn();
     const refreshSpy = vi.fn();
@@ -143,19 +139,10 @@ describe("scheduleRefreshAfterChange — foydalanuvchi o'zgarishidan 5s keyin Ct
 
     scheduleRefreshAfterChange(5000);
 
-    expect(scheduledSpy).toHaveBeenCalledTimes(1);
+    expect(scheduledSpy).not.toHaveBeenCalled();
     expect(refreshSpy).not.toHaveBeenCalled();
-
-    // 4 soniyada hali chaqirilmaydi
-    vi.advanceTimersByTime(4000);
-    expect(refreshSpy).not.toHaveBeenCalled();
-
-    // 5 soniya to'lgach chaqiriladi
-    vi.advanceTimersByTime(1000);
-    expect(refreshSpy).toHaveBeenCalledTimes(1);
 
     window.removeEventListener("teamflow:change-scheduled", scheduledSpy);
     window.removeEventListener("teamflow:refresh", refreshSpy);
-    vi.useRealTimers();
   });
 });

@@ -4991,6 +4991,42 @@
   "value": "Bu yonalishda jamoada aʼzo yoq. Avval mos mutaxassisni qoshing.",
   "note": "pages/TaskForm.tsx"
  },
+ "task_form.jamoaga_azo_qoshish": {
+  "value": "Jamoaga a'zo qo'shish",
+  "note": "pages/TaskForm.tsx"
+ },
+ "task_form.jamoada_azo_yoq_qoshish": {
+  "value": "Jamoada hozircha a'zo yo'q. Quyidagi xodimlardan tanlab jamoaga qo'shing:",
+  "note": "pages/TaskForm.tsx"
+ },
+ "task_form.jamoaga_qoshish_btn": {
+  "value": "+ Jamoaga qo'shish",
+  "note": "pages/TaskForm.tsx"
+ },
+ "task_form.boshqa_xodimni_qoshish": {
+  "value": "+ Yangi xodimni jamoaga qo'shish",
+  "note": "pages/TaskForm.tsx"
+ },
+ "task_form.boshqa_xodimlar_jamoada_yoq": {
+  "value": "Boshqa xodimlar (jamoada yo'q):",
+  "note": "pages/TaskForm.tsx"
+ },
+ "task_form.qoshilmoqda": {
+  "value": "Qo'shilmoqda...",
+  "note": "pages/TaskForm.tsx"
+ },
+ "task_form.jamoaga_qoshildi": {
+  "value": "{ism} jamoaga qo'shildi va vazifaga biriktirildi",
+  "note": "pages/TaskForm.tsx"
+ },
+ "task_form.yashirish": {
+  "value": "Yashirish",
+  "note": "pages/TaskForm.tsx"
+ },
+ "task_form.nomzod_topilmadi": {
+  "value": "bo'yicha nomzod topilmadi.",
+  "note": "pages/TaskForm.tsx"
+ },
  "task_form.fayllar": {
   "value": "Fayllar",
   "note": "pages/TaskForm.tsx"

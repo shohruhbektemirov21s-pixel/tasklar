@@ -81,8 +81,6 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         }
 
         listeners.current.forEach((fn) => fn(data));
-        // O'zgarish bo'lganda 5 sekunddan keyin Ctrl+R funksiyasi ishlasin
-        scheduleRefreshAfterChange(5000);
       },
     });
 

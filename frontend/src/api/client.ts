@@ -131,28 +131,11 @@ interface RequestOptions {
   signal?: AbortSignal;
 }
 
-let changeTimer: ReturnType<typeof setTimeout> | null = null;
-
 /**
- * Foydalanuvchi ma'lumotni o'zgartirgandagina (vazifa, loyiha, taklif, profil va h.k.),
- * 5 sekunddan keyin xuddi Ctrl+R bosilgandek butun ilovani yangilash (teamflow:refresh) ishlaydi.
- * Ketma-ket o'zgarishlar qilinganda taymer qayta boshlanadi (debounced 5s).
+ * 5 sekundda avtomatik yangilanish olib tashlandi.
  */
-export function scheduleRefreshAfterChange(delayMs = 5000) {
-  if (typeof window === "undefined") return;
-  if (changeTimer) {
-    clearTimeout(changeTimer);
-  }
-  window.dispatchEvent(
-    new CustomEvent("teamflow:change-scheduled", { detail: { delayMs } })
-  );
-
-  changeTimer = setTimeout(() => {
-    changeTimer = null;
-    window.dispatchEvent(
-      new CustomEvent("teamflow:refresh", { detail: { source: "auto-change-5s" } })
-    );
-  }, delayMs);
+export function scheduleRefreshAfterChange(_delayMs = 5000) {
+  // No-op: foydalanuvchi talabi bilan avto-yangilanish o'chirildi
 }
 
 async function request<T>(path: string, opts: RequestOptions = {}, retry = true): Promise<T> {
@@ -183,17 +166,7 @@ async function request<T>(path: string, opts: RequestOptions = {}, retry = true)
     if (tokens.access || tokens.refresh) sessionEnded();
   }
 
-  const notifyMutation = () => {
-    const method = (opts.method || "GET").toUpperCase();
-    const isReadGateway = path === READ_PATH || path.startsWith("/read/");
-    const isAuthNoop = path.includes("/auth/login/") || path.includes("/auth/refresh/");
-    if (!isReadGateway && !isAuthNoop && ["POST", "PATCH", "PUT", "DELETE"].includes(method)) {
-      scheduleRefreshAfterChange(5000);
-    }
-  };
-
   if (res.status === 204) {
-    notifyMutation();
     return undefined as T;
   }
 
@@ -206,7 +179,6 @@ async function request<T>(path: string, opts: RequestOptions = {}, retry = true)
   }
 
   if (!res.ok) throw new ApiError(res.status, data);
-  notifyMutation();
   return data as T;
 }
 

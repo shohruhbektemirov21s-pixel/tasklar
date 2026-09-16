@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ApiError, api, listOf } from "@/api/client";
 import type { Project, Task, UserBrief } from "@/api/types";
@@ -38,6 +38,10 @@ export default function TaskForm() {
   const [project, setProject] = useState<Project | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [candidates, setCandidates] = useState<UserBrief[]>([]);
+  const [addingUserId, setAddingUserId] = useState<number | null>(null);
+  const [showAllCandidates, setShowAllCandidates] = useState(false);
+  const [memberSuccessMsg, setMemberSuccessMsg] = useState<string | null>(null);
   const [assignees, setAssignees] = useState<number[]>([]);
   // Jamoa kattalashganda uzun ro'yxatdan odam topib bo'lmaydi - shuning uchun qidiruv.
   const [who, setWho] = useState("");
@@ -118,16 +122,56 @@ export default function TaskForm() {
     return () => { alive = false; };
   }, [parentTaskId]);
 
+  const loadSuggestions = useCallback(async (pid: string | number, specialty?: string) => {
+    try {
+      const d = await api.get<Suggestion[]>("/tasks/suggest-assignees/", {
+        project: pid, specialty: specialty || "",
+      });
+      setSuggestions(d);
+    } catch {
+      setSuggestions([]);
+    }
+  }, []);
+
+  const loadCandidates = useCallback(async (pid: string | number) => {
+    try {
+      const d = await api.get<UserBrief[]>("/team/candidates/", { project: pid });
+      setCandidates(d);
+    } catch {
+      setCandidates([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (!projectId) return;
-    let alive = true;
-    void api.get<Suggestion[]>("/tasks/suggest-assignees/", {
-      project: projectId, specialty: f.required_specialty,
-    })
-      .then((d) => { if (alive) setSuggestions(d); })
-      .catch(() => { if (alive) setSuggestions([]); });
-    return () => { alive = false; };
-  }, [projectId, f.required_specialty]);
+    void loadSuggestions(projectId, f.required_specialty);
+    void loadCandidates(projectId);
+  }, [projectId, f.required_specialty, loadSuggestions, loadCandidates]);
+
+  async function handleAddMember(c: UserBrief) {
+    if (!projectId) return;
+    setAddingUserId(c.id);
+    try {
+      await api.post("/team/add/", {
+        project: Number(projectId),
+        user_id: c.id,
+        role: "DEVELOPER",
+      });
+      await Promise.all([
+        loadSuggestions(projectId, f.required_specialty),
+        loadCandidates(projectId),
+      ]);
+      setAssignees((prev) => (prev.includes(c.id) ? prev : [...prev, c.id]));
+      setMemberSuccessMsg(
+        tx("task_form.jamoaga_qoshildi", { ism: c.full_name }, `${c.full_name} jamoaga qo'shildi va vazifaga biriktirildi`)
+      );
+      setTimeout(() => setMemberSuccessMsg(null), 4000);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : tx("add_member_box.qoshib_bolmadi", undefined, "Qo'shib bo'lmadi"));
+    } finally {
+      setAddingUserId(null);
+    }
+  }
 
   const set = (k: string, v: unknown) => setF((p) => ({ ...p, [k]: v }));
 
@@ -305,6 +349,11 @@ export default function TaskForm() {
   const hiddenPicked = assignees.filter(
     (id) => !shown.some((s) => s.user.id === id)).length;
 
+  const filteredCandidates = needle
+    ? candidates.filter((c) =>
+        `${c.full_name} ${c.email}`.toLowerCase().includes(needle))
+    : candidates;
+
   return (
     <>
       <PageHead
@@ -393,8 +442,21 @@ export default function TaskForm() {
                 </div>
               </Card>
 
-              <Card title={tx("common.ijrochilar")}
+              <Card title={tx("task_form.jamoaga_azo_qoshish", undefined, "Jamoaga a'zo qo'shish")}
                     badge={<span className="badge">{assignees.length} {tx("task_form.tanlangan")}</span>}>
+                {memberSuccessMsg && (
+                  <div style={{
+                    padding: "8px 12px",
+                    background: "rgba(16, 185, 129, 0.1)",
+                    border: "1px solid rgba(16, 185, 129, 0.3)",
+                    borderRadius: 6,
+                    color: "var(--color-success, #10b981)",
+                    fontSize: 13,
+                    marginBottom: 10,
+                  }}>
+                    ✓ {memberSuccessMsg}
+                  </div>
+                )}
                 <div className="gh-search mb" style={{ width: "100%" }}>
                   <IconSearch size={14} />
                   <input type="search" value={who} placeholder={tx("task_form.ism_familiya_yoki_email_boyicha")}
@@ -424,18 +486,153 @@ export default function TaskForm() {
                       {!s.matches && <span className="badge badge-warn">{tx("task_form.mos_emas")}</span>}
                     </label>
                   ))}
-                  {!shown.length && !!suggestions.length && (
-                    <p className="muted">«{who}{tx("task_form.boyicha_hech_kim_topilmadi")}</p>
-                  )}
-                  {!suggestions.length && (
-                    <p className="muted">
-                      {tx("task_form.bu_yonalishda_jamoada_azo_yoq")}
-                    </p>
+                  {!shown.length && !!eligibleSuggestions.length && (
+                    <p className="muted">«{who}» {tx("task_form.boyicha_hech_kim_topilmadi")}</p>
                   )}
                   {!!hiddenPicked && (
                     <p className="muted" style={{ fontSize: 12 }}>
                       {tx("task_form.yana")} {hiddenPicked} {tx("task_form.ta_tanlangan_azo_qidiruvdan_tashqarida")}
                     </p>
+                  )}
+
+                  {!eligibleSuggestions.length && (
+                    <div style={{ marginTop: 4 }}>
+                      <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>
+                        {tx("task_form.jamoada_azo_yoq_qoshish", undefined, "Jamoada hozircha a'zo yo'q. Quyidagi xodimlardan tanlab jamoaga qo'shing:")}
+                      </p>
+                      {filteredCandidates.length > 0 ? (
+                        <div className="stack">
+                          {filteredCandidates.map((c) => (
+                            <div key={c.id} className="row"
+                                 style={{
+                                   padding: "8px 10px", border: "1px solid var(--border)",
+                                   borderRadius: 6, background: "var(--card-bg, transparent)",
+                                 }}>
+                              <Avatar user={c} size="sm" />
+                              <div>
+                                <strong style={{ fontSize: 13 }}>{c.full_name}</strong>
+                                <br />
+                                <small className="muted">{c.specialty_display || c.email}</small>
+                              </div>
+                              <span className="spacer" />
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-primary"
+                                disabled={addingUserId === c.id}
+                                onClick={() => void handleAddMember(c)}
+                              >
+                                {addingUserId === c.id
+                                  ? tx("task_form.qoshilmoqda", undefined, "Qo'shilmoqda...")
+                                  : tx("task_form.jamoaga_qoshish_btn", undefined, "+ Jamoaga qo'shish")}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="muted" style={{ fontSize: 13 }}>
+                          {needle
+                            ? `«${who}» ${tx("task_form.nomzod_topilmadi", undefined, "bo'yicha nomzod topilmadi.")}`
+                            : tx("task_form.bu_yonalishda_jamoada_azo_yoq")}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {eligibleSuggestions.length > 0 && candidates.length > 0 && (
+                    <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed var(--border)" }}>
+                      {needle ? (
+                        filteredCandidates.length > 0 && (
+                          <>
+                            <small className="muted" style={{ display: "block", marginBottom: 8, fontWeight: 600 }}>
+                              {tx("task_form.boshqa_xodimlar_jamoada_yoq", undefined, "Boshqa xodimlar (jamoada yo'q):")}
+                            </small>
+                            <div className="stack">
+                              {filteredCandidates.map((c) => (
+                                <div key={c.id} className="row"
+                                     style={{
+                                       padding: "6px 10px", border: "1px solid var(--border)",
+                                       borderRadius: 6,
+                                     }}>
+                                  <Avatar user={c} size="sm" />
+                                  <div>
+                                    <strong style={{ fontSize: 13 }}>{c.full_name}</strong>
+                                    <br />
+                                    <small className="muted">{c.specialty_display || c.email}</small>
+                                  </div>
+                                  <span className="spacer" />
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm"
+                                    disabled={addingUserId === c.id}
+                                    onClick={() => void handleAddMember(c)}
+                                  >
+                                    {addingUserId === c.id
+                                      ? tx("task_form.qoshilmoqda", undefined, "Qo'shilmoqda...")
+                                      : tx("task_form.jamoaga_qoshish_btn", undefined, "+ Jamoaga qo'shish")}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )
+                      ) : (
+                        <div>
+                          {!showAllCandidates ? (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-ghost"
+                              onClick={() => setShowAllCandidates(true)}
+                              style={{ fontSize: 13 }}
+                            >
+                              {tx("task_form.boshqa_xodimni_qoshish", undefined, "+ Yangi xodimni jamoaga qo'shish")}
+                            </button>
+                          ) : (
+                            <div>
+                              <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+                                <small className="muted" style={{ fontWeight: 600 }}>
+                                  {tx("task_form.boshqa_xodimlar_jamoada_yoq", undefined, "Boshqa xodimlar (jamoada yo'q):")}
+                                </small>
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-ghost"
+                                  onClick={() => setShowAllCandidates(false)}
+                                  style={{ fontSize: 12, padding: "2px 6px" }}
+                                >
+                                  {tx("task_form.yashirish", undefined, "Yashirish")}
+                                </button>
+                              </div>
+                              <div className="stack">
+                                {candidates.map((c) => (
+                                  <div key={c.id} className="row"
+                                       style={{
+                                         padding: "6px 10px", border: "1px solid var(--border)",
+                                         borderRadius: 6,
+                                       }}>
+                                    <Avatar user={c} size="sm" />
+                                    <div>
+                                      <strong style={{ fontSize: 13 }}>{c.full_name}</strong>
+                                      <br />
+                                      <small className="muted">{c.specialty_display || c.email}</small>
+                                    </div>
+                                    <span className="spacer" />
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm"
+                                      disabled={addingUserId === c.id}
+                                      onClick={() => void handleAddMember(c)}
+                                    >
+                                      {addingUserId === c.id
+                                        ? tx("task_form.qoshilmoqda", undefined, "Qo'shilmoqda...")
+                                        : tx("task_form.jamoaga_qoshish_btn", undefined, "+ Jamoaga qo'shish")}
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </Card>
