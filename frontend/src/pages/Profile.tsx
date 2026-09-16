@@ -5,7 +5,6 @@ import type { Task, User, UserWork, ChangeRequestItem } from "@/api/types";
 import { clientApprove, clientReject } from "@/api/orders";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
-import SkillEditor from "@/components/SkillEditor";
 import { IconChat } from "@/components/icons";
 import Timeline from "@/components/Timeline";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
@@ -399,19 +398,9 @@ export default function Profile() {
                     {target.department_name ? ` • ${target.department_name}` : ""}
                   </p>
                   <div className="row wrap" style={{ gap: 6 }}>
-                    <span className="badge">{target.seniority_display}</span>
-                    <span className="badge">{target.years_experience} {tx("profile.yil_tajriba")}</span>
                     <span className="badge badge-info">{target.global_role_display}</span>
                   </div>
                   {target.bio && <p className="pre-wrap" style={{ marginTop: 10 }}>{target.bio}</p>}
-                  <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
-                    {target.skill_list.map((s) => <span className="chip" key={s}>{s}</span>)}
-                    {!target.skill_list.length && isSelf && !edit && (
-                      <button type="button" className="btn btn-sm" onClick={() => setEdit(true)}>
-                        {tx("profile.konikma_qoshish")}
-                      </button>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
@@ -439,16 +428,6 @@ export default function Profile() {
                       )}
                     </div>
                   ))}
-                  <div className="field">
-                    <label htmlFor={`${fid}-4`}>{tx("profile.konikmalar")}</label>
-                    <SkillEditor
-                      id={`${fid}-4`}
-                      value={form.skills || ""}
-                      onChange={(v) => setForm({ ...form, skills: v })}
-                      suggestions={target.suggested_skills || []}
-                    />
-                  </div>
-
                   <div className="field">
                     <label htmlFor={`${fid}-3`}>{tx("profile.qisqacha_malumot")}</label>
                     <textarea id={`${fid}-3`} rows={3} value={form.bio || ""}

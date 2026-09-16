@@ -12,7 +12,7 @@ export default function TaskBulkForm() {
   const fid = useId();
   const id = useEntityId("project");
   const go = useGo();
-  const { meta } = useAuth();
+  const { user, meta } = useAuth();
 
   const [project, setProject] = useState<Project | null>(null);
   const [lines, setLines] = useState("");
@@ -39,12 +39,14 @@ export default function TaskBulkForm() {
 
   const titles = lines.split("\n").map((l) => l.trim().replace(/^[-*]\s*/, "")).filter(Boolean);
 
+  const isBoss = Boolean(user?.is_boss || user?.global_role === "BOSS");
   const members = (project?.members || []).filter(
     (m) => (!f.required_specialty || !matchSpec || m.user.specialty === f.required_specialty) &&
            m.user.global_role !== "ADMIN" &&
            m.user.global_role !== "BOSS" &&
            !m.user.is_platform_admin &&
-           !m.user.is_boss
+           !m.user.is_boss &&
+           (isBoss || (m.user.global_role !== "MANAGER" && m.user.specialty !== "PM" && !m.user.is_manager))
   );
 
   const selected = members.filter((m) => assignees.includes(m.user.id));

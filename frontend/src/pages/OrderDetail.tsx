@@ -2556,19 +2556,6 @@ export default function OrderDetail() {
 
             <form onSubmit={handleApproveVersionSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-                <div
-                  style={{
-                    background: "var(--accent-soft)",
-                    borderRadius: 8,
-                    padding: "10px 14px",
-                    fontSize: 12.5,
-                    lineHeight: 1.45,
-                    color: "var(--text)",
-                  }}
-                >
-                  Yangi TZ tasdiqlangach, oldingi versiyalar bekor qilinadi (atmen) va buyurtma yangi topshiriq hujjatiga to'liq o'tkaziladi.
-                </div>
-
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div className="field">
                     <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>

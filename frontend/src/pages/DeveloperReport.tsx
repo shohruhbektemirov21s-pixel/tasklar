@@ -57,7 +57,6 @@ export default function DeveloperReport() {
                 <span className="badge" style={{ color: d.developer.specialty_color }}>
                   {d.developer.specialty_display}
                 </span>
-                <span className="badge">{d.developer.seniority_display}</span>
                 {m && <span className="badge">{m.role_display}</span>}
                 {m && !m.is_active && <span className="badge badge-danger">{tx("developer_report.sobiq_azo")}</span>}
               </div>

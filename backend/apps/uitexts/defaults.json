@@ -6682,5 +6682,13 @@
  "people.kamida_bitta_ijrochi": {
   "value": "Kamida bitta ijrochi tanlanishi shart",
   "note": "pages/People.tsx"
+ },
+ "team_picker.admin_va_boshliqqa_vazifa_berilmaydi": {
+  "value": "Bosh admin va Boshliqqa vazifa biriktirilmaydi",
+  "note": "components/TeamPicker.tsx"
+ },
+ "team_picker.pmga_faqat_boshliq_vazifa_beradi": {
+  "value": "PM (Loyiha menejeri)ga faqat Boshliq vazifa bera oladi",
+  "note": "components/TeamPicker.tsx"
  }
 }

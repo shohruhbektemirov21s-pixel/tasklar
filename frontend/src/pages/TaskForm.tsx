@@ -154,12 +154,22 @@ export default function TaskForm() {
     }
   }, [editing, draftKey]);
 
-  // Yangi vazifada dastlab foydalanuvchining o'zini tanlab qo'yish (keyin sheriklar qo'shilishi mumkin)
+  // Yangi vazifada dastlab foydalanuvchining o'zini tanlab qo'yish (admin, boshliq va PMga cheklov)
   useEffect(() => {
     if (!editing && user?.id && assignees.length === 0 && !draftRestored) {
-      setAssignees([user.id]);
+      const isBoss = user.is_boss || user.global_role === "BOSS";
+      const isPm = user.global_role === "MANAGER" || user.specialty === "PM" || user.is_manager;
+      const isRestricted =
+        user.is_platform_admin ||
+        user.is_boss ||
+        user.global_role === "ADMIN" ||
+        user.global_role === "BOSS" ||
+        (!isBoss && isPm);
+      if (!isRestricted) {
+        setAssignees([user.id]);
+      }
     }
-  }, [editing, user?.id, draftRestored, assignees.length]);
+  }, [editing, user, draftRestored, assignees.length]);
 
   // Qoralamani avtomatik saqlash
   useEffect(() => {
@@ -278,11 +288,20 @@ export default function TaskForm() {
 
   // Ism, familiya yoki email bo'yicha filtr. Tanlangan a'zo qidiruvdan tushib
   // qolsa ham tanlovi saqlanadi - pastda nechtasi yashiringani aytiladi.
+  const isBoss = Boolean(user?.is_boss || user?.global_role === "BOSS");
   const needle = who.trim().toLowerCase();
+  const eligibleSuggestions = suggestions.filter(
+    (s) =>
+      !s.user.is_platform_admin &&
+      !s.user.is_boss &&
+      s.user.global_role !== "ADMIN" &&
+      s.user.global_role !== "BOSS" &&
+      (isBoss || (s.user.global_role !== "MANAGER" && s.user.specialty !== "PM" && !s.user.is_manager))
+  );
   const shown = needle
-    ? suggestions.filter((s) =>
+    ? eligibleSuggestions.filter((s) =>
         `${s.user.full_name} ${s.user.email}`.toLowerCase().includes(needle))
-    : suggestions;
+    : eligibleSuggestions;
   const hiddenPicked = assignees.filter(
     (id) => !shown.some((s) => s.user.id === id)).length;
 
@@ -397,7 +416,7 @@ export default function TaskForm() {
                         <strong style={{ fontSize: 13 }}>{s.user.full_name}</strong>
                         <br />
                         <small className="muted">
-                          {s.user.specialty_display} · {s.user.seniority_display}
+                          {s.user.specialty_display}
                         </small>
                       </div>
                       <span className="spacer" />

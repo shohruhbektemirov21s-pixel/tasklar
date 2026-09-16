@@ -182,6 +182,42 @@ class TaskSerializer(serializers.ModelSerializer):
                     "due_date": "Muddat bugungi kundan oldingi sana bo'lishi mumkin emas."})
         return attrs
 
+    def validate_assignee_ids(self, value):
+        if value:
+            from apps.accounts.models import GlobalRole, User
+            from django.db.models import Q
+            invalid = list(
+                User.objects.filter(
+                    id__in=value
+                ).filter(
+                    Q(is_superuser=True) | Q(global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])
+                ).values_list("full_name", flat=True)
+            )
+            if invalid:
+                names = ", ".join(invalid)
+                raise serializers.ValidationError(
+                    f"Bosh admin va Boshliqqa vazifa biriktirib bo'lmaydi ({names})."
+                )
+
+            request = self.context.get("request")
+            actor = getattr(request, "user", None) if request else None
+            is_boss = actor and (actor.global_role == GlobalRole.BOSS or getattr(actor, "is_boss", False))
+            if not is_boss:
+                from apps.accounts.models import Specialty
+                pm_assignees = list(
+                    User.objects.filter(
+                        id__in=value
+                    ).filter(
+                        Q(global_role=GlobalRole.MANAGER) | Q(specialty=Specialty.PM)
+                    ).values_list("full_name", flat=True)
+                )
+                if pm_assignees:
+                    names = ", ".join(pm_assignees)
+                    raise serializers.ValidationError(
+                        f"PM (Loyiha menejeri)ga faqat Boshliq vazifa bera oladi ({names})."
+                    )
+        return value
+
     def get_attachment_count(self, obj):
         # Ro'yxatda annotatsiya bo'ladi, alohida ochilganda - bazadan.
         annotated = getattr(obj, "attachments_total", None)

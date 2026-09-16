@@ -89,7 +89,7 @@ export default function Members({ project, onChange }: { project: Project; onCha
                     <SpecialtyTag user={r.user} />
                     <br />
                     <small className="muted">
-                      {r.user.seniority_display} {tx("project_members.istagan_roli")} {r.desired_role_display} · {timeAgo(r.created_at)}
+                      {tx("project_members.istagan_roli")} {r.desired_role_display} · {timeAgo(r.created_at)}
                     </small>
                   </div>
                   <span className="spacer" />
@@ -143,7 +143,6 @@ export default function Members({ project, onChange }: { project: Project; onCha
                       <span className="badge" style={{ color: m.user.specialty_color }}>
                         {m.user.specialty_display}
                       </span>
-                      <br /><small className="muted">{m.user.seniority_display}</small>
                     </td>
                     <td>
                       {acc.can_manage && !isManager(m) ? (

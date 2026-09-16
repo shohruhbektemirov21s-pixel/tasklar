@@ -112,10 +112,14 @@ export default function Discover() {
           <div>
             <Card title={tx("discover.sizning_yonalishingiz")}>
               <div className="row mb"><SpecialtyTag user={user} /></div>
-              <strong style={{ fontSize: 13 }}>{tx("discover.konikmalaringiz")}</strong>
-              <div className="row wrap" style={{ marginTop: 8, gap: 6 }}>
-                {user?.skill_list.map((s) => <span className="badge" key={s}>{s}</span>)}
-              </div>
+              {!!user?.skill_list?.length && (
+                <>
+                  <strong style={{ fontSize: 13 }}>{tx("discover.konikmalaringiz")}</strong>
+                  <div className="row wrap" style={{ marginTop: 8, gap: 6 }}>
+                    {user?.skill_list.map((s) => <span className="badge" key={s}>{s}</span>)}
+                  </div>
+                </>
+              )}
             </Card>
 
           </div>

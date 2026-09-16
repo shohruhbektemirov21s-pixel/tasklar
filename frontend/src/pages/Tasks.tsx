@@ -141,13 +141,6 @@ export default function Tasks() {
           </div>
         </div>
 
-        {!!rows?.length && (
-          <div className="page-hint-strip">
-            <span className="ico">ℹ</span>
-            <span>{tx("tasks.xodim_bosish_tavsif")}</span>
-          </div>
-        )}
-
         {loading ? <Loading /> : !rows ? null : !rows.length ? (
           <div className="card">
             <Empty icon="☺" title={tx("tasks.dasturchi_topilmadi")}
@@ -278,7 +271,6 @@ function DeveloperRow({ row, filtered, open, onToggle }: {
             <Link {...toUser(u.id)} onClick={(e) => e.stopPropagation()}>{u.full_name}</Link>
           </h3>
           <SpecialtyTag user={u} />
-          <span className="badge">{u.seniority_display}</span>
           <span className="spacer" />
           {row.overdue_count > 0 && (
             <span className="badge badge-danger">{row.overdue_count} {tx("tasks.ta_muddati_otgan")}</span>

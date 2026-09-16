@@ -357,6 +357,26 @@ class TaskAssignment(models.Model):
             models.Index(fields=["user", "is_active"]),
         ]
 
+    def clean(self):
+        super().clean()
+        from apps.accounts.models import GlobalRole, Specialty
+        from django.core.exceptions import ValidationError
+        if self.user_id:
+            u = getattr(self, "user", None)
+            if u:
+                if u.is_superuser or u.global_role in [GlobalRole.ADMIN, GlobalRole.BOSS]:
+                    raise ValidationError("Bosh admin va Boshliqqa vazifa biriktirib bo'lmaydi.")
+                is_pm = u.global_role == GlobalRole.MANAGER or u.specialty == Specialty.PM
+                if is_pm:
+                    actor = getattr(self, "assigned_by", None)
+                    is_boss = actor and (actor.global_role == GlobalRole.BOSS or getattr(actor, "is_boss", False))
+                    if not is_boss:
+                        raise ValidationError("PM (Loyiha menejeri)ga faqat Boshliq vazifa bera oladi.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return "{} -> {}".format(self.task.code, self.user)
 

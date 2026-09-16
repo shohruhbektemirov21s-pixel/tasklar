@@ -249,3 +249,120 @@ class TaskTeamCollaborationTests(ApiTestCase):
         })
         self.assertEqual(res.status_code, 400)
 
+    def test_cannot_assign_task_to_admin_or_boss(self):
+        """Bosh admin va Boshliqqa task berilmasligi tekshiruvi."""
+        admin_user = make_user(
+            "admin_test@teamflow.uz", "Bosh Admin",
+            role=GlobalRole.ADMIN, specialty=Specialty.DEVELOPER
+        )
+        boss_user = make_user(
+            "boss_test@teamflow.uz", "Tashkilot Boshlig'i",
+            role=GlobalRole.BOSS, specialty=Specialty.DEVELOPER
+        )
+        for u in [admin_user, boss_user]:
+            ProjectMember.objects.create(
+                project=self.project, user=u, role=ProjectRole.DEVELOPER, is_active=True
+            )
+
+        client = APIClient()
+        client.force_authenticate(user=self.pm_user)
+
+        # 1. Vazifa yaratishda admin yoki boshliqqa berilmasligi
+        res_admin = client.post("/api/tasks/", {
+            "project": self.project.id,
+            "title": "Adminga berilmasin",
+            "assignee_ids": [admin_user.id],
+        })
+        self.assertEqual(res_admin.status_code, 400)
+
+        res_boss = client.post("/api/tasks/", {
+            "project": self.project.id,
+            "title": "Boshliqqa berilmasin",
+            "assignee_ids": [boss_user.id],
+        })
+        self.assertEqual(res_boss.status_code, 400)
+
+        # 2. Team modal orqali qo'shilmasligi
+        res_team_admin = client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": admin_user.id,
+            "role": "Admin",
+        })
+        self.assertEqual(res_team_admin.status_code, 400)
+
+        res_team_boss = client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": boss_user.id,
+            "role": "Boshliq",
+        })
+        self.assertEqual(res_team_boss.status_code, 400)
+
+        # 3. Boshqa odamga o'tkazish (reassign) orqali ham berilmasligi
+        res_reassign_admin = client.post(f"/api/tasks/{self.task.id}/reassign/", {
+            "user_id": admin_user.id,
+        })
+        self.assertEqual(res_reassign_admin.status_code, 400)
+
+        res_reassign_boss = client.post(f"/api/tasks/{self.task.id}/reassign/", {
+            "user_id": boss_user.id,
+        })
+        self.assertEqual(res_reassign_boss.status_code, 400)
+
+    def test_pm_can_only_be_assigned_task_by_boss(self):
+        """PMga faqat boshliq task bera olishi tekshiruvi."""
+        boss_user = make_user(
+            "boss_pm_test@teamflow.uz", "Boshliq",
+            role=GlobalRole.BOSS, specialty=Specialty.DEVELOPER
+        )
+        another_pm = make_user(
+            "pm2_test@teamflow.uz", "Ikkinchi PM",
+            role=GlobalRole.MANAGER, specialty=Specialty.PM
+        )
+        ProjectMember.objects.create(project=self.project, user=boss_user, role=ProjectRole.MANAGER, is_active=True)
+        ProjectMember.objects.create(project=self.project, user=another_pm, role=ProjectRole.MANAGER, is_active=True)
+
+        dev_client = APIClient()
+        dev_client.force_authenticate(user=self.dev1)
+
+        pm_client = APIClient()
+        pm_client.force_authenticate(user=self.pm_user)
+
+        boss_client = APIClient()
+        boss_client.force_authenticate(user=boss_user)
+
+        # 1. Dasturchi yoki PM boshqa PMga vazifa yarata olmaydi
+        res_dev_to_pm = dev_client.post("/api/tasks/", {
+            "project": self.project.id,
+            "title": "Dasturchi PMga berganda",
+            "assignee_ids": [another_pm.id],
+        })
+        self.assertEqual(res_dev_to_pm.status_code, 400)
+
+        res_pm_to_pm = pm_client.post("/api/tasks/", {
+            "project": self.project.id,
+            "title": "PM boshqa PMga berganda",
+            "assignee_ids": [another_pm.id],
+        })
+        self.assertEqual(res_pm_to_pm.status_code, 400)
+
+        # 2. Team modal orqali dasturchi yoki PM boshqa PMni qo'sha olmaydi
+        res_team_pm = pm_client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": another_pm.id,
+            "role": "Loyiha boshqaruvi",
+        })
+        self.assertEqual(res_team_pm.status_code, 400)
+
+        # 3. Boshliq esa PMga vazifa bera oladi
+        res_boss_to_pm = boss_client.post("/api/tasks/", {
+            "project": self.project.id,
+            "title": "Boshliq PMga vazifa topshirdi",
+            "assignee_ids": [another_pm.id],
+        })
+        self.assertEqual(res_boss_to_pm.status_code, 201)
+
+        # 4. Boshliq team modal orqali ham PMni biriktira oladi
+        res_boss_team_pm = boss_client.post(f"/api/tasks/{self.task.id}/team/", {
+            "user_id": another_pm.id,
+            "role": "Menejment",
+        })
+        self.assertEqual(res_boss_team_pm.status_code, 200)
+
+

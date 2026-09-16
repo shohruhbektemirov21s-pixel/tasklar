@@ -190,6 +190,15 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
   const fileInput = useRef<HTMLInputElement>(null);
   // Ishni boshqa odamga o'tkazish: jamoa ro'yxati, kimga va nega.
   const [members, setMembers] = useState<ProjectMember[]>([]);
+  const isBoss = Boolean(user?.is_boss || user?.global_role === "BOSS");
+  const assignableMembers = members.filter(
+    (m) =>
+      !m.user.is_platform_admin &&
+      !m.user.is_boss &&
+      m.user.global_role !== "ADMIN" &&
+      m.user.global_role !== "BOSS" &&
+      (isBoss || (m.user.global_role !== "MANAGER" && m.user.specialty !== "PM" && !m.user.is_manager))
+  );
   const [handTo, setHandTo] = useState("");
   const [handNote, setHandNote] = useState("");
 
@@ -1482,7 +1491,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                     <select id={`${fid}-5`} value={handTo} required
                             onChange={(e) => setHandTo(e.target.value)}>
                       <option value="">{tx("task_detail.jamoadan_tanlang", undefined, "Jamoadan tanlang")}</option>
-                      {members.map((m) => {
+                      {assignableMembers.map((m) => {
                         const now = task.assignees.some((a) => a.id === m.user.id);
                         return (
                           <option key={m.id} value={m.user.id}>
@@ -1665,11 +1674,11 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                     />
                   </div>
 
-                  {members.length > 0 && (
+                  {assignableMembers.length > 0 && (
                     <div className="field">
                       <label>{tx("common.ijrochilar")}</label>
                       <div style={{ maxHeight: 120, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 6, padding: 6 }}>
-                        {members.map((m) => {
+                        {assignableMembers.map((m) => {
                           const checked = stAssignees.includes(m.user.id);
                           return (
                             <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>
@@ -1837,7 +1846,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
                   onChange={(e) => setTeamMemberId(e.target.value)}
                 >
                   <option value="">{tx("task_detail.jamoadan_tanlang", undefined, "Jamoadan tanlang")}</option>
-                  {members.map((m) => {
+                  {assignableMembers.map((m) => {
                     const alreadyIn = task.assignments?.some((a) => a.user.id === m.user.id && a.id !== editingAssignment?.id);
                     return (
                       <option key={m.id} value={m.user.id} disabled={alreadyIn}>

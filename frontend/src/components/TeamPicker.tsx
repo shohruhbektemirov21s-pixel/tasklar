@@ -18,6 +18,7 @@ import { MAX_FILE_BYTES, fileSize, uploadFiles } from "./FilePicker";
 import UserSearch from "./UserSearch";
 import { IconCheck, IconClose, IconFile, IconPlus } from "./icons";
 import { Avatar, DateField, fromDateTimeInput, SpecialtyTag } from "./ui";
+import { useAuth } from "@/auth/AuthContext";
 import { tx } from "@/i18n";
 
 /** Odamga atab yozilgan, hali yaratilmagan vazifa. */
@@ -105,10 +106,19 @@ export async function addPickedMembers(projectId: number, picks: Pick[]) {
  * yuklanmasa vazifa o'chirilmaydi: qaysi vazifaning fayli qolib ketgani
  * alohida qaytariladi, odam uni vazifa sahifasidan qayta yuklaydi.
  */
-export async function createPickedTasks(projectId: number, picks: Pick[]) {
+export async function createPickedTasks(projectId: number, picks: Pick[], isBoss = false) {
   const failedTasks: string[] = [];
   const failedFiles: string[] = [];
   for (const p of inAddedOrder(picks)) {
+    if (
+      p.user.is_platform_admin ||
+      p.user.is_boss ||
+      p.user.global_role === "ADMIN" ||
+      p.user.global_role === "BOSS" ||
+      (!isBoss && (p.user.global_role === "MANAGER" || p.user.specialty === "PM" || p.user.is_manager))
+    ) {
+      continue;
+    }
     for (const t of tasksOf(p)) {
       let task: Task;
       try {
@@ -160,6 +170,14 @@ interface Props {
 export default function TeamPicker({
   picks, onChange, roles, priorities, defaultRole = "DEVELOPER", excludeId,
 }: Props) {
+  const { user } = useAuth();
+  const isBoss = Boolean(user?.is_boss || user?.global_role === "BOSS");
+  const isExcludedFromTasks = (u: UserBrief) =>
+    u.is_platform_admin ||
+    u.is_boss ||
+    u.global_role === "ADMIN" ||
+    u.global_role === "BOSS" ||
+    (!isBoss && (u.global_role === "MANAGER" || u.specialty === "PM" || u.is_manager));
 
   const search = useCallback(async (q: string) => {
     const data = await api.get<any>("/users/", { search: q, page_size: 8, exclude_management: "1" });
@@ -218,74 +236,82 @@ export default function TeamPicker({
                 ))}
               </select>
 
-              <div className="pick-tasks">
-                {p.tasks.map((t, n) => (
-                  p.edit && p.edit.index === n ? (
-                    /* Tahrir aynan SHU qatorning o'rnida ochiladi - odam
-                       qaysi vazifani ochganini ko'rib tursin. */
-                    <TaskAdder
-                      key={n}
-                      priorities={priorities}
-                      value={p.edit.task}
-                      onValue={(d) => patch(i, { edit: { index: n, task: d } })}
-                      onSubmit={(saved) => patch(i, {
-                        tasks: p.tasks.map((old, k) => (k === n ? saved : old)),
-                        edit: null,
-                      })}
-                      onCancel={() => patch(i, { edit: null })}
-                    />
-                  ) : (
-                    <div className="pick-task" key={n}>
-                      {/* Nomini bosish vazifani OCHADI. Ilgari qatorda faqat
-                          o'chirish tugmasi bor edi: sarlavhada xato ketsa yoki
-                          sana o'zgarsa, vazifani o'chirib qaytadan yozib
-                          chiqishdan boshqa yo'l yo'q edi. */}
-                      <button type="button" className="pick-task-title" title={t.title}
-                              onClick={() => patch(i, { edit: { index: n, task: t } })}>
-                        {t.title}
-                      </button>
-                      <span className={`pri pri-${t.priority}`}>
-                        {priorities.find((x) => Number(x.value) === t.priority)?.label}
-                      </span>
-                      {(t.start_date || t.due_date) && (
-                        <small className="muted nowrap">
-                          {t.start_date && dmy(t.start_date)}
-                          {t.start_date && t.due_date && " → "}
-                          {t.due_date && dmy(t.due_date)}
-                        </small>
-                      )}
-                      {!!t.files.length && (
-                        <small className="muted nowrap" title={t.files.map((f) => f.name).join(", ")}>
-                          <IconFile size={11} /> {t.files.length}
-                        </small>
-                      )}
-                      <button type="button" className="chip-x" title={tx("team_picker.vazifani_olib_tashlash")}
-                              onClick={() => patch(i, {
-                                tasks: p.tasks.filter((_, k) => k !== n),
-                                // Qator o'chsa ochiq tahrirning indeksi siljiydi:
-                                // o'chirilgani tahrirdagidan OLDINDA bo'lsa, u bir
-                                // qator yuqoriga ko'chadi; o'zi o'chsa - yopiladi.
-                                edit: !p.edit || p.edit.index === n ? null
-                                  : { ...p.edit,
-                                      index: p.edit.index - (p.edit.index > n ? 1 : 0) },
-                              })}>
-                        <IconClose size={9} />
-                      </button>
-                    </div>
-                  )
-                ))}
+              {isExcludedFromTasks(p.user) ? (
+                <div className="muted" style={{ padding: "8px 12px", fontSize: 12, fontStyle: "italic" }}>
+                  {p.user.global_role === "MANAGER" || p.user.specialty === "PM" || p.user.is_manager
+                    ? tx("team_picker.pmga_faqat_boshliq_vazifa_beradi", undefined, "PM (Loyiha menejeri)ga faqat Boshliq vazifa bera oladi")
+                    : tx("team_picker.admin_va_boshliqqa_vazifa_berilmaydi", undefined, "Bosh admin va Boshliqqa vazifa biriktirilmaydi")}
+                </div>
+              ) : (
+                <div className="pick-tasks">
+                  {p.tasks.map((t, n) => (
+                    p.edit && p.edit.index === n ? (
+                      /* Tahrir aynan SHU qatorning o'rnida ochiladi - odam
+                         qaysi vazifani ochganini ko'rib tursin. */
+                      <TaskAdder
+                        key={n}
+                        priorities={priorities}
+                        value={p.edit.task}
+                        onValue={(d) => patch(i, { edit: { index: n, task: d } })}
+                        onSubmit={(saved) => patch(i, {
+                          tasks: p.tasks.map((old, k) => (k === n ? saved : old)),
+                          edit: null,
+                        })}
+                        onCancel={() => patch(i, { edit: null })}
+                      />
+                    ) : (
+                      <div className="pick-task" key={n}>
+                        {/* Nomini bosish vazifani OCHADI. Ilgari qatorda faqat
+                            o'chirish tugmasi bor edi: sarlavhada xato ketsa yoki
+                            sana o'zgarsa, vazifani o'chirib qaytadan yozib
+                            chiqishdan boshqa yo'l yo'q edi. */}
+                        <button type="button" className="pick-task-title" title={t.title}
+                                onClick={() => patch(i, { edit: { index: n, task: t } })}>
+                          {t.title}
+                        </button>
+                        <span className={`pri pri-${t.priority}`}>
+                          {priorities.find((x) => Number(x.value) === t.priority)?.label}
+                        </span>
+                        {(t.start_date || t.due_date) && (
+                          <small className="muted nowrap">
+                            {t.start_date && dmy(t.start_date)}
+                            {t.start_date && t.due_date && " → "}
+                            {t.due_date && dmy(t.due_date)}
+                          </small>
+                        )}
+                        {!!t.files.length && (
+                          <small className="muted nowrap" title={t.files.map((f) => f.name).join(", ")}>
+                            <IconFile size={11} /> {t.files.length}
+                          </small>
+                        )}
+                        <button type="button" className="chip-x" title={tx("team_picker.vazifani_olib_tashlash")}
+                                onClick={() => patch(i, {
+                                  tasks: p.tasks.filter((_, k) => k !== n),
+                                  // Qator o'chsa ochiq tahrirning indeksi siljiydi:
+                                  // o'chirilgani tahrirdagidan OLDINDA bo'lsa, u bir
+                                  // qator yuqoriga ko'chadi; o'zi o'chsa - yopiladi.
+                                  edit: !p.edit || p.edit.index === n ? null
+                                    : { ...p.edit,
+                                        index: p.edit.index - (p.edit.index > n ? 1 : 0) },
+                                })}>
+                          <IconClose size={9} />
+                        </button>
+                      </div>
+                    )
+                  ))}
 
-                {/* Tahrir ochiq turganda yangi vazifa formasi ko'rinmaydi -
-                    bitta katakda ikkita bir xil forma chalkashtirardi. */}
-                {!p.edit && (
-                  <TaskAdder
-                    priorities={priorities}
-                    value={p.draft}
-                    onValue={(d) => patch(i, { draft: d })}
-                    onSubmit={(t) => patch(i, { tasks: [...p.tasks, t], draft: emptyTask() })}
-                  />
-                )}
-              </div>
+                  {/* Tahrir ochiq turganda yangi vazifa formasi ko'rinmaydi -
+                      bitta katakda ikkita bir xil forma chalkashtirardi. */}
+                  {!p.edit && (
+                    <TaskAdder
+                      priorities={priorities}
+                      value={p.draft}
+                      onValue={(d) => patch(i, { draft: d })}
+                      onSubmit={(t) => patch(i, { tasks: [...p.tasks, t], draft: emptyTask() })}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           ))}
 

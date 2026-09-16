@@ -30,7 +30,7 @@ SPECIALTY_PROFILE = {
     Specialty.DEVELOPER: {
         "icon": "</>",
         "color": "#2f81f7",
-        "skills": ["Backend", "Frontend", "Fullstack", "Mobile", "DevOps", "QA", "Database"],
+        "skills": [],
         "task_types": ["FEATURE", "BUG", "CHORE", "RESEARCH"],
         "default_project_role": "DEVELOPER",
         "focus": "Dasturiy ta'minot yaratish, kod yozish va tizimlarni ishlab chiqish",
@@ -44,7 +44,7 @@ SPECIALTY_PROFILE = {
     Specialty.SOHAVIY: {
         "icon": "[S]",
         "color": "#0284c7",
-        "skills": ["Buyurtmalar", "Talablar tahlili", "Boshqarma nazorati", "Texnik talabnoma"],
+        "skills": [],
         "task_types": ["FEATURE", "BUG", "DOCS"],
         "default_project_role": "VIEWER",
         "focus": "Sohaviy boshqarmalar bo'yicha tizimga o'zgartirish kiritish buyurtmalari",
@@ -57,7 +57,7 @@ SPECIALTY_PROFILE = {
     Specialty.PM: {
         "icon": "= >",
         "color": "#8b949e",
-        "skills": ["Rejalashtirish", "Agile", "Risk boshqaruvi", "Kommunikatsiya"],
+        "skills": [],
         "task_types": ["CHORE", "DOCS", "RESEARCH"],
         "default_project_role": "MANAGER",
         "focus": "Rejalashtirish, jamoa va muddatlar",
@@ -70,7 +70,7 @@ SPECIALTY_PROFILE = {
     Specialty.OTHER: {
         "icon": "*",
         "color": "#a371f7",
-        "skills": ["Umumiy ko'nikmalar", "Hujjatlar", "Tahlil"],
+        "skills": [],
         "task_types": ["DOCS", "RESEARCH", "CHORE"],
         "default_project_role": "DEVELOPER",
         "focus": "Boshqa yo'nalishlar va qo'llab-quvvatlash vazifalari",

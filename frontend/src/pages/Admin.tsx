@@ -313,15 +313,6 @@ export default function Admin() {
                         ))}
                       </select>
                     </div>
-                    <div className="field" style={{ flex: "1 1 160px" }}>
-                      <label htmlFor="nu-sen">{tx("common.daraja")}</label>
-                      <select id="nu-sen" value={form.seniority}
-                              onChange={(e) => setForm({ ...form, seniority: e.target.value })}>
-                        {(meta?.seniority || []).map((s) => (
-                          <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
                   {/* Parol ochiq ko'rinadi - admin uni egasiga aytishi kerak,
                       shuning uchun yashirishning ma'nosi yo'q. */}

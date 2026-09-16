@@ -77,7 +77,7 @@ export default function JoinProject() {
             <form onSubmit={submit}>
               <div className="field">
                 <span className="lbl">{tx("join_project.sizning_yonalishingiz")}</span>
-                <div className="row"><SpecialtyTag user={user} /><span className="muted">{user?.seniority_display}</span></div>
+                <div className="row"><SpecialtyTag user={user} /></div>
               </div>
               <div className="field">
                 <label htmlFor={`${fid}-0`}>{tx("join_project.istagan_rol")}</label>

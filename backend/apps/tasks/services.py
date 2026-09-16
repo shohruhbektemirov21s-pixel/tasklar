@@ -203,14 +203,20 @@ def live_task(task, action, actor=None, **extra):
 def sync_assignees(task, user_ids, actor):
     """Ijrochilar ro'yxatini yangilaydi va tarixga yozadi."""
     wanted = set(user_ids or [])
-    from apps.accounts.models import GlobalRole
+    from apps.accounts.models import GlobalRole, Specialty
+    from django.db.models import Q
 
-    members = set(
+    is_boss = actor and (actor.global_role == GlobalRole.BOSS or getattr(actor, "is_boss", False))
+    members_qs = (
         task.project.memberships.filter(is_active=True)
         .exclude(user__global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])
         .exclude(user__is_superuser=True)
-        .values_list("user_id", flat=True)
     )
+    if not is_boss:
+        members_qs = members_qs.exclude(
+            Q(user__global_role=GlobalRole.MANAGER) | Q(user__specialty=Specialty.PM)
+        )
+    members = set(members_qs.values_list("user_id", flat=True))
     skipped = sorted(wanted - members)
     wanted &= members
     current = {a.user_id: a for a in task.assignments.select_related("user")}
@@ -270,6 +276,15 @@ def sync_assignees(task, user_ids, actor):
 
 def assign_team_member(task, user, actor, start_date=None, due_date=None, allocated_hours=None, role="", note=""):
     """Vazifaga jamoa a'zosini biriktiradi yoki uning muddat/rol parametrlarini yangilaydi."""
+    from apps.accounts.models import GlobalRole, Specialty
+    from django.core.exceptions import ValidationError
+    if user.is_superuser or user.global_role in [GlobalRole.ADMIN, GlobalRole.BOSS]:
+        raise ValidationError("Bosh admin va Boshliqqa vazifa biriktirib bo'lmaydi.")
+    is_pm = user.global_role == GlobalRole.MANAGER or user.specialty == Specialty.PM
+    if is_pm:
+        is_boss = actor and (actor.global_role == GlobalRole.BOSS or getattr(actor, "is_boss", False))
+        if not is_boss:
+            raise ValidationError("PM (Loyiha menejeri)ga faqat Boshliq vazifa bera oladi.")
     assignment = task.assignments.filter(user=user).first()
     is_new = False
     if assignment is None:

@@ -67,6 +67,14 @@ export default function People() {
     user?.is_boss || user?.is_platform_admin || user?.can_create_project || user?.manages_projects
   );
 
+  const isBoss = Boolean(user?.is_boss || user?.global_role === "BOSS");
+  const isNonAssignable = (u?: { is_platform_admin?: boolean; is_boss?: boolean; global_role?: string; specialty?: string; is_manager?: boolean }) => {
+    if (!u) return false;
+    if (u.is_platform_admin || u.is_boss || u.global_role === "ADMIN" || u.global_role === "BOSS") return true;
+    if (!isBoss && (u.global_role === "MANAGER" || u.specialty === "PM" || u.is_manager)) return true;
+    return false;
+  };
+
   // Rol o'zgartirish xatosi - yuklash xatosidan alohida.
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -260,15 +268,6 @@ export default function People() {
             </select>
           </div>
           <div className="f">
-            <label htmlFor={`${fid}-2`}>{tx("common.daraja")}</label>
-            <select id={`${fid}-2`} value={f.seniority} onChange={(e) => setFilter({ seniority: e.target.value })}>
-              <option value="">{tx("common.hammasi")}</option>
-              {(meta?.seniority || []).map((s) => (
-                <option key={s.value} value={String(s.value)}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="f">
             <label htmlFor={`${fid}-3`}>{tx("people.tizim_roli")}</label>
             <select id={`${fid}-3`} value={f.role} onChange={(e) => setFilter({ role: e.target.value })}>
               <option value="">{tx("common.hammasi")}</option>
@@ -307,8 +306,8 @@ export default function People() {
                         style={{ fontSize: 12 }}
                         onClick={() => {
                           const pool = allUsers.length ? allUsers : (users || []);
-                          const picked = pool.filter((u) => selectedUserIds.includes(u.id));
-                          setAssignTargets(picked.length ? picked : (users || []).filter((u) => selectedUserIds.includes(u.id)));
+                          const picked = pool.filter((u) => selectedUserIds.includes(u.id) && !isNonAssignable(u));
+                          setAssignTargets(picked);
                           setAssignFiles([]);
                           setAssignError(null);
                         }}
@@ -429,7 +428,7 @@ export default function People() {
                           )}
                         </td>
                         <td className="right" style={{ whiteSpace: "nowrap" }}>
-                          {canManageTasks && (
+                          {canManageTasks && !isNonAssignable(u) && (
                             <>
                               <button
                                 type="button"
@@ -444,7 +443,9 @@ export default function People() {
                               >
                                 + {tx("people.vazifa_berish", undefined, "Vazifa berish")}
                               </button>
-                              {Boolean(u.open_tasks && u.open_tasks > 0) && (
+                            </>
+                          )}
+                          {canManageTasks && Boolean(u.open_tasks && u.open_tasks > 0) && (
                                 <button
                                   type="button"
                                   className="btn btn-sm btn-outline"
@@ -455,8 +456,6 @@ export default function People() {
                                   ⇄ {tx("people.vazifani_otkazish", undefined, "Boshqaga o'tkazish")}
                                 </button>
                               )}
-                            </>
-                          )}
                           {isAdmin && u.id !== user?.id && (
                             <button className={`btn btn-sm ${u.is_active ? "btn-danger" : ""}`}
                                     onClick={() => void change(u, { is_active: !u.is_active })}>
@@ -633,7 +632,7 @@ export default function People() {
                 >
                   <option value="">+ {tx("people.ijrochi_qoshish", undefined, "Yana ijrochi qo'shish...")}</option>
                   {allUsers
-                    .filter((au) => au.is_active && !assignTargets.some((x) => x.id === au.id))
+                    .filter((au) => au.is_active && !isNonAssignable(au) && !assignTargets.some((x) => x.id === au.id))
                     .map((au) => (
                       <option key={au.id} value={au.id}>
                         {au.full_name} ({au.email}) {au.specialty_display ? `— ${au.specialty_display}` : ""}
@@ -902,7 +901,7 @@ export default function People() {
                             >
                               <option value="">{tx("people.yangi_ijrochi", undefined, "Yangi ijrochini tanlang")}</option>
                               {allUsers
-                                .filter((au) => au.id !== reassignTarget.id && au.is_active)
+                                .filter((au) => au.id !== reassignTarget.id && au.is_active && !isNonAssignable(au))
                                 .map((au) => (
                                   <option key={au.id} value={au.id}>
                                     {au.full_name} ({au.email}) — {au.global_role_display}

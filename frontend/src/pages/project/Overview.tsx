@@ -164,9 +164,6 @@ export default function Overview({ project }: { project: Project; onChange: () =
                             <Avatar user={u} size="sm" />
                             <span className="spec-person-text">
                               <strong>{u.full_name}</strong>
-                              {u.seniority_display && (
-                                <small className="muted">{u.seniority_display}</small>
-                              )}
                             </span>
                           </Link>
                         ))}

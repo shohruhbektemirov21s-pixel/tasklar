@@ -246,14 +246,20 @@ class TaskViewSet(viewsets.ModelViewSet):
             raise ValidationError({
                 "status": "Vazifalar «Bajarildi» holatida yaratilmaydi."})
 
-        from apps.accounts.models import GlobalRole
+        from apps.accounts.models import GlobalRole, Specialty
+        from django.db.models import Q
 
-        members = list(
+        is_boss = request.user.global_role == GlobalRole.BOSS or getattr(request.user, "is_boss", False)
+        members_qs = (
             project.memberships.filter(is_active=True)
             .exclude(user__global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])
             .exclude(user__is_superuser=True)
-            .select_related("user")
         )
+        if not is_boss:
+            members_qs = members_qs.exclude(
+                Q(user__global_role=GlobalRole.MANAGER) | Q(user__specialty=Specialty.PM)
+            )
+        members = list(members_qs.select_related("user"))
         member_ids = {m.user_id for m in members}
         assignees = [uid for uid in d["assignee_ids"] if uid in member_ids]
 
@@ -485,6 +491,14 @@ class TaskViewSet(viewsets.ModelViewSet):
             else:
                 raise ValidationError({"user_id": "Vazifani faqat loyiha a'zosiga otkazish mumkin."})
         target = member.user
+        from apps.accounts.models import GlobalRole, Specialty
+        if target.is_superuser or target.global_role in [GlobalRole.ADMIN, GlobalRole.BOSS]:
+            raise ValidationError({"user_id": "Bosh admin va Boshliqqa vazifa biriktirib bo'lmaydi."})
+        is_pm = target.global_role == GlobalRole.MANAGER or target.specialty == Specialty.PM
+        if is_pm:
+            is_boss = request.user.global_role == GlobalRole.BOSS or getattr(request.user, "is_boss", False)
+            if not is_boss:
+                raise ValidationError({"user_id": "PM (Loyiha menejeri)ga faqat Boshliq vazifa bera oladi."})
 
         active = list(task.assignments.filter(is_active=True).select_related("user"))
         if [a.user_id for a in active] == [target.id]:
@@ -572,6 +586,14 @@ class TaskViewSet(viewsets.ModelViewSet):
         d = serializer.validated_data
 
         target_user = object_or_404(User, pk=d["user_id"])
+        from apps.accounts.models import GlobalRole, Specialty
+        if target_user.is_superuser or target_user.global_role in [GlobalRole.ADMIN, GlobalRole.BOSS]:
+            raise ValidationError({"user_id": "Bosh admin va Boshliqqa vazifa biriktirib bo'lmaydi."})
+        is_pm = target_user.global_role == GlobalRole.MANAGER or target_user.specialty == Specialty.PM
+        if is_pm:
+            is_boss = request.user.global_role == GlobalRole.BOSS or getattr(request.user, "is_boss", False)
+            if not is_boss:
+                raise ValidationError({"user_id": "PM (Loyiha menejeri)ga faqat Boshliq vazifa bera oladi."})
         is_proj_member = task.project.memberships.filter(is_active=True, user=target_user).exists()
         if not is_proj_member:
             raise ValidationError({"user_id": "Foydalanuvchi ushbu loyiha a'zosi emas."})
@@ -884,13 +906,19 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         project = object_or_404(Project, pk=request.query_params.get("project"))
         check_access(request.user, project, "view")
-        from apps.accounts.models import GlobalRole
+        from apps.accounts.models import GlobalRole, Specialty
+        from django.db.models import Q
 
+        is_boss = request.user.global_role == GlobalRole.BOSS or getattr(request.user, "is_boss", False)
         members = (project.memberships
                    .filter(is_active=True)
                    .exclude(user__global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])
-                   .exclude(user__is_superuser=True)
-                   .select_related("user"))
+                   .exclude(user__is_superuser=True))
+        if not is_boss:
+            members = members.exclude(
+                Q(user__global_role=GlobalRole.MANAGER) | Q(user__specialty=Specialty.PM)
+            )
+        members = members.select_related("user")
         # Ochiq vazifalar soni HAMMA a'zo uchun bitta guruhlangan so'rovda
         # olinadi. Ilgari tsikl ichida `count()` chaqirilardi va so'rovlar soni
         # jamoa kattaligiga ko'payib ketardi (14 a'zo -> 18 so'rov).
