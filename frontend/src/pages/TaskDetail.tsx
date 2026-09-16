@@ -2026,7 +2026,6 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
             <strong>{task.title}</strong>
           </>
         }
-        actions={taskActions}
       />
 
       <div className="content">
