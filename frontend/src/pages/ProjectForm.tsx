@@ -37,10 +37,7 @@ export default function ProjectForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [fileNote, setFileNote] = useState("");
   // Hujjat sanasi ikki qavat: `fileDate` - butun to'plamga (izoh yonida),
-  // `fileDates[i]` esa aynan `files[i]` uchun. Fayl sanasi bo'sh bo'lsa
-  // umumiy sana ketadi - bir xil sanani har faylga qayta yozish shart emas.
   const [fileDate, setFileDate] = useState("");
-  const [fileDates, setFileDates] = useState<string[]>([]);
   // Jamoa ham loyiha yaratilgandan keyin qo'shiladi - avval id kerak.
   const [team, setTeam] = useState<TeamPick[]>([]);
   // Tahrirlashda loyihaning ruxsatlari kerak: o'chirish faqat menejer va adminda.
@@ -172,9 +169,8 @@ export default function ProjectForm() {
         setError(tx("project_form.fayllar_uchun_hujjat_nomini_yozing"));
         return;
       }
-      const missing = files.filter((_, i) => !(fileDates[i] || fileDate));
-      if (missing.length) {
-        setError(tx("project_form.hujjat_sanasi_korsatilmagan") + missing.map((f) => f.name).join(", "));
+      if (!fileDate) {
+        setError(tx("project_form.hujjat_sanasi_korsatilmagan"));
         return;
       }
     }
@@ -209,7 +205,7 @@ export default function ProjectForm() {
       if (files.length) {
         try {
           await uploadFiles(`/projects/${saved.id}/files/`, files, fileNote,
-                            files.map((_, i) => fileDates[i] || fileDate));
+                            files.map(() => fileDate));
         } catch {
           setBusy(false);
           setError(tx("project_form.loyiha_yaratildi_lekin_fayllarni_yuklab")
@@ -461,8 +457,6 @@ export default function ProjectForm() {
                   withDates
                   date={fileDate}
                   onDate={setFileDate}
-                  dates={fileDates}
-                  onDates={setFileDates}
                   /* Hujjat sanasi loyiha oralig'idan chiqmasin - chegaralar
                      shu formaning o'zidagi maydonlardan olinadi. */
                   minDate={f.start_date || undefined}
