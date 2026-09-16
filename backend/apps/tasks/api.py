@@ -30,7 +30,8 @@ from .serializers import (AttachmentSerializer, BoardTaskSerializer, BulkTaskSer
 User = get_user_model()
 
 
-from .services import (apply_review, assign_team_member, live_task, move_status, project_people,
+from .services import (apply_review, assign_team_member, can_edit_task, can_manage_task_team,
+                       is_task_created_by_pm_or_boss, live_task, move_status, project_people,
                        remove_team_member, send_to_review, sync_assignees, task_watchers)
 
 
@@ -169,23 +170,16 @@ class TaskViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         task = self.get_object()
         access = ProjectAccess(request.user, task.project)
-        # Vazifa mazmunini loyiha menejeri, admin, boshliq, vazifani yaratgan shaxs,
-        # vazifa biriktirilgan ijrochilar hamda loyiha a'zolari tahrirlay oladi.
-        is_assignee = task.assignments.filter(user_id=request.user.id, is_active=True).exists()
-        can_edit = bool(
-            access.can_manage
-            or access.is_member
-            or is_assignee
-            or task.created_by_id == request.user.id
-            or getattr(request.user, "is_boss", False)
-            or getattr(request.user, "is_platform_admin", False)
-        )
-        if not can_edit:
+        if not can_edit_task(request.user, task, access):
+            if is_task_created_by_pm_or_boss(task):
+                raise PermissionDenied(
+                    "PM va Boshliq bergan vazifalarni faqat PM va Boshliq tahrirlay oladi.")
             raise PermissionDenied(
                 "Vazifani faqat loyiha menejeri, admin, boshliq yoki jamoa a'zosi tahrirlay oladi.")
 
         tracked = ["title", "description", "acceptance_criteria", "priority", "due_date",
-                   "task_type", "estimate_hours", "branch_name", "pr_url"]
+                   "start_date", "task_type", "estimate_hours", "branch_name", "pr_url",
+                   "required_specialty", "reviewer_id"]
         before = {f: getattr(task, f) for f in tracked}
 
         serializer = self.get_serializer(task, data=request.data, partial=True)
@@ -594,16 +588,9 @@ class TaskViewSet(viewsets.ModelViewSet):
             return Response(TaskAssignmentSerializer(assignments, many=True, context=self.get_serializer_context()).data)
 
         access = ProjectAccess(request.user, task.project)
-        is_assignee = task.assignments.filter(user_id=request.user.id, is_active=True).exists()
-        can_manage_team = bool(
-            access.can_manage
-            or access.is_member
-            or is_assignee
-            or task.created_by_id == request.user.id
-            or getattr(request.user, "is_boss", False)
-            or getattr(request.user, "is_platform_admin", False)
-        )
-        if not can_manage_team:
+        if not can_manage_task_team(request.user, task, access):
+            if is_task_created_by_pm_or_boss(task):
+                raise PermissionDenied("PM va Boshliq bergan vazifalarning jamoasini faqat PM va Boshliq tahrirlay oladi.")
             raise PermissionDenied("Vazifaga jamoa a'zolarini biriktirish huquqingiz yo'q.")
 
         if task.status in (TaskStatus.DONE, TaskStatus.CANCELLED):
@@ -645,16 +632,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         """Vazifadan jamoa a'zosini chiqarish."""
         task = self.get_object()
         access = ProjectAccess(request.user, task.project)
-        is_assignee = task.assignments.filter(user_id=request.user.id, is_active=True).exists()
-        can_manage_team = bool(
-            access.can_manage
-            or access.is_member
-            or is_assignee
-            or task.created_by_id == request.user.id
-            or getattr(request.user, "is_boss", False)
-            or getattr(request.user, "is_platform_admin", False)
-        )
-        if not can_manage_team:
+        if not can_manage_task_team(request.user, task, access):
+            if is_task_created_by_pm_or_boss(task):
+                raise PermissionDenied("PM va Boshliq bergan vazifalarning jamoasini faqat PM va Boshliq tahrirlay oladi.")
             raise PermissionDenied("Vazifadan jamoa a'zosini chiqarish huquqingiz yo'q.")
 
         user_id = request.data.get("user_id")

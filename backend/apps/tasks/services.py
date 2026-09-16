@@ -387,3 +387,74 @@ def remove_team_member(task, user, actor):
         meta={"user_id": user.id},
     )
     return assignment
+
+
+def is_pm_or_boss(user, project=None):
+    """Foydalanuvchi Boshliq, Tizim Admini yoki PM (Loyiha menejeri) ekanligini tekshiradi."""
+    if not user or not user.is_authenticated:
+        return False
+    from apps.accounts.models import GlobalRole, Specialty
+    if getattr(user, "is_boss", False) or getattr(user, "is_platform_admin", False):
+        return True
+    if getattr(user, "global_role", None) in (GlobalRole.BOSS, GlobalRole.ADMIN, GlobalRole.MANAGER):
+        return True
+    if getattr(user, "specialty", None) == Specialty.PM:
+        return True
+    if project:
+        if getattr(project, "manager_id", None) == user.id:
+            return True
+        from apps.projects.models import ProjectRole
+        if hasattr(project, "_prefetched_objects_cache") and "memberships" in project._prefetched_objects_cache:
+            for m in project.memberships.all():
+                if m.is_active and m.user_id == user.id and m.role in (ProjectRole.MANAGER, ProjectRole.ADMIN):
+                    return True
+        else:
+            from apps.projects.models import ProjectMember
+            if ProjectMember.objects.filter(
+                project=project, user=user, is_active=True, role__in=[ProjectRole.MANAGER, ProjectRole.ADMIN]
+            ).exists():
+                return True
+    return False
+
+
+def is_task_created_by_pm_or_boss(task):
+    """Vazifa PM yoki Boshliq tomonidan berilganmi (yaratilganmi)."""
+    if not task or not task.created_by_id:
+        return False
+    return is_pm_or_boss(task.created_by, task.project)
+
+
+def can_edit_task(user, task, access=None):
+    """Vazifani tahrirlash huquqi tekshiruvi.
+
+    Qoida: PM va Boshliq bergan ishlarni PM va Boshliqdan boshqa hech kim tahrirlay olmaydi.
+    Boshqa vazifalar uchun (masalan ijrochi o'zi ochgan vazifa) tegishli jamoa a'zolari va ijrochilar tahrirlashi mumkin.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if task.deleted_at is not None or getattr(task.project, "deleted_at", None) is not None:
+        return False
+
+    # Agar vazifani PM yoki Boshliq bergan bo'lsa:
+    if is_task_created_by_pm_or_boss(task):
+        return is_pm_or_boss(user, task.project)
+
+    # Agar vazifani PM yoki Boshliq bermagan bo'lsa:
+    if access is None:
+        from apps.projects.permissions import ProjectAccess
+        access = ProjectAccess(user, task.project)
+
+    is_assignee = task.assignments.filter(user_id=user.id, is_active=True).exists() if hasattr(task, "assignments") else False
+    return bool(
+        access.can_manage
+        or access.is_member
+        or is_assignee
+        or task.created_by_id == user.id
+        or is_pm_or_boss(user, task.project)
+    )
+
+
+def can_manage_task_team(user, task, access=None):
+    """Vazifaning jamoa a'zolarini o'zgartirish huquqi."""
+    return can_edit_task(user, task, access)
+

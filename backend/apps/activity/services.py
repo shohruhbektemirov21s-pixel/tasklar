@@ -34,16 +34,25 @@ def log(actor=None, verb="", summary="", *, project=None, task=None, workspace=N
         return None
 
 
+def _format_change_val(val):
+    if val is None or val == "":
+        return "-"
+    if hasattr(val, "strftime"):
+        return val.strftime("%d.%m.%Y %H:%M")
+    return str(val)
+
+
 def log_field_changes(actor, task, changes):
     """Task maydonlari ozgarganda birma-bir emas, bitta yozuvda saqlaymiz."""
     if not changes:
         return None
     parts = []
     for field, (old, new) in changes.items():
-        parts.append("{}: {} -> {}".format(field, old or "-", new or "-"))
+        parts.append("{}: {} -> {}".format(field, _format_change_val(old), _format_change_val(new)))
     return log(
         actor=actor, verb="task.updated", task=task,
-        summary="{} yangilandi".format(task.code),
+        summary="{} tahrirlandi".format(task.code),
         detail="; ".join(parts),
-        meta={"changes": {k: [str(v[0]), str(v[1])] for k, v in changes.items()}},
+        meta={"changes": {k: [_format_change_val(v[0]), _format_change_val(v[1])] for k, v in changes.items()}},
     )
+

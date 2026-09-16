@@ -485,14 +485,16 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
   const acc = task.access!;
   const isAssignee = task.assignees.some((a) => a.id === user?.id);
   const isCreator = task.created_by?.id === user?.id;
-  const canEdit = Boolean(
-    acc.can_manage ||
-    acc.is_member ||
-    isAssignee ||
-    isCreator ||
-    user?.is_boss ||
-    user?.is_platform_admin
-  );
+  const canEdit = typeof task.can_edit === "boolean"
+    ? task.can_edit
+    : Boolean(
+        acc.can_manage ||
+        acc.is_member ||
+        isAssignee ||
+        isCreator ||
+        user?.is_boss ||
+        user?.is_platform_admin
+      );
   const canManageSubtasks = Boolean(acc.can_create_subtask || acc.is_manager || acc.is_project_admin || acc.is_admin || user?.is_boss);
   const transitions = task.allowed_transitions || [];
 
@@ -600,6 +602,15 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
             )}
             <Priority task={task} />
             <span className="badge">{task.type_display}</span>
+            {task.is_pm_or_boss_created && (
+              <span
+                className="badge"
+                style={{ background: "var(--surface-subtle)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                title={tx("task_detail.pm_boshliq_vazifasi_izoh")}
+              >
+                👑 {tx("task_detail.pm_boshliq_vazifasi")}
+              </span>
+            )}
             {task.specialty_label && <span className="badge badge-brand">{task.specialty_label}</span>}
             {task.start_date && (
               <span className="badge">{tx("task_detail.boshlanish", undefined, "Boshlanish")} {fmtDateTime(task.start_date)}</span>

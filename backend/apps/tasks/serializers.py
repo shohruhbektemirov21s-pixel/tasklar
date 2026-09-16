@@ -148,6 +148,8 @@ class TaskSerializer(serializers.ModelSerializer):
     parent_title = serializers.CharField(source="parent.title", read_only=True, allow_null=True)
     subtask_count = serializers.SerializerMethodField()
     subtasks_completed_count = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
+    is_pm_or_boss_created = serializers.SerializerMethodField()
     deleted_at = serializers.DateTimeField(read_only=True)
     is_deleted = serializers.BooleanField(read_only=True)
 
@@ -164,6 +166,7 @@ class TaskSerializer(serializers.ModelSerializer):
                   "start_date", "due_date", "estimate_hours",
                   "branch_name", "pr_url", "blocked_reason",
                   "review_round", "is_overdue", "logged_hours", "attachment_count",
+                  "can_edit", "is_pm_or_boss_created",
                   "created_at", "updated_at", "started_at", "submitted_at", "completed_at",
                   "deleted_at", "is_deleted"]
         read_only_fields = ["project", "number", "created_by", "review_round",
@@ -241,6 +244,17 @@ class TaskSerializer(serializers.ModelSerializer):
     def get_assignments(self, obj):
         active = [a for a in obj.assignments.all() if a.is_active]
         return TaskAssignmentSerializer(active, many=True, context=self.context).data
+
+    def get_can_edit(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+        from apps.tasks.services import can_edit_task
+        return can_edit_task(request.user, obj)
+
+    def get_is_pm_or_boss_created(self, obj):
+        from apps.tasks.services import is_task_created_by_pm_or_boss
+        return is_task_created_by_pm_or_boss(obj)
 
 
 class BoardTaskSerializer(TaskSerializer):

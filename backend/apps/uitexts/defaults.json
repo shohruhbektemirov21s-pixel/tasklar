@@ -7158,5 +7158,17 @@
  "layout.tooltip_admin": {
   "value": "Admin panel",
   "note": "components/Layout.tsx"
+ },
+ "task_detail.pm_boshliq_vazifasi": {
+  "value": "PM / Boshliq topshirig'i",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_detail.pm_boshliq_vazifasi_izoh": {
+  "value": "PM yoki Boshliq bergan vazifa (faqat PM va Boshliq tahrirlay oladi)",
+  "note": "pages/TaskDetail.tsx"
+ },
+ "task_form.pm_boshliq_tahrirlash_taqiq": {
+  "value": "PM va Boshliq bergan vazifalarni faqat PM va Boshliq tahrirlay oladi.",
+  "note": "pages/TaskForm.tsx"
  }
 }

@@ -366,3 +366,109 @@ class TaskTeamCollaborationTests(ApiTestCase):
         self.assertEqual(res_boss_team_pm.status_code, 200)
 
 
+class TaskEditPermissionAndHistoryTests(ApiTestCase):
+    def setUp(self):
+        super().setUp()
+        self.pm_user = make_user(
+            "pm_edit@teamflow.uz", "Loyiha Menejeri PM",
+            role=GlobalRole.MANAGER, specialty=Specialty.PM
+        )
+        self.boss_user = make_user(
+            "boss_edit@teamflow.uz", "Tashkilot Boshlig'i",
+            role=GlobalRole.BOSS
+        )
+        self.dev_user = make_user(
+            "dev_edit@teamflow.uz", "Dasturchi Dev",
+            role=GlobalRole.DEVELOPER, specialty=Specialty.DEVELOPER
+        )
+        self.workspace = Workspace.objects.create(name="PM Boss Maydon", owner=self.pm_user)
+        self.project = Project.objects.create(
+            workspace=self.workspace,
+            name="PM Boss Loyiha", key="PMB", manager=self.pm_user, created_by=self.pm_user
+        )
+        ProjectMember.objects.create(
+            project=self.project, user=self.pm_user, role=ProjectRole.MANAGER, is_active=True
+        )
+        ProjectMember.objects.create(
+            project=self.project, user=self.dev_user, role=ProjectRole.DEVELOPER, is_active=True
+        )
+
+        # PM bergan vazifa
+        self.pm_task = Task.objects.create(
+            project=self.project, title="PM bergan vazifa", created_by=self.pm_user
+        )
+        # Boshliq bergan vazifa
+        self.boss_task = Task.objects.create(
+            project=self.project, title="Boshliq bergan vazifa", created_by=self.boss_user
+        )
+        # Dasturchi bergan vazifa
+        self.dev_task = Task.objects.create(
+            project=self.project, title="Dasturchi ochgan vazifa", created_by=self.dev_user
+        )
+
+    def test_developer_cannot_edit_task_created_by_pm(self):
+        client = APIClient()
+        client.force_authenticate(user=self.dev_user)
+
+        res = client.patch(f"/api/tasks/{self.pm_task.id}/", {
+            "title": "Dasturchi PM vazifasini o'zgartirmoqchi bo'ldi",
+        })
+        self.assertEqual(res.status_code, 403)
+        self.assertIn("PM va Boshliq bergan vazifalarni faqat PM va Boshliq tahrirlay oladi", str(res.data))
+
+    def test_developer_cannot_edit_task_created_by_boss(self):
+        client = APIClient()
+        client.force_authenticate(user=self.dev_user)
+
+        res = client.patch(f"/api/tasks/{self.boss_task.id}/", {
+            "title": "Dasturchi Boshliq vazifasini o'zgartirmoqchi bo'ldi",
+        })
+        self.assertEqual(res.status_code, 403)
+        self.assertIn("PM va Boshliq bergan vazifalarni faqat PM va Boshliq tahrirlay oladi", str(res.data))
+
+    def test_pm_and_boss_can_edit_task_and_history_is_logged_with_time(self):
+        from apps.activity.models import Activity
+
+        # PM o'zgartiradi
+        pm_client = APIClient()
+        pm_client.force_authenticate(user=self.pm_user)
+
+        res_pm = pm_client.patch(f"/api/tasks/{self.pm_task.id}/", {
+            "title": "PM vazifa sarlavhasini yangiladi",
+            "description": "Yangi tavsif",
+        })
+        self.assertEqual(res_pm.status_code, 200)
+
+        # Tarixda task.updated yozuvi bo'lishi va vaqti borligini tekshirish
+        hist = Activity.objects.filter(task=self.pm_task, verb="task.updated").first()
+        self.assertIsNotNone(hist)
+        self.assertIsNotNone(hist.created_at)
+        self.assertEqual(hist.actor, self.pm_user)
+        self.assertIn("Sarlavha", hist.detail)
+
+        # /history/ endpointida ko'rinishi
+        res_hist = pm_client.get(f"/api/tasks/{self.pm_task.id}/history/")
+        self.assertEqual(res_hist.status_code, 200)
+        self.assertTrue(any(item["verb"] == "task.updated" for item in res_hist.data))
+
+        # Boshliq ham PM bergan vazifani o'zgartira oladi
+        boss_client = APIClient()
+        boss_client.force_authenticate(user=self.boss_user)
+        res_boss = boss_client.patch(f"/api/tasks/{self.pm_task.id}/", {
+            "title": "Boshliq PM vazifasini yangiladi",
+        })
+        self.assertEqual(res_boss.status_code, 200)
+
+    def test_developer_can_edit_own_created_task(self):
+        client = APIClient()
+        client.force_authenticate(user=self.dev_user)
+
+        res = client.patch(f"/api/tasks/{self.dev_task.id}/", {
+            "title": "Dasturchi o'z vazifasini yangiladi",
+        })
+        self.assertEqual(res.status_code, 200)
+        self.dev_task.refresh_from_db()
+        self.assertEqual(self.dev_task.title, "Dasturchi o'z vazifasini yangiladi")
+
+
+

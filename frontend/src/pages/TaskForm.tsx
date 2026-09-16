@@ -80,6 +80,11 @@ export default function TaskForm() {
       if (editing) {
         const t = await api.get<Task>(`/tasks/${taskId}/`);
         if (!alive) return;
+        if (t.can_edit === false) {
+          setError(tx("task_form.pm_boshliq_tahrirlash_taqiq"));
+          setReady(true);
+          return;
+        }
         pid = String(t.project);
         setF({
           title: t.title, description: t.description, acceptance_criteria: t.acceptance_criteria,

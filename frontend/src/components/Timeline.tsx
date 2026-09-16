@@ -72,7 +72,7 @@ export default function Timeline({
               {/* Siqilgan ko'rinishda loyiha/vazifa alohida qatorga tushmaydi */}
               {compact && hasMeta && <small className="muted tl-meta">{meta}</small>}
               <span className="spacer" />
-              <span className="tl-time" title={fmtDateTime(a.created_at)} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <span className="tl-time" title={fmtDateTime(a.created_at)} style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 {halfNum && (
                   <span
                     className="badge"
@@ -90,7 +90,12 @@ export default function Timeline({
                     {halfNum}
                   </span>
                 )}
-                {timeAgo(a.created_at)}
+                <span className="tl-datetime" style={{ fontSize: 11.5, fontWeight: 500, color: "var(--text)" }}>
+                  🕒 {fmtDateTime(a.created_at)}
+                </span>
+                <span className="muted" style={{ fontSize: 11 }}>
+                  ({timeAgo(a.created_at)})
+                </span>
               </span>
             </div>
             {!compact && hasMeta && <small className="muted tl-meta-row">{meta}</small>}

@@ -306,6 +306,8 @@ export interface Task {
   required_specialty: string;
   specialty_label: string;
   attachment_count: number;
+  can_edit?: boolean;
+  is_pm_or_boss_created?: boolean;
   comments?: Comment[];
   reviews?: Review[];
   worklogs?: WorkLog[];
