@@ -18,14 +18,6 @@ import { tx } from "@/i18n";
 /** Ikkala endpoint ham 25 MB gacha qabul qiladi (serverda ham tekshiriladi). */
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
-/** "2026-02-21T14:30" -> "21.02.2026 14:30" (ekranda ko'rsatish uchun). */
-function isoToUz(value: string) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(value);
-  if (!m) return value;
-  const day = `${m[3]}.${m[2]}.${m[1]}`;
-  return m[4] ? `${day} ${m[4]}:${m[5]}` : day;
-}
-
 export function fileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -131,10 +123,6 @@ export default function FilePicker({
     onDates?.(dates.filter((_, n) => n !== index));
   }
 
-  function setDate(index: number, value: string) {
-    const next = files.map((_, n) => (n === index ? value : dates[n] || ""));
-    onDates?.(next);
-  }
 
   return (
     <>
@@ -203,27 +191,6 @@ export default function FilePicker({
                 </button>
               </div>
 
-              {/* Hujjat sanasi - faylning O'ZIDAGI sana (shartnoma imzolangan
-                  kun, topshiriq tasdiqlangan kun). Yuklangan vaqt serverda
-                  o'zi yoziladi, bu esa qo'lda kiritiladi va ixtiyoriy. */}
-              {withDates && (
-                <div className="row wrap" style={{ marginTop: 7, gap: 8 }}>
-                  <label htmlFor={`${fid}-d${i}`} className="muted"
-                         style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>
-                    {tx("file_picker.hujjat_sanasi_va_vaqti")}
-                  </label>
-                  <div style={{ maxWidth: 230, flex: 1 }}>
-                    <DateTimeField id={`${fid}-d${i}`} value={dates[i] || ""}
-                                   onChange={(v) => setDate(i, v)}
-                                   min={minAt} max={maxAt} />
-                  </div>
-                  {/* Bo'sh qolsa yuqoridagi umumiy sana ketadi - odam har
-                      faylga bir xil sanani qayta yozib chiqmasin. */}
-                  {!dates[i] && date && (
-                    <small className="muted">{tx("file_picker.umumiy_sana")} {isoToUz(date)}</small>
-                  )}
-                </div>
-              )}
             </div>
           ))}
           <small className="muted">

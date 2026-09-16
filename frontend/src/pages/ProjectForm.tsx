@@ -126,16 +126,23 @@ export default function ProjectForm() {
     if (selectedId && !editing) {
       const ord = orders.find((o) => o.id === selectedId);
       if (ord) {
+        const ordDate = ord.request_date ? ord.request_date.split("T")[0] : "";
         setF((prev) => ({
           ...prev,
           order_id: selectedId,
           name: prev.name.trim() ? prev.name : (ord.system_name || `Buyurtma #${ord.request_no}`),
           description: prev.description.trim() ? prev.description : (ord.requested_change || ""),
           project_type: ord.order_type || prev.project_type,
+          start_date: prev.start_date && ordDate && prev.start_date < ordDate ? ordDate : prev.start_date,
         }));
       }
     }
   }
+
+  const selectedOrder = f.order_id ? orders.find((o) => o.id === f.order_id) : null;
+  const orderDate = selectedOrder?.request_date
+    ? selectedOrder.request_date.split("T")[0]
+    : undefined;
 
   useEffect(() => {
     try {
@@ -147,6 +154,16 @@ export default function ProjectForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (f.order_id && orderDate && f.start_date && f.start_date < orderDate) {
+      const msg = tx(
+        "project_form.boshlanish_buyurtmadan_oldin_bolmasin",
+        undefined,
+        "Loyiha boshlanish sanasi buyurtma sanasidan oldin bo'lishi mumkin emas."
+      );
+      setErrors({ start_date: msg });
+      setError(msg);
+      return;
+    }
     // Hujjat nomsiz va sanasiz yuklanmaydi (server ham shunday tekshiradi) -
     // buni loyiha yaratilgandan KEYIN aytish kech bo'lardi: fayl o'tmay
     // qolar, odam esa uni «Hujjatlar» bo'limidan qayta yuklashi kerak edi.
@@ -303,7 +320,7 @@ export default function ProjectForm() {
                   }}
                   disabled={ordersLoading}
                 >
-                  <option value="">{tx("project_form.buyurtma_tanlanmagan")}</option>
+                  <option value="">{tx("project_form.buyurtma_tanlanmagan", undefined, "— Tanlanmagan (Buyurtmasiz yangi) —")}</option>
                   {orders.filter((ord) => ord.status !== "DRAFT").map((ord) => (
                     <option key={ord.id} value={ord.id}>
                       {ord.request_no} — {ord.system_name} ({ord.status_display})
@@ -352,8 +369,27 @@ export default function ProjectForm() {
                 <div className="field" style={{ flex: 1 }}>
                   <label htmlFor={`${fid}-2`}>{tx("project_form.boshlanish_sanasi")}</label>
                   <DateField id={`${fid}-2`} value={f.start_date}
+                             min={orderDate || undefined}
                              max={f.due_date || undefined}
-                             onChange={(v) => set("start_date", v)} />
+                             onChange={(v) => {
+                               set("start_date", v);
+                               if (orderDate && v && v < orderDate) {
+                                 setErrors((prev) => ({
+                                   ...prev,
+                                   start_date: tx(
+                                     "project_form.boshlanish_buyurtmadan_oldin_bolmasin",
+                                     undefined,
+                                     "Loyiha boshlanish sanasi buyurtma sanasidan oldin bo'lishi mumkin emas."
+                                   ),
+                                 }));
+                               } else {
+                                 setErrors((prev) => {
+                                   const next = { ...prev };
+                                   delete next.start_date;
+                                   return next;
+                                 });
+                               }
+                             }} />
                   {errors.start_date && <div className="err">{errors.start_date}</div>}
                 </div>
                 <div className="field" style={{ flex: 1 }}>

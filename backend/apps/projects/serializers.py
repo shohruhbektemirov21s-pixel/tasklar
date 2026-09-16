@@ -131,6 +131,18 @@ class ProjectSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "due_date": "Tugash sanasi boshlanish sanasidan oldin bo'la olmaydi."
             })
+        order_id = attrs.get("order_id", None)
+        if order_id is None and hasattr(self, "initial_data") and "order_id" in self.initial_data:
+            order_id = self.initial_data.get("order_id")
+        if order_id:
+            from apps.orders.models import ChangeRequest
+            order = ChangeRequest.objects.filter(pk=order_id).first()
+            if order and start:
+                order_date = order.request_date or (order.created_at.date() if order.created_at else None)
+                if order_date and start < order_date:
+                    raise serializers.ValidationError({
+                        "start_date": f"Loyihaning boshlanish sanasi buyurtma sanasidan ({order_date.strftime('%d.%m.%Y')}) oldin bo'lishi mumkin emas."
+                    })
         return attrs
 
     def get_progress(self, obj):

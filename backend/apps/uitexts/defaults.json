@@ -3292,11 +3292,15 @@
   "note": "pages/ProjectForm.tsx"
  },
  "project_form.buyurtma_tanlanmagan": {
-  "value": "— Tanlanmagan (Buyurtmasiz) —",
+  "value": "— Tanlanmagan (Buyurtmasiz yangi) —",
   "note": "pages/ProjectForm.tsx"
  },
  "project_form.buyurtma_tanlash_izohi": {
   "value": "Loyiha biror buyurtma (TZ) asosida yaratilayotgan bo'lsa, uni tanlang.",
+  "note": "pages/ProjectForm.tsx"
+ },
+ "project_form.boshlanish_buyurtmadan_oldin_bolmasin": {
+  "value": "Loyiha boshlanish sanasi buyurtma sanasidan oldin bo'lishi mumkin emas.",
   "note": "pages/ProjectForm.tsx"
  },
  "project_form.asosiy_malumot": {
