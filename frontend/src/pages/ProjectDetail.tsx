@@ -6,7 +6,7 @@ import { useFetch } from "@/api/useFetch";
 import type { Project } from "@/api/types";
 import { PageHead } from "@/components/Layout";
 import { Empty, ErrorMsg, Loading, Progress, fmtDateTime } from "@/components/ui";
-import { toBulkTasks, toNewTask, toProject, toProjectEdit, useEntityId } from "@/nav";
+import { toNewTask, toProject, toProjectEdit, useEntityId } from "@/nav";
 import { tx } from "@/i18n";
 
 /**
@@ -124,12 +124,9 @@ export default function ProjectDetail() {
         actions={
           <>
             {acc.can_create_task && (
-              <>
-                <Link className="btn btn-sm" {...toBulkTasks(id)}>{tx("project_detail.koplab_vazifa")}</Link>
-                <Link className="btn btn-sm btn-primary" {...toNewTask(id)}>
-                  {tx("common.yangi_vazifa")}
-                </Link>
-              </>
+              <Link className="btn btn-sm btn-primary" {...toNewTask(id)}>
+                {tx("common.yangi_vazifa")}
+              </Link>
             )}
             {acc.can_manage && (
               <>
