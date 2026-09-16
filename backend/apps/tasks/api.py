@@ -43,7 +43,8 @@ class TaskViewSet(viewsets.ModelViewSet):
     # ------------------------------------------------------------ queryset
     def get_queryset(self):
         user = self.request.user
-        qs = (Task.objects.for_display()
+        base_mgr = Task.all_objects if self.action == "retrieve" else Task.objects
+        qs = (base_mgr.for_display()
               # O'chirilgan loyihaning vazifalari hech qayerda ko'rinmaydi
               # (yozuvlar bazada qoladi).
               .filter(project__deleted_at__isnull=True))
@@ -98,13 +99,21 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     def get_object(self):
         task = object_or_404(
-            Task.objects.select_related("project", "project__workspace",
-                                        "created_by", "reviewer")
+            Task.all_objects.select_related("project", "project__workspace",
+                                            "created_by", "reviewer")
             .prefetch_related(*self.DETAIL_PREFETCH),
             pk=self.kwargs["pk"])
         need = "view" if self.request.method in ("GET", "HEAD", "OPTIONS") else "work"
         check_access(self.request.user, task.project, need)
         return task
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user.is_authenticated:
+            from apps.notifications.services import mark_task_notifications_read
+            mark_task_notifications_read(instance, request.user)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     # ------------------------------------------------------------ yaratish
     def create(self, request, *args, **kwargs):
@@ -131,6 +140,13 @@ class TaskViewSet(viewsets.ModelViewSet):
             raise ValidationError({
                 "status": "Yangi vazifa «Bajarildi» holatida yaratilmaydi - "
                           "ish topshirilib, tekshiruvdan otishi kerak."})
+
+        from apps.projects.models import ProjectMember, ProjectRole
+        if not project.memberships.filter(user=request.user, is_active=True).exists():
+            ProjectMember.objects.get_or_create(
+                project=project, user=request.user,
+                defaults={"role": getattr(request.user, "default_project_role", None) or ProjectRole.DEVELOPER, "is_active": True}
+            )
 
         task = serializer.save(project=project, created_by=request.user,
                                reviewer_id=reviewer_id)
@@ -227,10 +243,22 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Yumshoq o'chirish: avval bazada qator belgilanadi. Agar baza xatosi
         # bo'lsa, xatolik qaytadi; efirga yolg'on "o'chirildi" signali ketmaydi.
         task.soft_delete(request.user)
-        log(actor=request.user, verb="task.deleted", project=task.project,
+        log(actor=request.user, verb="task.deleted", project=task.project, task=task,
             summary="Vazifa ochirildi: {}".format(task.title))
         live_task(task, "deleted", request.user)
         return Response(status=204)
+
+    @action(detail=True, methods=["post"], url_path="restore")
+    def restore(self, request, pk=None):
+        task = self.get_object()
+        check_access(request.user, task.project, "manage")
+        if not task.deleted_at:
+            return Response(TaskDetailSerializer(task, context=self.get_serializer_context()).data)
+        task.restore()
+        log(actor=request.user, verb="task.created", task=task,
+            summary="Vazifa qayta tiklandi: {}".format(task.title))
+        live_task(task, "created", request.user, title=task.title[:120])
+        return Response(TaskDetailSerializer(task, context=self.get_serializer_context()).data)
 
     # ------------------------------------------------------------ ommaviy yaratish
     @action(detail=False, methods=["post"], url_path="bulk")
@@ -906,6 +934,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         project = object_or_404(Project, pk=request.query_params.get("project"))
         check_access(request.user, project, "view")
+        specialty = request.query_params.get("specialty")
         from apps.accounts.models import GlobalRole, Specialty
         from django.db.models import Q
 
@@ -929,7 +958,9 @@ class TaskViewSet(viewsets.ModelViewSet):
                                       TaskStatus.CHANGES_REQUESTED])
             .values_list("user_id").annotate(n=Count("id")))
         rows = []
+        member_user_ids = set()
         for m in members:
+            member_user_ids.add(m.user_id)
             if specialty and m.user.specialty != specialty:
                 continue
             open_count = open_counts.get(m.user_id, 0)
@@ -939,6 +970,26 @@ class TaskViewSet(viewsets.ModelViewSet):
                 "open_tasks": open_count,
                 "matches": (not specialty) or m.user.specialty == specialty,
             })
+
+        # Boshqa tizim foydalanuvchilarini ham taklif qilish
+        other_users = (User.objects.filter(is_active=True)
+                       .exclude(id__in=member_user_ids)
+                       .exclude(global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])
+                       .exclude(is_superuser=True))
+        if not is_boss:
+            other_users = other_users.exclude(
+                Q(global_role=GlobalRole.MANAGER) | Q(specialty=Specialty.PM)
+            )
+        for u in other_users:
+            if specialty and u.specialty != specialty:
+                continue
+            rows.append({
+                "user": UserBriefSerializer(u, context={"request": request}).data,
+                "role": getattr(u, "default_project_role", None) or "DEVELOPER",
+                "open_tasks": 0,
+                "matches": (not specialty) or u.specialty == specialty,
+            })
+
         rows.sort(key=lambda r: (not r["matches"], r["open_tasks"]))
         return Response(rows)
 

@@ -204,9 +204,33 @@ def sync_assignees(task, user_ids, actor):
     """Ijrochilar ro'yxatini yangilaydi va tarixga yozadi."""
     wanted = set(user_ids or [])
     from apps.accounts.models import GlobalRole, Specialty
+    from apps.projects.models import ProjectMember, ProjectRole
     from django.db.models import Q
 
     is_boss = actor and (actor.global_role == GlobalRole.BOSS or getattr(actor, "is_boss", False))
+    
+    # Tanlangan foydalanuvchilar loyiha a'zoligiga avtomatik qo'shiladi
+    valid_users = User.objects.filter(pk__in=wanted, is_active=True).exclude(
+        global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS]
+    ).exclude(is_superuser=True)
+    if not is_boss:
+        valid_users = valid_users.exclude(
+            Q(global_role=GlobalRole.MANAGER) | Q(specialty=Specialty.PM)
+        )
+    for u in valid_users:
+        pm = task.project.memberships.filter(user=u).first()
+        if pm is None:
+            ProjectMember.objects.create(
+                project=task.project,
+                user=u,
+                role=getattr(u, "default_project_role", None) or ProjectRole.DEVELOPER,
+                is_active=True,
+            )
+        elif not pm.is_active:
+            pm.is_active = True
+            pm.left_at = None
+            pm.save(update_fields=["is_active", "left_at"])
+
     members_qs = (
         task.project.memberships.filter(is_active=True)
         .exclude(user__global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS])

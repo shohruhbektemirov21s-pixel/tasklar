@@ -49,6 +49,22 @@ def tick_deadline_reminders():
         logger.exception("Muddat eslatmalarini yuborib bo'lmadi")
 
 
+def tick_unopened_task_alerts():
+    """3 soat ichida ochilmagan vazifalar bo'yicha PMga ogohlantirish yuboradi.
+
+    Kesh orqali har 5 daqiqada ko'pi bilan bir marta tekshiriladi.
+    """
+    key = "unopened-tasks-tick"
+    try:
+        if not cache.add(key, 1, 300):
+            return
+        from apps.core.background import run_later
+        from apps.notifications.services import check_unopened_task_notifications
+        run_later(check_unopened_task_notifications)
+    except Exception:
+        logger.exception("Ochilmagan vazifalar tekshiruvini ishga tushirib bo'lmadi")
+
+
 class DeadlineReminderMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -57,4 +73,5 @@ class DeadlineReminderMiddleware:
         response = self.get_response(request)
         # Javob tayyor bo'lgach: eslatma yuborish so'rovni kutdirmasin.
         tick_deadline_reminders()
+        tick_unopened_task_alerts()
         return response

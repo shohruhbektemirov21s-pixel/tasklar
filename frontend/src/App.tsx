@@ -52,7 +52,6 @@ const Messages = lazy(() => import("@/pages/Messages"));
 const WorkspaceChat = lazy(() => import("@/pages/WorkspaceChat"));
 const Suggestions = lazy(() => import("@/pages/Suggestions"));
 const SuggestionDetail = lazy(() => import("@/pages/SuggestionDetail"));
-const Inquiries = lazy(() => import("@/pages/Inquiries"));
 const ChangeRequests = lazy(() => import("@/pages/ChangeRequests"));
 const OrderDetail = lazy(() => import("@/pages/OrderDetail"));
 const OrderForm = lazy(() => import("@/pages/OrderForm"));
@@ -100,12 +99,12 @@ function ManagesOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Tashkilot jamoasi - faqat Boshliqqa */
+/** Tashkilot jamoasi va Boshliq sahifalari - faqat Boshliqqa */
 function BossOnly({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
   if (!user?.is_boss && !user?.is_platform_admin) {
-    return <Navigate to="/panel" replace />;
+    return <Navigate to="/mening-ishim" replace />;
   }
   return <>{children}</>;
 }
@@ -184,8 +183,7 @@ export default function App() {
         {/* Takliflar - hamma ko'radi. Yopiq takliflar va boshliq
             qarori serverda filtrlanadi (`SuggestionViewSet`). */}
         <Route path="/takliflar" element={<Suggestions />} />
-        {/* So'rovlar - faqat ruxsatli foydalanuvchilar, boshliq va adminga */}
-        <Route path="/sorovlar" element={<Inquiries />} />
+        <Route path="/sorovlar" element={<Navigate to="/panel" replace />} />
         {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Буюртма.docx) */}
         <Route path="/buyurtmalar" element={<ChangeRequests />} />
         <Route path="/buyurtma" element={<OrderDetail />} />

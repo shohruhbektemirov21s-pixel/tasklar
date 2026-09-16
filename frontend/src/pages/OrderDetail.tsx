@@ -732,7 +732,7 @@ export default function OrderDetail() {
                   className="btn btn-sm btn-outline"
                   onClick={() => setPmPanelOpen((v) => !v)}
                 >
-                  {pmPanelOpen ? tx("orders.pm_panelni_yopish") : tx("orders.pm_holat_muddatni_ozgartirish")}
+                  {pmPanelOpen ? tx("orders.pm_panelni_yopish", undefined, "Panelni yopish") : tx("orders.pm_holat_muddatni_ozgartirish", undefined, "Tahrirlash")}
                 </button>
                 <button
                   type="button"
@@ -2286,20 +2286,6 @@ export default function OrderDetail() {
 
             <form onSubmit={handleSubmitCompletion}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-                <div
-                  style={{
-                    background: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
-                    borderRadius: 8,
-                    padding: "10px 14px",
-                    fontSize: 12.5,
-                    color: "#166534",
-                    lineHeight: 1.45,
-                  }}
-                >
-                  Bajarilgan ish bo'yicha hisobot hujjati (Word, PDF, Excel) yoki natija skrinshotini yuklang. Boshqarma ko'rib chiqib tasdiqlagach, buyurtma yakunlanadi.
-                </div>
-
                 {completionError && <ErrorMsg error={completionError} />}
 
                 <div className="field">

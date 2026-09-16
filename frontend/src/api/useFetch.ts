@@ -130,8 +130,11 @@ export function useFetch<T>(path: string | null, params?: Params, opts: Options 
     };
 
     let timer: number | undefined;
-    if (debounceMs > 0) timer = window.setTimeout(run, debounceMs);
-    else run();
+    if (debounceMs > 0 && data !== null) {
+      timer = window.setTimeout(run, debounceMs);
+    } else {
+      run();
+    }
 
     return () => {
       alive = false;

@@ -15,22 +15,22 @@ def order_url(order):
 def get_order_notification_recipients(order=None, exclude_id=None):
     """Buyurtma bildirishnomalarini qabul qiluvchilar:
     Sohaviy boshqarmalar xodimlari, tizim ma'murlari (adminlar), boshliq va
-    loyiha menejerlari (PM).
+    loyiha menejerlari (PM). Dasturchilarga buyurtma bildirishnomalari bormaydi.
     """
     qs = User.objects.filter(
         Q(is_superuser=True)
         | Q(global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS, GlobalRole.MANAGER, GlobalRole.SOHAVIY])
         | Q(specialty=Specialty.SOHAVIY),
         is_active=True,
-    )
+    ).exclude(global_role=GlobalRole.DEVELOPER)
     if exclude_id:
         qs = qs.exclude(pk=exclude_id)
-    recipients = list(qs)
+    recipients = [u for u in qs if getattr(u, "can_access_orders", False)]
 
     # Agar buyurtma aniq bir loyihaga biriktirilgan bo'lsa va uning o'z menejeri bo'lsa
     if order and getattr(order, "project", None) and order.project.manager:
         pm = order.project.manager
-        if pm.is_active and pm.id != exclude_id and pm not in recipients:
+        if pm.is_active and pm.id != exclude_id and getattr(pm, "can_access_orders", False) and pm not in recipients:
             recipients.append(pm)
 
     return recipients
@@ -78,7 +78,7 @@ def notify_order_status(order, actor, old_status, new_status):
 
 
 def notify_pm_decision(order, pm_user):
-    """PM buyurtma bo'yicha muddat va holatni belgilaganda buyurtmachiga va dasturchiga bildirishnoma yuborish."""
+    """PM buyurtma bo'yicha muddat va holatni belgilaganda buyurtmachiga bildirishnoma yuborish."""
     parts = [f"Holati: {order.get_status_display()}"]
     if order.assigned_developer:
         parts.append(f"Mas'ul dasturchi: {order.assigned_developer.full_name}")
@@ -95,22 +95,6 @@ def notify_pm_decision(order, pm_user):
             NotificationKind.ORDER_STATUS,
             title=f"Buyurtma holati: {order.request_no}",
             body=f"{pm_user.full_name}: {body_text}",
-            url=order_url(order),
-            actor=pm_user,
-            meta={
-                "order_id": order.pk,
-                "status": order.status,
-                "pm_estimated_duration": order.pm_estimated_duration,
-                "pm_deadline": str(order.pm_deadline) if order.pm_deadline else None,
-            },
-        )
-
-    if order.assigned_developer and order.assigned_developer_id != pm_user.id:
-        notify(
-            order.assigned_developer,
-            NotificationKind.ORDER_STATUS,
-            title=f"Sizga yangi buyurtma/topshiriq topshirildi: {order.request_no}",
-            body=f"Loyiha: {order.project.name if order.project else order.system_name}. {body_text}",
             url=order_url(order),
             actor=pm_user,
             meta={
@@ -168,8 +152,6 @@ def notify_order_client_approved(order, actor):
     recipients = []
     if order.assigned_pm:
         recipients.append(order.assigned_pm)
-    if order.assigned_developer and order.assigned_developer != order.assigned_pm:
-        recipients.append(order.assigned_developer)
 
     if not recipients:
         return 0
@@ -190,8 +172,6 @@ def notify_order_completion_rejected(order, actor, feedback_note):
     recipients = []
     if order.assigned_pm:
         recipients.append(order.assigned_pm)
-    if order.assigned_developer and order.assigned_developer != order.assigned_pm:
-        recipients.append(order.assigned_developer)
 
     if not recipients:
         return 0

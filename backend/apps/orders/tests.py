@@ -517,11 +517,9 @@ class OrdersSeniorDevTests(ApiTestCase):
         self.assertEqual(order.assigned_developer, self.dev_user)
         self.assertEqual(order.assigned_pm, self.pm_user)
 
-        # Dasturchiga bildirishnoma (Notification) borganligini tekshirish
+        # Dasturchilarga buyurtma bildirishnomalari bormasligini tekshirish
         from apps.notifications.models import Notification
-        notif = Notification.objects.filter(recipient=self.dev_user).first()
-        self.assertIsNotNone(notif)
-        self.assertIn(order.request_no, notif.title)
+        self.assertFalse(Notification.objects.filter(recipient=self.dev_user).exists())
 
     def test_orders_stats_includes_assigned_to_dev(self):
         """Stats endpointida assigned_to_dev, accepted, in_progress_strict hisoblagichlari mavjudligi."""

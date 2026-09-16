@@ -71,7 +71,7 @@ export default function TaskForm() {
       let pid = id;
       let pList: Project[] = [];
       try {
-        pList = listOf<Project>(await api.get<{ results: Project[] } | Project[]>("/projects/"));
+        pList = listOf<Project>(await api.get<{ results: Project[] } | Project[]>("/projects/?scope=visible"));
         if (alive) setUserProjects(pList);
       } catch {
         // ignore
@@ -92,18 +92,26 @@ export default function TaskForm() {
         setAssignees(t.assignees.map((a) => a.id));
         if (t.parent) setParentTaskId(String(t.parent));
       } else if (!pid && pList.length > 0) {
-        pid = String(pList[0].id);
+        const creatable = pList.find((p) => p.access?.can_create_task || p.access?.can_manage || p.access?.is_member);
+        pid = creatable ? String(creatable.id) : String(pList[0].id);
       }
 
       if (pid) {
-        const p = await api.get<Project>(`/projects/${pid}/`);
-        if (!alive) return;
-        setProject(p);
+        try {
+          const p = await api.get<Project>(`/projects/${pid}/`);
+          if (!alive) return;
+          setProject(p);
+        } catch (e) {
+          if (alive) setError(e instanceof ApiError ? e.message : tx("task_form.loyihani_ochib_bolmadi", undefined, "Loyihani ochib bo'lmadi"));
+        }
       }
-      setReady(true);
+      if (alive) setReady(true);
     })().catch((e) => {
       // Xato ushlanmasa sahifa abadiy "Yuklanmoqda" da qolardi.
-      if (alive) setError(e instanceof ApiError ? e.message : tx("task_form.vazifani_ochib_bolmadi", undefined, "Vazifani ochib bo'lmadi"));
+      if (alive) {
+        setError(e instanceof ApiError ? e.message : tx("task_form.vazifani_ochib_bolmadi", undefined, "Vazifani ochib bo'lmadi"));
+        setReady(true);
+      }
     });
     return () => { alive = false; };
   }, [id, taskId, editing]);
@@ -304,7 +312,38 @@ export default function TaskForm() {
     }
   }
 
-  if (!ready || !project) return <div className="content"><Loading /></div>;
+  if (!ready) return <div className="content"><Loading /></div>;
+
+  if (!project) {
+    return (
+      <>
+        <PageHead
+          title={
+            <>
+              <span className="muted">{tx("common.vazifalar", undefined, "Vazifalar")} / </span>
+              <strong>{editing ? tx("task_form.vazifani_tahrirlash", undefined, "Vazifani tahrirlash") : tx("common.yangi_vazifa", undefined, "Yangi vazifa")}</strong>
+            </>
+          }
+        />
+        <div className="content">
+          <ErrorMsg error={error} />
+          <Card title={tx("task_form.loyiha_topilmadi", undefined, "Loyiha topilmadi")}>
+            <p className="muted" style={{ marginBottom: 16 }}>
+              {tx("task_form.vazifa_yaratish_uchun_avval_loyiha", undefined, "Vazifa yaratish uchun avval birorta loyihaga a'zo bo'lishingiz yoki yangi loyiha ochishingiz kerak.")}
+            </p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button type="button" className="btn btn-primary" onClick={() => go("/loyihalar")}>
+                {tx("common.loyihalar", undefined, "Loyihalar")}
+              </button>
+              <button type="button" className="btn" onClick={() => go("/qoshilish")}>
+                {tx("join_project.qoshilish", undefined, "Loyihaga qo'shilish")}
+              </button>
+            </div>
+          </Card>
+        </div>
+      </>
+    );
+  }
 
   // URL orqali kirib qolmasin: vazifa yaratish/tahrirlash - menejer, admin, boshliq va jamoa a'zolari
   const canAct = Boolean(
@@ -317,15 +356,38 @@ export default function TaskForm() {
   );
   if (!canAct) {
     return (
-      <div className="content">
-        <Card title={tx("task_form.ruxsat_yoq", undefined, "Ruxsat yo'q")}>
-          <p className="muted" style={{ margin: 0 }}>
-            {tx("task_form.vazifa_yaratish_va_tahrirlash_faqat", undefined, "Vazifa yaratish va tahrirlash faqat jamoa a'zolariga ruxsat etilgan.")}
-          </p>
-        </Card>
-      </div>
+      <>
+        <PageHead
+          title={
+            <>
+              <span className="muted">{project.name} / </span>
+              <strong>{editing ? tx("task_form.vazifani_tahrirlash", undefined, "Vazifani tahrirlash") : tx("common.yangi_vazifa", undefined, "Yangi vazifa")}</strong>
+            </>
+          }
+        />
+        <div className="content">
+          <ErrorMsg error={error} />
+          <Card title={tx("task_form.ruxsat_yoq", undefined, "Ruxsat yo'q")}>
+            <p className="muted" style={{ margin: "0 0 16px 0" }}>
+              {tx("task_form.vazifa_yaratish_va_tahrirlash_faqat", undefined, "Vazifa yaratish va tahrirlash faqat jamoa a'zolariga ruxsat etilgan.")}
+            </p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button type="button" className="btn btn-primary" onClick={() => go(`/loyiha/${project.id}/qoshilish`)}>
+                {tx("join_project.qoshilish", undefined, "Loyihaga qo'shilish")}
+              </button>
+              <button type="button" className="btn" onClick={() => go("/loyihalar")}>
+                {tx("common.loyihalar", undefined, "Loyihalar")}
+              </button>
+            </div>
+          </Card>
+        </div>
+      </>
     );
   }
+
+  const canManageMembers = Boolean(
+    project.access?.can_manage || user?.is_boss || user?.is_platform_admin
+  );
 
 
   const specialtyInfo = meta?.specialties?.find((s) => s.value === f.required_specialty);
@@ -442,7 +504,7 @@ export default function TaskForm() {
                 </div>
               </Card>
 
-              <Card title={tx("task_form.jamoaga_azo_qoshish", undefined, "Jamoaga a'zo qo'shish")}
+              <Card title={tx("common.ijrochilar", undefined, "Ijrochilar")}
                     badge={<span className="badge">{assignees.length} {tx("task_form.tanlangan")}</span>}>
                 {memberSuccessMsg && (
                   <div style={{
@@ -497,48 +559,56 @@ export default function TaskForm() {
 
                   {!eligibleSuggestions.length && (
                     <div style={{ marginTop: 4 }}>
-                      <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>
-                        {tx("task_form.jamoada_azo_yoq_qoshish", undefined, "Jamoada hozircha a'zo yo'q. Quyidagi xodimlardan tanlab jamoaga qo'shing:")}
-                      </p>
-                      {filteredCandidates.length > 0 ? (
-                        <div className="stack">
-                          {filteredCandidates.map((c) => (
-                            <div key={c.id} className="row"
-                                 style={{
-                                   padding: "8px 10px", border: "1px solid var(--border)",
-                                   borderRadius: 6, background: "var(--card-bg, transparent)",
-                                 }}>
-                              <Avatar user={c} size="sm" />
-                              <div>
-                                <strong style={{ fontSize: 13 }}>{c.full_name}</strong>
-                                <br />
-                                <small className="muted">{c.specialty_display || c.email}</small>
-                              </div>
-                              <span className="spacer" />
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-primary"
-                                disabled={addingUserId === c.id}
-                                onClick={() => void handleAddMember(c)}
-                              >
-                                {addingUserId === c.id
-                                  ? tx("task_form.qoshilmoqda", undefined, "Qo'shilmoqda...")
-                                  : tx("task_form.jamoaga_qoshish_btn", undefined, "+ Jamoaga qo'shish")}
-                              </button>
+                      {canManageMembers ? (
+                        <>
+                          <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>
+                            {tx("task_form.jamoada_azo_yoq_qoshish", undefined, "Jamoada hozircha a'zo yo'q. Quyidagi xodimlardan tanlab jamoaga qo'shing:")}
+                          </p>
+                          {filteredCandidates.length > 0 ? (
+                            <div className="stack">
+                              {filteredCandidates.map((c) => (
+                                <div key={c.id} className="row"
+                                     style={{
+                                       padding: "8px 10px", border: "1px solid var(--border)",
+                                       borderRadius: 6, background: "var(--card-bg, transparent)",
+                                     }}>
+                                  <Avatar user={c} size="sm" />
+                                  <div>
+                                    <strong style={{ fontSize: 13 }}>{c.full_name}</strong>
+                                    <br />
+                                    <small className="muted">{c.specialty_display || c.email}</small>
+                                  </div>
+                                  <span className="spacer" />
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-primary"
+                                    disabled={addingUserId === c.id}
+                                    onClick={() => void handleAddMember(c)}
+                                  >
+                                    {addingUserId === c.id
+                                      ? tx("task_form.qoshilmoqda", undefined, "Qo'shilmoqda...")
+                                      : tx("task_form.jamoaga_qoshish_btn", undefined, "+ Jamoaga qo'shish")}
+                                  </button>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          ) : (
+                            <p className="muted" style={{ fontSize: 13 }}>
+                              {needle
+                                ? `«${who}» ${tx("task_form.nomzod_topilmadi", undefined, "bo'yicha nomzod topilmadi.")}`
+                                : tx("task_form.bu_yonalishda_jamoada_azo_yoq")}
+                            </p>
+                          )}
+                        </>
                       ) : (
                         <p className="muted" style={{ fontSize: 13 }}>
-                          {needle
-                            ? `«${who}» ${tx("task_form.nomzod_topilmadi", undefined, "bo'yicha nomzod topilmadi.")}`
-                            : tx("task_form.bu_yonalishda_jamoada_azo_yoq")}
+                          {tx("task_form.bu_yonalishda_jamoada_azo_yoq", undefined, "Bu yo'nalishda jamoada a'zo yo'q.")}
                         </p>
                       )}
                     </div>
                   )}
 
-                  {eligibleSuggestions.length > 0 && candidates.length > 0 && (
+                  {canManageMembers && eligibleSuggestions.length > 0 && candidates.length > 0 && (
                     <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed var(--border)" }}>
                       {needle ? (
                         filteredCandidates.length > 0 && (

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, listOf } from "@/api/client";
@@ -7,10 +7,10 @@ import { useAuth } from "@/auth/AuthContext";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import ErrorBoundary from "./ErrorBoundary";
 import { Logo } from "./Logo";
-import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconCheck, IconChevron, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
+import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconCheck, IconChevron, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
 import ThemeToggle from "./ThemeToggle";
-import { Avatar, SpecialtyTag } from "./ui";
-import { toFeed, toMessages, toSelfProfile, toUser, type NavTarget, useGo, useHistoryTracker, useNavHistory } from "@/nav";
+import { Avatar, Loading, SpecialtyTag } from "./ui";
+import { toFeed, toMessages, toSelfProfile, toUser, type NavTarget, useGo, useHistoryTracker, useNavHistory, getFallbackParentRoute } from "@/nav";
 import { tx } from "@/i18n";
 import { lockScroll, unlockScroll, resetScrollLock } from "./scrollLock";
 
@@ -61,10 +61,9 @@ function toPageTop() {
  * kun bo'yi bosiladigan tugma ko'z bilan qidirilmasin. Qidiruv esa
  * panelning o'ng chetiga, boshqa nishonlar yoniga o'tgan.
  *
- * QACHON O'CHIQ. React Router har bir tarix yozuviga o'z tartib raqamini
- * qo'yadi (`history.state.idx`). Nol bo'lsa - bu ilovadagi birinchi
- * sahifa va qaytadigan joy yo'q: tugma bosilmaydigan holatda turadi,
- * yo'qolib qolmaydi (aks holda panel sakrab turardi).
+ * QACHON O'CHIQ. Faqat bosh panelda (/panel) va orqaga qaytadigan tarix
+ * bo'lmaganda o'chadi. Boshqa ichki sahifalarda tarix bo'lmasa ham
+ * tegishli bosh bo'limga (/loyihalar, /ish-maydonlari va h.k.) olib boradi.
  */
 function BackButton() {
   const navigate = useNavigate();
@@ -73,12 +72,17 @@ function BackButton() {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // `location` o'zgarganda qayta hisoblanadi - shuning uchun u bog'liqlikda.
-  const canGoBack = useMemo(() => {
-    const idx = (window.history.state as { idx?: number } | null)?.idx;
-    return typeof idx === "number" ? idx > 0 : window.history.length > 1;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.key]);
+  const isRootPage = location.pathname === "/panel" || location.pathname === "/";
+  const hasHistory = currentIdx > 0 || (typeof window !== "undefined" && window.history.length > 1);
+  const canGoBack = hasHistory || !isRootPage;
+
+  const handleBack = useCallback(() => {
+    if (currentIdx > 0) {
+      navigate(-1);
+    } else if (!isRootPage) {
+      navigate(getFallbackParentRoute(location.pathname));
+    }
+  }, [currentIdx, isRootPage, location.pathname, navigate]);
 
   // Oldingi qadamlar (eng oxirgi bosilgan qadam eng yuqorida turadi)
   const previousSteps = useMemo(() => {
@@ -128,7 +132,7 @@ function BackButton() {
           type="button"
           className="top-icon top-back"
           disabled={!canGoBack}
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           onContextMenu={onContextMenu}
           title={canGoBack ? tx("layout.orqaga_qaytish") : tx("layout.orqaga_qaytadigan_sahifa_yoq")}
           aria-label={tx("layout.orqaga_qaytish")}
@@ -517,15 +521,6 @@ export default function Layout() {
             {!!counts.reviews && <span className="dot">{counts.reviews}</span>}
           </Link>
         )}
-        {/* Yangi vazifa yaratish - barcha foydalanuvchilar uchun */}
-        <Link
-          className="top-icon hide-sm"
-          to="/loyiha/vazifa-yaratish"
-          title={tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-          aria-label={tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-        >
-          <IconPlus size={17} />
-        </Link>
         <Link {...toSelfProfile()} aria-label={user?.full_name}>
           <Avatar user={user} placement="bottom" />
         </Link>
@@ -572,7 +567,6 @@ export default function Layout() {
             {item("/bildirishnomalar", <IconBell />, tx("common.bildirishnomalar"), notifCount, true, tx("layout.tooltip_bildirishnomalar"))}
             {manages && item("/tekshiruv", <IconReview />, tx("common.tekshiruv_navbati"), counts.reviews, true, tx("layout.tooltip_tekshiruv"))}
             {item("/takliflar", <IconIdea />, tx("layout.takliflar"), counts.suggestions, true, tx("layout.tooltip_takliflar"))}
-            {user?.has_inquiries_access && item("/sorovlar", <IconInquiry />, tx("layout.sorovlar"), undefined, false, tx("layout.tooltip_sorovlar"))}
             {itemTo(toMessages(), <IconChat />, tx("layout.xabarlar"), undefined, false, tx("layout.tooltip_xabarlar"))}
           </div>
 
@@ -633,7 +627,9 @@ export default function Layout() {
           <div className="page-swap" key={loc.pathname}>
             <ErrorBoundary>
               <TitleSlot.Provider value={titleSlot}>
-                <Outlet />
+                <Suspense fallback={<Loading text={tx("app.yuklanmoqda")} />}>
+                  <Outlet />
+                </Suspense>
               </TitleSlot.Provider>
             </ErrorBoundary>
           </div>

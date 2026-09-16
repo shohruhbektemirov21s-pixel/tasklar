@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import {
   cleanHistoryTitle,
   clearNavHistory,
+  getFallbackParentRoute,
   getFallbackRouteTitle,
   readHistory,
   recordNavStep,
@@ -25,12 +26,25 @@ describe("Navigation History Tracker", () => {
 
   it("marshrutlar bo'yicha zaxira nomlarni aniqlaydi", () => {
     expect(getFallbackRouteTitle("/panel")).toBe("Bosh panel");
+    expect(getFallbackRouteTitle("/qilingan-ishlar")).toBe("Qilingan ishlar");
     expect(getFallbackRouteTitle("/jamoa")).toBe("Xodimlar");
     expect(getFallbackRouteTitle("/xodimlar")).toBe("Xodimlar");
     expect(getFallbackRouteTitle("/profil", { user: 5 })).toBe("Xodim profili");
     expect(getFallbackRouteTitle("/profil")).toBe("Profil");
     expect(getFallbackRouteTitle("/loyihalar")).toBe("Loyihalar");
     expect(getFallbackRouteTitle("/vazifa")).toBe("Vazifa");
+    expect(getFallbackRouteTitle("/ochiq-loyiha")).toBe("Ochiq loyiha");
+    expect(getFallbackRouteTitle("/qidiruv")).toBe("Qidiruv");
+  });
+
+  it("tarix bo'lmaganda sahifaning asosiy yuqori marshrutini to'g'ri topadi", () => {
+    expect(getFallbackParentRoute("/loyiha/1")).toBe("/loyihalar");
+    expect(getFallbackParentRoute("/vazifa")).toBe("/loyihalar");
+    expect(getFallbackParentRoute("/ish-maydoni/chat")).toBe("/ish-maydonlari");
+    expect(getFallbackParentRoute("/profil")).toBe("/jamoa");
+    expect(getFallbackParentRoute("/taklif")).toBe("/takliflar");
+    expect(getFallbackParentRoute("/buyurtma")).toBe("/buyurtmalar");
+    expect(getFallbackParentRoute("/loyihalar")).toBe("/panel");
   });
 
   it("ketma-ket navigatsiya qilinganda qadamlarni tarixga to'g'ri yozadi", () => {

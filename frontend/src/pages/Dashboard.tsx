@@ -32,7 +32,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { PageHead } from "@/components/Layout";
 import {
-  AvatarStack, Card, Empty, ErrorMsg, Loading, Pager, Priority, StatusBadge, fmtDate, fmtDateTime,
+  AvatarStack, Card, DateField, Empty, ErrorMsg, Loading, Pager, Priority, StatusBadge, fmtDate, fmtDateTime,
 } from "@/components/ui";
 import { IconPlus } from "@/components/icons";
 import TaskDrawer from "@/components/TaskDrawer";
@@ -207,9 +207,12 @@ const DUE_OPTIONS = [
 ] as const;
 
 const EMPTY_FILTERS = {
-  search: "", due: "", status: "", project: "", assignee: "", half: "",
+  search: "", due: "week", date: "", status: "", project: "", assignee: "", half: "",
 };
-type Filters = typeof EMPTY_FILTERS;
+const RESET_FILTERS = {
+  search: "", due: "", date: "", status: "", project: "", assignee: "", half: "",
+};
+type Filters = typeof RESET_FILTERS;
 type FilterKey = keyof Filters;
 
 /** `/dashboard/tasks/` javobi. */
@@ -351,7 +354,7 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
     setPage(1);
     setF((prev) => ({ ...prev, [k]: v }));
   };
-  const clear = () => { setPage(1); setF(EMPTY_FILTERS); };
+  const clear = () => { setPage(1); setF(RESET_FILTERS); };
 
   return (
     /* Ro'yxat va vazifa paneli yonma-yon: keng ekranda panel ro'yxatning
@@ -373,11 +376,33 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
         <div className="f">
           <label htmlFor={fid + "-due"}>{tx("common.muddat")}</label>
           <select id={fid + "-due"} value={f.due}
-                  onChange={(e) => set("due", e.target.value)}>
+                  onChange={(e) => {
+                    setPage(1);
+                    setF((prev) => ({ ...prev, due: e.target.value, date: "" }));
+                  }}>
             <option value="">{tx("common.hammasi")}</option>
             {DUE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
+          </select>
+        </div>
+
+        <div className="f wl-date">
+          <label htmlFor={fid + "-date"}>{tx("common.sana", undefined, "Sana")}</label>
+          <DateField id={fid + "-date"} value={f.date}
+                     onChange={(v) => {
+                       setPage(1);
+                       setF((prev) => ({ ...prev, date: v, due: v ? "" : prev.due }));
+                     }} />
+        </div>
+
+        <div className="f">
+          <label htmlFor={fid + "-half"}>{tx("dashboard.oy_yarmi", undefined, "Oy yarmi")}</label>
+          <select id={fid + "-half"} value={f.half}
+                  onChange={(e) => set("half", e.target.value)}>
+            <option value="">{tx("common.hammasi")}</option>
+            <option value="1">{tx("dashboard.davr_1", undefined, "1 (1—15 sanalar)")}</option>
+            <option value="2">{tx("dashboard.davr_2", undefined, "2 (16—30 sanalar)")}</option>
           </select>
         </div>
 
@@ -1547,11 +1572,6 @@ export default function Dashboard() {
     <>
       <PageHead
         title={name}
-        actions={
-          <Link className="btn btn-sm btn-primary" to="/loyiha/vazifa-yaratish">
-            + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-          </Link>
-        }
       />
 
       <div className="content">

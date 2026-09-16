@@ -49,10 +49,6 @@ export default function MyWork() {
   const fid = useId();
   const { user } = useAuth();
 
-  // Boshliq uchun "Mening ishim" o'rniga "Qilingan ishlar" sahifasi
-  if (user?.is_boss) {
-    return <Navigate to="/qilingan-ishlar" replace />;
-  }
   const [dragId, setDragId] = useState<number | null>(null);
   const dragRef = useRef<number | null>(null);
   const [over, setOver] = useState<string | null>(null);
@@ -66,7 +62,7 @@ export default function MyWork() {
 
   const pageOf = (key: string) => Number(params.get(`page_${key.toLowerCase()}`)) || 1;
 
-  const { data, error: loadError, reload } = useFetch<MyWorkData>("/my-work/", {
+  const { data, error: loadError, reload } = useFetch<MyWorkData>(!user?.is_boss ? "/my-work/" : null, {
     board: "due",
     period,
     project: projectId,
@@ -74,6 +70,11 @@ export default function MyWork() {
     scope,
     ...Object.fromEntries(COLUMNS.map((c) => [`page_${c.key.toLowerCase()}`, String(pageOf(c.key))])),
   });
+
+  // Boshliq uchun "Mening ishim" o'rniga "Qilingan ishlar" sahifasi
+  if (user?.is_boss) {
+    return <Navigate to="/qilingan-ishlar" replace />;
+  }
 
   const set = (k: string, v: string) => {
     const next = new URLSearchParams(params);
@@ -186,7 +187,12 @@ export default function MyWork() {
   return (
     <>
       <PageHead
-        title={<strong>{tx("my_work.mening_ishim")}</strong>}
+        title={<strong>{tx("my_work.mening_ishim", undefined, "Vazifalarim")}</strong>}
+        actions={
+          <Link className="btn btn-sm btn-primary" to="/loyiha/vazifa-yaratish">
+            + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+          </Link>
+        }
       />
       <div className="content">
         {error ? (
@@ -348,7 +354,10 @@ export default function MyWork() {
                 <Empty icon="☐" title={tx("my_work.sizga_hali_vazifa_biriktirilmagan")}
                        text={tx("my_work.loyihaga_qoshiling_menejer_mutaxassisligingi")}>
                   <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
-                    <Link className="btn btn-primary" to="/loyihalar">
+                    <Link className="btn btn-primary" to="/loyiha/vazifa-yaratish">
+                      + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+                    </Link>
+                    <Link className="btn" to="/loyihalar">
                       {tx("common.loyihalar")}
                     </Link>
                     <Link className="btn" to="/qoshilish">

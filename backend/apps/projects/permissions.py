@@ -232,7 +232,7 @@ def visible_projects_q(user, path=""):
     in_ws = Exists(WorkspaceMember.objects.filter(
         workspace=OuterRef(path + "workspace_id"), user=user))
     owns_ws = Q(**{path + "workspace__owner": user})
-    return member_of | (Q(**{path + "is_public": True}) & (in_ws | owns_ws))
+    return member_of | Q(**{path + "is_public": True}) | (in_ws | owns_ws)
 
 
 def task_scope_q(user):
@@ -284,9 +284,9 @@ def task_scope_q(user):
         project=OuterRef("project_id"), user=user, is_active=True,
         role__in=[ProjectRole.DEVELOPER, ProjectRole.QA]))
     mine = Exists(TaskAssignment.objects.filter(
-        task=OuterRef("pk"), user=user, is_active=True))
-    # Ijrochi bo'lmagan loyihada cheklov yo'q; ijrochi bo'lganida - o'ziniki.
-    return ~Q(executor) | Q(mine)
+        task=OuterRef("pk"), user=user, is_active=True)) | Q(created_by=user)
+    # Ijrochi bo'lmagan loyihada cheklov yo'q; ijrochi bo'lganida - o'ziniki yoki o'zi yaratgani.
+    return ~Q(executor) | mine
 
 
 def managed_projects_q(user):
@@ -391,8 +391,8 @@ class ProjectAccess:
             if getattr(self.user, "department_id", None):
                 cr_q |= Q(project=self.project, created_by__department_id=self.user.department_id)
             return ChangeRequest.objects.filter(cr_q).exists()
-        if not self.project.is_public:
-            return False
+        if self.project.is_public:
+            return True
         if self._in_workspace is None:
             self._in_workspace = in_workspace(self.user, self.project)
         return self._in_workspace
@@ -406,10 +406,10 @@ class ProjectAccess:
 
     @property
     def can_create_task(self):
-        """Vazifa yaratish: menejer, admin yoki loyihaning faol a'zosi (dasturchi, QA)."""
+        """Vazifa yaratish: menejer, admin yoki loyihaning faol a'zosi (dasturchi, QA) yoki ko'rish ruxsati borlar."""
         if self.is_sohaviy and not self.is_admin and not self.is_boss:
             return False
-        return bool(self.can_manage or self.is_member)
+        return bool(self.can_manage or self.is_member or self.can_view)
 
     @property
     def can_create_subtask(self):
@@ -510,7 +510,9 @@ class ProjectAccess:
         if role == ProjectRole_value("MANAGER"):
             return self.is_manager or ((self.is_admin or self.is_boss)
                                        and not self.project.has_active_manager)
-        return self.can_manage
+        if role == ProjectRole_value("ADMIN"):
+            return self.can_manage
+        return bool(self.can_manage or self.is_member)
 
     @property
     def label(self):

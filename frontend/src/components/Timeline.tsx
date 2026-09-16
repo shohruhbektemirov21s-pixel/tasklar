@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { Activity } from "@/api/types";
-import { Avatar, fmtDateTime, timeAgo } from "./ui";
+import { Avatar, fmtDate, fmtDateTime, timeAgo } from "./ui";
 import { toProject, toTask } from "@/nav";
 import { tx } from "@/i18n";
 
@@ -54,6 +54,9 @@ export default function Timeline({
           </>
         );
         const hasMeta = (showProject && Boolean(a.project)) || (showTask && Boolean(a.task));
+        const day = a.created_at ? parseInt(fmtDate(a.created_at).split(".")[0], 10) : null;
+        const halfNum = day ? (day <= 15 ? 1 : 2) : null;
+
         return (
           <div key={a.id} className={`tl-item cat-${a.category}`}>
             <div className="tl-head">
@@ -69,7 +72,24 @@ export default function Timeline({
               {/* Siqilgan ko'rinishda loyiha/vazifa alohida qatorga tushmaydi */}
               {compact && hasMeta && <small className="muted tl-meta">{meta}</small>}
               <span className="spacer" />
-              <span className="tl-time" title={fmtDateTime(a.created_at)}>
+              <span className="tl-time" title={fmtDateTime(a.created_at)} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                {halfNum && (
+                  <span
+                    className="badge"
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "1px 5px",
+                      borderRadius: 4,
+                      background: halfNum === 1 ? "var(--accent-bg, #eff6ff)" : "var(--warning-bg, #fef3c7)",
+                      color: halfNum === 1 ? "var(--accent, #2563eb)" : "var(--warning, #d97706)",
+                      border: `1px solid ${halfNum === 1 ? "rgba(37,99,235,0.2)" : "rgba(217,119,6,0.2)"}`,
+                    }}
+                    title={halfNum === 1 ? tx("my_work.davr_1", undefined, "1-davr: 1—15 sanalar (1)") : tx("my_work.davr_2", undefined, "2-davr: 16—30 sanalar (2)")}
+                  >
+                    {halfNum}
+                  </span>
+                )}
                 {timeAgo(a.created_at)}
               </span>
             </div>

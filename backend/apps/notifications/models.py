@@ -21,6 +21,7 @@ class NotificationKind(models.TextChoices):
     TASK_REVIEW = "task.review", "Tekshiruvga tushdi"
     TASK_DECIDED = "task.decided", "Tekshiruv natijasi"
     TASK_COMMENT = "task.comment", "Yangi izoh"
+    TASK_UNOPENED_WARNING = "task.unopened_warning", "Vazifa ochilmadi"
     # Suhbat - kimdir to'g'ridan-to'g'ri yozdi
     CHAT_MESSAGE = "chat.message", "Chat xabari"
     CHAT_DIRECT = "chat.direct", "Shaxsiy xabar"

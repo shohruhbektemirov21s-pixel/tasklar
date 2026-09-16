@@ -37,6 +37,7 @@ export function cleanHistoryTitle(raw: string): string {
 export function getFallbackRouteTitle(pathname: string, state?: any): string {
   if (pathname === "/panel") return tx("layout.bosh_panel", undefined, "Bosh panel");
   if (pathname === "/mening-ishim") return tx("layout.mening_ishim", undefined, "Mening ishim");
+  if (pathname === "/qilingan-ishlar") return tx("layout.qilingan_ishlar", undefined, "Qilingan ishlar");
   if (pathname === "/loyihalar") return tx("projects.loyihalar", undefined, "Loyihalar");
   if (pathname.startsWith("/loyiha/yangi")) return tx("workspace_form.yangi_loyiha", undefined, "Yangi loyiha");
   if (pathname.startsWith("/loyiha/tahrir")) return tx("project_detail.loyiha_tahrirlash", undefined, "Loyiha tahrirlash");
@@ -45,6 +46,7 @@ export function getFallbackRouteTitle(pathname: string, state?: any): string {
   if (pathname.startsWith("/loyiha/dasturchi")) return tx("project_detail.dasturchi_hisoboti", undefined, "Dasturchi hisoboti");
   if (pathname.startsWith("/loyiha/qoshilish")) return tx("discover.loyihaga_qoshilish", undefined, "Loyihaga qo'shilish");
   if (pathname.startsWith("/loyiha")) return tx("projects.loyiha", undefined, "Loyiha");
+  if (pathname === "/ochiq-loyiha") return tx("projects.ochiq_loyiha", undefined, "Ochiq loyiha");
   if (pathname === "/vazifalar") return tx("common.vazifalar", undefined, "Vazifalar");
   if (pathname.startsWith("/vazifa/tahrir")) return tx("task_detail.vazifani_tahrirlash", undefined, "Vazifa tahrirlash");
   if (pathname.startsWith("/vazifa")) return tx("task_detail.vazifa", undefined, "Vazifa");
@@ -66,8 +68,22 @@ export function getFallbackRouteTitle(pathname: string, state?: any): string {
   if (pathname === "/sorovlar") return tx("inquiries.sorovlar", undefined, "So'rovlar");
   if (pathname === "/buyurtmalar") return tx("change_requests.buyurtmalar", undefined, "Buyurtmalar");
   if (pathname.startsWith("/buyurtma")) return tx("change_requests.buyurtma", undefined, "Buyurtma");
+  if (pathname === "/qidiruv") return tx("search.sarlavha", undefined, "Qidiruv");
   if (pathname === "/admin") return tx("admin.boshqaruv_paneli", undefined, "Admin panel");
   return tx("common.sahifa", undefined, "Sahifa");
+}
+
+/** Brauzer tarixi bo'lmaganda (idx === 0) sahifaning asosiy yuqori marshruti */
+export function getFallbackParentRoute(pathname: string): string {
+  if (pathname.startsWith("/loyiha/") || pathname === "/loyiha") return "/loyihalar";
+  if (pathname.startsWith("/vazifa")) return "/loyihalar";
+  if (pathname.startsWith("/ish-maydoni")) return "/ish-maydonlari";
+  if (pathname.startsWith("/profil")) return "/jamoa";
+  if (pathname.startsWith("/taklif")) return "/takliflar";
+  if (pathname.startsWith("/buyurtma")) return "/buyurtmalar";
+  if (pathname.startsWith("/sorov")) return "/sorovlar";
+  if (pathname === "/ochiq-loyiha") return "/loyihalar";
+  return "/panel";
 }
 
 export function readHistory(): NavHistoryItem[] {

@@ -301,6 +301,8 @@ export interface Task {
   started_at: string | null;
   submitted_at: string | null;
   completed_at: string | null;
+  deleted_at?: string | null;
+  is_deleted?: boolean;
   required_specialty: string;
   specialty_label: string;
   attachment_count: number;
@@ -388,6 +390,8 @@ export interface ActivityStats {
   comments: number;
   worklogs: number;
   tasks_done: number;
+  tasks_todo?: number;
+  tasks_overdue?: number;
 }
 
 export interface Paginated<T> {
@@ -641,10 +645,13 @@ export interface Choice {
 /* Qo'ng'iroqqa faqat javob talab qiladigan narsa tushadi: o'z vazifang,
    senga yozilgan xabar va qo'shilish so'rovi. Qolgani tarixda. */
 export type NotificationKind =
-  | "task.assigned" | "task.review" | "task.decided" | "task.comment"
+  | "task.assigned" | "task.reassigned" | "task.review" | "task.decided" | "task.comment" | "task.unopened_warning"
   | "chat.message" | "chat.direct"
   | "join.request"
-  | "project.deadline";
+  | "project.deadline"
+  | "order.new" | "order.status" | "order.reminder"
+  | "inquiry.new" | "inquiry.decided"
+  | "suggestion.new" | "suggestion.decided";
 
 export interface AppNotification {
   id: number;

@@ -2990,20 +2990,6 @@ export default function ChangeRequests() {
                   Buyurtma raqami: <strong>{completionModalItem.request_no}</strong> ({completionModalItem.system_name})
                 </div>
 
-                <div
-                  style={{
-                    background: "#f0fdf4",
-                    border: "1px solid #bbf7d0",
-                    borderRadius: 6,
-                    padding: 12,
-                    marginBottom: 16,
-                    fontSize: 12.5,
-                    color: "#166534",
-                  }}
-                >
-                  ℹ️ Bajarilgan ish bo'yicha hisobot hujjati (Word, PDF, Excel) yoki natija skrinshotini (PNG, JPG) yuklang. Boshqarma ko'rib chiqib tasdiqlagach, buyurtma yakunlanadi.
-                </div>
-
                 {completionError && <ErrorMsg error={completionError} />}
 
                 <div className="field" style={{ marginBottom: 14 }}>

@@ -77,9 +77,14 @@ export default function Tasks() {
     <>
       <PageHead
         title={<strong>{tx("common.vazifalar")}</strong>}
-        /* Sanoq JAMI ijrochilarniki, sahifadagilarniki emas: u jamoaning
-           kattaligini aytadi. */
-        actions={!!data && <span className="badge">{data.count} {tx("common.kishi")}</span>}
+        actions={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {!!data && <span className="badge">{data.count} {tx("common.kishi")}</span>}
+            <Link className="btn btn-sm btn-primary" to="/loyiha/vazifa-yaratish">
+              + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+            </Link>
+          </div>
+        }
       />
       <div className="content wl">
         <ErrorMsg error={error} />

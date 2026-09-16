@@ -146,9 +146,10 @@ function AccordionSection({
 export interface TaskDetailProps {
   taskId?: number | string;
   onClose?: () => void;
+  initialSection?: string;
 }
 
-export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailProps = {}) {
+export default function TaskDetail({ taskId: propTaskId, onClose, initialSection }: TaskDetailProps = {}) {
   const fid = useId();
   const routeTaskId = useEntityId("task");
   const taskId = propTaskId ?? routeTaskId;
@@ -227,9 +228,22 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
   const [teamNote, setTeamNote] = useState("");
 
   // Accordion yig'iladigan bo'limlar holati:
-  // Sahifa ochilganda faqat eng muhim bo'limlar ochiq bo'ladi.
-  const [openLeft, setOpenLeft] = useState<string | null>("desc");
+  // Sahifa ochilganda yoki initialSection berilganda mos bo'lim ochiq bo'ladi.
+  const [openLeft, setOpenLeft] = useState<string | null>(initialSection || "desc");
   const [openRight, setOpenRight] = useState<string | null>("info");
+
+  useEffect(() => {
+    if (initialSection) {
+      setOpenLeft(initialSection);
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`section-${initialSection}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [initialSection, taskId]);
 
   const toggleLeft = (section: string) => {
     setOpenLeft((prev) => (prev === section ? null : section));
@@ -521,17 +535,36 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
     });
   }
 
+  async function handleRestore() {
+    if (!task) return;
+    await run(async () => {
+      await api.post(`/tasks/${task.id}/restore/`, {});
+    });
+  }
+
+  const isDeleted = Boolean(task.deleted_at || task.is_deleted);
+
   const taskActions = (
     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-      {canEdit && (
-        <Link className="btn btn-sm btn-primary" {...toTaskEdit(task.id)} onClick={isModal ? onClose : undefined}>
-          ✏️ {tx("common.tahrirlash", undefined, "Tahrirlash")}
-        </Link>
-      )}
-      {acc.can_manage && (
-        <button className="btn btn-sm btn-danger" onClick={() => void handleDelete()}>
-          {tx("common.ochirish_2", undefined, "O'chirish")}
-        </button>
+      {isDeleted ? (
+        acc.can_manage && (
+          <button className="btn btn-sm btn-primary" onClick={() => void handleRestore()}>
+            🔄 {tx("common.tiklash", undefined, "Tiklash")}
+          </button>
+        )
+      ) : (
+        <>
+          {canEdit && (
+            <Link className="btn btn-sm btn-primary" {...toTaskEdit(task.id)} onClick={isModal ? onClose : undefined}>
+              ✏️ {tx("common.tahrirlash", undefined, "Tahrirlash")}
+            </Link>
+          )}
+          {acc.can_manage && (
+            <button className="btn btn-sm btn-danger" onClick={() => void handleDelete()}>
+              {tx("common.ochirish_2", undefined, "O'chirish")}
+            </button>
+          )}
+        </>
       )}
     </div>
   );
@@ -558,7 +591,13 @@ export default function TaskDetail({ taskId: propTaskId, onClose }: TaskDetailPr
           marginBottom: 16,
         }}>
           <div className="row wrap" style={{ alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
-            <StatusBadge task={task} />
+            {isDeleted ? (
+              <span className="badge badge-danger" style={{ fontWeight: 700 }}>
+                🗑️ {tx("common.ochirilgan", undefined, "O'chirilgan")}
+              </span>
+            ) : (
+              <StatusBadge task={task} />
+            )}
             <Priority task={task} />
             <span className="badge">{task.type_display}</span>
             {task.specialty_label && <span className="badge badge-brand">{task.specialty_label}</span>}

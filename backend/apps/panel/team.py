@@ -69,7 +69,14 @@ def candidates(request):
     ishlamay qoladi, qidiruv esa ishlayveradi.
     """
     project, workspace = _resolve_scope(request)
-    _require_manage(request.user, project, workspace)
+    from apps.projects.permissions import ProjectAccess
+    allowed = (
+        (ProjectAccess(request.user, project).can_manage or ProjectAccess(request.user, project).is_member)
+        if project is not None
+        else workspace.can_manage(request.user)
+    )
+    if not allowed:
+        raise PermissionDenied("Nomzodlarni ko'rish huquqi yo'q.")
 
     from apps.accounts.models import GlobalRole
 
@@ -103,9 +110,18 @@ def add_member(request):
     Tanasi: `{project|workspace, user_id, role}`.
     """
     from apps.workspaces.models import WorkspaceMember, WorkspaceRole
+    from apps.projects.permissions import ProjectAccess
+    from apps.projects.models import ProjectRole
 
     project, workspace = _resolve_scope(request)
-    _require_manage(request.user, project, workspace)
+    role = request.data.get("role") or (ProjectRole.DEVELOPER if project else WorkspaceRole.MEMBER)
+    allowed = (
+        ProjectAccess(request.user, project).can_grant_role(role)
+        if project is not None
+        else workspace.can_manage(request.user)
+    )
+    if not allowed:
+        raise PermissionDenied("Jamoaga a'zo qo'shish huquqi yo'q.")
 
     target = object_or_404(User, pk=request.data.get("user_id"), is_active=True)
     if target.pk == request.user.pk:

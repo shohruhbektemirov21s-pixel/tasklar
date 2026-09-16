@@ -148,6 +148,8 @@ class TaskSerializer(serializers.ModelSerializer):
     parent_title = serializers.CharField(source="parent.title", read_only=True, allow_null=True)
     subtask_count = serializers.SerializerMethodField()
     subtasks_completed_count = serializers.SerializerMethodField()
+    deleted_at = serializers.DateTimeField(read_only=True)
+    is_deleted = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Task
@@ -162,9 +164,10 @@ class TaskSerializer(serializers.ModelSerializer):
                   "start_date", "due_date", "estimate_hours",
                   "branch_name", "pr_url", "blocked_reason",
                   "review_round", "is_overdue", "logged_hours", "attachment_count",
-                  "created_at", "updated_at", "started_at", "submitted_at", "completed_at"]
+                  "created_at", "updated_at", "started_at", "submitted_at", "completed_at",
+                  "deleted_at", "is_deleted"]
         read_only_fields = ["project", "number", "created_by", "review_round",
-                            "started_at", "submitted_at", "completed_at"]
+                            "started_at", "submitted_at", "completed_at", "deleted_at", "is_deleted"]
 
     def validate(self, attrs):
         """Ish oynasi teskari bo'lib qolmasin: boshlanish muddatdan keyin emas."""

@@ -111,6 +111,7 @@ export default function TaskSubmission({ task, canWork, onChange, isOpen, onTogg
 
   return (
     <div
+      id="section-submission"
       className={`card accordion-section ${open ? "is-open" : "is-collapsed"}`}
       style={{
         marginBottom: 10,

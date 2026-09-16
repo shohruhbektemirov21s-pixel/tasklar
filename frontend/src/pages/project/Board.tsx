@@ -6,7 +6,7 @@ import type { Access, Project, ProjectFile, Task, TaskStatusValue } from "@/api/
 import { IconFile } from "@/components/icons";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import { ErrorMsg, Loading, STATUS_DOT, TaskCard, TaskScopeNote } from "@/components/ui";
-import { toProject } from "@/nav";
+import { toNewTask, toProject } from "@/nav";
 import { tx } from "@/i18n";
 
 interface Column {
@@ -120,6 +120,11 @@ export default function Board({ project }: { project: Project }) {
           </select>
         </div>
         <span className="spacer" />
+        {project.access?.can_create_task && (
+          <Link className="btn btn-sm btn-primary" {...toNewTask(project.id)}>
+            + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+          </Link>
+        )}
       </div>
 
       {files.length > 0 && (

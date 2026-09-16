@@ -448,11 +448,12 @@ function MyProjectTasks() {
         actions={
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {!!total && <span className="badge">{total} {tx("projects.ta_vazifa", undefined, "ta vazifa")}</span>}
-            {groups && groups.length > 0 && (
-              <Link className="btn btn-sm btn-primary" {...toNewTask(groups[0][0])}>
-                + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-              </Link>
-            )}
+            <Link
+              className="btn btn-sm btn-primary"
+              {...(groups && groups.length > 0 ? toNewTask(groups[0][0]) : { to: "/loyiha/vazifa-yaratish" })}
+            >
+              + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+            </Link>
           </div>
         }
       />
@@ -519,7 +520,12 @@ function MyProjectTasks() {
                   {tx("common.filtrni_tozalash")}
                 </button>
               ) : (
-                <Link className="btn btn-primary" to="/qoshilish">{tx("projects.loyiha_topish")}</Link>
+                <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
+                  <Link className="btn btn-primary" to="/loyiha/vazifa-yaratish">
+                    + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+                  </Link>
+                  <Link className="btn" to="/qoshilish">{tx("projects.loyiha_topish")}</Link>
+                </div>
               )}
             </Empty>
           </div>

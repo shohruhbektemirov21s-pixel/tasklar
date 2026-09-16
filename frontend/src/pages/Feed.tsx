@@ -9,7 +9,7 @@
  *   - loyiha yopiq turganda — nom, kalit va tavsif bo'yicha loyiha qidiriladi;
  *   - loyiha ochilganda — o'sha loyihaning yozuvlari matn bo'yicha filtrlanadi.
  */
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, listOf } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
@@ -17,7 +17,7 @@ import type { Activity, ProjectFile } from "@/api/types";
 import { IconFile } from "@/components/icons";
 import { PageHead } from "@/components/Layout";
 import Timeline from "@/components/Timeline";
-import { Card, Empty, Loading, timeAgo } from "@/components/ui";
+import { Card, DateField, Empty, Loading, fmtDate, timeAgo } from "@/components/ui";
 import { toProject, useNavParams } from "@/nav";
 import { tx } from "@/i18n";
 
@@ -100,7 +100,7 @@ function ProjectFeed({ projectId }: { projectId: number }) {
   const [items, setItems] = useState<Activity[] | null>(null);
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
-  const [f, setF] = useState({ search: "", category: "", days: "", mine: "" });
+  const [f, setF] = useState({ search: "", category: "", days: "", half: "", date: "" });
 
   useEffect(() => {
     // Filtr yoki sahifa tez almashtirilsa eski javob yangisining ustiga
@@ -109,7 +109,8 @@ function ProjectFeed({ projectId }: { projectId: number }) {
     setItems(null);
     void api.get<{ results?: Activity[]; count?: number }>("/activity/", {
       project: projectId, search: f.search, category: f.category, days: f.days,
-      page, page_size: 50,
+      half: f.half, date: f.date,
+      page, page_size: 15,
     })
       .then((d) => { if (!alive) return; setItems(d.results || []); setCount(d.count || 0); })
       .catch(() => { if (!alive) return; setItems([]); setCount(0); });
@@ -117,7 +118,7 @@ function ProjectFeed({ projectId }: { projectId: number }) {
   }, [projectId, f, page]);
 
   const set = (k: string, v: string) => { setPage(1); setF((p) => ({ ...p, [k]: v })); };
-  const pages = Math.ceil(count / 50);
+  const pages = Math.ceil(count / 15);
 
   return (
     <div className="card-body">
@@ -147,6 +148,18 @@ function ProjectFeed({ projectId }: { projectId: number }) {
             <option value="90">{tx("feed.songgi_90_kun")}</option>
           </select>
         </div>
+        <div className="f wl-date">
+          <label htmlFor={`${fid}-date`}>{tx("common.sana", undefined, "Sana")}</label>
+          <DateField id={`${fid}-date`} value={f.date} onChange={(v) => set("date", v)} />
+        </div>
+        <div className="f">
+          <label htmlFor={`${fid}-half`}>{tx("dashboard.oy_yarmi", undefined, "Oy yarmi")}</label>
+          <select id={`${fid}-half`} value={f.half} onChange={(e) => set("half", e.target.value)}>
+            <option value="">{tx("common.hammasi")}</option>
+            <option value="1">{tx("dashboard.davr_1", undefined, "1 (1—15 sanalar)")}</option>
+            <option value="2">{tx("dashboard.davr_2", undefined, "2 (16—30 sanalar)")}</option>
+          </select>
+        </div>
       </div>
 
       {!items ? <Loading /> : items.length
@@ -174,6 +187,9 @@ export default function Feed() {
   const [rows, setRows] = useState<ProjectRow[] | null>(null);
 
   const q = params.get("q") || "";
+  const half = params.get("half") || "";
+  const date = params.get("date") || "";
+  const page = Number(params.get("page") || 1);
   // Ochiq loyiha manzilda turadi — sahifa yangilansa ham ochiq qoladi.
   const open = Number(params.get("loyiha") || 0) || null;
 
@@ -191,8 +207,30 @@ export default function Feed() {
   function set(k: string, v: string) {
     const next = new URLSearchParams(params);
     if (v) next.set(k, v); else next.delete(k);
+    if (k !== "page" && k !== "loyiha") next.delete("page");
     setParams(next);
   }
+
+  const filteredRows = useMemo(() => {
+    if (!rows) return [];
+    return rows.filter((r) => {
+      if (half) {
+        const day = r.last_activity ? parseInt(fmtDate(r.last_activity).split(".")[0], 10) : null;
+        const h = day ? (day <= 15 ? "1" : "2") : null;
+        if (h !== half) return false;
+      }
+      if (date) {
+        const d = r.last_activity ? fmtDate(r.last_activity) : null;
+        if (d && !d.includes(date)) return false;
+      }
+      return true;
+    });
+  }, [rows, half, date]);
+
+  const PER_PAGE = 15;
+  const totalPages = Math.ceil(filteredRows.length / PER_PAGE) || 1;
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const pageRows = filteredRows.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   const total = (rows || []).reduce((n, r) => n + r.activity_count, 0);
 
@@ -211,23 +249,57 @@ export default function Feed() {
                      if (e.key === "Enter") set("q", (e.target as HTMLInputElement).value);
                    }} />
           </div>
+          <div className="f wl-date">
+            <label htmlFor={`${fid}-date`}>{tx("common.sana", undefined, "Sana")}</label>
+            <DateField id={`${fid}-date`} value={date} onChange={(v) => set("date", v)} />
+          </div>
+          <div className="f">
+            <label htmlFor={`${fid}-half`}>{tx("dashboard.oy_yarmi", undefined, "Oy yarmi")}</label>
+            <select id={`${fid}-half`} value={half} onChange={(e) => set("half", e.target.value)}>
+              <option value="">{tx("common.hammasi")}</option>
+              <option value="1">{tx("dashboard.davr_1", undefined, "1 (1—15 sanalar)")}</option>
+              <option value="2">{tx("dashboard.davr_2", undefined, "2 (16—30 sanalar)")}</option>
+            </select>
+          </div>
+          {(Boolean(q) || Boolean(half) || Boolean(date)) && (
+            <button type="button" className="btn btn-ghost" onClick={() => {
+              const next = new URLSearchParams();
+              if (open) next.set("loyiha", String(open));
+              setParams(next);
+            }}>
+              {tx("common.tozalash")}
+            </button>
+          )}
         </div>
 
-        {!rows ? <Loading /> : !rows.length ? (
+        {!rows ? <Loading /> : !pageRows.length ? (
           <Empty icon="☰" title={tx("common.loyiha_topilmadi")}
-                 text={q ? tx("feed.qidiruvni_ozgartirib_koring") : tx("feed.hali_loyiha_yoq")} />
+                 text={q || half || date ? tx("feed.qidiruvni_ozgartirib_koring") : tx("feed.hali_loyiha_yoq")} />
         ) : (
           <div className="card">
             <div className="card-list">
-              {rows.map((r) => {
+              {pageRows.map((r, idx) => {
                 const isOpen = open === r.id;
+                const rowNum = (currentPage - 1) * PER_PAGE + idx + 1;
+                const day = r.last_activity ? parseInt(fmtDate(r.last_activity).split(".")[0], 10) : null;
+                const halfNum = day ? (day <= 15 ? 1 : 2) : null;
+
                 return (
                   <div key={r.id}>
                     {/* Butun qator ochish tugmasi — sarlavhani aniq nishonga
                         olish shart emas. Ichidagi havolalar o'z ishini qiladi. */}
                     <div className="repo-item clickable"
                          onClick={() => set("loyiha", isOpen ? "" : String(r.id))}>
-                      <div className="row wrap">
+                      <div className="row wrap" style={{ alignItems: "center" }}>
+                        <span style={{
+                          minWidth: 28,
+                          textAlign: "center",
+                          color: "var(--muted)",
+                          fontWeight: 600,
+                          fontSize: 13,
+                        }}>
+                          {rowNum}
+                        </span>
                         <h3 style={{ margin: 0 }}>
                           <span className="lang-dot" style={{ background: r.color }} />{" "}
                           <Link {...toProject(r.id)}
@@ -235,13 +307,30 @@ export default function Feed() {
                         </h3>
                         <span className="badge">{r.status_display}</span>
                         {!r.is_public && <span className="badge badge-warn">{tx("feed.yopiq")}</span>}
+                        {halfNum && (
+                          <span
+                            className="badge"
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              padding: "1px 5px",
+                              borderRadius: 4,
+                              background: halfNum === 1 ? "var(--accent-bg, #eff6ff)" : "var(--warning-bg, #fef3c7)",
+                              color: halfNum === 1 ? "var(--accent, #2563eb)" : "var(--warning, #d97706)",
+                              border: `1px solid ${halfNum === 1 ? "rgba(37,99,235,0.2)" : "rgba(217,119,6,0.2)"}`,
+                            }}
+                            title={halfNum === 1 ? tx("my_work.davr_1", undefined, "1-davr: 1—15 sanalar (1)") : tx("my_work.davr_2", undefined, "2-davr: 16—30 sanalar (2)")}
+                          >
+                            {halfNum}
+                          </span>
+                        )}
                         <span className="spacer" />
                         <span className="badge">{r.activity_count} {tx("feed.yozuv")}</span>
                         <span className="muted" style={{ fontSize: 18, lineHeight: 1 }}>
                           {isOpen ? "▴" : "▾"}
                         </span>
                       </div>
-                      <div className="repo-meta">
+                      <div className="repo-meta" style={{ paddingLeft: 34 }}>
                         {r.manager_name && <span>{tx("common.pm")} {r.manager_name}</span>}
                         {r.last_activity && <span>{tx("feed.songgi_harakat")} {timeAgo(r.last_activity)}</span>}
                       </div>
@@ -257,6 +346,29 @@ export default function Feed() {
                 );
               })}
             </div>
+            {totalPages > 1 && (
+              <div className="card-body pager-bar" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, borderTop: "1px solid var(--border)" }}>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => set("page", String(currentPage - 1))}
+                >
+                  {tx("feed.oldingi", undefined, "Oldingi")}
+                </button>
+                <span className="muted" style={{ fontSize: 13 }}>
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => set("page", String(currentPage + 1))}
+                >
+                  {tx("feed.keyingi", undefined, "Keyingi")}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -563,3 +563,64 @@ class BossActivityAndWorkDoneTest(ApiTestCase):
         self.assertIn("tasks_done", r.data)
         self.assertGreaterEqual(r.data["comments"], 1)
 
+
+class BossPeopleWorkloadTest(ApiTestCase):
+    """Boshliq xodimlar ro'yxatida vazifasi yo'qlarni tepada ko'rishi, yuklama filtri va statistikasi."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        from apps.tasks.models import TaskAssignment, TaskStatus
+        cls.boss = make_user("boshliq.yuklama@sinov.uz", "Boshliq Bobur", role="BOSS")
+        cls.free_user = make_user("bosh.xodim@sinov.uz", "Anvar Bo'sh", specialty="BACKEND")
+        cls.busy_user = make_user("band.xodim@sinov.uz", "Zafar Band", specialty="FRONTEND")
+
+        cls.task = Task.objects.create(
+            project=cls.project,
+            title="Band xodim vazifasi",
+            created_by=cls.admin,
+            status=TaskStatus.IN_PROGRESS,
+        )
+        TaskAssignment.objects.create(task=cls.task, user=cls.busy_user)
+
+    def setUp(self):
+        super().setUp()
+        self.boss_api = self.client_for(self.boss)
+
+    def test_xodimlar_standart_vazifasi_yoqlar_tepada_saralanadi(self):
+        r = self.boss_api.get("/api/users/")
+        self.assertEqual(r.status_code, 200)
+        users = r.data["results"] if "results" in r.data else r.data
+        free_idx = next(i for i, u in enumerate(users) if u["id"] == self.free_user.id)
+        busy_idx = next(i for i, u in enumerate(users) if u["id"] == self.busy_user.id)
+        self.assertLess(free_idx, busy_idx)
+
+    def test_workload_filtri_bosh_xodimlar(self):
+        r = self.boss_api.get("/api/users/", {"workload": "free"})
+        self.assertEqual(r.status_code, 200)
+        users = r.data["results"] if "results" in r.data else r.data
+        self.assertTrue(all(u.get("open_tasks", 0) == 0 for u in users))
+        ids = [u["id"] for u in users]
+        self.assertIn(self.free_user.id, ids)
+        self.assertNotIn(self.busy_user.id, ids)
+
+    def test_workload_filtri_band_xodimlar(self):
+        r = self.boss_api.get("/api/users/", {"workload": "busy"})
+        self.assertEqual(r.status_code, 200)
+        users = r.data["results"] if "results" in r.data else r.data
+        self.assertTrue(all(u.get("open_tasks", 0) > 0 for u in users))
+        ids = [u["id"] for u in users]
+        self.assertIn(self.busy_user.id, ids)
+        self.assertNotIn(self.free_user.id, ids)
+
+    def test_workload_summary_endpoint(self):
+        r = self.boss_api.get("/api/users/workload-summary/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("total_users", r.data)
+        self.assertIn("free_users", r.data)
+        self.assertIn("busy_users", r.data)
+        self.assertIn("total_open_tasks", r.data)
+        self.assertGreaterEqual(r.data["free_users"], 1)
+        self.assertGreaterEqual(r.data["busy_users"], 1)
+
+

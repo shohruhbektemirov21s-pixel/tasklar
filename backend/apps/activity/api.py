@@ -63,6 +63,19 @@ class ActivityViewSet(viewsets.ReadOnlyModelViewSet):
         if days and days.isdigit():
             qs = qs.filter(created_at__gte=timezone.now() - timezone.timedelta(days=int(days)))
 
+        date_param = (self.request.query_params.get("date") or "").strip()
+        if date_param:
+            from apps.core.periods import due_span
+            span = due_span(due_raw=date_param)
+            if span:
+                qs = qs.filter(created_at__gte=span[0], created_at__lt=span[1])
+
+        half = (self.request.query_params.get("half") or "").strip()
+        if half == "1":
+            qs = qs.filter(created_at__day__lte=15)
+        elif half == "2":
+            qs = qs.filter(created_at__day__gte=16)
+
         task = self.request.query_params.get("task")
         if task:
             qs = qs.filter(task_id=int_param(task, "task"))
@@ -76,18 +89,79 @@ class ActivityViewSet(viewsets.ReadOnlyModelViewSet):
         search = self.request.query_params.get("search")
         if search:
             qs = qs.filter(Q(summary__icontains=search) | Q(detail__icontains=search) | Q(task__title__icontains=search))
+
+        task_status = self.request.query_params.get("task_status")
+        if task_status:
+            statuses = [s.strip() for s in task_status.split(",") if s.strip()]
+            if statuses:
+                qs = qs.filter(task__status__in=statuses)
+
+        if self.request.query_params.get("overdue") in ["1", "true", "True"]:
+            unfinished = [
+                TaskStatus.TODO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.BLOCKED,
+                TaskStatus.CHANGES_REQUESTED,
+                TaskStatus.IN_REVIEW,
+            ]
+            qs = qs.filter(task__status__in=unfinished, task__due_date__lt=timezone.now())
+
         return qs
 
     @action(detail=False, methods=["get"], url_path="stats")
     def stats(self, request):
-        qs = self.get_queryset()
+        user = request.user
+        qs = Activity.objects.timeline().exclude(project__deleted_at__isnull=False)
+
+        project_id = request.query_params.get("project")
+        if project_id:
+            project = object_or_404(Project, pk=project_id)
+            check_access(user, project, "view")
+            qs = qs.filter(project=project)
+        elif not sees_all_projects(user):
+            qs = qs.filter(
+                Q(actor=user) | Exists(ProjectMember.objects.filter(
+                    project=OuterRef("project_id"), user=user, is_active=True))
+            )
+
+        actor = request.query_params.get("actor")
+        if actor:
+            qs = qs.filter(actor_id=int_param(actor, "actor"))
+
         today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+        now = timezone.now()
+        task_qs = Task.objects.filter(project__deleted_at__isnull=True)
+        if project_id:
+            task_qs = task_qs.filter(project_id=project_id)
+        elif not sees_all_projects(request.user):
+            task_qs = task_qs.filter(
+                Exists(ProjectMember.objects.filter(
+                    project=OuterRef("project_id"), user=request.user, is_active=True))
+            )
+
+        if actor:
+            task_qs = task_qs.filter(
+                Exists(TaskAssignment.objects.filter(
+                    task=OuterRef("pk"), user_id=actor, is_active=True))
+            )
+
+        unfinished = [
+            TaskStatus.TODO,
+            TaskStatus.IN_PROGRESS,
+            TaskStatus.BLOCKED,
+            TaskStatus.CHANGES_REQUESTED,
+            TaskStatus.IN_REVIEW,
+        ]
+
         return Response({
             "total": qs.count(),
             "today": qs.filter(created_at__gte=today_start).count(),
             "comments": qs.filter(verb="task.commented").count(),
             "worklogs": qs.filter(verb="task.worklog").count(),
             "tasks_done": qs.filter(verb__in=["task.status", "task.approved"]).count(),
+            "tasks_todo": task_qs.filter(status__in=[TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED]).count(),
+            "tasks_overdue": task_qs.filter(status__in=unfinished, due_date__lt=now).count(),
         })
 
     # ------------------------------------------------------------ loyihalar kesimi

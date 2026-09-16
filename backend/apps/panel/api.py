@@ -550,14 +550,18 @@ def panel_tasks(request):
                 ))
             )
 
-    due = p.get("due") or ""
-    if due:
-        span = _due_range(due)
+    due = (p.get("due") or "").strip()
+    date_val = (p.get("date") or "").strip()
+    span = None
+    if date_val:
+        span = due_span(due_raw=date_val)
+    elif due:
+        span = due_span(due_raw=due if "-" in due else "", period=due if "-" not in due else "")
         if span is None:
             raise DrfValidationError(
-                {"due": "Faqat {}.".format(", ".join(DUE_RANGES))})
-        # Muddati QO'YILMAGAN ish oraliqqa tushmaydi - `due_date` bo'sh
-        # bo'lsa ikkala solishtiruv ham NULL beradi va yozuv chetda qoladi.
+                {"due": "Faqat {} yoki YYYY-MM-DD.".format(", ".join(DUE_RANGES))})
+
+    if span:
         tasks = tasks.filter(due_date__gte=span[0], due_date__lt=span[1])
 
     half = (p.get("half") or "").strip()

@@ -136,6 +136,11 @@ export default function TaskList({ project }: { project: Project }) {
             {tx("common.tozalash")}
           </button>
         )}
+        {project.access?.can_create_task && (
+          <Link className="btn btn-primary" {...toNewTask(project.id)}>
+            + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
+          </Link>
+        )}
       </div>
 
       <div className="card">

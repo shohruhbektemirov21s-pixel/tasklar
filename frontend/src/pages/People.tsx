@@ -29,6 +29,8 @@ export default function People() {
     specialty: params.get("specialty") || "",
     role: params.get("role") || "",
     seniority: params.get("seniority") || "",
+    workload: params.get("workload") || "",
+    ordering: params.get("ordering") || "open_tasks,full_name",
   }), [params]);
 
   const page = Math.max(1, Number(params.get("page")) || 1);
@@ -87,6 +89,14 @@ export default function People() {
   const total = totalOf(data);
   const pages = pagesOf(data, PER_PAGE);
   const error = actionError || loadError;
+
+  const { data: summaryData, reload: reloadSummary } = useFetch<{
+    total_users: number;
+    free_users: number;
+    busy_users: number;
+    total_open_tasks: number;
+    total_done_tasks: number;
+  }>("/users/workload-summary/", { search: f.search, specialty: f.specialty, role: f.role }, { debounceMs: 300 });
 
   const { data: spec } = useFetch<{ items: { label: string; count: number }[] }>(
     "/users/specialty-stats/", f, { debounceMs: 300 });
@@ -223,6 +233,7 @@ export default function People() {
       setSeparateTasks(false);
       setSelectedUserIds([]);
       reload();
+      reloadSummary();
     } catch (err) {
       setAssignError(err instanceof ApiError ? err.message : tx("people.vazifa_yuklashda_xatolik", undefined, "Vazifa berishda xatolik yuz berdi"));
     } finally {
@@ -247,6 +258,7 @@ export default function People() {
       setReassignNote("");
       setReassignTasks((prev) => prev.filter((t) => t.id !== taskId));
       reload();
+      reloadSummary();
     } catch (err) {
       setReassignError(err instanceof ApiError ? err.message : "Vazifani o'tkazib bo'lmadi");
     } finally {
@@ -259,6 +271,7 @@ export default function People() {
     try {
       await api.patch(`/users/${target.id}/role/`, patch);
       reload();
+      reloadSummary();
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : tx("people.ozgartirib_bolmadi"));
     }
@@ -275,6 +288,104 @@ export default function People() {
       <div className="content">
         <ErrorMsg error={error} />
 
+        {/* JAMOA YUKLAMASI KPI BLOKI */}
+        {summaryData && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
+            <div
+              className="card"
+              style={{
+                padding: "12px 16px",
+                cursor: "pointer",
+                border: f.workload === "" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                background: f.workload === "" ? "var(--primary-soft, rgba(99, 102, 241, 0.08))" : "var(--surface)",
+                borderRadius: 10,
+                transition: "all 0.15s ease",
+              }}
+              onClick={() => setFilter({ workload: "" })}
+            >
+              <div className="row between middle">
+                <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>
+                  👥 {tx("people.jami_xodimlar", undefined, "Jami xodimlar")}
+                </span>
+                <span className="badge" style={{ fontSize: 14, fontWeight: 700 }}>
+                  {summaryData.total_users}
+                </span>
+              </div>
+            </div>
+
+            <div
+              className="card"
+              style={{
+                padding: "12px 16px",
+                cursor: "pointer",
+                border: f.workload === "free" ? "2px solid #16a34a" : "1px solid var(--border)",
+                background: f.workload === "free" ? "rgba(22, 163, 74, 0.12)" : "var(--surface)",
+                borderRadius: 10,
+                transition: "all 0.15s ease",
+              }}
+              onClick={() => setFilter({ workload: f.workload === "free" ? "" : "free" })}
+            >
+              <div className="row between middle">
+                <span style={{ fontSize: 13, color: "#16a34a", fontWeight: 600 }}>
+                  🟢 {tx("people.bosh_xodimlar", undefined, "Bo'sh xodimlar (0 ta)")}
+                </span>
+                <span className="badge badge-success" style={{ fontSize: 14, fontWeight: 700, background: "rgba(22, 163, 74, 0.18)", color: "#15803d" }}>
+                  {summaryData.free_users}
+                </span>
+              </div>
+            </div>
+
+            <div
+              className="card"
+              style={{
+                padding: "12px 16px",
+                cursor: "pointer",
+                border: f.workload === "busy" ? "2px solid #d97706" : "1px solid var(--border)",
+                background: f.workload === "busy" ? "rgba(217, 119, 6, 0.12)" : "var(--surface)",
+                borderRadius: 10,
+                transition: "all 0.15s ease",
+              }}
+              onClick={() => setFilter({ workload: f.workload === "busy" ? "" : "busy" })}
+            >
+              <div className="row between middle">
+                <span style={{ fontSize: 13, color: "#d97706", fontWeight: 600 }}>
+                  🟡 {tx("people.band_xodimlar", undefined, "Band xodimlar")}
+                </span>
+                <span className="badge badge-warning" style={{ fontSize: 14, fontWeight: 700, background: "rgba(245, 158, 11, 0.18)", color: "#b45309" }}>
+                  {summaryData.busy_users}
+                </span>
+              </div>
+            </div>
+
+            <div
+              className="card"
+              style={{
+                padding: "12px 16px",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+                borderRadius: 10,
+              }}
+            >
+              <div className="row between middle">
+                <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>
+                  📋 {tx("people.ochiq_vazifalar_jami", undefined, "Bajarilmagan vazifalar")}
+                </span>
+                <span className="badge badge-primary" style={{ fontSize: 14, fontWeight: 700 }}>
+                  {summaryData.total_open_tasks}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FILTRLAR VA SARALASH */}
         <div className="filters">
           <div className="f grow">
             <label htmlFor={`${fid}-0`}>{tx("common.qidiruv")}</label>
@@ -292,8 +403,25 @@ export default function People() {
             </select>
           </div>
           <div className="f">
-            <label htmlFor={`${fid}-3`}>{tx("people.tizim_roli")}</label>
-            <select id={`${fid}-3`} value={f.role} onChange={(e) => setFilter({ role: e.target.value })}>
+            <label htmlFor={`${fid}-2`}>{tx("people.yuklama_holati", undefined, "Yuklama")}</label>
+            <select id={`${fid}-2`} value={f.workload} onChange={(e) => setFilter({ workload: e.target.value })}>
+              <option value="">{tx("common.hammasi")}</option>
+              <option value="free">{tx("people.bosh_xodimlar", undefined, "Bo'sh (0 ta vazifa)")}</option>
+              <option value="busy">{tx("people.band_xodimlar", undefined, "Band (vazifasi bor)")}</option>
+            </select>
+          </div>
+          <div className="f">
+            <label htmlFor={`${fid}-3`}>{tx("people.saralash", undefined, "Saralash")}</label>
+            <select id={`${fid}-3`} value={f.ordering} onChange={(e) => setFilter({ ordering: e.target.value })}>
+              <option value="open_tasks,full_name">{tx("people.vazifasizlar_oldinda", undefined, "Vazifasi yo'qlar avval")}</option>
+              <option value="-open_tasks,full_name">{tx("people.vazifasi_koplar_oldinda", undefined, "Vazifasi ko'plar avval")}</option>
+              <option value="full_name">{tx("people.ism_a_z", undefined, "Ism bo'yicha (A-Z)")}</option>
+              <option value="-date_joined">{tx("people.yangi_qoshilganlar", undefined, "Yangi qo'shilganlar")}</option>
+            </select>
+          </div>
+          <div className="f">
+            <label htmlFor={`${fid}-4`}>{tx("people.tizim_roli")}</label>
+            <select id={`${fid}-4`} value={f.role} onChange={(e) => setFilter({ role: e.target.value })}>
               <option value="">{tx("common.hammasi")}</option>
               {(meta?.global_role || []).map((s) => (
                 <option key={s.value} value={String(s.value)}>{s.label}</option>
@@ -382,6 +510,7 @@ export default function People() {
                   <tbody>
                     {users.map((u) => {
                       const isSelected = activeUser?.id === u.id;
+                      const hasOpenTasks = Boolean(u.open_tasks && u.open_tasks > 0);
                       return (
                       <tr
                         key={u.id}
@@ -423,7 +552,7 @@ export default function People() {
                           </div>
                         </td>
                         <td>
-                          {u.open_tasks && u.open_tasks > 0 ? (
+                          {hasOpenTasks ? (
                             <button
                               type="button"
                               className="badge badge-warning"
@@ -434,6 +563,9 @@ export default function People() {
                                 cursor: canManageTasks ? "pointer" : "default",
                                 border: "none",
                                 padding: "4px 8px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
                               }}
                               title={canManageTasks ? tx("people.vazifalarni_otkazish", undefined, "Vazifalarni o'tkazish") : undefined}
                               onClick={(e) => {
@@ -441,10 +573,25 @@ export default function People() {
                                 if (canManageTasks) setReassignTarget(u);
                               }}
                             >
-                              {u.open_tasks} {tx("common.ta", undefined, "ta")}
+                              <span>🟡</span>
+                              <span>{u.open_tasks} {tx("people.faol_vazifa_birlik", undefined, "ta faol vazifa")}</span>
                             </button>
                           ) : (
-                            <span className="muted">0</span>
+                            <span
+                              className="badge badge-success"
+                              style={{
+                                fontWeight: 600,
+                                color: "#15803d",
+                                background: "rgba(34, 197, 94, 0.15)",
+                                padding: "4px 8px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
+                            >
+                              <span>🟢</span>
+                              <span>0 {tx("common.ta", undefined, "ta")} ({tx("people.bosh_status", undefined, "Bo'sh")})</span>
+                            </span>
                           )}
                         </td>
                         <td onClick={(e) => e.stopPropagation()}>
@@ -461,7 +608,7 @@ export default function People() {
                         <td>
                           {u.done_tasks && u.done_tasks > 0 ? (
                             <span className="badge badge-success" style={{ fontWeight: 600, color: "#15803d", background: "rgba(34, 197, 94, 0.15)" }}>
-                              {u.done_tasks} {tx("common.ta", undefined, "ta")}
+                              ✓ {u.done_tasks} {tx("common.ta", undefined, "ta")}
                             </span>
                           ) : (
                             <span className="muted">0</span>
@@ -469,33 +616,31 @@ export default function People() {
                         </td>
                         <td className="right" style={{ whiteSpace: "nowrap" }} onClick={(e) => e.stopPropagation()}>
                           {canManageTasks && !isNonAssignable(u) && (
-                            <>
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline"
-                                style={{ marginRight: 6, fontSize: 12, padding: "3px 8px" }}
-                                onClick={() => {
-                                  setAssignTargets([u]);
-                                  setAssignFiles([]);
-                                  setAssignError(null);
-                                }}
-                                title={tx("people.vazifa_berish", undefined, "Vazifa berish")}
-                              >
-                                + {tx("people.vazifa_berish", undefined, "Vazifa berish")}
-                              </button>
-                            </>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-primary"
+                              style={{ marginRight: 6, fontSize: 12, padding: "3px 9px", fontWeight: 500 }}
+                              onClick={() => {
+                                setAssignTargets([u]);
+                                setAssignFiles([]);
+                                setAssignError(null);
+                              }}
+                              title={tx("people.vazifa_berish", undefined, "Vazifa berish")}
+                            >
+                              + {tx("people.vazifa_berish", undefined, "Vazifa berish")}
+                            </button>
                           )}
-                          {canManageTasks && Boolean(u.open_tasks && u.open_tasks > 0) && (
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-outline"
-                                  style={{ marginRight: 6, fontSize: 12, padding: "3px 8px" }}
-                                  onClick={() => setReassignTarget(u)}
-                                  title={tx("people.vazifalarni_otkazish", undefined, "Vazifalarni o'tkazish")}
-                                >
-                                  ⇄ {tx("people.vazifani_otkazish", undefined, "Boshqaga o'tkazish")}
-                                </button>
-                              )}
+                          {canManageTasks && hasOpenTasks && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline"
+                              style={{ marginRight: 6, fontSize: 12, padding: "3px 8px" }}
+                              onClick={() => setReassignTarget(u)}
+                              title={tx("people.vazifalarni_otkazish", undefined, "Vazifalarni o'tkazish")}
+                            >
+                              ⇄ {tx("people.vazifani_otkazish", undefined, "Boshqaga o'tkazish")}
+                            </button>
+                          )}
                           {isAdmin && u.id !== user?.id && (
                             <button className={`btn btn-sm ${u.is_active ? "btn-danger" : ""}`}
                                     onClick={() => void change(u, { is_active: !u.is_active })}>
@@ -596,73 +741,105 @@ export default function People() {
                     <ErrorMsg error={tasksError} />
                   ) : userTasks.length === 0 ? (
                     <div style={{ padding: "20px 12px", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
-                      {tx("people.xodimda_vazifalar_yoq", undefined, "Ushbu xodimda hozircha vazifalar yo'q.")}
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "550px", overflowY: "auto", paddingRight: 4 }}>
-                      {userTasks.map((t) => (
-                        <div
-                          key={t.id}
-                          onClick={() => setSelectedTaskId(t.id)}
-                          style={{
-                            padding: "10px 12px",
-                            borderRadius: 8,
-                            border: "1px solid var(--border)",
-                            background: "var(--surface)",
-                            cursor: "pointer",
-                            transition: "all 0.15s ease",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 6,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = "var(--primary)";
-                            e.currentTarget.style.transform = "translateY(-1px)";
-                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = "var(--border)";
-                            e.currentTarget.style.transform = "none";
-                            e.currentTarget.style.boxShadow = "none";
+                      <p style={{ marginBottom: 10 }}>{tx("people.xodimda_vazifalar_yoq", undefined, "Ushbu xodimda hozircha vazifalar yo'q.")}</p>
+                      {canManageTasks && !isNonAssignable(activeUser) && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary"
+                          onClick={() => {
+                            setAssignTargets([activeUser]);
+                            setAssignFiles([]);
+                            setAssignError(null);
                           }}
                         >
-                          <div className="row between middle" style={{ gap: 8 }}>
-                            <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: "var(--primary)" }}>
-                              {t.code}
-                            </span>
-                            <div className="row middle" style={{ gap: 6 }}>
-                              <Priority task={t} />
-                              <StatusBadge task={t} />
+                          + {tx("people.yangi_vazifa_yuklash", undefined, "Yangi vazifa berish")}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "500px", overflowY: "auto", paddingRight: 4 }}>
+                        {userTasks.map((t) => (
+                          <div
+                            key={t.id}
+                            onClick={() => setSelectedTaskId(t.id)}
+                            style={{
+                              padding: "10px 12px",
+                              borderRadius: 8,
+                              border: "1px solid var(--border)",
+                              background: "var(--surface)",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 6,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = "var(--primary)";
+                              e.currentTarget.style.transform = "translateY(-1px)";
+                              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = "var(--border)";
+                              e.currentTarget.style.transform = "none";
+                              e.currentTarget.style.boxShadow = "none";
+                            }}
+                          >
+                            <div className="row between middle" style={{ gap: 8 }}>
+                              <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: "var(--primary)" }}>
+                                {t.code}
+                              </span>
+                              <div className="row middle" style={{ gap: 6 }}>
+                                <Priority task={t} />
+                                <StatusBadge task={t} />
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 600,
+                                lineHeight: 1.35,
+                                color: "var(--text)",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                              }}
+                              title={t.title}
+                            >
+                              {t.title}
+                            </div>
+                            <div className="row between middle" style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "160px" }}>
+                                📁 {t.project_name}
+                              </span>
+                              {t.due_date && (
+                                <span style={{ color: t.is_overdue ? "var(--danger, #ef4444)" : undefined }}>
+                                  📅 {fmtDate(t.due_date)}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <div
-                            style={{
-                              fontSize: 13,
-                              fontWeight: 600,
-                              lineHeight: 1.35,
-                              color: "var(--text)",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
+                        ))}
+                      </div>
+
+                      {canManageTasks && !isNonAssignable(activeUser) && (
+                        <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px dashed var(--border)" }}>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline"
+                            style={{ width: "100%", justifyContent: "center" }}
+                            onClick={() => {
+                              setAssignTargets([activeUser]);
+                              setAssignFiles([]);
+                              setAssignError(null);
                             }}
-                            title={t.title}
                           >
-                            {t.title}
-                          </div>
-                          <div className="row between middle" style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "160px" }}>
-                              📁 {t.project_name}
-                            </span>
-                            {t.due_date && (
-                              <span style={{ color: t.is_overdue ? "var(--danger, #ef4444)" : undefined }}>
-                                📅 {fmtDate(t.due_date)}
-                              </span>
-                            )}
-                          </div>
+                            + {tx("people.yangi_vazifa_yuklash", undefined, "Yangi vazifa berish")}
+                          </button>
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
                 </div>

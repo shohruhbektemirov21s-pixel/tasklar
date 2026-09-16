@@ -343,8 +343,8 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["full_name", "email", "skills", "job_title"]
-    ordering_fields = ["date_joined", "full_name"]
-    ordering = ["-date_joined"]
+    ordering_fields = ["date_joined", "full_name", "open_tasks", "done_tasks", "project_count"]
+    ordering = ["open_tasks", "full_name"]
 
     def get_serializer_class(self):
         # Ro'yxatda qisqa ko'rinish: shaxsiy kontakt ma'lumotlari (bio,
@@ -396,9 +396,34 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         seniority = self.request.query_params.get("seniority")
         if seniority:
             qs = qs.filter(seniority=seniority)
+        workload = self.request.query_params.get("workload")
+        if workload == "free":
+            qs = qs.filter(open_tasks=0)
+        elif workload == "busy":
+            qs = qs.filter(open_tasks__gt=0)
         if self.request.query_params.get("exclude_management") == "1":
             qs = qs.exclude(global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS]).exclude(is_superuser=True)
         return qs
+
+    @action(detail=False, methods=["get"], url_path="workload-summary")
+    def workload_summary(self, request):
+        """Jamoa yuklamasi: jami xodimlar, bo'shlar (0 vazifa), bandlar (1+ vazifa) va ochiq vazifalar yig'indisi."""
+        base_qs = self.get_queryset()
+        # Qidiruv va boshqa filtrlarni ham inobatga olish
+        filtered_qs = self.filter_queryset(base_qs)
+        total_users = filtered_qs.count()
+        free_users = filtered_qs.filter(open_tasks=0).count()
+        busy_users = filtered_qs.filter(open_tasks__gt=0).count()
+        total_open_tasks = filtered_qs.aggregate(total=Sum("open_tasks"))["total"] or 0
+        total_done_tasks = filtered_qs.aggregate(total=Sum("done_tasks"))["total"] or 0
+
+        return Response({
+            "total_users": total_users,
+            "free_users": free_users,
+            "busy_users": busy_users,
+            "total_open_tasks": total_open_tasks,
+            "total_done_tasks": total_done_tasks,
+        })
 
     @action(detail=False, methods=["get"], url_path="specialty-stats")
     def specialty_stats(self, request):
