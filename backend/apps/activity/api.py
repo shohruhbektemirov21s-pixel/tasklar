@@ -66,7 +66,29 @@ class ActivityViewSet(viewsets.ReadOnlyModelViewSet):
         task = self.request.query_params.get("task")
         if task:
             qs = qs.filter(task_id=int_param(task, "task"))
+
+        verb = self.request.query_params.get("verb")
+        if verb:
+            verbs = [v.strip() for v in verb.split(",") if v.strip()]
+            if verbs:
+                qs = qs.filter(verb__in=verbs)
+
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(Q(summary__icontains=search) | Q(detail__icontains=search) | Q(task__title__icontains=search))
         return qs
+
+    @action(detail=False, methods=["get"], url_path="stats")
+    def stats(self, request):
+        qs = self.get_queryset()
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        return Response({
+            "total": qs.count(),
+            "today": qs.filter(created_at__gte=today_start).count(),
+            "comments": qs.filter(verb="task.commented").count(),
+            "worklogs": qs.filter(verb="task.worklog").count(),
+            "tasks_done": qs.filter(verb__in=["task.status", "task.approved"]).count(),
+        })
 
     # ------------------------------------------------------------ loyihalar kesimi
     @action(detail=False, methods=["get"], url_path="by-project")

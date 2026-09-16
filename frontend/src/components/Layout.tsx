@@ -7,7 +7,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import ErrorBoundary from "./ErrorBoundary";
 import { Logo } from "./Logo";
-import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconChevron, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
+import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconCheck, IconChevron, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconInquiry, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar, SpecialtyTag } from "./ui";
 import { toFeed, toMessages, toSelfProfile, toUser, type NavTarget, useGo, useHistoryTracker, useNavHistory } from "@/nav";
@@ -550,8 +550,12 @@ export default function Layout() {
             {manages || user?.is_sohaviy_boshqarma
               ? item("/loyihalar", <IconBoard />, tx("common.loyihalar"), undefined, false, tx("layout.tooltip_loyihalar"))
               : item("/loyihalar", <IconLayers />, tx("common.vazifalar"), undefined, false, tx("layout.tooltip_loyihalar"))}
-            {!user?.is_sohaviy_boshqarma &&
-              item("/mening-ishim", <IconTasks />, tx("layout.mening_ishim"), counts.open, false, tx("layout.tooltip_mening_ishim"))}
+            {user?.is_boss ? (
+              item("/qilingan-ishlar", <IconCheck />, tx("layout.qilingan_ishlar", undefined, "Qilingan ishlar"), undefined, false, tx("layout.tooltip_qilingan_ishlar", undefined, "Qilingan ishlar, izohlar va yangilanishlar"))
+            ) : (
+              !user?.is_sohaviy_boshqarma &&
+              item("/mening-ishim", <IconTasks />, tx("layout.mening_ishim"), counts.open, false, tx("layout.tooltip_mening_ishim"))
+            )}
             {user?.is_sohaviy_boshqarma &&
               item("/buyurtmalar", <IconOrder />, tx("orders.sarlavha"), counts.orders, true, tx("layout.tooltip_buyurtmalar"))}
             {!user?.is_sohaviy_boshqarma &&

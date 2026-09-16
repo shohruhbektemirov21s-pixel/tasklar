@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { ApiError, api } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import type { DueColumnKey, MyWorkData, Task } from "@/api/types";
@@ -48,6 +48,11 @@ const TERMS = [
 export default function MyWork() {
   const fid = useId();
   const { user } = useAuth();
+
+  // Boshliq uchun "Mening ishim" o'rniga "Qilingan ishlar" sahifasi
+  if (user?.is_boss) {
+    return <Navigate to="/qilingan-ishlar" replace />;
+  }
   const [dragId, setDragId] = useState<number | null>(null);
   const dragRef = useRef<number | null>(null);
   const [over, setOver] = useState<string | null>(null);

@@ -10,6 +10,7 @@ Quyidagi testlar ikkala tomonni ham qulflaydi: ko'rinishning ochilganini
 ham, huquqning kengaymaganini ham.
 """
 
+from apps.activity.models import Activity
 from apps.projects.models import Project, ProjectMember, ProjectRole
 from apps.suggestions.models import Suggestion, SuggestionScope, SuggestionStatus
 from apps.tasks.models import Task, TaskStatus
@@ -498,3 +499,67 @@ class GlobalManagerSeesAllProjectsTest(ApiTestCase):
             c.get("/api/projects/{}/".format(self.other_project.pk)).status_code, 403)
         ids = [p["id"] for p in c.get("/api/projects/", {"scope": "visible"}).data["results"]]
         self.assertNotIn(self.other_project.pk, ids)
+
+
+class BossActivityAndWorkDoneTest(ApiTestCase):
+    """Qilingan ishlar va izohlar lentasi — Boshliq uchun to'liq ko'rinishi."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.boss = make_user("boshliq.faollik@sinov.uz", "Faol Boshliq", role="BOSS")
+        cls.task1 = Task.objects.create(
+            project=cls.project, title="Birinchi muhim vazifa", created_by=cls.admin)
+        cls.act_comment = Activity.objects.create(
+            verb="task.commented",
+            summary="Vazifaga izoh qoldirildi",
+            detail="Ushbu vazifada API integratsiyasi muvaffaqiyatli yakunlandi.",
+            actor=cls.dev,
+            project=cls.project,
+            task=cls.task1,
+            workspace=cls.workspace,
+        )
+        cls.act_done = Activity.objects.create(
+            verb="task.status",
+            summary="Vazifa bajarildi",
+            detail="Barcha talablar bajarildi va sinovdan o'tkazildi.",
+            actor=cls.dev,
+            project=cls.project,
+            task=cls.task1,
+            workspace=cls.workspace,
+        )
+
+    def setUp(self):
+        super().setUp()
+        self.boss_api = self.client_for(self.boss)
+
+    def test_boshliq_faoliyat_va_izohlarni_koradi(self):
+        r = self.boss_api.get("/api/activity/")
+        self.assertEqual(r.status_code, 200)
+        items = r.data["results"] if "results" in r.data else r.data
+        self.assertGreaterEqual(len(items), 2)
+        comment_item = next((x for x in items if x["id"] == self.act_comment.id), None)
+        self.assertIsNotNone(comment_item)
+        self.assertEqual(comment_item["task_title"], "Birinchi muhim vazifa")
+        self.assertIn("API integratsiyasi", comment_item["detail"])
+
+    def test_faoliyat_verb_va_search_filtrlari(self):
+        r_verb = self.boss_api.get("/api/activity/", {"verb": "task.commented"})
+        self.assertEqual(r_verb.status_code, 200)
+        items = r_verb.data["results"] if "results" in r_verb.data else r_verb.data
+        for item in items:
+            self.assertEqual(item["verb"], "task.commented")
+
+        r_search = self.boss_api.get("/api/activity/", {"search": "integratsiyasi"})
+        self.assertEqual(r_search.status_code, 200)
+        items = r_search.data["results"] if "results" in r_search.data else r_search.data
+        self.assertTrue(any(x["id"] == self.act_comment.id for x in items))
+
+    def test_activity_stats_endpoint(self):
+        r = self.boss_api.get("/api/activity/stats/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("total", r.data)
+        self.assertIn("comments", r.data)
+        self.assertIn("tasks_done", r.data)
+        self.assertGreaterEqual(r.data["comments"], 1)
+

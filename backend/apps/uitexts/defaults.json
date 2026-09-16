@@ -1743,6 +1743,14 @@
   "value": "Mening ishim",
   "note": "components/Layout.tsx"
  },
+ "layout.qilingan_ishlar": {
+  "value": "Qilingan ishlar",
+  "note": "components/Layout.tsx"
+ },
+ "layout.tooltip_qilingan_ishlar": {
+  "value": "Qilingan ishlar, izohlar va yangilanishlar",
+  "note": "components/Layout.tsx"
+ },
  "layout.menyuni_ochish": {
   "value": "Menyuni ochish",
   "note": "components/Layout.tsx"
@@ -6770,5 +6778,105 @@
  "project_forecast.boshlanish_va_tugash_sanasi": {
   "value": "Boshlanish va tugash sanasi",
   "note": "pages/project/Forecast.tsx"
+ },
+ "work_done.sarlavha": {
+  "value": "Qilingan ishlar",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.tavsif": {
+  "value": "Xodimlar tomonidan bajarilgan ishlar, yozilgan izohlar va yangilanishlar jurnali",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.stat_jami": {
+  "value": "Jami harakatlar",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.stat_bugun": {
+  "value": "Bugungi",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.stat_izohlar": {
+  "value": "Izohlar",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.stat_ish_jurnali": {
+  "value": "Ish vaqti qaydlari",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.stat_bajarilgan": {
+  "value": "Bajarilgan vazifalar",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.tab_hammasi": {
+  "value": "Hammasi",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.tab_izohlar": {
+  "value": "Izohlar",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.tab_bajarilgan": {
+  "value": "Bajarilganlar",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.tab_ish_jurnali": {
+  "value": "Ish jurnali",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.tab_holatlar": {
+  "value": "Holat o'zgarishlari",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.barcha_loyihalar": {
+  "value": "Barcha loyihalar",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.barcha_xodimlar": {
+  "value": "Barcha xodimlar",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.davr_barchasi": {
+  "value": "Barcha vaqt",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.davr_bugun": {
+  "value": "Bugun",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.davr_oxirgi_7_kun": {
+  "value": "Oxirgi 7 kun",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.davr_oxirgi_30_kun": {
+  "value": "Oxirgi 30 kun",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.qidirish": {
+  "value": "Izoh, vazifa yoki loyiha bo'yicha qidirish...",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.bosh_holat": {
+  "value": "Tanlangan filtrlar bo'yicha ma'lumot topilmadi",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.loyiha": {
+  "value": "Loyiha",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.vazifa": {
+  "value": "Vazifa",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.izoh": {
+  "value": "Izoh matni",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.ish_qaydi": {
+  "value": "Ish qaydi",
+  "note": "pages/WorkDone.tsx"
+ },
+ "work_done.batafsil": {
+  "value": "Batafsil ko'rish",
+  "note": "pages/WorkDone.tsx"
  }
 }

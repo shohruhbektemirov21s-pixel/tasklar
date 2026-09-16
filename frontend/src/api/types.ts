@@ -378,7 +378,16 @@ export interface Activity {
   project_name: string | null;
   task: number | null;
   task_code: string | null;
+  task_title?: string | null;
   created_at: string;
+}
+
+export interface ActivityStats {
+  total: number;
+  today: number;
+  comments: number;
+  worklogs: number;
+  tasks_done: number;
 }
 
 export interface Paginated<T> {

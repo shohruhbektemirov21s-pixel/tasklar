@@ -26,6 +26,7 @@ import { tx } from "@/i18n";
  * o'z bo'lagida - birinchi ochilish yengil, qolgani bosilganda keladi.
  */
 const MyWork = lazy(() => import("@/pages/MyWork"));
+const WorkDone = lazy(() => import("@/pages/WorkDone"));
 const Projects = lazy(() => import("@/pages/Projects"));
 const Tasks = lazy(() => import("@/pages/Tasks"));
 const Discover = lazy(() => import("@/pages/Discover"));
@@ -139,6 +140,7 @@ export default function App() {
       <Route element={<Protected><Layout /></Protected>}>
         <Route path="/panel" element={<Dashboard />} />
         <Route path="/mening-ishim" element={<MyWork />} />
+        <Route path="/qilingan-ishlar" element={<BossOnly><WorkDone /></BossOnly>} />
         <Route path="/loyihalar" element={<Projects />} />
         <Route path="/vazifalar" element={<ManagesOnly><Tasks /></ManagesOnly>} />
         <Route path="/qoshilish" element={<Discover />} />
