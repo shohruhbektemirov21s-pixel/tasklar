@@ -48,6 +48,8 @@ export default function Members({ project, onChange }: { project: Project; onCha
       chiqadi (o'ngdagi «Loyihadan chiqish» kartasi). */
   const isManager = (m: ProjectMember) =>
     m.role === "MANAGER" || m.user.id === project.manager?.id;
+  const isBoss = (m: ProjectMember) =>
+    Boolean(m.user.is_boss || m.user.global_role === "BOSS");
   /** O'ziga o'zi tegmaydi: adminlikni ham, chiqishni ham boshqa odam bajaradi.
       Ataylab chiqmoqchi bo'lsa o'ngdagi «Loyihadan chiqish» kartasi bor. */
   const isSelf = (m: ProjectMember) => m.user.id === user?.id;
@@ -145,7 +147,11 @@ export default function Members({ project, onChange }: { project: Project; onCha
                       </span>
                     </td>
                     <td>
-                      {acc.can_manage && !isManager(m) ? (
+                      {isBoss(m) ? (
+                        <span className="badge badge-brand" style={{ fontWeight: 600 }}>
+                          {tx("roles.boshliq", undefined, "Boshliq")}
+                        </span>
+                      ) : acc.can_manage && !isManager(m) ? (
                         <select defaultValue={m.role} style={{ width: 160 }}
                                 onChange={(e) => void act(() =>
                                   api.post(`/projects/${project.id}/members/${m.id}/`, {
@@ -211,6 +217,10 @@ export default function Members({ project, onChange }: { project: Project; onCha
                         isSelf(m) ? (
                           <span className="badge" title={tx("project_members.ozingizga_bu_yerdan_tega_olmaysiz")}>
                             {tx("project_members.bu_sizsiz")}
+                          </span>
+                        ) : isBoss(m) ? (
+                          <span className="badge" title={tx("project_members.boshliqqa_tegib_bolmaydi", undefined, "Boshliqqa tegib bo'lmaydi")}>
+                            {tx("project_members.himoyalangan")}
                           </span>
                         ) : isManager(m) ? (
                           <span className="badge" title={tx("project_members.menejerga_tegib_bolmaydi_u_loyihadan")}>

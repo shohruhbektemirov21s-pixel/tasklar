@@ -6758,5 +6758,17 @@
  "people.ta_vazifa": {
   "value": "{soni} ta vazifa",
   "note": "pages/People.tsx"
+ },
+ "roles.boshliq": {
+  "value": "Boshliq",
+  "note": "common roles"
+ },
+ "project_members.boshliqqa_tegib_bolmaydi": {
+  "value": "Boshliqqa tegib bo'lmaydi — u loyihadan chiqarilmaydi",
+  "note": "pages/project/Members.tsx"
+ },
+ "project_forecast.boshlanish_va_tugash_sanasi": {
+  "value": "Boshlanish va tugash sanasi",
+  "note": "pages/project/Forecast.tsx"
  }
 }

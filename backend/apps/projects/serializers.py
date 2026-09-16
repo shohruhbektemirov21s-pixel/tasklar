@@ -11,9 +11,14 @@ from .models import (JoinRequest, Project, ProjectBrief, ProjectFile,
 class ProjectMemberSerializer(serializers.ModelSerializer):
     user = UserBriefSerializer(read_only=True)
     user_id = serializers.IntegerField(write_only=True)
-    role_display = serializers.CharField(source="get_role_display", read_only=True)
+    role_display = serializers.SerializerMethodField()
     open_tasks = serializers.IntegerField(read_only=True)
     done_tasks = serializers.IntegerField(read_only=True)
+
+    def get_role_display(self, obj):
+        if obj.user and (getattr(obj.user, "is_boss", False) or getattr(obj.user, "global_role", None) == "BOSS"):
+            return "Boshliq"
+        return obj.get_role_display()
 
     class Meta:
         model = ProjectMember

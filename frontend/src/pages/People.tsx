@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api, listOf, pagesOf, totalOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
@@ -7,8 +7,9 @@ import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { Avatar, Card, ErrorMsg, Loading, Pager, Priority, StatusBadge } from "@/components/ui";
 import { fmtDate } from "@/components/dates";
-import TaskDrawer from "@/components/TaskDrawer";
 import { toUser, useNavParams } from "@/nav";
+
+const TaskDetailModal = lazy(() => import("@/pages/TaskDetail"));
 import { tx } from "@/i18n";
 import { IconClose } from "@/components/icons";
 import FilePicker, { uploadFiles } from "@/components/FilePicker";
@@ -105,7 +106,7 @@ export default function People() {
   const [userTasks, setUserTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState<string | null>(null);
-  const [drawerTask, setDrawerTask] = useState<Task | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!activeUser) {
@@ -602,7 +603,7 @@ export default function People() {
                       {userTasks.map((t) => (
                         <div
                           key={t.id}
-                          onClick={() => setDrawerTask(t)}
+                          onClick={() => setSelectedTaskId(t.id)}
                           style={{
                             padding: "10px 12px",
                             borderRadius: 8,
@@ -1142,8 +1143,22 @@ export default function People() {
         </div>
       )}
 
-      {/* Vazifa batafsil ko'rish tortmasi */}
-      {drawerTask && <TaskDrawer task={drawerTask} onClose={() => setDrawerTask(null)} />}
+      {/* Vazifa to'liq modal oynasi */}
+      {selectedTaskId && (
+        <Suspense fallback={null}>
+          <TaskDetailModal
+            taskId={selectedTaskId}
+            onClose={() => {
+              setSelectedTaskId(null);
+              if (activeUser) {
+                api.get<{ results: Task[] } | Task[]>("/tasks/", { assignee: activeUser.id, page_size: 100 })
+                  .then((d) => setUserTasks(listOf<Task>(d)))
+                  .catch(() => {});
+              }
+            }}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

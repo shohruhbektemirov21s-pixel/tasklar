@@ -10,7 +10,7 @@
  * o'ylab topilgan soatlardan chiqarilgan "taxminan tugaydi" sanasi turardi -
  * odam kiritmagan sana ekranda turishi chalkashlikdan boshqa narsa emas.
  */
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api } from "@/api/client";
 import type { Forecast, Project } from "@/api/types";
@@ -18,10 +18,13 @@ import { Avatar, Card, Empty, ErrorMsg, Loading, Stat, fmtDate } from "@/compone
 import { toDeveloper, toProject, toTask, useGo } from "@/nav";
 import { tx } from "@/i18n";
 
+const TaskDetailModal = lazy(() => import("@/pages/TaskDetail"));
+
 export default function ForecastTab({ project }: { project: Project }) {
   const go = useGo();
   const [data, setData] = useState<Forecast | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -55,8 +58,14 @@ export default function ForecastTab({ project }: { project: Project }) {
               {...toProject(project.id, "vazifalar", "overdue=1")}
               title={tx("project_forecast.muddati_otgan_vazifalarni_korish")} />
         <Stat
-          value={p.start_date ? fmtDate(p.start_date) : "—"}
-          label={tx("project_forecast.loyiha_boshlanish_sanasi")}
+          value={
+            <span style={{ fontSize: "1.05rem", whiteSpace: "nowrap" }}>
+              {p.start_date ? fmtDate(p.start_date) : "—"}
+              <span className="muted" style={{ fontWeight: 400, margin: "0 6px" }}>→</span>
+              {p.due_date ? fmtDate(p.due_date) : "—"}
+            </span>
+          }
+          label={tx("project_forecast.boshlanish_va_tugash_sanasi", undefined, "Boshlanish va tugash sanasi")}
           tone="done"
         />
       </div>
@@ -135,12 +144,11 @@ export default function ForecastTab({ project }: { project: Project }) {
               <tbody>
                 {m.tasks.map((t) => (
                   <tr key={t.id} className={`clickable ${t.overdue ? "row-risk" : ""}`}
-                      onClick={() => go(toTask(t.id))}>
+                      onClick={() => setSelectedTaskId(t.id)}>
                     <td>
-                      <Link {...toTask(t.id)} onClick={(e) => e.stopPropagation()}
-                            style={{ color: "var(--text)", fontWeight: 500 }}>
+                      <span style={{ color: "var(--text)", fontWeight: 500, cursor: "pointer" }}>
                         {t.title}
-                      </Link>
+                      </span>
                     </td>
                     <td className="muted nowrap">{t.status_display}</td>
                     <td className="muted nowrap">{t.start_date ? fmtDate(t.start_date) : "—"}</td>
@@ -163,6 +171,17 @@ export default function ForecastTab({ project }: { project: Project }) {
         </Card>
       ))}
 
+      {selectedTaskId && (
+        <Suspense fallback={null}>
+          <TaskDetailModal
+            taskId={selectedTaskId}
+            onClose={() => {
+              setSelectedTaskId(null);
+              void load();
+            }}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

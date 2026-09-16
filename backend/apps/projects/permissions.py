@@ -495,6 +495,8 @@ class ProjectAccess:
         """
         if not self.can_manage:
             return False
+        if getattr(member.user, "is_boss", False) or getattr(member.user, "global_role", None) == "BOSS":
+            return False
         return not self.is_manager_member(member)
 
     def can_grant_role(self, role):
