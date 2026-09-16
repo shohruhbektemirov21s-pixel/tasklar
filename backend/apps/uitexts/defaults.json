@@ -6131,6 +6131,18 @@
   "value": "Qoralama sifatida saqlash",
   "note": "pages/OrderForm.tsx"
  },
+ "orders.autosave_saving": {
+  "value": "Avtomatik saqlanmoqda...",
+  "note": "pages/OrderForm.tsx"
+ },
+ "orders.autosave_saved": {
+  "value": "Avtomatik saqlandi",
+  "note": "pages/OrderForm.tsx"
+ },
+ "orders.submitting": {
+  "value": "Yuborilmoqda...",
+  "note": "pages/OrderForm.tsx"
+ },
  "orders.send_order": {
   "value": "Buyurtmani yuborish",
   "note": "pages/OrderDetail.tsx"
