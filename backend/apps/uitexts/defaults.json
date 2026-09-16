@@ -6742,5 +6742,21 @@
  "team_picker.pmga_faqat_boshliq_vazifa_beradi": {
   "value": "PM (Loyiha menejeri)ga faqat Boshliq vazifa bera oladi",
   "note": "components/TeamPicker.tsx"
+ },
+ "people.xodim_vazifalari": {
+  "value": "Xodim vazifalari",
+  "note": "pages/People.tsx"
+ },
+ "people.xodimni_tanlang_vazifalarini_korish": {
+  "value": "Xodimlar ro'yxatidan birini tanlang — bu yerda uning vazifalari ko'rinadi.",
+  "note": "pages/People.tsx"
+ },
+ "people.xodimda_vazifalar_yoq": {
+  "value": "Ushbu xodimda hozircha vazifalar yo'q.",
+  "note": "pages/People.tsx"
+ },
+ "people.ta_vazifa": {
+  "value": "{soni} ta vazifa",
+  "note": "pages/People.tsx"
  }
 }

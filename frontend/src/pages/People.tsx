@@ -5,7 +5,9 @@ import { useFetch } from "@/api/useFetch";
 import type { User, Project, Task } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
-import { Avatar, Card, ErrorMsg, Loading, Pager } from "@/components/ui";
+import { Avatar, Card, ErrorMsg, Loading, Pager, Priority, StatusBadge } from "@/components/ui";
+import { fmtDate } from "@/components/dates";
+import TaskDrawer from "@/components/TaskDrawer";
 import { toUser, useNavParams } from "@/nav";
 import { tx } from "@/i18n";
 import { IconClose } from "@/components/icons";
@@ -97,6 +99,27 @@ export default function People() {
 
   // Jadvalda ko'p xodimlarni belgilash (multi-select)
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+
+  // Tanlangan xodim va uning vazifalari (o'ng paneldagi ro'yxat uchun)
+  const [activeUser, setActiveUser] = useState<User | null>(null);
+  const [userTasks, setUserTasks] = useState<Task[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [tasksError, setTasksError] = useState<string | null>(null);
+  const [drawerTask, setDrawerTask] = useState<Task | null>(null);
+
+  useEffect(() => {
+    if (!activeUser) {
+      setUserTasks([]);
+      setTasksError(null);
+      return;
+    }
+    setTasksLoading(true);
+    setTasksError(null);
+    api.get<{ results: Task[] } | Task[]>("/tasks/", { assignee: activeUser.id, page_size: 100 })
+      .then((d) => setUserTasks(listOf<Task>(d)))
+      .catch((e) => setTasksError(e instanceof ApiError ? e.message : "Vazifalarni yuklab bo'lmadi"))
+      .finally(() => setTasksLoading(false));
+  }, [activeUser]);
 
   // Vazifa berish modali holati
   const [assignTargets, setAssignTargets] = useState<User[]>([]);
@@ -356,10 +379,23 @@ export default function People() {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((u) => (
-                      <tr key={u.id}>
+                    {users.map((u) => {
+                      const isSelected = activeUser?.id === u.id;
+                      return (
+                      <tr
+                        key={u.id}
+                        onClick={() => setActiveUser((prev) => (prev?.id === u.id ? null : u))}
+                        style={{
+                          cursor: "pointer",
+                          backgroundColor: isSelected ? "var(--primary-soft, rgba(99, 102, 241, 0.08))" : undefined,
+                          transition: "background-color 0.15s ease",
+                        }}
+                      >
                         {canManageTasks && (
-                          <td style={{ textAlign: "center", width: 36, padding: "8px 4px" }}>
+                          <td
+                            style={{ textAlign: "center", width: 36, padding: "8px 4px" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <input
                               type="checkbox"
                               style={{ width: "auto", minHeight: 0, cursor: "pointer" }}
@@ -379,7 +415,7 @@ export default function People() {
                           <div className="row">
                             <Avatar user={u} size="sm" />
                             <div>
-                              <Link {...toUser(u.id)}>{u.full_name}</Link>
+                              <Link {...toUser(u.id)} onClick={(e) => e.stopPropagation()}>{u.full_name}</Link>
                               {!u.is_active && <span className="badge badge-danger">{tx("people.bloklangan")}</span>}
                               <br /><small className="muted">{u.email}</small>
                             </div>
@@ -399,7 +435,10 @@ export default function People() {
                                 padding: "4px 8px",
                               }}
                               title={canManageTasks ? tx("people.vazifalarni_otkazish", undefined, "Vazifalarni o'tkazish") : undefined}
-                              onClick={() => canManageTasks && setReassignTarget(u)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (canManageTasks) setReassignTarget(u);
+                              }}
                             >
                               {u.open_tasks} {tx("common.ta", undefined, "ta")}
                             </button>
@@ -407,7 +446,7 @@ export default function People() {
                             <span className="muted">0</span>
                           )}
                         </td>
-                        <td>
+                        <td onClick={(e) => e.stopPropagation()}>
                           {isAdmin ? (
                             <select defaultValue={u.global_role} style={{ width: 150 }}
                                     onChange={(e) => void change(u, { global_role: e.target.value })}>
@@ -427,7 +466,7 @@ export default function People() {
                             <span className="muted">0</span>
                           )}
                         </td>
-                        <td className="right" style={{ whiteSpace: "nowrap" }}>
+                        <td className="right" style={{ whiteSpace: "nowrap" }} onClick={(e) => e.stopPropagation()}>
                           {canManageTasks && !isNonAssignable(u) && (
                             <>
                               <button
@@ -464,7 +503,7 @@ export default function People() {
                           )}
                         </td>
                       </tr>
-                    ))}
+                    );})}
                   </tbody>
                 </table></div>
               </>
@@ -476,7 +515,160 @@ export default function People() {
             )}
           </div>
 
-          <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Tanlangan xodim vazifalari */}
+            <Card
+              title={
+                <div className="row middle" style={{ gap: 8 }}>
+                  <span>{tx("people.xodim_vazifalari", undefined, "Xodim vazifalari")}</span>
+                  {activeUser && (
+                    <span className="badge badge-info" style={{ fontSize: 12, padding: "2px 8px" }}>
+                      {tx("people.ta_vazifa", { soni: userTasks.length }, `${userTasks.length} ta vazifa`)}
+                    </span>
+                  )}
+                </div>
+              }
+              action={
+                activeUser ? (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-subtle"
+                    onClick={() => setActiveUser(null)}
+                    title={tx("common.yopish", undefined, "Yopish")}
+                    style={{ padding: "2px 6px", lineHeight: 1 }}
+                  >
+                    <IconClose size={14} />
+                  </button>
+                ) : undefined
+              }
+            >
+              {!activeUser ? (
+                <div style={{ padding: "24px 12px", textAlign: "center", color: "var(--muted)" }}>
+                  <p style={{ margin: 0, fontSize: 13 }}>
+                    {tx("people.xodimni_tanlang_vazifalarini_korish", undefined, "Xodimlar ro'yxatidan birini tanlang — bu yerda uning vazifalari ko'rinadi.")}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  {/* Xodim ma'lumotlari */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "10px 12px",
+                      marginBottom: 12,
+                      background: "var(--surface-sunken, rgba(0,0,0,0.03))",
+                      borderRadius: 8,
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <Avatar user={activeUser} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {activeUser.full_name}
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {activeUser.specialty_display || activeUser.job_title || activeUser.email}
+                      </div>
+                    </div>
+                    {canManageTasks && !isNonAssignable(activeUser) && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        style={{ fontSize: 12, padding: "4px 8px", whiteSpace: "nowrap" }}
+                        onClick={() => {
+                          setAssignTargets([activeUser]);
+                          setAssignFiles([]);
+                          setAssignError(null);
+                        }}
+                      >
+                        + {tx("people.vazifa_berish", undefined, "Vazifa berish")}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Vazifalar ro'yxati */}
+                  {tasksLoading ? (
+                    <Loading />
+                  ) : tasksError ? (
+                    <ErrorMsg error={tasksError} />
+                  ) : userTasks.length === 0 ? (
+                    <div style={{ padding: "20px 12px", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
+                      {tx("people.xodimda_vazifalar_yoq", undefined, "Ushbu xodimda hozircha vazifalar yo'q.")}
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "550px", overflowY: "auto", paddingRight: 4 }}>
+                      {userTasks.map((t) => (
+                        <div
+                          key={t.id}
+                          onClick={() => setDrawerTask(t)}
+                          style={{
+                            padding: "10px 12px",
+                            borderRadius: 8,
+                            border: "1px solid var(--border)",
+                            background: "var(--surface)",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 6,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = "var(--primary)";
+                            e.currentTarget.style.transform = "translateY(-1px)";
+                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = "var(--border)";
+                            e.currentTarget.style.transform = "none";
+                            e.currentTarget.style.boxShadow = "none";
+                          }}
+                        >
+                          <div className="row between middle" style={{ gap: 8 }}>
+                            <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: "var(--primary)" }}>
+                              {t.code}
+                            </span>
+                            <div className="row middle" style={{ gap: 6 }}>
+                              <Priority task={t} />
+                              <StatusBadge task={t} />
+                            </div>
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              lineHeight: 1.35,
+                              color: "var(--text)",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                            }}
+                            title={t.title}
+                          >
+                            {t.title}
+                          </div>
+                          <div className="row between middle" style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "160px" }}>
+                              📁 {t.project_name}
+                            </span>
+                            {t.due_date && (
+                              <span style={{ color: t.is_overdue ? "var(--danger, #ef4444)" : undefined }}>
+                                📅 {fmtDate(t.due_date)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+
+            {/* Mutaxassisliklar taqsimoti */}
             <Card title={tx("people.mutaxassisliklar_taqsimoti")}>
               <ul className="list-plain" style={{ fontSize: 13 }}>
                 {(spec?.items || []).map((row) => (
@@ -949,6 +1141,9 @@ export default function People() {
           </div>
         </div>
       )}
+
+      {/* Vazifa batafsil ko'rish tortmasi */}
+      {drawerTask && <TaskDrawer task={drawerTask} onClose={() => setDrawerTask(null)} />}
     </>
   );
 }
