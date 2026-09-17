@@ -57,7 +57,13 @@ class CanAccessOrders(permissions.BasePermission):
             or getattr(user, "is_sohaviy_boshqarma", False)
             or getattr(user, "can_create_project", False)
         )
+        
         if not can_access:
+            # Agar foydalanuvchi oddiy dasturchi bo'lsa ham, o'ziga biriktirilgan
+            # buyurtmani ko'rish huquqiga ega bo'lishi kerak. Detail o'qishda bu
+            # queryset orqali ham cheklanadi.
+            if getattr(view, "action", "") in ["retrieve", "list", "stats"]:
+                return True
             return False
 
         # Yangi buyurtma yaratish (POST create) faqat sohaviy boshqarma va admin/boss uchun.
@@ -185,13 +191,19 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 if for_pm and user.is_authenticated:
                     qs = qs.filter(Q(assigned_pm=user) | Q(project__manager=user)).exclude(status=ChangeRequestStatus.DRAFT)
                 elif mine and user.is_authenticated:
-                    mine_q = Q(created_by=user) | Q(assigned_pm=user) | Q(project__manager=user)
+                    mine_q = Q(created_by=user) | Q(assigned_pm=user) | Q(project__manager=user) | Q(assigned_developer=user)
                     if getattr(user, "department_id", None) and user.department:
                         mine_q |= (
                             (Q(department__iexact=user.department.name) | Q(created_by__department=user.department))
                             & ~Q(status=ChangeRequestStatus.DRAFT)
                         )
                     qs = qs.filter(mine_q)
+                elif user.is_authenticated:
+                    # Agar mine yoki for_pm berilmasa, baribir o'ziga tegishli (masalan developer) ni filtrlaymiz
+                    # agar ular PM bo'lmasa.
+                    is_pm = getattr(user, "is_manager", False) or getattr(user, "can_access_orders", False)
+                    if not is_pm:
+                        qs = qs.filter(Q(created_by=user) | Q(assigned_pm=user) | Q(assigned_developer=user) | Q(project__manager=user))
 
         # Qoralamalar (DRAFT) userni o'zidan boshqa hech kimga (hatto admin yoki boshliqqa ham) ko'rinmaydi!
         if user.is_authenticated:
