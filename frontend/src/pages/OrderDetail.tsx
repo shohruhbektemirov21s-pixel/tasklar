@@ -22,7 +22,6 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-
 import { ApiError, listOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import {
@@ -49,14 +48,12 @@ import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { Card, Empty, ErrorMsg, Loading, OkMsg, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
 import { toEditOrder, toOrders, toProject, toTask, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge } from "./ChangeRequests";
-
 const UserOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
     <circle cx="12" cy="7" r="4" />
   </svg>
 );
-
 const CalendarOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -65,14 +62,12 @@ const CalendarOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; 
     <line x1="3" y1="10" x2="21" y2="10" />
   </svg>
 );
-
 const ClockOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <polyline points="12 6 12 12 16 14" />
   </svg>
 );
-
 const TimerOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="14" r="8" />
@@ -80,31 +75,26 @@ const TimerOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; col
     <line x1="12" y1="14" x2="15" y2="11" />
   </svg>
 );
-
 const HourglassOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
   </svg>
 );
-
 const ChatOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
 );
-
 const PaperclipOutlineIcon = ({ size = 16, color = "#3b82f6" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l7.88-7.88" />
   </svg>
 );
-
 const FolderFilledIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
   </svg>
 );
-
 const DocLilacIcon = ({ size = 20, color = "#8b5cf6" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -114,76 +104,57 @@ const DocLilacIcon = ({ size = 20, color = "#8b5cf6" }: { size?: number; color?:
     <polyline points="10 9 9 9 8 9" />
   </svg>
 );
-
 const ChevronDownOutlineIcon = ({ size = 16, color = "#64748b" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="6 9 12 15 18 9" />
   </svg>
 );
-
 const ChevronRightOutlineIcon = ({ size = 16, color = "#64748b" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="9 18 15 12 9 6" />
   </svg>
 );
-
 export default function OrderDetail() {
   const { user, meta } = useAuth();
   const id = useEntityNum("order");
   const go = useGo();
-
   const [item, setItem] = useState<ChangeRequestItem | null>(null);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionOk, setActionOk] = useState<string | null>(null);
-
-  // Kamchilik bilan qaytarish modali
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectFile, setRejectFile] = useState<File | null>(null);
   const [rejectIsNewTz, setRejectIsNewTz] = useState(false);
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
-
-  // PM Tugatilgan ish hisobotini topshirish modali
   const [completionModalOpen, setCompletionModalOpen] = useState(false);
   const [completionFile, setCompletionFile] = useState<File | null>(null);
   const [completionNote, setCompletionNote] = useState("");
   const [completionSubmitting, setCompletionSubmitting] = useState(false);
   const [completionError, setCompletionError] = useState<string | null>(null);
-
-  // Tavsifni to'liq ochish / qisqartirish holati
   const [expandDesc, setExpandDesc] = useState(false);
-
-  // PM tezkor boshqaruv paneli
   const [pmPanelOpen, setPmPanelOpen] = useState(false);
   const [pmStatus, setPmStatus] = useState<ChangeRequestItem["status"]>("ACCEPTED");
   const [pmDeadline, setPmDeadline] = useState("");
   const [pmNotes, setPmNotes] = useState("");
   const [pmSaving, setPmSaving] = useState(false);
-
-  // PM claim modali
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [claimDuration, setClaimDuration] = useState("");
   const [claimDeadlineInput, setClaimDeadlineInput] = useState("");
   const [claimNotesInput, setClaimNotesInput] = useState("");
   const [claimSubmitting, setClaimSubmitting] = useState(false);
-
   const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>("/users/", { is_active: true });
   const usersList: UserBrief[] = useMemo(() => (usersData ? listOf<UserBrief>(usersData) : []), [usersData]);
   const developersList = useMemo(
     () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY" && u.global_role !== "ADMIN" && u.global_role !== "BOSS" && !u.is_platform_admin && !u.is_boss),
     [usersList]
   );
-
-  // Yangi versiya yuborish modali
   const [versionModal, setVersionModal] = useState(false);
   const [versionFile, setVersionFile] = useState<File | null>(null);
   const [versionNote, setVersionNote] = useState("");
   const [versionSubmitting, setVersionSubmitting] = useState(false);
-
-  // Yangi TZ versiyasini tasdiqlash modali (PM)
   const [approveVersionModal, setApproveVersionModal] = useState(false);
   const [approveVersionTarget, setApproveVersionTarget] = useState<number | null>(null);
   const [approveDeadline, setApproveDeadline] = useState("");
@@ -191,30 +162,20 @@ export default function OrderDetail() {
   const [approveDeveloper, setApproveDeveloper] = useState<number | null>(null);
   const [approveNote, setApproveNote] = useState("");
   const [approveSubmitting, setApproveSubmitting] = useState(false);
-
-  // Yangi TZ versiyasini rad etish modali (PM)
   const [rejectVersionModal, setRejectVersionModal] = useState(false);
   const [rejectVersionTarget, setRejectVersionTarget] = useState<number | null>(null);
   const [rejectVersionReason, setRejectVersionReason] = useState("");
   const [rejectVersionSubmitting, setRejectVersionSubmitting] = useState(false);
-
-  // Eski TZ versiyalari tarixi (yig'ilgan / ochilgan)
   const [historyOpen, setHistoryOpen] = useState(false);
-
-  // Fayllar bloki (ochilgan / yopilgan)
   const [filesOpen, setFilesOpen] = useState(true);
-
-  // Jami fayllar soni
   const totalFilesCount = useMemo(() => {
     if (!item) return 1;
     const atts = item.attachments && item.attachments.length > 0
       ? item.attachments.length
       : item.tz_file_url ? 1 : 0;
     const comp = item.completion_file_url ? 1 : 0;
-    return atts + comp + 1; // +1 Word (.docx) blanki
+    return atts + comp + 1; 
   }, [item]);
-
-  // Buyurtma bo'yicha yangi vazifa (Task) yaratish modali
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
@@ -223,15 +184,12 @@ export default function OrderDetail() {
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskType, setTaskType] = useState("FEATURE");
   const [taskSubmitting, setTaskSubmitting] = useState(false);
-
-  // Eski TZ versiyalari tarixi (amaldagi joriy versiyadan tashqari)
   const olderVersions = useMemo(() => {
     if (!item?.versions) return [];
     return item.versions
       .filter((v) => v.version !== item.version && v.status !== "NEW")
       .sort((a, b) => b.version - a.version);
   }, [item?.versions, item?.version]);
-
   const load = useCallback(async () => {
     if (!id) return;
     try {
@@ -248,11 +206,9 @@ export default function OrderDetail() {
       setLoading(false);
     }
   }, [id]);
-
   useEffect(() => {
     void load();
   }, [load]);
-
   useDebouncedLive((e) => {
     if (
       e.event === "notification" ||
@@ -262,7 +218,6 @@ export default function OrderDetail() {
       void load();
     }
   }, 800);
-
   const isPMOrAdmin = Boolean(
     user?.is_platform_admin ||
       user?.is_boss ||
@@ -270,17 +225,14 @@ export default function OrderDetail() {
       user?.global_role === "MANAGER" ||
       user?.specialty === "PM"
   );
-
   const isSohaviyOrAdmin = Boolean(
     user?.is_sohaviy_boshqarma ||
       user?.is_platform_admin ||
       user?.is_boss
   );
-
   const canClientReview = Boolean(
     isSohaviyOrAdmin || (item && user && item.created_by === user.id)
   );
-
   const canSubmitCompletion = Boolean(
     isPMOrAdmin &&
       (user?.is_platform_admin || user?.is_boss || item?.assigned_pm === user?.id) &&
@@ -290,13 +242,9 @@ export default function OrderDetail() {
       item.status !== "REJECTED" &&
       item.status !== "DRAFT"
   );
-
   const canEdit = false;
   const canDelete = false;
-
   const [sendingOrder, setSendingOrder] = useState(false);
-
-  // Qoralama buyurtmani yuborish
   async function handleSendDraftOrder() {
     if (!item) return;
     const ok = await confirmDialog({
@@ -306,7 +254,6 @@ export default function OrderDetail() {
       danger: false,
     });
     if (!ok) return;
-
     try {
       setSendingOrder(true);
       setActionError(null);
@@ -318,8 +265,6 @@ export default function OrderDetail() {
       setSendingOrder(false);
     }
   }
-
-  // Buyurtmani o'chirish
   async function handleDelete() {
     if (!item) return;
     const ok = await confirmDialog({
@@ -329,7 +274,6 @@ export default function OrderDetail() {
       danger: true,
     });
     if (!ok) return;
-
     try {
       setActionError(null);
       await deleteOrder(item.id);
@@ -338,8 +282,6 @@ export default function OrderDetail() {
       setActionError((err as { message?: string })?.message || tx("orders.ochirishda_xatolik"));
     }
   }
-
-  // PM ishni o'z zimmasiga olishi (Claim)
   function handleOpenClaim() {
     if (!item) return;
     setClaimDuration(item.pm_estimated_duration || "");
@@ -347,7 +289,6 @@ export default function OrderDetail() {
     setClaimNotesInput("");
     setClaimModalOpen(true);
   }
-
   function applyQuickDeadline(days: number, durationText: string) {
     const d = new Date();
     d.setDate(d.getDate() + days);
@@ -355,7 +296,6 @@ export default function OrderDetail() {
     setClaimDeadlineInput(iso);
     setClaimDuration(durationText);
   }
-
   async function handleClaimSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
@@ -379,8 +319,6 @@ export default function OrderDetail() {
       setClaimSubmitting(false);
     }
   }
-
-  // PM qarori va muddatni saqlash
   async function handleSavePM(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
@@ -401,8 +339,6 @@ export default function OrderDetail() {
       setPmSaving(false);
     }
   }
-
-  // Boshqarma ishni tasdiqlashi
   async function handleClientApprove() {
     if (!item) return;
     const ok = await confirmDialog({
@@ -420,15 +356,12 @@ export default function OrderDetail() {
       setActionError((err as { message?: string })?.message || tx("orders.tasdiqlashda_xatolik"));
     }
   }
-
-  // Boshqarma qaytarishi (modal ochish)
   function handleOpenReject() {
     setRejectReason("");
     setRejectFile(null);
     setRejectIsNewTz(false);
     setRejectModalOpen(true);
   }
-
   async function handleRejectSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
@@ -456,15 +389,12 @@ export default function OrderDetail() {
       setRejectSubmitting(false);
     }
   }
-
-  // PM tugatilgan ish hisobotini topshirish (modal ochish)
   function handleOpenSubmitCompletion() {
     setCompletionFile(null);
     setCompletionNote("");
     setCompletionError(null);
     setCompletionModalOpen(true);
   }
-
   async function handleSubmitCompletion(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
@@ -494,8 +424,6 @@ export default function OrderDetail() {
       setCompletionSubmitting(false);
     }
   }
-
-  // Yangi TZ versiya yuborish
   async function handleUploadVersionSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item || !versionFile || !versionNote.trim()) return;
@@ -517,8 +445,6 @@ export default function OrderDetail() {
       setVersionSubmitting(false);
     }
   }
-
-  // Yangi TZ versiyasini yuklashni ochish (boshqarma)
   function handleOpenUploadVersion() {
     if (item?.status === "NEW") {
       setActionError(
@@ -535,8 +461,6 @@ export default function OrderDetail() {
     }
     setVersionModal(true);
   }
-
-  // Yangi TZ versiyasini tasdiqlashni ochish (PM)
   function handleOpenApproveVersion(verNum?: number) {
     const targetVer = verNum || item?.pending_version?.version || null;
     const v1 = item?.versions?.find((v) => v.version === 1);
@@ -555,7 +479,6 @@ export default function OrderDetail() {
     setApproveNote("");
     setApproveVersionModal(true);
   }
-
   async function handleApproveVersionSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
@@ -578,14 +501,11 @@ export default function OrderDetail() {
       setApproveSubmitting(false);
     }
   }
-
-  // Yangi TZ versiyasini rad etishni ochish (PM)
   function handleOpenRejectVersion(verNum?: number) {
     setRejectVersionTarget(verNum || item?.pending_version?.version || null);
     setRejectVersionReason("");
     setRejectVersionModal(true);
   }
-
   async function handleRejectVersionSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item || !rejectVersionReason.trim()) return;
@@ -605,8 +525,6 @@ export default function OrderDetail() {
       setRejectVersionSubmitting(false);
     }
   }
-
-  // Buyurtma bo'yicha yangi vazifa yaratish handler
   function handleOpenCreateTask() {
     setTaskTitle(item?.requested_change ? `Topshiriq: ${item.system_name} - ${item.module || 'TZ ijrosi'}` : "");
     setTaskDescription(item?.requested_change || "");
@@ -616,7 +534,6 @@ export default function OrderDetail() {
     setTaskType("FEATURE");
     setTaskModalOpen(true);
   }
-
   async function handleCreateTaskSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item || !taskTitle.trim()) return;
@@ -642,7 +559,6 @@ export default function OrderDetail() {
       setTaskSubmitting(false);
     }
   }
-
   if (!id) {
     return (
       <>
@@ -663,7 +579,6 @@ export default function OrderDetail() {
       </>
     );
   }
-
   if (loading && !item) {
     return (
       <>
@@ -674,7 +589,6 @@ export default function OrderDetail() {
       </>
     );
   }
-
   if (error || !item) {
     return (
       <>
@@ -688,10 +602,8 @@ export default function OrderDetail() {
       </>
     );
   }
-
   const descText = item.requested_change || item.current_state || tx("common.tavsif_kiritilmagan");
   const isLongText = descText.length > 180;
-
   return (
     <>
       <PageHead
@@ -731,7 +643,6 @@ export default function OrderDetail() {
                 <span>{sendingOrder ? tx("common.yuborilmoqda") : tx("orders.send_order")}</span>
               </button>
             )}
-
             {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && (
               <button
                 type="button"
@@ -741,7 +652,6 @@ export default function OrderDetail() {
                 + {tx("orders.yangi_tz_versiyasi")}
               </button>
             )}
-
             {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
               <>
                 {canSubmitCompletion && (
@@ -771,7 +681,6 @@ export default function OrderDetail() {
                 </button>
               </>
             )}
-
             {canEdit && (
               <button
                 type="button"
@@ -781,7 +690,6 @@ export default function OrderDetail() {
                 {tx("common.tahrirlash")}
               </button>
             )}
-
             {canDelete && (
               <button
                 type="button"
@@ -796,7 +704,6 @@ export default function OrderDetail() {
           </div>
         }
       />
-
       <div
         className="content"
         style={{
@@ -810,8 +717,6 @@ export default function OrderDetail() {
       >
         <ErrorMsg error={actionError} />
         <OkMsg text={actionOk} />
-
-        {/* Yangi TZ fayli / versiyasi yuklanganda PM ko'rib chiqishi uchun banner (Image 1 UX) */}
         {item.pending_version && (
           <div
             style={{
@@ -849,7 +754,6 @@ export default function OrderDetail() {
                 </div>
               </div>
             </div>
-
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
               {item.pending_version.tz_file_url && (
                 <button
@@ -883,7 +787,6 @@ export default function OrderDetail() {
                   )}
                 </button>
               )}
-
               {isPMOrAdmin && (
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <button
@@ -930,7 +833,6 @@ export default function OrderDetail() {
                 </div>
               )}
             </div>
-
             {item.pending_version.change_note && (
               <div
                 style={{
@@ -948,8 +850,6 @@ export default function OrderDetail() {
             )}
           </div>
         )}
-
-        {/* Qoralama (DRAFT) holatidagi buyurtma banneri */}
         {item.status === "DRAFT" && (
           <div
             style={{
@@ -985,8 +885,6 @@ export default function OrderDetail() {
             </button>
           </div>
         )}
-
-        {/* PM Ishni o'z zimmasiga olish banneri */}
         {!item.assigned_pm && isPMOrAdmin && item.status !== "DRAFT" && (
           <div
             style={{
@@ -1013,8 +911,6 @@ export default function OrderDetail() {
             </button>
           </div>
         )}
-
-        {/* Boshqarma tasdig'i kutilayotgan holat banneri */}
         {item.status === "READY_FOR_REVIEW" && (
           <div
             style={{
@@ -1091,8 +987,6 @@ export default function OrderDetail() {
             )}
           </div>
         )}
-
-        {/* Boshqarma kamchiliklarni ko'rsatib qaytargan holat banneri */}
         {item.client_feedback_note && item.status !== "COMPLETED" && item.status !== "READY_FOR_REVIEW" && (
           <div
             style={{
@@ -1149,8 +1043,6 @@ export default function OrderDetail() {
             )}
           </div>
         )}
-
-        {/* Rad etilgan buyurtma sababi banneri */}
         {item.status === "REJECTED" && (item.pm_notes || item.client_feedback_note) && (
           <div
             style={{
@@ -1166,8 +1058,6 @@ export default function OrderDetail() {
             <span>{item.pm_notes || item.client_feedback_note}</span>
           </div>
         )}
-
-        {/* YAGONA ASOSIY KARTA (Image 1 UX) */}
         <section
           className="card padded"
           style={{
@@ -1178,7 +1068,6 @@ export default function OrderDetail() {
             boxShadow: "0 1px 3px rgba(0, 0, 0, 0.03)",
           }}
         >
-          {/* Sarlavha va Loyiha */}
           <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
             <div style={{ paddingTop: 2, color: "#3b82f6", display: "inline-flex" }}>
               <CalendarOutlineIcon size={22} color="#3b82f6" />
@@ -1233,10 +1122,7 @@ export default function OrderDetail() {
               )}
             </div>
           </div>
-
           <div style={{ height: 1, background: "var(--border-muted, #f1f5f9)", margin: "20px 0" }} />
-
-          {/* 1-Qator: 4 ta ustun (Mijoz, Mas'ul PM, Muddat, PM belgilagan muddat) */}
           <div
             style={{
               display: "grid",
@@ -1258,7 +1144,6 @@ export default function OrderDetail() {
                 </div>
               )}
             </div>
-
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
                 <UserOutlineIcon size={15} color="#64748b" />
@@ -1268,7 +1153,6 @@ export default function OrderDetail() {
                 {item.assigned_pm_name || <span style={{ color: "#94a3b8", fontWeight: 500 }}>{tx("orders.biriktirilmagan")}</span>}
               </div>
             </div>
-
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
                 <CalendarOutlineIcon size={15} color="#64748b" />
@@ -1278,7 +1162,6 @@ export default function OrderDetail() {
                 {item.due_date ? fmtDate(item.due_date) : "—"}
               </div>
             </div>
-
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
                 <ClockOutlineIcon size={15} color="#64748b" />
@@ -1289,10 +1172,7 @@ export default function OrderDetail() {
               </div>
             </div>
           </div>
-
           <div style={{ height: 1, background: "var(--border-muted, #f1f5f9)", margin: "20px 0" }} />
-
-          {/* 2-Qator: 4 ta ustun (Mas'ul dasturchi, Muhimlik turi, Vaqt, Qolgan vaqt) */}
           <div
             style={{
               display: "grid",
@@ -1309,7 +1189,6 @@ export default function OrderDetail() {
                 {item.assigned_developer_name || tx("orders.biriktirilmagan")}
               </div>
             </div>
-
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
                 <ClockOutlineIcon size={15} color="#64748b" />
@@ -1345,7 +1224,6 @@ export default function OrderDetail() {
                 </span>
               </div>
             </div>
-
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
                 <TimerOutlineIcon size={15} color="#64748b" />
@@ -1355,7 +1233,6 @@ export default function OrderDetail() {
                 {fmtDateTime(item.created_at || item.request_date)}
               </div>
             </div>
-
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
                 <HourglassOutlineIcon size={15} color="#64748b" />
@@ -1366,10 +1243,7 @@ export default function OrderDetail() {
               </div>
             </div>
           </div>
-
           <div style={{ height: 1, background: "var(--border-muted, #f1f5f9)", margin: "20px 0" }} />
-
-          {/* 1-BO'LIM: Tizimga qo'shimcha va o'zgartirish kiritish */}
           <div
             style={{
               background: "var(--surface-2, #f8fafc)",
@@ -1384,7 +1258,6 @@ export default function OrderDetail() {
                 {tx("orders.bolim_1_title", undefined, "1. Tizimga qo'shimcha va o'zgartirish kiritish")}
               </span>
             </div>
-
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4 }}>
@@ -1405,7 +1278,6 @@ export default function OrderDetail() {
                   {item.requested_change || descText}
                 </div>
               </div>
-
               {item.current_state && (
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4 }}>
@@ -1427,7 +1299,6 @@ export default function OrderDetail() {
                   </div>
                 </div>
               )}
-
               {item.reason && (
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4 }}>
@@ -1451,8 +1322,6 @@ export default function OrderDetail() {
               )}
             </div>
           </div>
-
-          {/* 2-BO'LIM: O'zgarishlar kiritishning ta'sir doirasi */}
           <div
             style={{
               background: "var(--surface-2, #f8fafc)",
@@ -1468,7 +1337,6 @@ export default function OrderDetail() {
                 {tx("orders.bolim_2_title", undefined, "2. O'zgarishlar kiritishning ta'sir doirasi")}
               </span>
             </div>
-
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
               <div
                 style={{
@@ -1485,7 +1353,6 @@ export default function OrderDetail() {
                   {item.affected_modules || item.module || "—"}
                 </div>
               </div>
-
               <div
                 style={{
                   background: "var(--surface, #ffffff)",
@@ -1509,7 +1376,6 @@ export default function OrderDetail() {
                   )}
                 </div>
               </div>
-
               <div
                 style={{
                   background: "var(--surface, #ffffff)",
@@ -1527,8 +1393,6 @@ export default function OrderDetail() {
               </div>
             </div>
           </div>
-
-          {/* 3-BO'LIM: Qo'shimcha materiallar */}
           <div
             style={{
               background: "var(--surface-2, #f8fafc)",
@@ -1544,7 +1408,6 @@ export default function OrderDetail() {
                 {tx("orders.bolim_3_title", undefined, "3. Qo'shimcha materiallar")}
               </span>
             </div>
-
             {item.additional_materials && (
               <div
                 style={{
@@ -1563,8 +1426,6 @@ export default function OrderDetail() {
               </div>
             )}
           </div>
-
-          {/* Fayllar Accordion (ochilib-yopiladigan blok) */}
           <div
             style={{
               background: "var(--surface-2, #f8fafc)",
@@ -1596,7 +1457,6 @@ export default function OrderDetail() {
                   {totalFilesCount} {tx("common.ta")}
                 </span>
               </div>
-
               <div
                 style={{
                   color: "#64748b",
@@ -1608,7 +1468,6 @@ export default function OrderDetail() {
                 <ChevronDownOutlineIcon size={16} color="#64748b" />
               </div>
             </div>
-
             {filesOpen && (
               <div
                 onClick={(e) => e.stopPropagation()}
@@ -1673,7 +1532,6 @@ export default function OrderDetail() {
                     <span>{item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}</span>
                   </button>
                 ) : null}
-
                 {item.completion_file_url && (
                   <button
                     type="button"
@@ -1698,12 +1556,9 @@ export default function OrderDetail() {
                     <span>{item.completion_file_name || "Hisobot fayli"}</span>
                   </button>
                 )}
-
               </div>
             )}
           </div>
-
-          {/* Avalgi TZ versiyalari (Tarix) Accordion (Image 1 UX) */}
           <div
             style={{
               background: "var(--surface-2, #f8fafc)",
@@ -1739,7 +1594,6 @@ export default function OrderDetail() {
                 </span>
               )}
             </div>
-
             <div
               style={{
                 color: "#64748b",
@@ -1751,8 +1605,6 @@ export default function OrderDetail() {
               <ChevronRightOutlineIcon size={16} color="#64748b" />
             </div>
           </div>
-
-          {/* Tarix ro'yxati (ochilganda) */}
           {historyOpen && (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
               {olderVersions.length === 0 ? (
@@ -1865,8 +1717,6 @@ export default function OrderDetail() {
               )}
             </div>
           )}
-
-          {/* 4-BO'LIM: O'zgarishni test qilish */}
           <div
             style={{
               background: "var(--surface-2, #f8fafc)",
@@ -1882,7 +1732,6 @@ export default function OrderDetail() {
                 {tx("orders.bolim_4_title", undefined, "4. O'zgarishni test qilish")}
               </span>
             </div>
-
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div
                 style={{
@@ -1899,7 +1748,6 @@ export default function OrderDetail() {
                   {item.test_result || tx("orders.kutilmoqda", undefined, "Kutilmoqda...")}
                 </div>
               </div>
-
               {(item.completion_note || item.client_feedback_note) && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
                   {item.completion_note && (
@@ -1916,8 +1764,6 @@ export default function OrderDetail() {
               )}
             </div>
           </div>
-
-          {/* 5-BO'LIM: Kelishish va tasdiqlash */}
           <div
             style={{
               background: "var(--surface-2, #f8fafc)",
@@ -1933,7 +1779,6 @@ export default function OrderDetail() {
                 {tx("orders.bolim_5_title", undefined, "5. Kelishish va tasdiqlash")}
               </span>
             </div>
-
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
               <div
                 style={{
@@ -1955,7 +1800,6 @@ export default function OrderDetail() {
                   </div>
                 )}
               </div>
-
               <div
                 style={{
                   background: "var(--surface, #ffffff)",
@@ -1976,7 +1820,6 @@ export default function OrderDetail() {
                   </div>
                 )}
               </div>
-
               <div
                 style={{
                   background: "var(--surface, #ffffff)",
@@ -1992,7 +1835,6 @@ export default function OrderDetail() {
                   {item.estimated_resources || item.pm_estimated_duration || "—"}
                 </div>
               </div>
-
               <div
                 style={{
                   background: "var(--surface, #ffffff)",
@@ -2009,8 +1851,6 @@ export default function OrderDetail() {
                 </div>
               </div>
             </div>
-
-            {/* Biriktirilgan topshiriqlar */}
             <div style={{ marginTop: 14 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>
                 {tx("orders.biriktirilgan_topshiriq", undefined, "Tizimdagi topshiriq")}:
@@ -2090,8 +1930,6 @@ export default function OrderDetail() {
               )}
             </div>
           </div>
-
-          {/* PM tahrir paneli (ochilganda) */}
           {pmPanelOpen && (
             <form
               onSubmit={handleSavePM}
@@ -2151,8 +1989,6 @@ export default function OrderDetail() {
           )}
         </section>
       </div>
-
-      {/* Yangi versiya yuborish modali */}
       {versionModal && (
         <div className="modal-overlay" onClick={() => setVersionModal(false)}>
           <div
@@ -2235,8 +2071,6 @@ export default function OrderDetail() {
           </div>
         </div>
       )}
-
-      {/* PM BUYURTMANI QABUL QILISH VA MUDDAT BELGILASH MODALI */}
       {claimModalOpen && item && (
         <div className="modal-overlay" onClick={() => !claimSubmitting && setClaimModalOpen(false)}>
           <div
@@ -2299,7 +2133,6 @@ export default function OrderDetail() {
                 ✕
               </button>
             </div>
-
             <form onSubmit={handleClaimSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
                 <div
@@ -2318,7 +2151,6 @@ export default function OrderDetail() {
                     {tx("orders.claim_modal_desc")}
                   </div>
                 </div>
-
                 {item.due_date && (
                   <div
                     style={{
@@ -2350,7 +2182,6 @@ export default function OrderDetail() {
                     </button>
                   </div>
                 )}
-
                 <div className="field">
                   <div className="row between middle" style={{ marginBottom: 6 }}>
                     <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0 }}>
@@ -2398,7 +2229,6 @@ export default function OrderDetail() {
                     style={{ width: "100%" }}
                   />
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_duration_label")}
@@ -2415,7 +2245,6 @@ export default function OrderDetail() {
                     {tx("orders.claim_duration_hint")}
                   </div>
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_notes_label")}
@@ -2433,7 +2262,6 @@ export default function OrderDetail() {
                   </div>
                 </div>
               </div>
-
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
@@ -2471,8 +2299,6 @@ export default function OrderDetail() {
           </div>
         </div>
       )}
-
-      {/* KAMCHILIK BILAN QAYTARISH MODALI */}
       {rejectModalOpen && item && (
         <div className="modal-overlay" onClick={() => !rejectSubmitting && setRejectModalOpen(false)}>
           <div
@@ -2516,7 +2342,6 @@ export default function OrderDetail() {
                 ✕
               </button>
             </div>
-
             <form onSubmit={handleRejectSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div
@@ -2532,7 +2357,6 @@ export default function OrderDetail() {
                 >
                   Buyurtma holati «Jarayonda»ga o'tkaziladi va loyiha menejeri ko'rsatilgan kamchiliklarni yoki ilova qilingan TZ asosida tuzatishlarni amalga oshiradi.
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.kamchilik_tavsifi")}
@@ -2546,7 +2370,6 @@ export default function OrderDetail() {
                     style={{ width: "100%", resize: "vertical" }}
                   />
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.kamchilik_hujjati_tz")}
@@ -2560,7 +2383,6 @@ export default function OrderDetail() {
                     {tx("orders.kamchilik_hujjati_izoh")}
                   </div>
                 </div>
-
                 {rejectFile && (
                   <div style={{ padding: "8px 12px", background: "var(--surface-2, #f8fafc)", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12.5, color: "var(--text)" }}>
@@ -2574,7 +2396,6 @@ export default function OrderDetail() {
                   </div>
                 )}
               </div>
-
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
@@ -2596,8 +2417,6 @@ export default function OrderDetail() {
           </div>
         </div>
       )}
-
-      {/* PM TUGATILGAN ISH HISOBOTINI TOPSHIRISH MODALI */}
       {completionModalOpen && item && (
         <div className="modal-overlay" onClick={() => !completionSubmitting && setCompletionModalOpen(false)}>
           <div
@@ -2641,11 +2460,9 @@ export default function OrderDetail() {
                 ✕
               </button>
             </div>
-
             <form onSubmit={handleSubmitCompletion}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
                 {completionError && <ErrorMsg error={completionError} />}
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     Tugatilgan ish hujjati / Skrinshot (fayl yoki rasm)
@@ -2659,7 +2476,6 @@ export default function OrderDetail() {
                     Word (.docx, .doc), PDF, Excel, Rasmlar (PNG, JPG, WEBP). Maksimal: 20 MB
                   </div>
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     Bajarilgan ish bo'yicha hisobot izohi
@@ -2674,7 +2490,6 @@ export default function OrderDetail() {
                   />
                 </div>
               </div>
-
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
@@ -2696,8 +2511,6 @@ export default function OrderDetail() {
           </div>
         </div>
       )}
-
-      {/* BUYURTMA BO'YICHA VAZIFA YARATISH MODALI */}
       {taskModalOpen && item && (
         <div className="modal-overlay" onClick={() => !taskSubmitting && setTaskModalOpen(false)}>
           <div
@@ -2744,7 +2557,6 @@ export default function OrderDetail() {
                 ✕
               </button>
             </div>
-
             <form onSubmit={handleCreateTaskSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div className="field">
@@ -2761,7 +2573,6 @@ export default function OrderDetail() {
                     style={{ width: "100%" }}
                   />
                 </div>
-
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div className="field">
                     <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
@@ -2781,7 +2592,6 @@ export default function OrderDetail() {
                       ))}
                     </select>
                   </div>
-
                   <div className="field">
                     <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                       {tx("orders.task_priority_label")}
@@ -2799,7 +2609,6 @@ export default function OrderDetail() {
                     </select>
                   </div>
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.task_due_date_label")}
@@ -2813,7 +2622,6 @@ export default function OrderDetail() {
                     style={{ width: "100%" }}
                   />
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.task_desc_label")}
@@ -2828,7 +2636,6 @@ export default function OrderDetail() {
                   />
                 </div>
               </div>
-
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
@@ -2851,8 +2658,6 @@ export default function OrderDetail() {
           </div>
         </div>
       )}
-
-      {/* YANGI TZ VERSIYASINI TASDIQLASH MODALI (PM) */}
       {approveVersionModal && item && (
         <div className="modal-overlay" onClick={() => !approveSubmitting && setApproveVersionModal(false)}>
           <div
@@ -2897,7 +2702,6 @@ export default function OrderDetail() {
                 ✕
               </button>
             </div>
-
             <form onSubmit={handleApproveVersionSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -2914,7 +2718,6 @@ export default function OrderDetail() {
                       style={{ width: "100%" }}
                     />
                   </div>
-
                   <div className="field">
                     <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                       Qanchada tugashi (baho)
@@ -2929,8 +2732,6 @@ export default function OrderDetail() {
                     />
                   </div>
                 </div>
-
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     PM xulosasi va ko'rsatmasi
@@ -2945,7 +2746,6 @@ export default function OrderDetail() {
                   />
                 </div>
               </div>
-
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
@@ -2968,8 +2768,6 @@ export default function OrderDetail() {
           </div>
         </div>
       )}
-
-      {/* YANGI TZ VERSIYASINI RAD ETISH MODALI (PM) */}
       {rejectVersionModal && item && (
         <div className="modal-overlay" onClick={() => !rejectVersionSubmitting && setRejectVersionModal(false)}>
           <div
@@ -3014,7 +2812,6 @@ export default function OrderDetail() {
                 ✕
               </button>
             </div>
-
             <form onSubmit={handleRejectVersionSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div
@@ -3030,7 +2827,6 @@ export default function OrderDetail() {
                 >
                   Yangi TZ rad etiladi va amaldagi avvalgi TZ o'z kuchida qoladi.
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     Rad etish sababi <span style={{ color: "var(--danger)" }}>*</span>
@@ -3046,7 +2842,6 @@ export default function OrderDetail() {
                   />
                 </div>
               </div>
-
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
@@ -3069,7 +2864,6 @@ export default function OrderDetail() {
           </div>
         </div>
       )}
-
       {previewFile && (
         <FilePreviewModal
           file={previewFile}

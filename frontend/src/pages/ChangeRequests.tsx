@@ -30,16 +30,12 @@ import {
   fmtDateTime,
   timeAgo,
 } from "@/components/ui";
-
 import { tx } from "@/i18n";
-
 const PER_PAGE = 15;
-
 export { ORDER_TYPE_CONFIG, OrderTypeBadge, ORDER_STATUS_CONFIG, OrderStatusBadge } from "./orders/OrderBadges";
 export { OrderProgressStepper } from "./orders/OrderProgressStepper";
 import { OrderStatusBadge } from "./orders/OrderBadges";
 import { KpiCardSkeleton, TableRowSkeleton } from "./orders/OrderSkeletons";
-
 export default function ChangeRequests() {
   const { user, meta } = useAuth();
   const go = useGo();
@@ -53,8 +49,6 @@ export default function ChangeRequests() {
   const [deadlineFilter, setDeadlineFilter] = useState<string>("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
   const [activeActionMenuId, setActiveActionMenuId] = useState<number | null>(null);
-
-  // Search debounce (350ms)
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -62,18 +56,13 @@ export default function ChangeRequests() {
     }, 350);
     return () => clearTimeout(timer);
   }, [search]);
-
   useEffect(() => {
     const handleClickOutside = () => setActiveActionMenuId(null);
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
-
-  // Modal oynasi (faqat batafsil ko'rish va PM qarori uchun)
   const [viewingItem, setViewingItem] = useState<ChangeRequestItem | null>(null);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
-
-  // PM qarorini belgilash holatlari (view modal ichida)
   const [pmDecisionForm, setPmDecisionForm] = useState<{
     status: ChangeRequestItem["status"];
     pm_estimated_duration: string;
@@ -90,8 +79,6 @@ export default function ChangeRequests() {
   const [pmSaveLoading, setPmSaveLoading] = useState(false);
   const [pmSaveError, setPmSaveError] = useState<string | null>(null);
   const [pmSaveSuccess, setPmSaveSuccess] = useState<string | null>(null);
-
-  // Ma'lumotlarni olish (barcha filterlar server-side ishlaydi)
   const { data, error, loading, reload } = useFetch<{ count: number; results: ChangeRequestItem[] } | ChangeRequestItem[]>(
     "/orders/",
     {
@@ -106,10 +93,7 @@ export default function ChangeRequests() {
       department: departmentFilter || undefined,
     }
   );
-
   const { data: statsData, loading: statsLoading } = useFetch<OrderStats>("/orders/stats/");
-
-  // Real-time yangilanish: yangi buyurtma kelganda yoki o'zgarganda darrov yangilanadi
   useDebouncedLive((e) => {
     if (
       e.event === "notification" ||
@@ -120,15 +104,12 @@ export default function ChangeRequests() {
       reload();
     }
   }, 800);
-
-  // Nisbiy vaqt (timeAgo) real-time har 30 soniyada o'zini yangilab turadi
   const [, setTick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => setTick((t) => t + 1), 30000);
     return () => clearInterval(timer);
   }, []);
   const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>("/users/", { is_active: true });
-
   const items: ChangeRequestItem[] = useMemo(() => (data ? listOf<ChangeRequestItem>(data) : []), [data]);
   const displayItems = items;
   const usersList: UserBrief[] = useMemo(() => (usersData ? listOf<UserBrief>(usersData) : []), [usersData]);
@@ -136,11 +117,8 @@ export default function ChangeRequests() {
     () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY" && u.global_role !== "ADMIN" && u.global_role !== "BOSS" && !u.is_platform_admin && !u.is_boss),
     [usersList]
   );
-
   const total = totalOf(data);
   const pages = pagesOf(data, PER_PAGE);
-
-  // Foydalanuvchi roli tekshiruvi
   const isPMOrAdmin = Boolean(
     user?.is_platform_admin ||
     user?.is_boss ||
@@ -148,7 +126,6 @@ export default function ChangeRequests() {
     user?.global_role === "MANAGER" ||
     user?.specialty === "PM"
   );
-
   const canAccess = Boolean(
     user?.can_access_orders ||
     user?.is_sohaviy_boshqarma ||
@@ -156,39 +133,29 @@ export default function ChangeRequests() {
     user?.is_manager ||
     user?.is_boss
   );
-
   const isSohaviyOrAdmin = Boolean(
     user?.is_sohaviy_boshqarma ||
     user?.is_platform_admin ||
     user?.is_boss
   );
-
-  // Tugatilgan ish hujjati topshirish (PM uchun)
   const [completionModalItem, setCompletionModalItem] = useState<ChangeRequestItem | null>(null);
   const [completionFile, setCompletionFile] = useState<File | null>(null);
   const [completionNote, setCompletionNote] = useState("");
   const [completionSubmitting, setCompletionSubmitting] = useState(false);
   const [completionError, setCompletionError] = useState<string | null>(null);
-
-  // Boshqarma kamchilik/xatolik bilan qaytarish modali
   const [rejectModalItem, setRejectModalItem] = useState<ChangeRequestItem | null>(null);
   const [rejectFeedbackNote, setRejectFeedbackNote] = useState("");
   const [rejectFeedbackFile, setRejectFeedbackFile] = useState<File | null>(null);
   const [rejectIsNewTz, setRejectIsNewTz] = useState(false);
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
   const [rejectError, setRejectError] = useState<string | null>(null);
-
-  // Boshqarma tasdiqlash holati
   const [approvingId, setApprovingId] = useState<number | null>(null);
-
-  // Yangi versiya yuborish (Boshqarma uchun)
   const [uploadVersionModalItem, setUploadVersionModalItem] = useState<ChangeRequestItem | null>(null);
   const [versionFile, setVersionFile] = useState<File | null>(null);
   const [versionChangeNote, setVersionChangeNote] = useState("");
   const [versionRequestedChange, setVersionRequestedChange] = useState("");
   const [versionSubmitting, setVersionSubmitting] = useState(false);
   const [versionError, setVersionError] = useState<string | null>(null);
-
   const handleOpenUploadVersion = (item: ChangeRequestItem) => {
     setUploadVersionModalItem(item);
     setVersionFile(null);
@@ -196,7 +163,6 @@ export default function ChangeRequests() {
     setVersionRequestedChange(item.requested_change || "");
     setVersionError(null);
   };
-
   const handleUploadVersionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadVersionModalItem) return;
@@ -208,7 +174,6 @@ export default function ChangeRequests() {
       setVersionError(tx("orders.err_enter_change_note"));
       return;
     }
-
     setVersionSubmitting(true);
     setVersionError(null);
     try {
@@ -232,8 +197,6 @@ export default function ChangeRequests() {
       setVersionSubmitting(false);
     }
   };
-
-  // PM yangi versiyani tasdiqlashi (Approve version)
   const [approveVersionModalItem, setApproveVersionModalItem] = useState<ChangeRequestItem | null>(null);
   const [approveVersionTarget, setApproveVersionTarget] = useState<number | null>(null);
   const [approveDecisionNote, setApproveDecisionNote] = useState("");
@@ -242,7 +205,6 @@ export default function ChangeRequests() {
   const [approveDeveloper, setApproveDeveloper] = useState<number | null>(null);
   const [approveSubmitting, setApproveSubmitting] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
-
   const handleOpenApproveVersion = (item: ChangeRequestItem, verNum?: number) => {
     setApproveVersionModalItem(item);
     setApproveVersionTarget(verNum || item.pending_version?.version || null);
@@ -252,7 +214,6 @@ export default function ChangeRequests() {
     setApproveDeveloper(item.assigned_developer || null);
     setApproveError(null);
   };
-
   const handleApproveVersionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!approveVersionModalItem) return;
@@ -278,21 +239,17 @@ export default function ChangeRequests() {
       setApproveSubmitting(false);
     }
   };
-
-  // PM yangi versiyani rad etishi (Reject version)
   const [rejectVersionModalItem, setRejectVersionModalItem] = useState<ChangeRequestItem | null>(null);
   const [rejectVersionTarget, setRejectVersionTarget] = useState<number | null>(null);
   const [rejectVersionReason, setRejectVersionReason] = useState("");
   const [rejectVersionSubmitting, setRejectVersionSubmitting] = useState(false);
   const [rejectVersionError, setRejectVersionError] = useState<string | null>(null);
-
   const handleOpenRejectVersion = (item: ChangeRequestItem, verNum?: number) => {
     setRejectVersionModalItem(item);
     setRejectVersionTarget(verNum || item.pending_version?.version || null);
     setRejectVersionReason("");
     setRejectVersionError(null);
   };
-
   const handleRejectVersionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rejectVersionModalItem) return;
@@ -319,22 +276,18 @@ export default function ChangeRequests() {
       setRejectVersionSubmitting(false);
     }
   };
-
-  // PM buyurtmani o'z zimmasiga olishi (Claim)
   const [claimModalItem, setClaimModalItem] = useState<ChangeRequestItem | null>(null);
   const [claimDuration, setClaimDuration] = useState("");
   const [claimDeadline, setClaimDeadline] = useState("");
   const [claimNotes, setClaimNotes] = useState("");
   const [claimSubmitting, setClaimSubmitting] = useState(false);
   const claimingId = claimSubmitting && claimModalItem ? claimModalItem.id : null;
-
   const handleOpenClaim = (item: ChangeRequestItem) => {
     setClaimModalItem(item);
     setClaimDuration(item.pm_estimated_duration || "");
     setClaimDeadline(item.pm_deadline || item.due_date || "");
     setClaimNotes("");
   };
-
   const applyQuickDeadline = (days: number, durationText: string) => {
     const d = new Date();
     d.setDate(d.getDate() + days);
@@ -342,7 +295,6 @@ export default function ChangeRequests() {
     setClaimDeadline(iso);
     setClaimDuration(durationText);
   };
-
   const handleClaimSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!claimModalItem) return;
@@ -364,19 +316,14 @@ export default function ChangeRequests() {
       setClaimSubmitting(false);
     }
   };
-
   const handleClaimOrder = (item: ChangeRequestItem) => {
     handleOpenClaim(item);
   };
-
-  // Batafsil ko'rishni ochish — yangi sodda tafsilotlar sahifasiga o'tadi
   const handleOpenView = (item: ChangeRequestItem) => {
     go(toOrder(item.id));
   };
-
   const canEditOrder = (_item: ChangeRequestItem) => false;
   const canDeleteOrder = (_item: ChangeRequestItem) => false;
-
   const handleSendOrder = async (item: ChangeRequestItem) => {
     if (!window.confirm(`${tx("orders.send_order_confirm_desc")} ${item.request_no}`)) {
       return;
@@ -388,7 +335,6 @@ export default function ChangeRequests() {
       alert((err as Error)?.message || tx("orders.err_send_order"));
     }
   };
-
   const handleDeleteOrder = async (item: ChangeRequestItem) => {
     if (!window.confirm(`${tx("orders.delete_order_confirm")} ${item.request_no}`)) {
       return;
@@ -400,21 +346,16 @@ export default function ChangeRequests() {
       alert((err as Error)?.message || tx("orders.err_delete_order"));
     }
   };
-
-  // PM qarorini saqlash
   const handleSavePMDecision = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!viewingItem) return;
-
     if (pmDecisionForm.status === "REJECTED" && !pmDecisionForm.pm_notes.trim()) {
       setPmSaveError(tx("orders.rad_etish_sababi_majburiy"));
       return;
     }
-
     setPmSaveLoading(true);
     setPmSaveError(null);
     setPmSaveSuccess(null);
-
     try {
       const updated = await api.post<ChangeRequestItem>(
         `/orders/${viewingItem.id}/set-pm-decision/`,
@@ -430,14 +371,11 @@ export default function ChangeRequests() {
       setPmSaveLoading(false);
     }
   };
-
-  // Tugatilgan ish hujjati topshirish (PM)
   const handleSubmitCompletion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!completionModalItem) return;
     setCompletionSubmitting(true);
     setCompletionError(null);
-
     try {
       const formData = new FormData();
       if (completionFile) {
@@ -446,7 +384,6 @@ export default function ChangeRequests() {
       if (completionNote.trim()) {
         formData.append("completion_note", completionNote.trim());
       }
-
       const updated = await api.post<ChangeRequestItem>(
         `/orders/${completionModalItem.id}/submit-completion/`,
         formData
@@ -465,8 +402,6 @@ export default function ChangeRequests() {
       setCompletionSubmitting(false);
     }
   };
-
-  // Boshqarma tasdiqlashi va buyurtmani yakunlash
   const handleClientApprove = async (item: ChangeRequestItem) => {
     if (
       !window.confirm(
@@ -491,8 +426,6 @@ export default function ChangeRequests() {
       setApprovingId(null);
     }
   };
-
-  // Boshqarma kamchilik/xatolik bilan qaytarishi
   const handleClientReject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rejectModalItem) return;
@@ -532,7 +465,6 @@ export default function ChangeRequests() {
       setRejectSubmitting(false);
     }
   };
-
   if (user && !canAccess) {
     return (
       <div className="card" style={{ maxWidth: 640, margin: "60px auto", padding: 36, textAlign: "center" }}>
@@ -547,7 +479,6 @@ export default function ChangeRequests() {
       </div>
     );
   }
-
   const isPM = Boolean(
     (user?.is_manager || user?.global_role === "MANAGER" || user?.specialty === "PM") &&
     !user?.is_sohaviy_boshqarma &&
@@ -555,7 +486,6 @@ export default function ChangeRequests() {
     !user?.is_boss
   );
   const canCreateOrder = !isPM;
-
   return (
     <>
       <PageHead
@@ -588,9 +518,7 @@ export default function ChangeRequests() {
           ) : undefined
         }
       />
-
       <div className="content">
-        {/* Yuqori ko'rsatkichlar kartalari (5 ta KPI kartochkasi - UX dizayn asosida) */}
         <div
           style={{
             display: "grid",
@@ -603,7 +531,6 @@ export default function ChangeRequests() {
             Array.from({ length: 5 }).map((_, i) => <KpiCardSkeleton key={i} />)
           ) : (
             <>
-              {/* 1. Jami so'rovlar */}
               <div
                 onClick={() => {
                   setStatusFilter("");
@@ -652,8 +579,6 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               </div>
-
-              {/* 2. Yangi */}
               <div
                 onClick={() => {
                   setStatusFilter("NEW");
@@ -701,8 +626,6 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               </div>
-
-              {/* 3. Jarayonda */}
               <div
                 onClick={() => {
                   setStatusFilter("IN_PROGRESS");
@@ -748,8 +671,6 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               </div>
-
-              {/* 4. Tugallangan */}
               <div
                 onClick={() => {
                   setStatusFilter("COMPLETED");
@@ -795,8 +716,6 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               </div>
-
-              {/* 5. Bekor qilingan */}
               <div
                 onClick={() => {
                   setStatusFilter("REJECTED");
@@ -846,8 +765,6 @@ export default function ChangeRequests() {
             </>
           )}
         </div>
-
-        {/* Qidiruv va filtrlar paneli */}
         <div
           style={{
             background: "var(--surface)",
@@ -862,7 +779,6 @@ export default function ChangeRequests() {
             boxShadow: "var(--shadow)",
           }}
         >
-          {/* Qidiruv maydoni */}
           <div style={{ position: "relative", flex: 1.5, minWidth: 260 }}>
             <div
               style={{
@@ -923,8 +839,6 @@ export default function ChangeRequests() {
               </button>
             )}
           </div>
-
-          {/* Davr filtri (Barcha davrlar, Shu oy, O'tgan oy, 6 oylik, 1 yillik) */}
           <div style={{ position: "relative", minWidth: 160 }}>
             <select
               value={periodFilter}
@@ -969,8 +883,6 @@ export default function ChangeRequests() {
               </svg>
             </span>
           </div>
-
-          {/* Barcha holatlar (Backend meta.order_status dan dinamik) */}
           <div style={{ position: "relative", minWidth: 160 }}>
             <select
               value={statusFilter}
@@ -1016,8 +928,6 @@ export default function ChangeRequests() {
               </svg>
             </span>
           </div>
-
-          {/* Talabnoma turi (Backend meta.order_type dan dinamik) */}
           {Boolean(meta?.order_type && meta.order_type.length > 0) && (
             <div style={{ position: "relative", minWidth: 160 }}>
               <select
@@ -1065,8 +975,6 @@ export default function ChangeRequests() {
               </span>
             </div>
           )}
-
-          {/* Muhimlik darajasi (Backend meta.order_priority dan dinamik) */}
           {Boolean(meta?.order_priority && meta.order_priority.length > 0) && (
             <div style={{ position: "relative", minWidth: 150 }}>
               <select
@@ -1114,8 +1022,6 @@ export default function ChangeRequests() {
               </span>
             </div>
           )}
-
-          {/* Boshqarma filtri (Admin va PM lar uchun meta.departments dan dinamik) */}
           {Boolean(isPMOrAdmin && meta?.departments && meta.departments.length > 0) && (
             <div style={{ position: "relative", minWidth: 180 }}>
               <select
@@ -1163,8 +1069,6 @@ export default function ChangeRequests() {
               </span>
             </div>
           )}
-
-          {/* Filtrlarni tozalash tugmasi */}
           <button
             type="button"
             className="btn btn-ghost"
@@ -1206,7 +1110,6 @@ export default function ChangeRequests() {
             </svg>
           </button>
         </div>
-
         {error && (
           <div
             style={{
@@ -1251,8 +1154,6 @@ export default function ChangeRequests() {
             </button>
           </div>
         )}
-
-        {/* Asosiy jadval (8 ta ustun - UX dizayn asosida) */}
         {loading || displayItems.length > 0 ? (
           <div
             style={{
@@ -1381,7 +1282,6 @@ export default function ChangeRequests() {
                           >
                             •••
                           </button>
-
                           {activeActionMenuId === item.id && (
                             <div
                               style={{
@@ -1411,7 +1311,6 @@ export default function ChangeRequests() {
                               >
                                 {tx("orders.korish_va_malumot")}
                               </button>
-
                               {!item.assigned_pm && isPMOrAdmin && (
                                 <button
                                   className="btn btn-ghost btn-sm"
@@ -1431,7 +1330,6 @@ export default function ChangeRequests() {
                                   📌 {claimingId === item.id ? tx("orders.claim_submitting") : tx("orders.ishni_qabul_qilish")}
                                 </button>
                               )}
-
                               {item.status === "READY_FOR_REVIEW" && (isSohaviyOrAdmin || (user && item.created_by === user.id)) && (
                                 <>
                                   <button
@@ -1458,7 +1356,6 @@ export default function ChangeRequests() {
                                   </button>
                                 </>
                               )}
-
                               {isPMOrAdmin &&
                                 (user?.is_platform_admin || user?.is_boss || item.assigned_pm === user?.id) &&
                                 item.status !== "COMPLETED" &&
@@ -1478,9 +1375,6 @@ export default function ChangeRequests() {
                                     {tx("orders.hisobot_topshirish")}
                                   </button>
                                 )}
-
-
-
                               {isPMOrAdmin && item.has_pending_version && (user?.is_platform_admin || user?.is_boss || !item.assigned_pm || item.assigned_pm === user?.id) && (
                                 <>
                                   <button
@@ -1505,7 +1399,6 @@ export default function ChangeRequests() {
                                   </button>
                                 </>
                               )}
-
                               <button
                                 className="btn btn-ghost btn-sm"
                                 style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5 }}
@@ -1516,7 +1409,6 @@ export default function ChangeRequests() {
                               >
                                 🕒 {tx("orders.tarix", undefined, "Tarix (Word fayllar)")}
                               </button>
-
                               {item.status === "DRAFT" && (
                                 <button
                                   className="btn btn-ghost btn-sm"
@@ -1529,7 +1421,6 @@ export default function ChangeRequests() {
                                   {tx("orders.korib_chiqish_yuborish")}
                                 </button>
                               )}
-
                               {canEditOrder(item) && (
                                 <button
                                   className="btn btn-ghost btn-sm"
@@ -1542,7 +1433,6 @@ export default function ChangeRequests() {
                                   {`✏️ ${tx("common.tahrirlash")}`}
                                 </button>
                               )}
-
                               {item.status === "DRAFT" && (
                                 <button
                                   className="btn btn-ghost btn-sm"
@@ -1555,7 +1445,6 @@ export default function ChangeRequests() {
                                   🚀 {tx("common.yuborish")}
                                 </button>
                               )}
-
                               {canDeleteOrder(item) && (
                                 <button
                                   className="btn btn-ghost btn-sm"
@@ -1577,8 +1466,6 @@ export default function ChangeRequests() {
                 </tbody>
               </table>
             </div>
-
-            {/* Jadval ostidagi footer / sahifalash (UX dizayn asosida) */}
             {!loading && (
               <div
                 style={{
@@ -1595,7 +1482,6 @@ export default function ChangeRequests() {
                 <div style={{ fontSize: 13, color: "#64748b" }}>
                   {tx("orders.jami_ta_buyurtma", { n: total })}
                 </div>
-
                 {pages > 1 && (
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <button
@@ -1621,7 +1507,6 @@ export default function ChangeRequests() {
                         <polyline points="15 18 9 12 15 6" />
                       </svg>
                     </button>
-
                     {Array.from({ length: Math.max(1, pages) }, (_, i) => i + 1).map((p) => (
                       <button
                         key={p}
@@ -1645,7 +1530,6 @@ export default function ChangeRequests() {
                         {p}
                       </button>
                     ))}
-
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
@@ -1741,8 +1625,6 @@ export default function ChangeRequests() {
           </div>
         )}
       </div>
-
-      {/* PM BUYURTMANI QABUL QILISH VA MUDDAT BELGILASH MODALI */}
       {claimModalItem && (
         <div className="modal-overlay" onClick={() => !claimSubmitting && setClaimModalItem(null)}>
           <div
@@ -1805,7 +1687,6 @@ export default function ChangeRequests() {
                 ✕
               </button>
             </div>
-
             <form onSubmit={handleClaimSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
                 <div
@@ -1824,7 +1705,6 @@ export default function ChangeRequests() {
                     {tx("orders.claim_modal_desc")}
                   </div>
                 </div>
-
                 {claimModalItem.due_date && (
                   <div
                     style={{
@@ -1856,7 +1736,6 @@ export default function ChangeRequests() {
                     </button>
                   </div>
                 )}
-
                 <div className="field">
                   <div className="row between middle" style={{ marginBottom: 6 }}>
                     <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0 }}>
@@ -1904,7 +1783,6 @@ export default function ChangeRequests() {
                     style={{ width: "100%" }}
                   />
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_duration_label")}
@@ -1921,7 +1799,6 @@ export default function ChangeRequests() {
                     {tx("orders.claim_duration_hint")}
                   </div>
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_notes_label")}
@@ -1939,7 +1816,6 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               </div>
-
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
                 <button
                   type="button"
@@ -1977,8 +1853,6 @@ export default function ChangeRequests() {
           </div>
         </div>
       )}
-
-      {/* 1. BATAFSIL KO'RISH MODAL (Буюртма.docx blankasi, Loyiha ma'lumoti va PM Paneli) */}
       {viewingItem && (
         <div className="modal-overlay" onClick={() => setViewingItem(null)}>
           <div
@@ -2018,7 +1892,6 @@ export default function ChangeRequests() {
                     📤 {tx("orders.upload_new_version")}
                   </button>
                 )}
-
                 {viewingItem.tz_file_url && (
                   <button
                     type="button"
@@ -2051,9 +1924,7 @@ export default function ChangeRequests() {
                 </button>
               </div>
             </div>
-
             <div className="modal-body" style={{ padding: 20 }}>
-              {/* Yangi TZ versiyasi tasdiqlash uchun kutayotganligi xabarnomasi */}
               {viewingItem.has_pending_version && viewingItem.pending_version && (
                 <div
                   style={{
@@ -2077,7 +1948,6 @@ export default function ChangeRequests() {
                           </div>
                         </div>
                       </div>
-
                       <div style={{ marginTop: 10, background: "#fef3c7", padding: "8px 12px", borderRadius: 6, fontSize: 12.5, color: "#78350f" }}>
                         <div><strong>{tx("orders.ozgarishlar_tavsifi")}</strong> {viewingItem.pending_version.change_note}</div>
                         {viewingItem.pending_version.requested_change && (
@@ -2088,7 +1958,6 @@ export default function ChangeRequests() {
                         </div>
                       </div>
                     </div>
-
                     <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
                       {viewingItem.pending_version.tz_file_url && (
                         <button
@@ -2105,7 +1974,6 @@ export default function ChangeRequests() {
                           <span>📄</span> {tx("orders.yangi_tz_fayli_btn")} (v{viewingItem.pending_version.version})
                         </button>
                       )}
-
                       {isPMOrAdmin && (user?.is_platform_admin || user?.is_boss || !viewingItem.assigned_pm || viewingItem.assigned_pm === user?.id) && (
                         <>
                           <button
@@ -2128,8 +1996,6 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               )}
-
-              {/* PM biriktirilganlik holati banneri */}
               {!viewingItem.assigned_pm ? (
                 <div
                   style={{
@@ -2212,9 +2078,6 @@ export default function ChangeRequests() {
                   <span>{tx("orders.masul_pm_label")} {viewingItem.assigned_pm_name || user?.full_name || tx("orders.siz")}</span>
                 </div>
               )}
-
-
-              {/* PM tomonidan rad etilgan (atkaz qilingan) xabarnoma */}
               {viewingItem.status === "REJECTED" && (
                 <div
                   style={{
@@ -2247,8 +2110,6 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               )}
-
-              {/* Boshqarma uchun tahrirlash va o'chirish taqiqlanganligi haqida ma'lumot */}
               {isSohaviyOrAdmin && !user?.is_platform_admin && !user?.is_boss && (viewingItem.status !== "NEW" || viewingItem.assigned_pm) && (
                 <div
                   style={{
@@ -2268,8 +2129,6 @@ export default function ChangeRequests() {
                   <span>{tx("orders.pm_qabul_qilgan_tahrirlab_bolmaydi")}</span>
                 </div>
               )}
-
-              {/* Boshqarma tasdig'i kutilayotgan holat xabarnomasi */}
               {viewingItem.status === "READY_FOR_REVIEW" && (
                 <div
                   style={{
@@ -2315,8 +2174,6 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               )}
-
-              {/* Boshqarma tomonidan bildirilgan kamchilik / xatolik izohi */}
               {viewingItem.client_feedback_note && viewingItem.status !== "COMPLETED" && (
                 <div
                   style={{
@@ -2354,8 +2211,6 @@ export default function ChangeRequests() {
                   )}
                 </div>
               )}
-
-              {/* PM tomonidan yuklangan bajarilgan ish hujjati / hisoboti */}
               {(viewingItem.completion_file_url || viewingItem.completion_note) && (
                 <div
                   style={{
@@ -2410,7 +2265,6 @@ export default function ChangeRequests() {
                       </button>
                     )}
                   </div>
-
                   {viewingItem.completion_note && (
                     <div
                       style={{
@@ -2425,8 +2279,6 @@ export default function ChangeRequests() {
                       <strong>{tx("orders.pm_hisobot_izohi")}:</strong> {viewingItem.completion_note}
                     </div>
                   )}
-
-
                   {viewingItem.client_approved_at && (
                     <div
                       style={{
@@ -2446,8 +2298,6 @@ export default function ChangeRequests() {
                   )}
                 </div>
               )}
-
-              {/* Asosiy ma'lumotlar to'ri */}
               <div
                 style={{
                   display: "grid",
@@ -2526,8 +2376,6 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               </div>
-
-              {/* Talab qilinayotgan o'zgartirish (Tavsif) */}
               <div
                 style={{
                   background: "var(--surface, #f8fafc)",
@@ -2549,8 +2397,6 @@ export default function ChangeRequests() {
                   </div>
                 )}
               </div>
-
-              {/* Biriktirilgan TZ fayli */}
               <div
                 style={{
                   background: "#f0fdf4",
@@ -2603,8 +2449,6 @@ export default function ChangeRequests() {
                   )}
                 </div>
               </div>
-
-              {/* Versiyalar tarixi (agar 1 tadan ortiq bo'lsa) */}
               {viewingItem.versions && viewingItem.versions.length > 1 && (
                 <div
                   style={{
@@ -2657,8 +2501,6 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               )}
-
-              {/* H. PM MAXSUS BOSHQARUV PANELI (PM O'ZI VAQT VA MUDDATNI BELGILAYDI) */}
               {isPMOrAdmin && (
                 viewingItem.assigned_pm && viewingItem.assigned_pm !== user?.id && !user?.is_platform_admin && !user?.is_boss ? (
                   <div
@@ -2728,7 +2570,6 @@ export default function ChangeRequests() {
                       {tx("orders.pm_paneli_sarlavha")}
                     </strong>
                   </div>
-
                   {pmSaveSuccess && (
                     <div
                       style={{
@@ -2745,7 +2586,6 @@ export default function ChangeRequests() {
                     </div>
                   )}
                   {pmSaveError && <ErrorMsg error={pmSaveError} />}
-
                   <form onSubmit={handleSavePMDecision}>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 12 }}>
                       <div className="field">
@@ -2817,7 +2657,6 @@ export default function ChangeRequests() {
                         />
                       </div>
                     </div>
-
                     <div className="field" style={{ marginBottom: 12 }}>
                       <label style={{ fontWeight: 600, fontSize: 12, color: pmDecisionForm.status === "REJECTED" ? "#dc2626" : undefined }}>
                         {pmDecisionForm.status === "REJECTED"
@@ -2845,7 +2684,6 @@ export default function ChangeRequests() {
                         }
                       />
                     </div>
-
                     <div className="row end">
                       <button
                         type="submit"
@@ -2855,8 +2693,6 @@ export default function ChangeRequests() {
                         {pmSaveLoading ? tx("common.saqlanmoqda") : tx("orders.pm_qarorini_saqlash")}
                       </button>
                     </div>
-
-                    {/* PM uchun ishni hisobot bilan topshirish tugmasi */}
                     {viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && (
                       <div
                         style={{
@@ -2892,10 +2728,8 @@ export default function ChangeRequests() {
                 )
               )}
             </div>
-
             <div className="modal-footer row between middle" style={{ padding: "12px 20px" }}>
               <div className="row middle" style={{ gap: 8 }}>
-
               </div>
               <button className="btn btn-ghost" onClick={() => setViewingItem(null)}>
                 {tx("common.yopish")}
@@ -2904,8 +2738,6 @@ export default function ChangeRequests() {
           </div>
         </div>
       )}
-
-      {/* 2. PM UCHUN TUGATILGAN ISH HUJJATINI TOPSHIRISH MODALI */}
       {completionModalItem && (
         <div className="modal-overlay" onClick={() => setCompletionModalItem(null)}>
           <div
@@ -2922,15 +2754,12 @@ export default function ChangeRequests() {
                 ✕
               </button>
             </div>
-
             <form onSubmit={handleSubmitCompletion}>
               <div className="modal-body" style={{ padding: 20 }}>
                 <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
                   {tx("orders.buyurtma_raqami")}: <strong>{completionModalItem.request_no}</strong> ({completionModalItem.system_name})
                 </div>
-
                 {completionError && <ErrorMsg error={completionError} />}
-
                 <div className="field" style={{ marginBottom: 14 }}>
                   <label style={{ fontWeight: 600, fontSize: 13 }}>
                     {tx("orders.tugatilgan_ish_hujjati_label")}
@@ -2944,7 +2773,6 @@ export default function ChangeRequests() {
                     {tx("orders.fayl_format_izohi")}
                   </div>
                 </div>
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 13 }}>
                     {tx("orders.hisobot_izohi_label")}
@@ -2957,7 +2785,6 @@ export default function ChangeRequests() {
                   />
                 </div>
               </div>
-
               <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
                 <button
                   type="button"
@@ -2979,8 +2806,6 @@ export default function ChangeRequests() {
           </div>
         </div>
       )}
-
-      {/* 3. BOSHQARMA UCHUN KAMCHILIK / XATOLIK BILAN QAYTARISH MODALI */}
       {rejectModalItem && (
         <div className="modal-overlay" onClick={() => setRejectModalItem(null)}>
           <div
@@ -2997,13 +2822,11 @@ export default function ChangeRequests() {
                 ✕
               </button>
             </div>
-
             <form onSubmit={handleClientReject}>
               <div className="modal-body" style={{ padding: 20 }}>
                 <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
                   {tx("orders.buyurtma_raqami")}: <strong>{rejectModalItem.request_no}</strong> ({rejectModalItem.system_name})
                 </div>
-
                 <div
                   style={{
                     background: "#fffbeb",
@@ -3017,9 +2840,7 @@ export default function ChangeRequests() {
                 >
                   {tx("orders.holat_qaytarilishi_izohi")}
                 </div>
-
                 {rejectError && <ErrorMsg error={rejectError} />}
-
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 13 }}>
                     {tx("orders.kamchilik_tavsifi_label")}
@@ -3031,7 +2852,6 @@ export default function ChangeRequests() {
                     onChange={(e) => setRejectFeedbackNote(e.target.value)}
                   />
                 </div>
-
                 <div className="field" style={{ marginTop: 12 }}>
                   <label style={{ fontWeight: 600, fontSize: 13 }}>
                     {tx("orders.kamchilik_hujjati_label")}
@@ -3045,7 +2865,6 @@ export default function ChangeRequests() {
                     {tx("orders.fayl_format_izohi_qisqa")}
                   </div>
                 </div>
-
                 {rejectFeedbackFile && (
                   <div style={{ marginTop: 10, padding: "8px 12px", background: "var(--surface-2, #f8fafc)", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12.5, color: "var(--text)" }}>
@@ -3059,7 +2878,6 @@ export default function ChangeRequests() {
                   </div>
                 )}
               </div>
-
               <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
                 <button
                   type="button"
@@ -3081,8 +2899,6 @@ export default function ChangeRequests() {
           </div>
         </div>
       )}
-
-      {/* 4. BOSHQARMA UCHUN YANGI TZ VERSIYASINI YUBORISH MODALI */}
       {uploadVersionModalItem && (
         <div className="modal-overlay" onClick={() => setUploadVersionModalItem(null)}>
           <div
@@ -3099,7 +2915,6 @@ export default function ChangeRequests() {
                 ✕
               </button>
             </div>
-
             <form onSubmit={handleUploadVersionSubmit}>
               <div className="modal-body" style={{ padding: 20 }}>
                 <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
@@ -3108,7 +2923,6 @@ export default function ChangeRequests() {
                     {tx("orders.hozirgi")}: v{uploadVersionModalItem.version || 1}
                   </span>
                 </div>
-
                 <div
                   style={{
                     background: "#eff6ff",
@@ -3123,9 +2937,7 @@ export default function ChangeRequests() {
                 >
                   💡 {tx("orders.upload_version_note")}
                 </div>
-
                 {versionError && <ErrorMsg error={versionError} />}
-
                 <div className="field" style={{ marginBottom: 14 }}>
                   <label style={{ fontWeight: 600, fontSize: 13 }}>
                     {tx("orders.tz_file_label")} *
@@ -3140,7 +2952,6 @@ export default function ChangeRequests() {
                     {tx("orders.upload_version_format_note")}
                   </div>
                 </div>
-
                 <div className="field" style={{ marginBottom: 14 }}>
                   <label style={{ fontWeight: 600, fontSize: 13 }}>
                     {tx("orders.change_note_label")} *
@@ -3153,7 +2964,6 @@ export default function ChangeRequests() {
                     onChange={(e) => setVersionChangeNote(e.target.value)}
                   />
                 </div>
-
                   <div className="field">
                     <label style={{ fontWeight: 600, fontSize: 13 }}>
                       {tx("orders.requested_change_label")}
@@ -3166,7 +2976,6 @@ export default function ChangeRequests() {
                     />
                   </div>
                 </div>
-
                 <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
                   <button
                     type="button"
@@ -3188,8 +2997,6 @@ export default function ChangeRequests() {
             </div>
           </div>
         )}
-
-        {/* 5. PM UCHUN YANGI TZ VERSIYASINI TASDIQLASH MODALI */}
         {approveVersionModalItem && (
           <div className="modal-overlay" onClick={() => setApproveVersionModalItem(null)}>
             <div
@@ -3206,14 +3013,12 @@ export default function ChangeRequests() {
                   ✕
                 </button>
               </div>
-
               <form onSubmit={handleApproveVersionSubmit}>
                 <div className="modal-body" style={{ padding: 20 }}>
                   <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
                     {tx("orders.buyurtma")}: <strong>{approveVersionModalItem.request_no}</strong> • {tx("orders.tasdiqlanayotgan_versiya")}:{" "}
                     <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || approveVersionModalItem.pending_version?.version || tx("orders.yangi_kichik")}</strong>
                   </div>
-
                   <div
                     style={{
                       background: "#ecfdf5",
@@ -3232,9 +3037,7 @@ export default function ChangeRequests() {
                       <li>{tx("orders.yangi_tz_otkaziladi")}</li>
                     </ul>
                   </div>
-
                   {approveError && <ErrorMsg error={approveError} />}
-
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 12 }}>
                     <div className="field">
                       <label style={{ fontWeight: 600, fontSize: 12 }}>{tx("orders.qanchada_tugashi_pm_bahosi")}</label>
@@ -3255,7 +3058,6 @@ export default function ChangeRequests() {
                       />
                     </div>
                   </div>
-
                   <div className="field" style={{ marginBottom: 12 }}>
                     <label style={{ fontWeight: 600, fontSize: 12 }}>{tx("orders.masul_dasturchi_label")}</label>
                     <select
@@ -3270,7 +3072,6 @@ export default function ChangeRequests() {
                       ))}
                     </select>
                   </div>
-
                   <div className="field">
                     <label style={{ fontWeight: 600, fontSize: 12 }}>
                       {tx("orders.pm_qaror_izohi_ko_rsatmalari")}
@@ -3283,7 +3084,6 @@ export default function ChangeRequests() {
                     />
                   </div>
                 </div>
-
                 <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
                   <button
                     type="button"
@@ -3305,8 +3105,6 @@ export default function ChangeRequests() {
             </div>
           </div>
         )}
-
-        {/* 6. PM UCHUN YANGI TZ VERSIYASINI RAD ETISH MODALI */}
         {rejectVersionModalItem && (
           <div className="modal-overlay" onClick={() => setRejectVersionModalItem(null)}>
             <div
@@ -3323,14 +3121,12 @@ export default function ChangeRequests() {
                   ✕
                 </button>
               </div>
-
               <form onSubmit={handleRejectVersionSubmit}>
                 <div className="modal-body" style={{ padding: 20 }}>
                   <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
                     {tx("orders.buyurtma")}: <strong>{rejectVersionModalItem.request_no}</strong> • {tx("orders.versiya_label")}:{" "}
                     <strong style={{ color: "#dc2626" }}>v{rejectVersionTarget || rejectVersionModalItem.pending_version?.version || tx("orders.yangi_kichik")}</strong>
                   </div>
-
                   <div
                     style={{
                       background: "#fef2f2",
@@ -3344,9 +3140,7 @@ export default function ChangeRequests() {
                   >
                     {tx("orders.versiya_rad_etiladi_izohi")}
                   </div>
-
                   {rejectVersionError && <ErrorMsg error={rejectVersionError} />}
-
                   <div className="field">
                     <label style={{ fontWeight: 600, fontSize: 13 }}>
                       {tx("orders.reject_version_reason_label")} *
@@ -3360,7 +3154,6 @@ export default function ChangeRequests() {
                     />
                   </div>
                 </div>
-
                 <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
                   <button
                     type="button"
@@ -3382,7 +3175,6 @@ export default function ChangeRequests() {
             </div>
           </div>
         )}
-
         {previewFile && (
           <FilePreviewModal
             file={previewFile}

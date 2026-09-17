@@ -38,15 +38,11 @@ import { IconPlus } from "@/components/icons";
 import TaskDrawer from "@/components/TaskDrawer";
 import { toOrder, toTask } from "@/nav";
 import { tx } from "@/i18n";
-
-// Davr sarlavhalari. Kalitlar serverdagi `PERIODS` bilan bir xil, tartibni
-// esa server beradi - bu yerda faqat o'zbekcha nomi turadi.
 const LABELS: Record<DashboardPeriod, string> = {
   year: tx("dashboard.yil_boshidan"),
   month: tx("dashboard.oy_boshidan"),
   week: tx("dashboard.hafta_boshidan"),
 };
-
 /** Taxtadagi uchta ustun: nomi, kaliti va nimani sanashi. */
 const COLUMNS = [
   { key: "todo", label: tx("common.nazoratda"),
@@ -56,7 +52,6 @@ const COLUMNS = [
   { key: "done", label: tx("dashboard.bajarilganlar"),
     hint: tx("dashboard.shu_davrda_yakunlangan_ishlaringiz") },
 ] as const;
-
 /**
  * Muddat holati — pastki qator.
  *
@@ -71,44 +66,25 @@ const DEADLINE_CARDS = [
   { key: "waiting", label: tx("dashboard.kutilmoqda"),
     hint: tx("dashboard.yopilmagan_muddati_hali_kelmagan_yoki") },
 ] as const;
-
 /** Bosilgan katak: qaysi davr va qaysi ko'rsatkich. */
 interface Picked {
   period?: DashboardPeriod;
   metric: string;
   title: string;
 }
-
 function Band({ p, onPick, picked }: {
   p: DashboardPeriodRow;
   onPick: (v: Picked) => void;
   picked: Picked | null;
 }) {
-  // Sarlavha bosilsa - BUTUN taxta: nazoratdagi, muddati o'tgan va
-  // bajarilgan ishlar bitta ro'yxatda. Katakning o'zi bosilsa - faqat
-  // o'sha ustun.
-  //
-  // Ya'ni «yil boshidan nima bo'ldi» degan savolga uchta katakni navbat
-  // bilan bosmasdan javob olinadi. Shart serverda ham bitta joyda
-  // (`panel_metric_q` dagi `period`) - sanoq bilan ro'yxat ajralib
-  // ketmasin.
-  //
-  // Ro'yxatdagi son uchta katakning YIG'INDISI bo'lmasligi mumkin va bu
-  // to'g'ri: bitta ish ham «nazoratda», ham «muddati o'tgan» bo'lishi
-  // mumkin, ro'yxatda esa u bir marta turadi.
   const hasAny = Boolean(p.todo || p.overdue || p.done);
-
   const pickBand = () => {
     if (!hasAny) return;
     onPick({ period: p.key, metric: "period",
              title: tx("dashboard.davr_hammasi", { davr: LABELS[p.key] }) });
   };
-
   return (
     <section className="stat-band">
-      {/* `<header>` `<button>` ga aylantirilmadi: ichida `<h2>` va `<p>` bor,
-          ular tugma ichida yaroqsiz. Shuning uchun tugma ROLI beriladi -
-          klaviatura bilan ham ochiladi. */}
       <header className={`stat-band-head ${hasAny ? "pickable" : ""}`
                          + (picked?.period === p.key && picked?.metric === "period"
                             ? " picked" : "")}
@@ -125,18 +101,12 @@ function Band({ p, onPick, picked }: {
                 }
               }}>
         <h2 className="stat-band-title">{LABELS[p.key]}</h2>
-        {/* Qaysi sanadan sanalayotgani ko'rinib tursin - «yil boshidan»
-            degani odamga aniq kunni aytmaydi. */}
         <p className="stat-band-since">{fmtDate(p.since)} {tx("dashboard.bugun")}</p>
       </header>
-
       <div className="stat-band-row">
         {COLUMNS.map((col) => {
           const active = picked?.period === p.key && picked?.metric === col.key;
           return (
-            // Katak BOSILADI: raqamni ko'rgan odam "bu qaysi ishlar?" degan
-            // savolni sahifani tark etmasdan ochadi. Nol bo'lsa bosilmaydi -
-            // bo'sh ro'yxat ochish faqat chalg'itadi.
             <button type="button" key={col.key} title={col.hint}
                     className={`stat-band-cell ${p[col.key] ? "pickable" : ""}`
                                + (active ? " picked" : "")}
@@ -145,8 +115,6 @@ function Band({ p, onPick, picked }: {
                       period: p.key, metric: col.key,
                       title: tx("dashboard.davr_ustun", { davr: LABELS[p.key], ustun: col.label }),
                     })}>
-              {/* Nol - so'ngan rangda: bo'sh katak ko'zni tortmasin,
-                  haqiqiy son esa darrov ajralib tursin. */}
               <span className={`v ${p[col.key] ? "" : "zero"}`}>{p[col.key]}</span>
               <span className="k">{col.label}</span>
             </button>
@@ -156,14 +124,9 @@ function Band({ p, onPick, picked }: {
     </section>
   );
 }
-
-// Muddat kartalari serverdagi ko'rsatkich nomiga moslanadi: kartaning
-// kaliti «overdue», endpointda esa «overdue_now» (davr katagidagi
-// «overdue» dan farqli - bu butun tarix bo'yicha).
 const DEADLINE_METRIC: Record<string, string> = {
   late_done: "late_done", overdue: "overdue_now", waiting: "waiting",
 };
-
 function Deadlines({ d, onPick, picked }: {
   d: DashboardData["deadlines"];
   onPick: (v: Picked) => void;
@@ -188,7 +151,6 @@ function Deadlines({ d, onPick, picked }: {
     </div>
   );
 }
-
 /**
  * Ro'yxat ustidagi «Muddat» tanlagichi.
  *
@@ -205,7 +167,6 @@ const DUE_OPTIONS = [
   { value: "month", label: tx("dashboard.shu_oy") },
   { value: "year", label: tx("dashboard.shu_yil") },
 ] as const;
-
 const EMPTY_FILTERS = {
   search: "", due: "week", date: "", status: "", project: "", assignee: "", half: "",
 };
@@ -214,7 +175,6 @@ const RESET_FILTERS = {
 };
 type Filters = typeof RESET_FILTERS;
 type FilterKey = keyof Filters;
-
 /** `/dashboard/tasks/` javobi. */
 interface PanelTasksData {
   count: number;
@@ -235,12 +195,10 @@ interface PanelTasksData {
     assignees?: { id: number; name: string }[];
   };
 }
-
 interface ComboOption {
   value: string;
   name: string;
 }
-
 /**
  * YOZIB qidiriladigan tanlagich.
  *
@@ -264,30 +222,23 @@ function Combo({ id, label, options, value, onChange, placeholder }: {
 }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
-
   const chosen = options.find((o) => o.value === value) || null;
-  // Yopiq turganda maydonda TANLANGANI ko'rinadi, ochilganda - yozilgani.
   const text = open ? q : (chosen?.name || value || "");
-
   const needle = q.trim().toLowerCase();
   const hits = needle
     ? options.filter((o) => o.name.toLowerCase().includes(needle))
     : options;
-
   const pick = (v: string) => {
     onChange(v);
     setQ("");
     setOpen(false);
   };
-
   return (
     <div className="f combo">
       <label htmlFor={id}>{label}</label>
       <input id={id} value={text} placeholder={placeholder} autoComplete="off"
              role="combobox" aria-expanded={open} aria-controls={id + "-list"}
              onChange={(e) => { setQ(e.target.value); setOpen(true); }}
-             // Fokus tushganda maydon bo'shaydi: tanlangan ismning ustiga
-             // yozib o'tirmasdan darrov yangisini izlash mumkin bo'lsin.
              onFocus={() => { setQ(""); setOpen(true); }}
              onBlur={() => setOpen(false)}
              onKeyDown={(e) => {
@@ -301,8 +252,6 @@ function Combo({ id, label, options, value, onChange, placeholder }: {
                }
              }} />
       {open && (
-        // `mousedown` to'xtatiladi: aks holda bosish paytida maydon fokusni
-        // yo'qotib, ro'yxat `click` yetib kelgunicha yopilib ketardi.
         <div className="combo-list" id={id + "-list"} role="listbox"
              onMouseDown={(e) => e.preventDefault()}>
           <button type="button" className={"combo-item " + (value ? "" : "on")}
@@ -318,34 +267,18 @@ function Combo({ id, label, options, value, onChange, placeholder }: {
     </div>
   );
 }
-
 /** Bosilgan katakdagi ishlar - panelning ostida. */
 function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void }) {
   const fid = useId();
   const { meta } = useAuth();
-  // Tortmada ochiq turgan vazifa. Yozuvning O'ZI saqlanadi, `id` emas:
-  // ro'yxat allaqachon to'liq javobni olgan, ya'ni tortma uchun bazaga
-  // qaytadan borish shart emas.
   const [open, setOpen] = useState<Task | null>(null);
   const [f, setF] = useState<Filters>(EMPTY_FILTERS);
-  // Sahifa filtrdan ALOHIDA holatda: filtr o'zgarganda u birinchi sahifaga
-  // qaytadi (`set` da), aks holda odam beshinchi sahifada turib qidiruv
-  // yozsa bo'sh ekranga urilardi - natija ikki sahifaga sig'ib qolgan.
   const [page, setPage] = useState(1);
   const filtered = Object.values(f).some(Boolean);
-
-  // Qidiruv va sahifalash SERVERDA: ekrandagi qatorlar ustida emas.
-  // Ro'yxat sahifalarga bo'lingan, ya'ni brauzerdagi filtr faqat joriy
-  // o'n beshtasini elasa, qolgan sahifalarda turgan natija «topilmadi»
-  // bo'lib ko'rinardi.
-  //
-  // `debounceMs` - har bosilgan harf uchun so'rov ketmasin: "arxitektura"
-  // so'zi 12 ta so'rov tug'dirardi.
   const { data, loading } = useFetch<PanelTasksData>("/dashboard/tasks/",
     { period: picked.period || "", metric: picked.metric, page, ...f },
     { debounceMs: 300 });
   const tasks = data ? listOf<Task>(data) : null;
-
   const projectOptions: ComboOption[] = (data?.facets.projects || [])
     .map((p) => ({ value: String(p.id), name: p.name }));
   const assigneeOptions: ComboOption[] = (data?.facets.assignees || [])
@@ -355,7 +288,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
     setF((prev) => ({ ...prev, [k]: v }));
   };
   const clear = () => { setPage(1); setF(RESET_FILTERS); };
-
   return (
     /* Ro'yxat va vazifa paneli yonma-yon: keng ekranda panel ro'yxatning
        o'ng yonida ochiladi va uni yopib qo'ymaydi (`app.css`,
@@ -365,8 +297,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
     <Card title={picked.title} padded={false}
           badge={data ? <span className="badge">{data.count}</span> : undefined}
           action={<button type="button" className="btn btn-sm" onClick={onClose}>{tx("common.yopish")}</button>}>
-      {/* Filtr qatori kartaning ICHIDA: u shu ro'yxatga tegishli, sahifaga
-          emas - katak yopilsa filtr ham u bilan ketadi. */}
       <div className="filters filters-inline">
         <div className="f grow">
           <label htmlFor={fid + "-q"}>{tx("common.qidiruv")}</label>
@@ -386,7 +316,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
             ))}
           </select>
         </div>
-
         <div className="f wl-date">
           <label htmlFor={fid + "-date"}>{tx("common.sana", undefined, "Sana")}</label>
           <DateField id={fid + "-date"} value={f.date}
@@ -395,7 +324,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
                        setF((prev) => ({ ...prev, date: v, due: v ? "" : prev.due }));
                      }} />
         </div>
-
         <div className="f">
           <label htmlFor={fid + "-half"}>{tx("dashboard.oy_yarmi", undefined, "Oy yarmi")}</label>
           <select id={fid + "-half"} value={f.half}
@@ -405,7 +333,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
             <option value="2">{tx("dashboard.davr_2", undefined, "2 (16—30 sanalar)")}</option>
           </select>
         </div>
-
         <div className="f">
           <label htmlFor={fid + "-st"}>{tx("common.holat")}</label>
           <select id={fid + "-st"} value={f.status}
@@ -416,15 +343,11 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
             ))}
           </select>
         </div>
-        {/* Loyiha tanlagichi faqat tanlanadigan narsa bo'lganda ko'rinadi:
-            bitta loyihali ro'yxatda u hech nimani o'zgartirmasdi, joyni
-            esa egallardi. */}
         {projectOptions.length > 1 && (
           <Combo id={fid + "-pr"} label={tx("common.loyiha")} options={projectOptions}
                  value={f.project} onChange={(v) => set("project", v)}
                  placeholder={tx("dashboard.loyiha_nomini_yozing")} />
         )}
-        {/* Xodim (ijrochi) filtri: ismni yozganda yoki ro'yxatdan tanlaganda filtrlash */}
         <Combo id={fid + "-as"} label={tx("dashboard.xodim")} options={assigneeOptions}
                 value={f.assignee} onChange={(v) => set("assignee", v)}
                 placeholder={tx("dashboard.xodim_nomini_yozing")} />
@@ -432,7 +355,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
           <button type="button" className="btn" onClick={clear}>{tx("common.tozalash")}</button>
         )}
       </div>
-
       {loading ? <Loading /> : !tasks?.length ? (
         <Empty title={tx("dashboard.ish_yoq")}
                text={filtered
@@ -459,7 +381,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
               const rowNum = (data ? (data.page - 1) * data.page_size : 0) + idx + 1;
               const day = t.due_date ? parseInt(fmtDate(t.due_date).split(".")[0], 10) : null;
               const halfNum = day ? (day <= 15 ? 1 : 2) : null;
-
               return (
               /* Qator bosilganda SAHIFA ALMASHMAYDI - o'ng chetdan tortma
                  chiqadi (`components/TaskDrawer.tsx`). Sabab: bu ro'yxat
@@ -493,9 +414,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
                 </td>
                 <td className="nowrap"><StatusBadge task={t} /></td>
                 <td className="nowrap"><Priority task={t} /></td>
-                {/* Kim qilayotgani ro'yxatning o'zida ko'rinsin: ilgari buni
-                    bilish uchun har bir vazifani birma-bir ochish kerak edi.
-                    Ijrochisi yo'q bo'lsa `AvatarStack` chiziqcha qo'yadi. */}
                 <td className="nowrap">
                   {t.assignees?.length ? (
                     <span className="row middle" style={{ gap: 8 }}>
@@ -540,7 +458,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
           </tbody>
         </table></div>
       )}
-      {/* Ro'yxat sahifalarga bo'lingan - qolgani jimgina qirqilmaydi. */}
       {data && data.pages > 1 && (
         <div className="card-body pager-bar">
           <span className="muted">
@@ -555,7 +472,6 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
     </div>
   );
 }
-
 function CalendarIcon({ size = 20, color = "currentColor" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -566,7 +482,6 @@ function CalendarIcon({ size = 20, color = "currentColor" }: { size?: number; co
     </svg>
   );
 }
-
 function ChevronRightIcon({ size = 16, color = "currentColor" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -574,8 +489,6 @@ function ChevronRightIcon({ size = 16, color = "currentColor" }: { size?: number
     </svg>
   );
 }
-
-
 function SearchIcon({ size = 16, color = "currentColor" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -584,7 +497,6 @@ function SearchIcon({ size = 16, color = "currentColor" }: { size?: number; colo
     </svg>
   );
 }
-
 function FilterIcon({ size = 15, color = "currentColor" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -592,7 +504,6 @@ function FilterIcon({ size = 15, color = "currentColor" }: { size?: number; colo
     </svg>
   );
 }
-
 function ListIcon({ size = 15, color = "currentColor" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -605,7 +516,6 @@ function ListIcon({ size = 15, color = "currentColor" }: { size?: number; color?
     </svg>
   );
 }
-
 function getStatusPill(status: string) {
   switch (status) {
     case "ACCEPTED":
@@ -626,7 +536,6 @@ function getStatusPill(status: string) {
       return { label: status, bg: "#fafafa", color: "#52525b", border: "#e4e4e7" };
   }
 }
-
 function getAvatarInitials(name: string) {
   if (!name) return "—";
   const parts = name.trim().split(/\s+/);
@@ -635,7 +544,6 @@ function getAvatarInitials(name: string) {
   }
   return parts[0].slice(0, 2).toUpperCase();
 }
-
 const PERIOD_THEMES: Record<
   DashboardPeriod,
   {
@@ -664,7 +572,6 @@ const PERIOD_THEMES: Record<
     activeBg: "#ecfdf5",
   },
 };
-
 /** Boshqarma foydalanuvchisi uchun to'liq bosh panel ko'rinishi (yangi UX dizayn) */
 function DepartmentDashboard() {
   const { meta } = useAuth();
@@ -673,16 +580,13 @@ function DepartmentDashboard() {
   const [selectedMetric, setSelectedMetric] = useState<"submitted" | "approved" | "in_progress" | "completed" | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-
   const scrollToOrders = () => {
     const el = document.getElementById("department-orders-section");
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
-
   const { data: stats, reload: reloadStats } = useFetch<OrderStats>("/orders/stats/", { mine: 1 });
-
   const queryParams = useMemo(() => {
     const p: Record<string, string | number> = { mine: 1, page_size: 20, ordering: "request_no" };
     if (selectedPeriod) p.period = selectedPeriod;
@@ -691,11 +595,9 @@ function DepartmentDashboard() {
     if (searchQuery.trim()) p.search = searchQuery.trim();
     return p;
   }, [selectedPeriod, selectedMetric, statusFilter, searchQuery]);
-
   const { data: ordersData, loading: ordersLoading, reload: reloadOrders } = useFetch<
     PaginatedResponse<ChangeRequestItem> | ChangeRequestItem[]
   >("/orders/", queryParams);
-
   useDebouncedLive((e) => {
     if (
       e.event === "notification" ||
@@ -707,23 +609,18 @@ function DepartmentDashboard() {
       reloadOrders();
     }
   }, 800);
-
   const total = stats?.total ?? 0;
   const inProgressCount =
     (stats?.in_progress ?? 0) + (stats?.assigned_to_dev ?? 0) + (stats?.testing ?? 0);
   const completed = stats?.completed ?? 0;
   const readyForReviewCount = stats?.ready_for_review ?? 0;
-
   const orders = useMemo(() => {
     if (!ordersData) return [];
     return listOf<ChangeRequestItem>(ordersData);
   }, [ordersData]);
-
   const periods: OrderPeriodRow[] = stats?.periods || [];
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 40 }}>
-      {/* Agar Boshqarma tasdiqlashi kutilayotgan ishlar bo'lsa ogohlantiruvchi kartochka */}
       {readyForReviewCount > 0 && (
         <div
           style={{
@@ -756,8 +653,6 @@ function DepartmentDashboard() {
           </button>
         </div>
       )}
-
-      {/* 3 ta Davriy Statistika kartasi (Yil boshidan, Oy boshidan, Hafta boshidan) */}
       <div
         style={{
           display: "grid",
@@ -768,7 +663,6 @@ function DepartmentDashboard() {
         {periods.map((p) => {
           const theme = PERIOD_THEMES[p.key] || PERIOD_THEMES.year;
           const isSelected = selectedPeriod === p.key;
-
           return (
             <div
               key={p.key}
@@ -783,7 +677,6 @@ function DepartmentDashboard() {
                 transition: "all 0.15s ease",
               }}
             >
-              {/* Tepa qator: Taqvim belgisi + Sarlavha/Sana + Strelka */}
               <div
                 onClick={() => {
                   if (selectedPeriod === p.key && !selectedMetric) {
@@ -831,8 +724,6 @@ function DepartmentDashboard() {
                   <ChevronRightIcon size={18} />
                 </div>
               </div>
-
-              {/* Pastki qator: Jami, Tasdiqlangan, Bajarilgan (3 ta alohida mini-kartochka) */}
               <div
                 style={{
                   display: "grid",
@@ -843,7 +734,6 @@ function DepartmentDashboard() {
                   gap: 10,
                 }}
               >
-                {/* 1. Jami */}
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -916,8 +806,6 @@ function DepartmentDashboard() {
                     {p.submitted ?? 0}
                   </div>
                 </div>
-
-                {/* 2. Jarayonda */}
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -990,8 +878,6 @@ function DepartmentDashboard() {
                     {p.in_progress ?? p.approved ?? 0}
                   </div>
                 </div>
-
-                {/* 3. Bajarilgan */}
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1069,8 +955,6 @@ function DepartmentDashboard() {
           );
         })}
       </div>
-
-      {/* Pastki qism: "Buyurtmalar" bo'limi */}
       <div id="department-orders-section" style={{ scrollMarginTop: 24 }}>
         <div className="row between middle" style={{ flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -1139,10 +1023,7 @@ function DepartmentDashboard() {
             )}
           </div>
         </div>
-
-        {/* Qidiruv va Holat filtrlari satri */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
-          {/* Qidiruv input */}
           <div style={{ position: "relative", width: 340, maxWidth: "100%" }}>
             <span
               style={{
@@ -1176,8 +1057,6 @@ function DepartmentDashboard() {
               }}
             />
           </div>
-
-          {/* Holat filtri dropdown */}
           <div style={{ position: "relative", minWidth: 170 }}>
             <div
               style={{
@@ -1217,8 +1096,6 @@ function DepartmentDashboard() {
             </select>
           </div>
         </div>
-
-        {/* Jadval kartasi */}
         <div
           style={{
             background: "#fff",
@@ -1285,7 +1162,6 @@ function DepartmentDashboard() {
                   {orders.map((o, idx) => {
                     const pill = getStatusPill(o.status);
                     const pmInitials = getAvatarInitials(o.assigned_pm_name || "");
-
                     return (
                       <tr
                         key={o.id}
@@ -1302,7 +1178,6 @@ function DepartmentDashboard() {
                           e.currentTarget.style.background = "transparent";
                         }}
                       >
-                        {/* 1. Tartib raqami */}
                         <td
                           style={{
                             textAlign: "center",
@@ -1314,8 +1189,6 @@ function DepartmentDashboard() {
                         >
                           {idx + 1}
                         </td>
-
-                        {/* 2. Talabnoma № va sana */}
                         <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
                           <Link
                             {...toOrder(o.id)}
@@ -1334,8 +1207,6 @@ function DepartmentDashboard() {
                             </div>
                           )}
                         </td>
-
-                        {/* 3. Axborot tizimi */}
                         <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
                           <div style={{ fontWeight: 600, fontSize: 13.5, color: "#18181b" }}>
                             {o.system_name}
@@ -1346,8 +1217,6 @@ function DepartmentDashboard() {
                             </div>
                           )}
                         </td>
-
-                        {/* 4. Talab mazmuni */}
                         <td style={{ padding: "14px", maxWidth: 300 }}>
                           <div
                             style={{
@@ -1365,8 +1234,6 @@ function DepartmentDashboard() {
                             {o.requested_change}
                           </div>
                         </td>
-
-                        {/* 5. Muddati */}
                         <td style={{ padding: "14px", whiteSpace: "nowrap", fontSize: 12.5, color: "#52525b" }}>
                           {o.pm_deadline || o.due_date ? (
                             fmtDate(o.pm_deadline || o.due_date)
@@ -1374,8 +1241,6 @@ function DepartmentDashboard() {
                             <span style={{ color: "#a1a1aa" }}>—</span>
                           )}
                         </td>
-
-                        {/* 6. Holati (Monochrome badge) */}
                         <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
                           <span
                             style={{
@@ -1393,8 +1258,6 @@ function DepartmentDashboard() {
                             {pill.label}
                           </span>
                         </td>
-
-                        {/* 7. Mas'ul PM */}
                         <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
                           {o.assigned_pm_name ? (
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1434,31 +1297,19 @@ function DepartmentDashboard() {
     </div>
   );
 }
-
 export default function Dashboard() {
   const { user } = useAuth();
   const [picked, setPicked] = useState<Picked | null>(null);
-
-  // Faqat sohaviy boshqarmalar akkaunti uchun (PM, Admin yoki oddiy dasturchiga chiqmaydi)
   const isDepartmentUser = Boolean(
     user?.is_sohaviy_boshqarma ||
     user?.global_role === "SOHAVIY" ||
     user?.specialty === "SOHAVIY"
   );
-
-  // Xato yutilmaydi: sabab ekranga chiqadi, aks holda sahifa abadiy
-  // «Yuklanmoqda» da qolardi.
   const { data: d, error, loading, reload } = useFetch<DashboardData>("/dashboard/");
-
-  // Jonli: vazifa yoki loyiha o'zgarsa raqamlar o'zini yangilaydi (debounce bilan himoyalangan).
   useDebouncedLive((e) => {
     if (e.event === "task.update" || e.event === "project.update") reload();
   }, 1500);
-
-  // Nom yuklanayotganda ham turadi: aks holda paneldagi joyi bo'sh qolib,
-  // ma'lumot kelgach sakrab paydo bo'lardi.
   const name = <strong>{tx("layout.bosh_panel")}</strong>;
-
   if (isDepartmentUser) {
     return (
       <>
@@ -1469,7 +1320,6 @@ export default function Dashboard() {
       </>
     );
   }
-
   if (loading) {
     return (
       <>
@@ -1488,19 +1338,16 @@ export default function Dashboard() {
       </>
     );
   }
-
   const isFresh =
     d.periods.every((p) => (p.todo ?? 0) === 0 && (p.overdue ?? 0) === 0 && (p.done ?? 0) === 0) &&
     (d.deadlines.late_done ?? 0) === 0 &&
     (d.deadlines.overdue ?? 0) === 0 &&
     (d.deadlines.waiting ?? 0) === 0;
-
   return (
     <>
       <PageHead
         title={name}
       />
-
       <div className="content">
         <div className="period-grid">
           {d.periods.map((p) => (
@@ -1508,7 +1355,6 @@ export default function Dashboard() {
           ))}
         </div>
         <Deadlines d={d.deadlines} picked={picked} onPick={setPicked} />
-
         {isFresh && !picked && (
           <div className="card mt" style={{ padding: "24px 20px", textAlign: "center" }}>
             <p className="muted" style={{ margin: "0 0 16px", fontSize: 14 }}>
@@ -1524,12 +1370,8 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-
         {picked && (
           <div className="mt">
-            {/* `key` - boshqa katak bosilganda ro'yxat YANGIDAN
-                yig'ilsin: aks holda oldingi katakda qo'yilgan filtr
-                yangisiga o'tib, odam bo'sh ro'yxat ko'rardi. */}
             <PickedTasks key={`${picked.period || ""}:${picked.metric}`}
                          picked={picked} onClose={() => setPicked(null)} />
           </div>
