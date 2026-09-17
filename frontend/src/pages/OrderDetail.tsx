@@ -289,12 +289,6 @@ export default function OrderDetail() {
     setClaimNotesInput("");
     setClaimModalOpen(true);
   }
-  function applyQuickDeadline(days: number) {
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    const iso = d.toISOString().split("T")[0];
-    setClaimDeadlineInput(iso);
-  }
   async function handleClaimSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
@@ -1788,22 +1782,6 @@ export default function OrderDetail() {
             </div>
             <form onSubmit={handleClaimSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
-                <div
-                  style={{
-                    background: "var(--accent-soft)",
-                    border: "1px solid rgba(106, 141, 255, 0.2)",
-                    borderRadius: 10,
-                    padding: "10px 14px",
-                    display: "flex",
-                    gap: 10,
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <span style={{ fontSize: 16, lineHeight: 1.2 }}>💡</span>
-                  <div style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.45 }}>
-                    {tx("orders.claim_modal_desc")}
-                  </div>
-                </div>
                 {item.due_date && (
                   <div
                     style={{
@@ -1853,37 +1831,6 @@ export default function OrderDetail() {
                       <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0 }}>
                         {tx("orders.claim_deadline_label")} <span style={{ color: "var(--danger)" }}>*</span>
                       </label>
-                    <div className="row middle" style={{ gap: 4 }}>
-                      <span style={{ fontSize: 11, color: "var(--muted)", marginRight: 2 }}>{tx("orders.claim_quick_label")}</span>
-                      <button
-                        type="button"
-                        className="modal-quick-chip"
-                        onClick={() => applyQuickDeadline(3)}
-                      >
-                        {tx("orders.claim_3days")}
-                      </button>
-                      <button
-                        type="button"
-                        className="modal-quick-chip"
-                        onClick={() => applyQuickDeadline(7)}
-                      >
-                        {tx("orders.claim_1week")}
-                      </button>
-                      <button
-                        type="button"
-                        className="modal-quick-chip"
-                        onClick={() => applyQuickDeadline(14)}
-                      >
-                        {tx("orders.claim_2weeks")}
-                      </button>
-                      <button
-                        type="button"
-                        className="modal-quick-chip"
-                        onClick={() => applyQuickDeadline(30)}
-                      >
-                        {tx("orders.claim_1month")}
-                      </button>
-                    </div>
                   </div>
                   <input
                     type="date"
