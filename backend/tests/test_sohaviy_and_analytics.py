@@ -194,7 +194,7 @@ class BuyurtmalarAccessControlSuite(ApiTestCase):
         }
         res = self.client_sohaviy.post(self.orders_url, payload, format="json")
         self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.content)
-        self.assertTrue(res.json()["request_no"].startswith("ORD-"))
+        self.assertTrue("id" in res.json())
 
     def test_sohaviy_can_retrieve_order_and_export_docx(self):
         """Sohaviy boshqarma vakili buyurtmani ko'rishi va Word (.docx) yuklab olishi shart."""
@@ -380,7 +380,7 @@ class OrderNotificationSuite(ApiTestCase):
         """Sohaviy boshqarma profiliga /api/counts/ da faol buyurtmalar soni (orders) qaytishi shart."""
         # 2 ta faol buyurtma yaratamiz
         ChangeRequest.objects.create(
-            request_no="ORD-TEST-001",
+            
             system_name="TeamFlow",
             department="Moliya",
             responsible_person="Aliyev",
@@ -391,7 +391,7 @@ class OrderNotificationSuite(ApiTestCase):
             created_by=self.sohaviy1,
         )
         ChangeRequest.objects.create(
-            request_no="ORD-TEST-002",
+            
             system_name="TeamFlow",
             department="Moliya",
             responsible_person="Aliyev",
@@ -403,7 +403,7 @@ class OrderNotificationSuite(ApiTestCase):
         )
         # 1 ta yakunlangan (COMPLETED) buyurtma
         ChangeRequest.objects.create(
-            request_no="ORD-TEST-003",
+            
             system_name="TeamFlow",
             department="Moliya",
             responsible_person="Aliyev",
@@ -479,7 +479,7 @@ class OrderNotificationSuite(ApiTestCase):
     def test_order_status_update_notifies_author(self):
         """Buyurtma holati o'zgarganda (masalan qabul qilinganda) buyurtma muallifiga bildirishnoma borishi shart."""
         order = ChangeRequest.objects.create(
-            request_no="ORD-STATUS-001",
+            
             system_name="ERP",
             department="Moliya",
             responsible_person="Sobirov",

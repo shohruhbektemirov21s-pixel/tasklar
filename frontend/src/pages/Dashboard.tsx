@@ -588,7 +588,7 @@ function DepartmentDashboard() {
   };
   const { data: stats, reload: reloadStats } = useFetch<OrderStats>("/orders/stats/", { mine: 1 });
   const queryParams = useMemo(() => {
-    const p: Record<string, string | number> = { mine: 1, page_size: 20, ordering: "request_no" };
+    const p: Record<string, string | number> = { mine: 1, page_size: 20, ordering: "-id" };
     if (selectedPeriod) p.period = selectedPeriod;
     if (selectedMetric) p.metric = selectedMetric;
     if (statusFilter) p.status = statusFilter;
@@ -1199,7 +1199,7 @@ function DepartmentDashboard() {
                               textDecoration: "none",
                             }}
                           >
-                            {o.request_no || `#${o.id}`}
+                            {`#${o.id}`}
                           </Link>
                           {o.request_date && (
                             <div style={{ fontSize: 11.5, color: "#71717a", marginTop: 2 }}>

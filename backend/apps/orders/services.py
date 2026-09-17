@@ -108,11 +108,11 @@ def notify_order_created(order):
     return notify_many(
         recipients,
         NotificationKind.ORDER_NEW,
-        title=f"Yangi buyurtma (TZ): {order.request_no}",
+        title=f"Yangi buyurtma (TZ): {order.system_name}",
         body=f"{dept} — {sys_name}{prj_name}{mod}",
         url=order_url(order),
         actor=order.created_by,
-        meta={"order_id": order.pk, "request_no": order.request_no},
+        meta={"order_id": order.pk},
     )
 
 
@@ -127,7 +127,7 @@ def notify_order_status(order, actor, old_status, new_status):
     return notify(
         order.created_by,
         NotificationKind.ORDER_STATUS,
-        title=f"Buyurtma holati o'zgardi: {order.request_no}",
+        title=f"Buyurtma holati o'zgardi: {order.system_name}",
         body=f"Yangi holat: {status_label}",
         url=order_url(order),
         actor=actor,
@@ -151,7 +151,7 @@ def notify_pm_decision(order, pm_user):
         notify(
             order.created_by,
             NotificationKind.ORDER_STATUS,
-            title=f"Buyurtma holati: {order.request_no}",
+            title=f"Buyurtma holati: {order.system_name}",
             body=f"{pm_user.full_name}: {body_text}",
             url=order_url(order),
             actor=pm_user,
@@ -177,13 +177,12 @@ def notify_order_new_version(order, version_obj, actor):
     return notify_many(
         recipients,
         NotificationKind.ORDER_NEW,
-        title=f"Yangi TZ versiyasi (v{version_obj.version}): {order.request_no}{prj_name}",
+        title=f"Yangi TZ versiyasi (v{version_obj.version}): {order.system_name}{prj_name}",
         body=f"{actor.full_name} tomonidan yangi versiya yuklandi{note_preview}. PM ko'rib chiqishi kutilmoqda.",
         url=order_url(order),
         actor=actor,
         meta={
             "order_id": order.pk,
-            "request_no": order.request_no,
             "version": version_obj.version,
         },
     )
@@ -201,7 +200,7 @@ def notify_order_completion_submitted(order, actor):
     return notify_many(
         recipients,
         NotificationKind.ORDER_STATUS,
-        title=f"Ish yakunlandi va tasdiqlash uchun topshirildi: {order.request_no}",
+        title=f"Ish yakunlandi va tasdiqlash uchun topshirildi: {order.system_name}",
         body=f"{actor.full_name} ishni yakunladi va tugatilgan ish hujjatini biriktirdi. Iltimos, tekshirib tasdiqlang yoki kamchilik bo'lsa qaytaring.",
         url=order_url(order),
         actor=actor,
@@ -223,7 +222,7 @@ def notify_order_client_approved(order, actor):
     return notify_many(
         recipients,
         NotificationKind.ORDER_STATUS,
-        title=f"Boshqarma ishni tasdiqladi va qabul qildi: {order.request_no}",
+        title=f"Boshqarma ishni tasdiqladi va qabul qildi: {order.system_name}",
         body=f"{actor.full_name} tomonidan bajarilgan ish to'liq tasdiqlandi va buyurtma muvaffaqiyatli yakunlandi.",
         url=order_url(order),
         actor=actor,
@@ -245,7 +244,7 @@ def notify_order_completion_rejected(order, actor, feedback_note):
     return notify_many(
         recipients,
         NotificationKind.ORDER_STATUS,
-        title=f"Ishda kamchilik aniqlandi (Qayta ishlashga): {order.request_no}",
+        title=f"Ishda kamchilik aniqlandi (Qayta ishlashga): {order.system_name}",
         body=f"Boshqarma vakili ({actor.full_name}) kamchiliklarni ko'rsatib ishni qayta tugatishga yubordi{note_text}",
         url=order_url(order),
         actor=actor,
@@ -270,7 +269,7 @@ def notify_order_version_approved(order, version_obj, actor, decision_note=""):
     return notify_many(
         recipients,
         NotificationKind.ORDER_STATUS,
-        title=f"Yangi TZ versiyasi tasdiqlandi (v{version_obj.version}): {order.request_no}",
+        title=f"Yangi TZ versiyasi tasdiqlandi (v{version_obj.version}): {order.system_name}",
         body=body,
         url=order_url(order),
         actor=actor,
@@ -294,7 +293,7 @@ def notify_order_version_rejected(order, version_obj, actor, reason):
     return notify_many(
         recipients,
         NotificationKind.ORDER_STATUS,
-        title=f"Yangi TZ versiyasi rad etildi (v{version_obj.version}): {order.request_no}",
+        title=f"Yangi TZ versiyasi rad etildi (v{version_obj.version}): {order.system_name}",
         body=body,
         url=order_url(order),
         actor=actor,

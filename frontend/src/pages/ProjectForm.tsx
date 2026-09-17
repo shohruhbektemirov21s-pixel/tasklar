@@ -127,7 +127,7 @@ export default function ProjectForm() {
         setF((prev) => ({
           ...prev,
           order_id: selectedId,
-          name: prev.name.trim() ? prev.name : (ord.system_name || `Buyurtma #${ord.request_no}`),
+          name: prev.name.trim() ? prev.name : (ord.system_name || `Buyurtma #${ord.system_name}`),
           description: prev.description.trim() ? prev.description : (ord.requested_change || ""),
           project_type: ord.order_type || prev.project_type,
           start_date: prev.start_date && ordDate && prev.start_date < ordDate ? ordDate : prev.start_date,
@@ -319,7 +319,7 @@ export default function ProjectForm() {
                   <option value="">{tx("project_form.buyurtma_tanlanmagan", undefined, "— Tanlanmagan (Buyurtmasiz yangi) —")}</option>
                   {orders.filter((ord) => ord.status !== "DRAFT").map((ord) => (
                     <option key={ord.id} value={ord.id}>
-                      {ord.request_no} — {ord.system_name} ({ord.status_display})
+                      {ord.system_name} — {ord.system_name} ({ord.status_display})
                     </option>
                   ))}
                   {f.order_id && !orders.some((o) => o.id === f.order_id) && (

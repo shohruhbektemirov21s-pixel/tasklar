@@ -51,7 +51,7 @@ class BotCommandTest(ApiTestCase):
         TaskAssignment.objects.create(task=cls.task, user=cls.dev)
         from apps.orders.models import ChangeRequest
         cls.order = ChangeRequest.objects.create(
-            request_no="ORD-TEST-001",
+            
             system_name="Sinov tizimi",
             assigned_developer=cls.dev,
             created_by=cls.manager,
@@ -112,7 +112,7 @@ class BotCommandTest(ApiTestCase):
     def test_buyurtmalar_buyrugi(self):
         commands.handle(update(self.CHAT, "/start"))
         commands.handle(update(self.CHAT, "/buyurtmalar"))
-        self.assertIn("ORD-TEST-001", self.last())
+        self.assertIn("#" + str(self.order.id), self.last())
 
     def test_yordam_buyrugi(self):
         commands.handle(update(self.CHAT, "/start"))

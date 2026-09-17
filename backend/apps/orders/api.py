@@ -121,7 +121,6 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["status", "priority", "department", "module", "project", "assigned_pm", "assigned_developer", "order_type"]
     search_fields = [
-        "request_no",
         "system_name",
         "module",
         "department",
@@ -1282,7 +1281,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         """Buyurtmani rasmiy Word (.docx) blanki ko'rinishida yuklab olish."""
         order = self.get_object()
         bio = generate_order_docx(order)
-        filename = f"Buyurtma_{order.request_no}.docx"
+        filename = f"Buyurtma_{order.pk}.docx"
         response = HttpResponse(
             bio.getvalue(),
             content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",

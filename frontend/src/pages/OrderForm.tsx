@@ -447,7 +447,7 @@ export default function OrderForm() {
           <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
           <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{tx("orders.locked_after_send_title")}</h2>
           <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
-            «{existingItem?.request_no}» {tx("orders.locked_after_send_desc")}
+            «{existingItem?.system_name}» {tx("orders.locked_after_send_desc")}
           </p>
           <button className="btn btn-primary" onClick={() => go(toOrders())}>
             {tx("orders.buyurtmalarga_qaytish")}
@@ -684,89 +684,6 @@ export default function OrderForm() {
                   onChange={(e) => set("due_date", e.target.value)}
                 />
                 {errors.due_date && <div className="err">{errors.due_date}</div>}
-              </div>
-            </Card>
-
-            <Card title={tx("orders.bolim1_nomi")}>
-              <div className="field">
-                <label htmlFor={`${fid}-requested-change`}>
-                  {tx("orders.talab_qilinayotgan_ozgartirish")}
-                </label>
-                <textarea
-                  id={`${fid}-requested-change`}
-                  rows={3}
-                  value={f.requested_change}
-                  placeholder={tx("orders.requested_change_placeholder")}
-                  onChange={(e) => set("requested_change", e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label htmlFor={`${fid}-current-state`}>
-                  {tx("orders.joriy_holat")}
-                </label>
-                <textarea
-                  id={`${fid}-current-state`}
-                  rows={2}
-                  value={f.current_state}
-                  placeholder={tx("orders.current_state_placeholder")}
-                  onChange={(e) => set("current_state", e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label htmlFor={`${fid}-reason`}>
-                  {tx("orders.sabab_maqsad")}
-                </label>
-                <input
-                  id={`${fid}-reason`}
-                  value={f.reason}
-                  placeholder={tx("orders.reason_placeholder")}
-                  onChange={(e) => set("reason", e.target.value)}
-                />
-              </div>
-            </Card>
-
-            <Card title={tx("orders.bolim2_nomi")}>
-              <div className="row" style={{ gap: 12 }}>
-                <div className="field" style={{ flex: 1 }}>
-                  <label htmlFor={`${fid}-affected-mod`}>
-                    {tx("orders.tasir_modullar")}
-                  </label>
-                  <input
-                    id={`${fid}-affected-mod`}
-                    value={f.affected_modules}
-                    placeholder={tx("orders.affected_modules_placeholder")}
-                    onChange={(e) => set("affected_modules", e.target.value)}
-                  />
-                </div>
-
-                <div className="field" style={{ flex: 1 }}>
-                  <label htmlFor={`${fid}-change-nature`}>
-                    {tx("orders.ozgarish_xarakteri")}
-                  </label>
-                  <select
-                    id={`${fid}-change-nature`}
-                    value={f.change_nature}
-                    onChange={(e) => set("change_nature", e.target.value as "USER_FACING" | "BACKEND" | "BOTH")}
-                  >
-                    {(meta?.change_nature || []).map((cn) => (
-                      <option key={String(cn.value)} value={String(cn.value)}>{cn.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="field">
-                <label htmlFor={`${fid}-dep-systems`}>
-                  {tx("orders.bogliq_tizimlar")}
-                </label>
-                <input
-                  id={`${fid}-dep-systems`}
-                  value={f.dependent_systems}
-                  placeholder={tx("orders.dep_systems_placeholder")}
-                  onChange={(e) => set("dependent_systems", e.target.value)}
-                />
               </div>
             </Card>
 

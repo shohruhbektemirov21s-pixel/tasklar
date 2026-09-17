@@ -178,7 +178,6 @@ class ProjectSerializer(serializers.ModelSerializer):
             if first:
                 return {
                     "id": first.id,
-                    "request_no": first.request_no,
                     "system_name": first.system_name,
                     "status": first.status,
                     "status_display": first.get_status_display(),

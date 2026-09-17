@@ -20,7 +20,6 @@ class ChangeRequestVersionInline(admin.TabularInline):
 class ChangeRequestAdmin(admin.ModelAdmin):
     inlines = [ChangeRequestVersionInline]
     list_display = (
-        "request_no",
         "system_name",
         "order_type_badge",
         "project_link",
@@ -37,17 +36,17 @@ class ChangeRequestAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "order_type", "priority", "project", "department", "assigned_developer", "request_date", "created_at")
     search_fields = (
-        "request_no", "system_name", "module", "department",
+        "system_name", "module", "department",
         "responsible_person", "requested_change", "reason",
         "project__name", "project__key", "assigned_developer__full_name",
     )
     ordering = ("-created_at",)
-    readonly_fields = ("request_no", "tz_file_name", "tz_file_size", "created_at", "updated_at")
+    readonly_fields = ("tz_file_name", "tz_file_size", "created_at", "updated_at")
 
     fieldsets = (
         ("Metama'lumotlar", {
             "fields": (
-                "request_no", "system_name", "order_type", "project", "module", "request_date",
+                "system_name", "order_type", "project", "module", "request_date",
                 "department", "responsible_person", "priority", "due_date"
             )
         }),

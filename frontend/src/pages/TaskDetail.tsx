@@ -1416,10 +1416,12 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                     <Link {...toTask(task.parent)}>{task.parent_title || `#${task.parent}`}</Link>
                   </li>
                 )}
-                {task.order_request_no && (
+                {task.order && (
                   <li className="row">
                     <span className="muted">{tx("task_detail.buyurtma_tz", undefined, "Buyurtma (TZ)")}</span><span className="spacer" />
-                    <span className="mono">#{task.order_request_no}</span>
+                    <span className="mono">
+                      <Link to={`/buyurtmalar/${task.order}`}>#{task.order}</Link>
+                    </span>
                   </li>
                 )}
                 <li className="row">

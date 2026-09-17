@@ -325,7 +325,7 @@ export default function ChangeRequests() {
   const canEditOrder = (_item: ChangeRequestItem) => false;
   const canDeleteOrder = (_item: ChangeRequestItem) => false;
   const handleSendOrder = async (item: ChangeRequestItem) => {
-    if (!window.confirm(`${tx("orders.send_order_confirm_desc")} ${item.request_no}`)) {
+    if (!window.confirm(`${tx("orders.send_order_confirm_desc")} ${item.id}`)) {
       return;
     }
     try {
@@ -336,7 +336,7 @@ export default function ChangeRequests() {
     }
   };
   const handleDeleteOrder = async (item: ChangeRequestItem) => {
-    if (!window.confirm(`${tx("orders.delete_order_confirm")} ${item.request_no}`)) {
+    if (!window.confirm(`${tx("orders.delete_order_confirm")} ${item.id}`)) {
       return;
     }
     try {
@@ -405,7 +405,7 @@ export default function ChangeRequests() {
   const handleClientApprove = async (item: ChangeRequestItem) => {
     if (
       !window.confirm(
-        `${tx("orders.client_approve_confirm")} ${item.request_no}`
+        `${tx("orders.client_approve_confirm")} ${item.id}`
       )
     ) {
       return;
@@ -1667,7 +1667,7 @@ export default function ChangeRequests() {
                         color: "var(--text)",
                       }}
                     >
-                      {claimModalItem.request_no}
+                      {claimModalItem.id}
                     </span>
                     <span style={{ fontSize: 12, color: "var(--muted)" }}>•</span>
                     <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
@@ -1862,7 +1862,7 @@ export default function ChangeRequests() {
           >
             <div className="modal-header row between middle">
               <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
-                <span className="badge badge-brand">{viewingItem.request_no}</span>
+                <span className="badge badge-brand">{viewingItem.id}</span>
                 <span className="badge" style={{ background: "#4f46e5", color: "#fff", fontWeight: 700, fontSize: 11 }}>
                   v{viewingItem.version || 1}
                 </span>
@@ -2715,18 +2715,27 @@ export default function ChangeRequests() {
             <form onSubmit={handleSubmitCompletion}>
               <div className="modal-body" style={{ padding: 20 }}>
                 <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
-                  {tx("orders.buyurtma_raqami")}: <strong>{completionModalItem.request_no}</strong> ({completionModalItem.system_name})
+                  {tx("orders.buyurtma_raqami")}: <strong>{completionModalItem.id}</strong> ({completionModalItem.system_name})
                 </div>
                 {completionError && <ErrorMsg error={completionError} />}
                 <div className="field" style={{ marginBottom: 14 }}>
                   <label style={{ fontWeight: 600, fontSize: 13 }}>
                     {tx("orders.tugatilgan_ish_hujjati_label")}
                   </label>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
-                    onChange={(e) => setCompletionFile(e.target.files?.[0] || null)}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                      Fayl tanlash
+                      <input
+                        type="file"
+                        hidden
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+                        onChange={(e) => setCompletionFile(e.target.files?.[0] || null)}
+                      />
+                    </label>
+                    <span className="muted" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+                      {completionFile ? completionFile.name : "Fayl tanlanmagan"}
+                    </span>
+                  </div>
                   <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>
                     {tx("orders.fayl_format_izohi")}
                   </div>
@@ -2783,7 +2792,7 @@ export default function ChangeRequests() {
             <form onSubmit={handleClientReject}>
               <div className="modal-body" style={{ padding: 20 }}>
                 <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
-                  {tx("orders.buyurtma_raqami")}: <strong>{rejectModalItem.request_no}</strong> ({rejectModalItem.system_name})
+                  {tx("orders.buyurtma_raqami")}: <strong>{rejectModalItem.id}</strong> ({rejectModalItem.system_name})
                 </div>
                 <div
                   style={{
@@ -2814,11 +2823,20 @@ export default function ChangeRequests() {
                   <label style={{ fontWeight: 600, fontSize: 13 }}>
                     {tx("orders.kamchilik_hujjati_label")}
                   </label>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
-                    onChange={(e) => setRejectFeedbackFile(e.target.files?.[0] || null)}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                      Fayl tanlash
+                      <input
+                        type="file"
+                        hidden
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+                        onChange={(e) => setRejectFeedbackFile(e.target.files?.[0] || null)}
+                      />
+                    </label>
+                    <span className="muted" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+                      {rejectFeedbackFile ? rejectFeedbackFile.name : "Fayl tanlanmagan"}
+                    </span>
+                  </div>
                   <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>
                     {tx("orders.fayl_format_izohi_qisqa")}
                   </div>
@@ -2876,36 +2894,31 @@ export default function ChangeRequests() {
             <form onSubmit={handleUploadVersionSubmit}>
               <div className="modal-body" style={{ padding: 20 }}>
                 <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
-                  {tx("orders.buyurtma_raqami")}: <strong>{uploadVersionModalItem.request_no}</strong> ({uploadVersionModalItem.system_name})
+                  {tx("orders.buyurtma_raqami")}: <strong>{uploadVersionModalItem.id}</strong> ({uploadVersionModalItem.system_name})
                   <span className="badge" style={{ marginLeft: 8, background: "#4f46e5", color: "#fff", fontSize: 11 }}>
                     {tx("orders.hozirgi")}: v{uploadVersionModalItem.version || 1}
                   </span>
                 </div>
-                <div
-                  style={{
-                    background: "#eff6ff",
-                    border: "1px solid #bfdbfe",
-                    borderRadius: 6,
-                    padding: 12,
-                    marginBottom: 14,
-                    fontSize: 12.5,
-                    color: "#1e40af",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  💡 {tx("orders.upload_version_note")}
-                </div>
+
                 {versionError && <ErrorMsg error={versionError} />}
                 <div className="field" style={{ marginBottom: 14 }}>
                   <label style={{ fontWeight: 600, fontSize: 13 }}>
                     {tx("orders.tz_file_label")} *
                   </label>
-                  <input
-                    type="file"
-                    required
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg,.webp"
-                    onChange={(e) => setVersionFile(e.target.files?.[0] || null)}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                      Fayl tanlash
+                      <input
+                        type="file"
+                        hidden
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.png,.jpg,.jpeg,.webp"
+                        onChange={(e) => setVersionFile(e.target.files?.[0] || null)}
+                      />
+                    </label>
+                    <span className="muted" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+                      {versionFile ? versionFile.name : "Fayl tanlanmagan"}
+                    </span>
+                  </div>
                   <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>
                     {tx("orders.upload_version_format_note")}
                   </div>
@@ -2922,17 +2935,7 @@ export default function ChangeRequests() {
                     onChange={(e) => setVersionChangeNote(e.target.value)}
                   />
                 </div>
-                  <div className="field">
-                    <label style={{ fontWeight: 600, fontSize: 13 }}>
-                      {tx("orders.requested_change_label")}
-                    </label>
-                    <textarea
-                      rows={4}
-                      placeholder={tx("orders.talab_ozgartirishlar_tavsifi_placeholder")}
-                      value={versionRequestedChange}
-                      onChange={(e) => setVersionRequestedChange(e.target.value)}
-                    />
-                  </div>
+
                 </div>
                 <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
                   <button
@@ -2974,7 +2977,7 @@ export default function ChangeRequests() {
               <form onSubmit={handleApproveVersionSubmit}>
                 <div className="modal-body" style={{ padding: 20 }}>
                   <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
-                    {tx("orders.buyurtma")}: <strong>{approveVersionModalItem.request_no}</strong> • {tx("orders.tasdiqlanayotgan_versiya")}:{" "}
+                    {tx("orders.buyurtma")}: <strong>{approveVersionModalItem.id}</strong> • {tx("orders.tasdiqlanayotgan_versiya")}:{" "}
                     <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || approveVersionModalItem.pending_version?.version || tx("orders.yangi_kichik")}</strong>
                   </div>
                   <div
@@ -3082,7 +3085,7 @@ export default function ChangeRequests() {
               <form onSubmit={handleRejectVersionSubmit}>
                 <div className="modal-body" style={{ padding: 20 }}>
                   <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
-                    {tx("orders.buyurtma")}: <strong>{rejectVersionModalItem.request_no}</strong> • {tx("orders.versiya_label")}:{" "}
+                    {tx("orders.buyurtma")}: <strong>{rejectVersionModalItem.id}</strong> • {tx("orders.versiya_label")}:{" "}
                     <strong style={{ color: "#dc2626" }}>v{rejectVersionTarget || rejectVersionModalItem.pending_version?.version || tx("orders.yangi_kichik")}</strong>
                   </div>
                   <div

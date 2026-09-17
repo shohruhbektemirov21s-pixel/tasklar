@@ -189,7 +189,7 @@ export default function Profile() {
 
   async function handleApproveOrder(o: ChangeRequestItem) {
     const ok = await confirmDialog({
-      title: `${tx("profile.tasdiqlash_va_yakunlash")}: №${o.request_no}`,
+      title: `${tx("profile.tasdiqlash_va_yakunlash")}: №${o.system_name}`,
       body: tx("profile.tasdiqlash_tasdiq_matni"),
       confirmText: tx("profile.tasdiqlash_va_yakunlash"),
       danger: false,
@@ -474,7 +474,7 @@ export default function Profile() {
                       <div className="row between middle wrap" style={{ gap: 8, marginBottom: 10 }}>
                         <div className="row middle wrap" style={{ gap: 8 }}>
                           <Link {...toOrder(ord.id)} style={{ fontWeight: 700, fontSize: 14 }}>
-                            №{ord.request_no}
+                            №{ord.system_name}
                           </Link>
                           <span className="badge">{ord.system_name || ord.project_detail?.name || "—"}</span>
                           {ord.module && <span className="badge badge-info">{ord.module}</span>}
@@ -642,7 +642,7 @@ export default function Profile() {
                         <tr className="clickable" key={ord.id} onClick={() => go(toOrder(ord.id))}>
                           <td style={{ fontWeight: 600 }}>
                             <Link {...toOrder(ord.id)} onClick={(e) => e.stopPropagation()}>
-                              №{ord.request_no}
+                              №{ord.system_name}
                             </Link>
                           </td>
                           <td>
@@ -885,7 +885,7 @@ export default function Profile() {
             <form onSubmit={handleRejectSubmit}>
               <div className="modal-body" style={{ padding: 20 }}>
                 <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
-                  Buyurtma: <strong>№{rejectModalItem.request_no}</strong> ({rejectModalItem.system_name || rejectModalItem.project_detail?.name || "—"})
+                  Buyurtma: <strong>№{rejectModalItem.system_name}</strong> ({rejectModalItem.system_name || rejectModalItem.project_detail?.name || "—"})
                   {rejectModalItem.assigned_pm_name && (
                     <span> • PM: <strong>{rejectModalItem.assigned_pm_name}</strong></span>
                   )}

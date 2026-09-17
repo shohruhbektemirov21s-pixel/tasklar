@@ -192,7 +192,6 @@ export interface Project {
   order_id?: number | null;
   linked_order?: {
     id: number;
-    request_no: string;
     system_name: string;
     status: string;
     status_display: string;
@@ -265,7 +264,6 @@ export interface Task {
   project_name: string;
   project_key: string;
   order?: number | null;
-  order_request_no?: string | null;
   number: number;
   code: string;
   title: string;
@@ -1053,7 +1051,6 @@ export interface OrderTaskBriefItem {
 /** Axborot tizimiga o'zgartirish kiritish so'rovi (TZ) */
 export interface ChangeRequestItem {
   id: number;
-  request_no: string;
   version?: number;
   is_locked?: boolean;
   stage_index?: number;

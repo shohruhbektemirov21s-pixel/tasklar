@@ -75,7 +75,7 @@ def generate_order_docx(order) -> io.BytesIO:
         [
             ("Tizim nomi:", order.system_name),
             ("Loyiha turi:", order_type_text),
-            ("Talabnoma №:", order.request_no),
+            ("Talabnoma №:", order.id),
             ("Sana:", str(order.request_date)),
         ],
         [

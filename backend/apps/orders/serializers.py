@@ -231,7 +231,6 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
         model = ChangeRequest
         fields = [
             "id",
-            "request_no",
             "version",
             "is_locked",
             "stage_index",
@@ -310,7 +309,6 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
-            "request_no",
             "version",
             "is_locked",
             "versions",

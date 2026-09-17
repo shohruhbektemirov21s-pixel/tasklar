@@ -45,14 +45,13 @@ class ChangeNature(models.TextChoices):
 
 
 def order_tz_file_path(instance, filename):
-    return f"orders/tz/{instance.request_no or 'new'}/{filename}"
+    return f"orders/tz/{instance.pk or 'new'}/{filename}"
 
 
 class ChangeRequest(models.Model):
     """Tizimga o'zgartirish kiritish bo'yicha buyurtma talabnomasi (TZ)."""
 
     # Metama'lumotlar
-    request_no = models.CharField("Talabnoma raqami", max_length=50, unique=True, db_index=True)
     system_name = models.CharField("Tizim nomi", max_length=150, default="TeamFlow")
     module = models.CharField("Modul", max_length=150, blank=True, default="")
     order_type = models.CharField(
@@ -212,7 +211,7 @@ class ChangeRequest(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"[{self.request_no}] {self.system_name} - {self.module or 'Umumiy'}"
+        return f"{self.system_name} - {self.module or 'Umumiy'}"
 
     @property
     def tz_file_size_display(self):
@@ -245,18 +244,6 @@ class ChangeRequest(models.Model):
         # Agar loyiha tanlangan bo'lsa va unda menejer (PM) bo'lsa, avtomatik PM biriktiriladi
         if self.project and self.project.manager and not self.assigned_pm:
             self.assigned_pm = self.project.manager
-
-        if not self.request_no:
-            today_str = timezone.now().strftime("%Y%m%d")
-            last_order = ChangeRequest.objects.filter(request_no__startswith=f"ORD-{today_str}").order_by("-id").first()
-            if last_order:
-                try:
-                    num = int(last_order.request_no.split("-")[-1]) + 1
-                except Exception:
-                    num = 1
-            else:
-                num = 1
-            self.request_no = f"ORD-{today_str}-{num:03d}"
 
         if self.tz_file and not self.tz_file_name:
             self.tz_file_name = self.tz_file.name.rsplit("/", 1)[-1][:255]
@@ -331,7 +318,7 @@ class ChangeRequestVersion(models.Model):
         unique_together = [("order", "version")]
 
     def __str__(self):
-        return f"{self.order.request_no} v{self.version}"
+        return f"{self.order.system_name} v{self.version}"
 
     @property
     def tz_file_size_display(self):
@@ -355,8 +342,8 @@ class ChangeRequestVersion(models.Model):
 
 def order_attachment_path(instance, filename):
     order_id = getattr(instance, "order_id", "new")
-    request_no = instance.order.request_no if instance.order and instance.order.request_no else str(order_id)
-    return f"orders/attachments/{request_no}/{filename}"
+    folder_name = instance.order.pk if instance.order and instance.order.pk else str(order_id)
+    return f"orders/attachments/{folder_name}/{filename}"
 
 
 class OrderAttachment(models.Model):

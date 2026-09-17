@@ -268,7 +268,7 @@ export default function OrderDetail() {
   async function handleDelete() {
     if (!item) return;
     const ok = await confirmDialog({
-      title: `«${item.request_no}» buyurtmasi o'chirilsinmi?`,
+      title: `«${item.system_name}» buyurtmasi o'chirilsinmi?`,
       body: tx("orders.amalni_ortga_qaytarib_bolmaydi"),
       confirmText: tx("common.ochirish"),
       danger: true,
@@ -342,7 +342,7 @@ export default function OrderDetail() {
   async function handleClientApprove() {
     if (!item) return;
     const ok = await confirmDialog({
-      title: tx("orders.buyurtma_qabul_qilinsinmi", { request_no: item.request_no }),
+      title: tx("orders.buyurtma_qabul_qilinsinmi", { request_no: `#${item.id}` }),
       body: tx("orders.ish_yakunlanadi_va_yopiladi"),
       confirmText: tx("common.tasdiqlash"),
     });
@@ -619,7 +619,7 @@ export default function OrderDetail() {
             </Link>
             <span className="muted" style={{ opacity: 0.5 }}>/</span>
             <span className="badge badge-brand" style={{ fontSize: 12, fontWeight: 700 }}>
-              {item.request_no}
+              {item.system_name}
             </span>
             {(item.version || 1) > 1 && (
               <span className="badge" style={{ fontSize: 11, fontWeight: 700 }}>
@@ -1405,7 +1405,7 @@ export default function OrderDetail() {
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: item.additional_materials ? 10 : 0 }}>
               <div style={{ width: 4, height: 16, borderRadius: 2, background: "#06b6d4" }} />
               <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)" }}>
-                {tx("orders.bolim_3_title", undefined, "3. Qo'shimcha materiallar")}
+                {tx("orders.fayl_va_izohlar", undefined, "Izoh va fayllar")}
               </span>
             </div>
             {item.additional_materials && (
@@ -2031,11 +2031,19 @@ export default function OrderDetail() {
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6 }}>
                     Yangi TZ fayli (PDF/DOCX/Rasm) <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
-                  <input
-                    type="file"
-                    required
-                    onChange={(e) => setVersionFile(e.target.files?.[0] || null)}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                      Fayl tanlash
+                      <input
+                        type="file"
+                        hidden
+                        onChange={(e) => setVersionFile(e.target.files?.[0] || null)}
+                      />
+                    </label>
+                    <span className="muted" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+                      {versionFile ? versionFile.name : "Fayl tanlanmagan"}
+                    </span>
+                  </div>
                 </div>
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6 }}>
@@ -2113,7 +2121,7 @@ export default function OrderDetail() {
                         color: "var(--text)",
                       }}
                     >
-                      {item.request_no}
+                      {item.system_name}
                     </span>
                     <span style={{ fontSize: 12, color: "var(--muted)" }}>•</span>
                     <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
@@ -2327,7 +2335,7 @@ export default function OrderDetail() {
                 <div>
                   <strong style={{ fontSize: 15, color: "var(--text)" }}>{tx("orders.kamchilik_bilan_qaytarish")}</strong>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {item.request_no} — {item.project_detail?.name || item.system_name}
+                    {item.system_name} — {item.project_detail?.name || item.system_name}
                   </div>
                 </div>
               </div>
@@ -2374,11 +2382,20 @@ export default function OrderDetail() {
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.kamchilik_hujjati_tz")}
                   </label>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
-                    onChange={(e) => setRejectFile(e.target.files?.[0] || null)}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                      Fayl tanlash
+                      <input
+                        type="file"
+                        hidden
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+                        onChange={(e) => setRejectFile(e.target.files?.[0] || null)}
+                      />
+                    </label>
+                    <span className="muted" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+                      {rejectFile ? rejectFile.name : "Fayl tanlanmagan"}
+                    </span>
+                  </div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
                     {tx("orders.kamchilik_hujjati_izoh")}
                   </div>
@@ -2445,7 +2462,7 @@ export default function OrderDetail() {
                 <div>
                   <strong style={{ fontSize: 15, color: "var(--text)" }}>{tx("orders.tugatilgan_ishni_topshirish")}</strong>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {item.request_no} — {item.project_detail?.name || item.system_name}
+                    {item.system_name} — {item.project_detail?.name || item.system_name}
                   </div>
                 </div>
               </div>
@@ -2467,11 +2484,20 @@ export default function OrderDetail() {
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     Tugatilgan ish hujjati / Skrinshot (fayl yoki rasm)
                   </label>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
-                    onChange={(e) => setCompletionFile(e.target.files?.[0] || null)}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                      Fayl tanlash
+                      <input
+                        type="file"
+                        hidden
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+                        onChange={(e) => setCompletionFile(e.target.files?.[0] || null)}
+                      />
+                    </label>
+                    <span className="muted" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+                      {completionFile ? completionFile.name : "Fayl tanlanmagan"}
+                    </span>
+                  </div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
                     Word (.docx, .doc), PDF, Excel, Rasmlar (PNG, JPG, WEBP). Maksimal: 20 MB
                   </div>
@@ -2542,7 +2568,7 @@ export default function OrderDetail() {
                     {tx("orders.create_task_btn")}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {item.request_no} — {item.project_detail?.name || item.system_name}
+                    {item.system_name} — {item.project_detail?.name || item.system_name}
                   </div>
                 </div>
               </div>
@@ -2687,7 +2713,7 @@ export default function OrderDetail() {
                 <div>
                   <strong style={{ fontSize: 16 }}>Yangi TZ versiyasini tasdiqlash</strong>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {item.request_no} • Versiya: <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || item.pending_version?.version || tx("orders.yangi")}</strong>
+                    {item.system_name} • Versiya: <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || item.pending_version?.version || tx("orders.yangi")}</strong>
                   </div>
                 </div>
               </div>
@@ -2797,7 +2823,7 @@ export default function OrderDetail() {
                 <div>
                   <strong style={{ fontSize: 16 }}>Yangi TZ versiyasini rad etish</strong>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {item.request_no} • Versiya: v{rejectVersionTarget || item.pending_version?.version || tx("orders.yangi")}
+                    {item.system_name} • Versiya: v{rejectVersionTarget || item.pending_version?.version || tx("orders.yangi")}
                   </div>
                 </div>
               </div>

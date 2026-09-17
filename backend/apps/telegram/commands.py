@@ -118,7 +118,7 @@ def _order_row(order):
     name = f"{order.system_name}{' — ' + order.module if order.module else ''}"
     due = order.pm_deadline or order.due_date
     due_str = f" <i>(Muddat: {due.strftime('%d.%m.%Y')})</i>" if due else ""
-    return f"• <code>{esc(order.request_no)}</code> {esc(name)} — <b>{esc(order.get_status_display())}</b>{due_str}"
+    return f"• <code>#{order.id}</code> {esc(name)} — <b>{esc(order.get_status_display())}</b>{due_str}"
 
 
 # ------------------------------------------------------------------ Buyruqlar

@@ -2688,7 +2688,7 @@
     "note": "pages/OrderDetail.tsx"
   },
   "orders.bolim3_nomi": {
-    "value": "3. Qo'shimcha materiallar",
+    "value": "Izoh va fayllar",
     "note": "pages/OrderDetail.tsx"
   },
   "orders.bolim4_nomi": {
@@ -2828,7 +2828,7 @@
     "note": "pages/OrderForm.tsx"
   },
   "orders.change_note_label": {
-    "value": "Ushbu versiyada nimalar o'zgargani / sababi",
+    "value": "Ushbu versiyada nimalar o'zgargani (sababi va tavsifi)",
     "note": "pages/ChangeRequests.tsx"
   },
   "orders.change_note_placeholder": {
@@ -3668,7 +3668,7 @@
     "note": "pages/OrderDetail.tsx"
   },
   "orders.qoshimcha_materiallar": {
-    "value": "Skrinshotlar, xato xabarlari, texnik talablar",
+    "value": "Qo'shimcha izoh yoki talablar",
     "note": "pages/OrderDetail.tsx"
   },
   "orders.qulflangan_izoh": {
@@ -4180,7 +4180,7 @@
     "note": "pages/ChangeRequests.tsx"
   },
   "orders.upload_version_format_note": {
-    "value": "Upload version format note",
+    "value": "Ruxsat etilgan formatlar: PDF, Word, Excel, ZIP, RAR, Rasm fayllari",
     "note": "pages/ChangeRequests.tsx"
   },
   "orders.upload_version_note": {
