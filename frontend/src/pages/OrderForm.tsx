@@ -631,19 +631,6 @@ export default function OrderForm() {
 
             <Card title={tx("orders.bolim3_nomi")}>
               <div className="field">
-                <label htmlFor={`${fid}-add-mat`}>
-                  {tx("orders.qoshimcha_materiallar")}
-                </label>
-                <textarea
-                  id={`${fid}-add-mat`}
-                  rows={2}
-                  value={f.additional_materials}
-                  placeholder={tx("orders.additional_materials_placeholder")}
-                  onChange={(e) => set("additional_materials", e.target.value)}
-                />
-              </div>
-
-              <div className="field" style={{ marginTop: 16 }}>
                 <label htmlFor={`${fid}-files`} style={{ fontWeight: 600, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>{tx("orders.biriktirilgan_fayllar_label")}</span>
                   <span className="muted" style={{ fontSize: 11.5, fontWeight: 400 }}>{tx("orders.koplab_fayl_yuklash")}</span>
