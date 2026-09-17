@@ -69,9 +69,6 @@ function BackButton() {
   const navigate = useNavigate();
   const location = useLocation();
   const { history, currentIdx, goBackTo, clearHistory } = useNavHistory();
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
-
   const isRootPage = location.pathname === "/panel" || location.pathname === "/";
   const hasHistory = currentIdx > 0 || (typeof window !== "undefined" && window.history.length > 1);
   const canGoBack = hasHistory || !isRootPage;
@@ -84,168 +81,22 @@ function BackButton() {
     }
   }, [currentIdx, isRootPage, location.pathname, navigate]);
 
-  // Oldingi qadamlar (eng oxirgi bosilgan qadam eng yuqorida turadi)
-  const previousSteps = useMemo(() => {
-    return history.filter((h) => h.idx < currentIdx).sort((a, b) => b.idx - a.idx);
-  }, [history, currentIdx]);
 
-  // Hozirgi qadam
-  const currentStep = useMemo(() => {
-    return history.find((h) => h.idx === currentIdx);
-  }, [history, currentIdx]);
-
-  // Oldinga qadamlar (agar orqaga qaytilgan bo'lsa)
-  const forwardSteps = useMemo(() => {
-    return history.filter((h) => h.idx > currentIdx).sort((a, b) => a.idx - b.idx);
-  }, [history, currentIdx]);
-
-  // Tashqariga yoki Esc bosilganda yopish
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  const onContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (previousSteps.length > 0 || forwardSteps.length > 0) {
-      setOpen((v) => !v);
-    }
-  };
 
   return (
-    <div className="top-back-wrap" ref={wrapRef}>
+    <div className="top-back-wrap">
       <div className="top-back-btn-group">
         <button
           type="button"
           className="top-icon top-back"
           disabled={!canGoBack}
           onClick={handleBack}
-          onContextMenu={onContextMenu}
           title={canGoBack ? tx("layout.orqaga_qaytish") : tx("layout.orqaga_qaytadigan_sahifa_yoq")}
           aria-label={tx("layout.orqaga_qaytish")}
         >
           <IconBack size={17} />
         </button>
-        {previousSteps.length > 0 && (
-          <button
-            type="button"
-            className={`top-back-caret ${open ? "open" : ""}`}
-            onClick={() => setOpen((v) => !v)}
-            title={tx("layout.qadamlar_tarixi")}
-            aria-label={tx("layout.qadamlar_tarixi")}
-            aria-expanded={open}
-          >
-            <IconChevron size={11} />
-          </button>
-        )}
       </div>
-
-      {open && (
-        <div className="top-back-dropdown" role="menu">
-          <div className="top-back-head">
-            <div className="top-back-head-title">
-              <IconHistory size={14} />
-              <span>{tx("layout.qadamlar_tarixi")}</span>
-            </div>
-            <span className="badge badge-sm">{previousSteps.length} {tx("layout.ta_qadam")}</span>
-          </div>
-
-          <div className="top-back-list">
-            {previousSteps.map((step) => {
-              const delta = currentIdx - step.idx;
-              return (
-                <button
-                  key={step.key || `${step.idx}-${step.pathname}`}
-                  type="button"
-                  className="top-back-item"
-                  onClick={() => {
-                    setOpen(false);
-                    goBackTo(step);
-                  }}
-                >
-                  <span className="top-back-step-num">-{delta}</span>
-                  <div className="top-back-item-info">
-                    <div className="top-back-item-title">{step.title}</div>
-                    <div className="top-back-item-sub">
-                      <span>{step.pathname}</span>
-                      <span className="bullet">·</span>
-                      <span>{tx("layout.qadam_orqaga", { n: delta })}</span>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-
-            {currentStep && (
-              <div className="top-back-item current">
-                <span className="top-back-step-num dot">•</span>
-                <div className="top-back-item-info">
-                  <div className="top-back-item-title">
-                    {currentStep.title} <span className="badge badge-subtle">{tx("layout.hozirgi_sahifa")}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {forwardSteps.length > 0 && (
-              <>
-                <div className="top-back-divider" />
-                <div className="top-back-section-label">{tx("layout.oldinga_qadamlar")}</div>
-                {forwardSteps.map((step) => {
-                  const delta = step.idx - currentIdx;
-                  return (
-                    <button
-                      key={step.key || `${step.idx}-${step.pathname}`}
-                      type="button"
-                      className="top-back-item forward"
-                      onClick={() => {
-                        setOpen(false);
-                        goBackTo(step);
-                      }}
-                    >
-                      <span className="top-back-step-num">+{delta}</span>
-                      <div className="top-back-item-info">
-                        <div className="top-back-item-title">{step.title}</div>
-                        <div className="top-back-item-sub">
-                          <span>{step.pathname}</span>
-                          <span className="bullet">·</span>
-                          <span>{tx("layout.qadam_oldinga", { n: delta })}</span>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </>
-            )}
-          </div>
-
-          <div className="top-back-foot">
-            <button
-              type="button"
-              className="top-back-clear"
-              onClick={() => {
-                clearHistory();
-                setOpen(false);
-              }}
-            >
-              {tx("layout.tarixni_tozalash")}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
