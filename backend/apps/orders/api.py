@@ -585,7 +585,10 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                         {"detail": f"Ushbu buyurtmani allaqachon boshqa loyiha menejeri ({pm_name}) o'z zimmasiga olgan. Boshqa PM bu ishni ololmaydi."}
                     )
 
-            order.assigned_pm = user
+            if "assigned_pm" in request.data and request.data.get("assigned_pm"):
+                order.assigned_pm_id = request.data.get("assigned_pm")
+            else:
+                order.assigned_pm = user
             role_label = getattr(user, "get_global_role_display", lambda: "PM")()
             order.executor_signer = f"{user.full_name} ({role_label})"
             if order.status == ChangeRequestStatus.NEW:
@@ -669,6 +672,8 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 order.pm_start_date = data["pm_start_date"]
             if "pm_notes" in data:
                 order.pm_notes = data["pm_notes"]
+            if "assigned_pm" in data:
+                order.assigned_pm = data["assigned_pm"]
             if "assigned_developer" in data:
                 order.assigned_developer = data["assigned_developer"]
             if "linked_task" in data:
@@ -680,7 +685,8 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 role_label = getattr(user, "get_global_role_display", lambda: "PM")()
                 order.executor_signer = f"{user.full_name} ({role_label})"
 
-            order.assigned_pm = user
+            if not order.assigned_pm:
+                order.assigned_pm = user
             order.save()
 
             # Joriy versiyani ham yangilash

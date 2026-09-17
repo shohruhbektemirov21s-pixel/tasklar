@@ -117,6 +117,10 @@ export default function ChangeRequests() {
     () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY" && u.global_role !== "ADMIN" && u.global_role !== "BOSS" && !u.is_platform_admin && !u.is_boss),
     [usersList]
   );
+  const pmList = useMemo(
+    () => usersList.filter((u) => u.specialty === "PM" || u.global_role === "MANAGER" || u.global_role === "ADMIN" || u.global_role === "BOSS"),
+    [usersList]
+  );
   const total = totalOf(data);
   const pages = pagesOf(data, PER_PAGE);
   const isPMOrAdmin = Boolean(
@@ -278,6 +282,7 @@ export default function ChangeRequests() {
   };
   const [claimModalItem, setClaimModalItem] = useState<ChangeRequestItem | null>(null);
   const [claimStartDate, setClaimStartDate] = useState("");
+  const [claimAssignedPm, setClaimAssignedPm] = useState<number | "">("");
   const [claimDeadline, setClaimDeadline] = useState("");
   const [claimNotes, setClaimNotes] = useState("");
   const [claimSubmitting, setClaimSubmitting] = useState(false);
@@ -285,6 +290,7 @@ export default function ChangeRequests() {
   const handleOpenClaim = (item: ChangeRequestItem) => {
     setClaimModalItem(item);
     setClaimStartDate(item.pm_start_date || "");
+    setClaimAssignedPm(item.assigned_pm || "");
     setClaimDeadline(item.pm_deadline || item.due_date || "");
     setClaimNotes("");
   };
@@ -295,6 +301,7 @@ export default function ChangeRequests() {
     try {
       const updated = await claimOrder(claimModalItem.id, {
         pm_start_date: claimStartDate || undefined,
+        assigned_pm: claimAssignedPm || undefined,
         pm_deadline: claimDeadline || undefined,
         pm_notes: claimNotes.trim() || undefined,
       });
@@ -1711,6 +1718,24 @@ export default function ChangeRequests() {
                     >
                       {tx("orders.claim_use_client_date")}
                     </button>
+                  </div>
+                )}
+                {(user?.is_platform_admin || user?.is_boss) && (
+                  <div className="field" style={{ gridColumn: "1 / -1" }}>
+                    <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                      Biriktirilgan hodim (PM)
+                    </label>
+                    <select
+                      className="input"
+                      value={claimAssignedPm}
+                      onChange={(e) => setClaimAssignedPm(e.target.value ? Number(e.target.value) : "")}
+                      style={{ width: "100%" }}
+                    >
+                      <option value="">(O'zingizga olish)</option>
+                      {pmList.map((u: any) => (
+                        <option key={u.id} value={u.id}>{u.full_name}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
                 <div className="field">

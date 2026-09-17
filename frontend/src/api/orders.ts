@@ -191,6 +191,7 @@ export interface PMDecisionPayload {
   pm_start_date?: string;
   pm_deadline?: string;
   pm_notes?: string;
+  assigned_pm?: number | null;
   assigned_developer?: number | null;
   executor_signer?: string;
 }
@@ -231,6 +232,7 @@ export interface ClaimOrderPayload {
   pm_start_date?: string;
   pm_deadline?: string;
   pm_notes?: string;
+  assigned_pm?: number | null;
   assigned_developer?: number | null;
 }
 

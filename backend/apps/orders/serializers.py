@@ -193,6 +193,9 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     assigned_developer = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), required=False, allow_null=True
     )
+    assigned_pm = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False, allow_null=True
+    )
     assigned_developer_name = serializers.CharField(source="assigned_developer.full_name", read_only=True, default="")
     assigned_developer_detail = serializers.SerializerMethodField(read_only=True)
 
@@ -573,6 +576,9 @@ class PMDecisionSerializer(serializers.Serializer):
     pm_notes = serializers.CharField(required=False, allow_blank=True)
     executor_signer = serializers.CharField(max_length=200, required=False, allow_blank=True)
     assigned_developer = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False, allow_null=True
+    )
+    assigned_pm = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), required=False, allow_null=True
     )
     linked_task = serializers.PrimaryKeyRelatedField(

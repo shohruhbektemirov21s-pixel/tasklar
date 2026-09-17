@@ -138,11 +138,13 @@ export default function OrderDetail() {
   const [pmPanelOpen, setPmPanelOpen] = useState(false);
   const [pmStatus, setPmStatus] = useState<ChangeRequestItem["status"]>("ACCEPTED");
   const [pmStartDate, setPmStartDate] = useState("");
+  const [pmAssignedPm, setPmAssignedPm] = useState<number | "">(item?.assigned_pm || "");
   const [pmDeadline, setPmDeadline] = useState("");
   const [pmNotes, setPmNotes] = useState("");
   const [pmSaving, setPmSaving] = useState(false);
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [claimStartDateInput, setClaimStartDateInput] = useState("");
+  const [claimAssignedPmInput, setClaimAssignedPmInput] = useState<number | "">("");
   const [claimDeadlineInput, setClaimDeadlineInput] = useState("");
   const [claimNotesInput, setClaimNotesInput] = useState("");
   const [claimSubmitting, setClaimSubmitting] = useState(false);
@@ -150,6 +152,10 @@ export default function OrderDetail() {
   const usersList: UserBrief[] = useMemo(() => (usersData ? listOf<UserBrief>(usersData) : []), [usersData]);
   const developersList = useMemo(
     () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY" && u.global_role !== "ADMIN" && u.global_role !== "BOSS" && !u.is_platform_admin && !u.is_boss),
+    [usersList]
+  );
+  const pmList = useMemo(
+    () => usersList.filter((u) => u.specialty === "PM" || u.global_role === "MANAGER" || u.global_role === "ADMIN" || u.global_role === "BOSS"),
     [usersList]
   );
   const [versionModal, setVersionModal] = useState(false);
@@ -285,6 +291,7 @@ export default function OrderDetail() {
   }
   function handleOpenClaim() {
     if (!item) return;
+    setClaimAssignedPmInput(item.assigned_pm || "");
     setClaimDeadlineInput(item.pm_deadline || item.due_date || "");
     setClaimNotesInput("");
     setClaimModalOpen(true);
@@ -297,6 +304,7 @@ export default function OrderDetail() {
     try {
       const updated = await claimOrder(item.id, {
         pm_start_date: claimStartDateInput || undefined,
+        assigned_pm: claimAssignedPmInput || undefined,
         pm_deadline: claimDeadlineInput || undefined,
         pm_notes: claimNotesInput.trim() || undefined,
       });
@@ -321,6 +329,7 @@ export default function OrderDetail() {
       const updated = await setPmDecision(item.id, {
         status: pmStatus,
         pm_start_date: pmStartDate || undefined,
+        assigned_pm: pmAssignedPm || undefined,
         pm_deadline: pmDeadline || undefined,
         pm_notes: pmNotes.trim() || undefined,
       });
@@ -661,7 +670,7 @@ export default function OrderDetail() {
                 <button
                   type="button"
                   className="btn btn-sm btn-outline"
-                  onClick={() => setPmPanelOpen((v) => !v)}
+                  onClick={() => { setPmPanelOpen((v) => !v); setPmAssignedPm(item?.assigned_pm || ""); }}
                 >
                   {pmPanelOpen ? tx("orders.pm_panelni_yopish", undefined, "Panelni yopish") : tx("orders.pm_holat_muddatni_ozgartirish", undefined, "Tahrirlash")}
                 </button>
@@ -1299,6 +1308,20 @@ export default function OrderDetail() {
                     ))}
                   </select>
                 </div>
+                {(user?.is_platform_admin || user?.is_boss) && (
+                  <div className="field" style={{ gridColumn: "1 / -1" }}>
+                    <label style={{ fontSize: 11, fontWeight: 600 }}>Biriktirilgan hodim (PM)</label>
+                    <select
+                      value={pmAssignedPm}
+                      onChange={(e) => setPmAssignedPm(e.target.value ? Number(e.target.value) : "")}
+                    >
+                      <option value="">(O'zgarishsiz qoldirish / O'zingizga olish)</option>
+                      {pmList.map((u: any) => (
+                        <option key={u.id} value={u.id}>{u.full_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="field">
                   <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.boshlanish_sanasi", undefined, "Boshlanish sanasi")}</label>
                   <input
@@ -1823,6 +1846,24 @@ export default function OrderDetail() {
                     >
                       {tx("orders.claim_use_client_date")}
                     </button>
+                  </div>
+                )}
+                {(user?.is_platform_admin || user?.is_boss) && (
+                  <div className="field">
+                    <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                      Biriktirilgan hodim (PM)
+                    </label>
+                    <select
+                      className="input"
+                      value={claimAssignedPmInput}
+                      onChange={(e) => setClaimAssignedPmInput(e.target.value ? Number(e.target.value) : "")}
+                      style={{ width: "100%" }}
+                    >
+                      <option value="">(O'zingizga olish)</option>
+                      {pmList.map((u: any) => (
+                        <option key={u.id} value={u.id}>{u.full_name}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
