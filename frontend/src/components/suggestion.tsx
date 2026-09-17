@@ -28,6 +28,7 @@ import {
 import { Card, ErrorMsg, timeAgo } from "@/components/ui";
 import { tx } from "@/i18n";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
+import { useAuth } from "@/auth/AuthContext";
 
 /** Holat nishonining rangi - ro'yxatda ham, sahifada ham bir xil. */
 export const STATUS_TONE: Record<SuggestionStatusValue, string> = {
@@ -69,6 +70,7 @@ export function SuggestionForm({ initial, editing, onCancel, onSaved }: {
   const [picked, setPicked] = useState<File[]>([]);
   /* Tahrirda allaqachon biriktirilgan fayllar: shu yerdan o'chiriladi. */
   const [kept, setKept] = useState<SuggestionFile[]>(editing?.files || []);
+  const { user } = useAuth();
 
   function set<K extends keyof SuggestionFormValues>(k: K, v: SuggestionFormValues[K]) {
     setF((prev) => ({ ...prev, [k]: v }));
@@ -160,15 +162,17 @@ export function SuggestionForm({ initial, editing, onCancel, onSaved }: {
 
         {/* Anonimlik TURDAN QAT'I NAZAR: yopiq taklif eng og'ir mavzular
             uchun va aynan o'sha yerda ism majburiy bo'lib turardi. */}
-        <div className="field">
-          <div className="check-list">
-            <label className={f.is_anonymous ? "on" : ""}>
-              <input type="checkbox" checked={f.is_anonymous}
-                     onChange={(e) => set("is_anonymous", e.target.checked)} />
-              {tx("suggestions.anonim_yuborish")}
-            </label>
+        {!user?.is_sohaviy_boshqarma && (
+          <div className="field">
+            <div className="check-list">
+              <label className={f.is_anonymous ? "on" : ""}>
+                <input type="checkbox" checked={f.is_anonymous}
+                       onChange={(e) => set("is_anonymous", e.target.checked)} />
+                {tx("suggestions.anonim_yuborish")}
+              </label>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Fayl — «oddiy taklif ham yuklay olsin». Kim yuklagani ko'rinadi;
             anonim taklifda esa u ham yashiriladi. */}

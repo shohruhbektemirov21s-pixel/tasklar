@@ -39,6 +39,14 @@ class SuggestionFileSerializer(serializers.ModelSerializer):
     # Yuklashda kerak, javobda emas: javobda imzolangan `url` ketadi.
     file = serializers.FileField(write_only=True)
 
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if request and getattr(request.user, "is_sohaviy_boshqarma", False):
+            if attrs.get("is_anonymous", False):
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError({"is_anonymous": "Boshqarma akkauntlari anonim taklif yubora olmaydi."})
+        return super().validate(attrs)
+
     class Meta:
         model = SuggestionFile
         fields = ["id", "file", "url", "original_name", "size", "size_display",
@@ -84,6 +92,14 @@ class SuggestionSerializer(serializers.ModelSerializer):
     can_edit = serializers.SerializerMethodField()
     can_decide = serializers.SerializerMethodField()
     can_vote = serializers.SerializerMethodField()
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if request and getattr(request.user, "is_sohaviy_boshqarma", False):
+            if attrs.get("is_anonymous", False):
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError({"is_anonymous": "Boshqarma akkauntlari anonim taklif yubora olmaydi."})
+        return super().validate(attrs)
 
     class Meta:
         model = Suggestion
