@@ -2652,7 +2652,7 @@
     "note": "pages/OrderForm.tsx"
   },
   "orders.biriktirilgan_fayllar_label": {
-    "value": "Biriktirilgan hujjatlar va fayllar (TZ, texnik topshiriq)",
+    "value": "Faylni yuklash",
     "note": "pages/OrderForm.tsx"
   },
   "orders.biriktirilgan_tz_hujjati": {
@@ -2688,7 +2688,7 @@
     "note": "pages/OrderDetail.tsx"
   },
   "orders.bolim3_nomi": {
-    "value": "Izoh va fayllar",
+    "value": "Izoh",
     "note": "pages/OrderDetail.tsx"
   },
   "orders.bolim4_nomi": {
@@ -3668,7 +3668,7 @@
     "note": "pages/OrderDetail.tsx"
   },
   "orders.qoshimcha_materiallar": {
-    "value": "Qo'shimcha izoh yoki talablar",
+    "value": "Batafsil ma'lumot (ixtiyoriy)",
     "note": "pages/OrderDetail.tsx"
   },
   "orders.qulflangan_izoh": {
