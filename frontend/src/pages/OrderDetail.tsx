@@ -142,7 +142,6 @@ export default function OrderDetail() {
   const [pmNotes, setPmNotes] = useState("");
   const [pmSaving, setPmSaving] = useState(false);
   const [claimModalOpen, setClaimModalOpen] = useState(false);
-  const [claimDuration, setClaimDuration] = useState("");
   const [claimStartDateInput, setClaimStartDateInput] = useState("");
   const [claimDeadlineInput, setClaimDeadlineInput] = useState("");
   const [claimNotesInput, setClaimNotesInput] = useState("");
@@ -286,17 +285,15 @@ export default function OrderDetail() {
   }
   function handleOpenClaim() {
     if (!item) return;
-    setClaimDuration(item.pm_estimated_duration || "");
     setClaimDeadlineInput(item.pm_deadline || item.due_date || "");
     setClaimNotesInput("");
     setClaimModalOpen(true);
   }
-  function applyQuickDeadline(days: number, durationText: string) {
+  function applyQuickDeadline(days: number) {
     const d = new Date();
     d.setDate(d.getDate() + days);
     const iso = d.toISOString().split("T")[0];
     setClaimDeadlineInput(iso);
-    setClaimDuration(durationText);
   }
   async function handleClaimSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -305,7 +302,6 @@ export default function OrderDetail() {
     setActionError(null);
     try {
       const updated = await claimOrder(item.id, {
-        pm_estimated_duration: claimDuration.trim() || undefined,
         pm_start_date: claimStartDateInput || undefined,
         pm_deadline: claimDeadlineInput || undefined,
         pm_notes: claimNotesInput.trim() || undefined,
@@ -1861,29 +1857,29 @@ export default function OrderDetail() {
                       <span style={{ fontSize: 11, color: "var(--muted)", marginRight: 2 }}>{tx("orders.claim_quick_label")}</span>
                       <button
                         type="button"
-                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_3days_duration") ? "active" : ""}`}
-                        onClick={() => applyQuickDeadline(3, tx("orders.claim_3days_duration"))}
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(3)}
                       >
                         {tx("orders.claim_3days")}
                       </button>
                       <button
                         type="button"
-                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_1week_duration") ? "active" : ""}`}
-                        onClick={() => applyQuickDeadline(7, tx("orders.claim_1week_duration"))}
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(7)}
                       >
                         {tx("orders.claim_1week")}
                       </button>
                       <button
                         type="button"
-                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_2weeks_duration") ? "active" : ""}`}
-                        onClick={() => applyQuickDeadline(14, tx("orders.claim_2weeks_duration"))}
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(14)}
                       >
                         {tx("orders.claim_2weeks")}
                       </button>
                       <button
                         type="button"
-                        className={`modal-quick-chip ${claimDuration === tx("orders.claim_1month_duration") ? "active" : ""}`}
-                        onClick={() => applyQuickDeadline(30, tx("orders.claim_1month_duration"))}
+                        className="modal-quick-chip"
+                        onClick={() => applyQuickDeadline(30)}
                       >
                         {tx("orders.claim_1month")}
                       </button>
@@ -1900,22 +1896,7 @@ export default function OrderDetail() {
                   />
                   </div>
                 </div>
-                <div className="field">
-                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
-                    {tx("orders.claim_duration_label")}
-                  </label>
-                  <input
-                    type="text"
-                    className="input"
-                    placeholder={tx("orders.claim_duration_placeholder")}
-                    value={claimDuration}
-                    onChange={(e) => setClaimDuration(e.target.value)}
-                    style={{ width: "100%" }}
-                  />
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
-                    {tx("orders.claim_duration_hint")}
-                  </div>
-                </div>
+
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
                     {tx("orders.claim_notes_label")}
