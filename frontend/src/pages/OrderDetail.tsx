@@ -1061,6 +1061,9 @@ export default function OrderDetail() {
             boxShadow: "0 1px 3px rgba(0, 0, 0, 0.03)",
           }}
         >
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 340px", gap: 32, alignItems: "start" }}>
+            {/* CHAP USTUN */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
             <div style={{ paddingTop: 2, color: "#3b82f6", display: "inline-flex" }}>
               <CalendarOutlineIcon size={22} color="#3b82f6" />
@@ -1270,6 +1273,78 @@ export default function OrderDetail() {
               </div>
             )}
           </div>
+
+            {/* PM Panel */}
+          {pmPanelOpen && (
+            <form
+              onSubmit={handleSavePM}
+              style={{
+                marginTop: 12,
+                paddingTop: 12,
+                borderTop: "1px dashed var(--border-color, #e2e8f0)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+                <div className="field">
+                  <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.yangi_holat")}</label>
+                  <select
+                    value={pmStatus}
+                    onChange={(e) => setPmStatus(e.target.value as ChangeRequestItem["status"])}
+                  >
+                    {(meta?.order_status || []).filter((s) => s.value !== "COMPLETED" && s.value !== "READY_FOR_REVIEW" && s.value !== "NEW").map((s) => (
+                      <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.boshlanish_sanasi", undefined, "Boshlanish sanasi")}</label>
+                  <input
+                    type="date"
+                    value={pmStartDate}
+                    onChange={(e) => setPmStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.pm_yakuniy_muddati")}</label>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    value={pmDeadline}
+                    onChange={(e) => setPmDeadline(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="field">
+                <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.pm_izohi")}</label>
+                <input
+                  type="text"
+                  placeholder={tx("orders.qisqa_korsatma")}
+                  value={pmNotes}
+                  onChange={(e) => setPmNotes(e.target.value)}
+                />
+              </div>
+              <div className="row end" style={{ gap: 6 }}>
+                <button
+                  type="button"
+                  className="btn btn-xs btn-ghost"
+                  onClick={() => setPmPanelOpen(false)}
+                >
+                  Bekor qilish
+                </button>
+                <button type="submit" className="btn btn-xs btn-primary" disabled={pmSaving}>
+                  {pmSaving ? tx("common.saqlanmoqda") : tx("common.saqlash")}
+                </button>
+              </div>
+            </form>
+          )}
+
+            </div>
+
+            {/* O'NG USTUN */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
               background: "var(--surface-2, #f8fafc)",
@@ -1561,71 +1636,8 @@ export default function OrderDetail() {
               )}
             </div>
           )}
-          {pmPanelOpen && (
-            <form
-              onSubmit={handleSavePM}
-              style={{
-                marginTop: 12,
-                paddingTop: 12,
-                borderTop: "1px dashed var(--border-color, #e2e8f0)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-                <div className="field">
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.yangi_holat")}</label>
-                  <select
-                    value={pmStatus}
-                    onChange={(e) => setPmStatus(e.target.value as ChangeRequestItem["status"])}
-                  >
-                    {(meta?.order_status || []).filter((s) => s.value !== "COMPLETED" && s.value !== "READY_FOR_REVIEW" && s.value !== "NEW").map((s) => (
-                      <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.boshlanish_sanasi", undefined, "Boshlanish sanasi")}</label>
-                  <input
-                    type="date"
-                    value={pmStartDate}
-                    onChange={(e) => setPmStartDate(e.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.pm_yakuniy_muddati")}</label>
-                  <input
-                    type="date"
-                    min={new Date().toISOString().split("T")[0]}
-                    value={pmDeadline}
-                    onChange={(e) => setPmDeadline(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="field">
-                <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.pm_izohi")}</label>
-                <input
-                  type="text"
-                  placeholder={tx("orders.qisqa_korsatma")}
-                  value={pmNotes}
-                  onChange={(e) => setPmNotes(e.target.value)}
-                />
-              </div>
-              <div className="row end" style={{ gap: 6 }}>
-                <button
-                  type="button"
-                  className="btn btn-xs btn-ghost"
-                  onClick={() => setPmPanelOpen(false)}
-                >
-                  Bekor qilish
-                </button>
-                <button type="submit" className="btn btn-xs btn-primary" disabled={pmSaving}>
-                  {pmSaving ? tx("common.saqlanmoqda") : tx("common.saqlash")}
-                </button>
-              </div>
-            </form>
-          )}
+            </div>
+          </div>
         </section>
       </div>
       {versionModal && (
