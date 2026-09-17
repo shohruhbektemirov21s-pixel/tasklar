@@ -117,7 +117,6 @@ export default function OrderForm() {
     }
   }, [user?.full_name, editing]);
 
-  const [draftRestored, setDraftRestored] = useState(false);
   const [serverDraftId, setServerDraftId] = useState<number | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
@@ -162,7 +161,6 @@ export default function OrderForm() {
             setLastSavedTime(parsed.lastSavedTime);
             setAutoSaveStatus("saved");
           }
-          setDraftRestored(true);
         }
       }
     } catch {
@@ -265,31 +263,7 @@ export default function OrderForm() {
     };
   }, [editing, f, isPM, serverDraftId, files.length]);
 
-  function clearDraft() {
-    localStorage.removeItem(ORDER_DRAFT_KEY);
-    setServerDraftId(null);
-    setF({
-      system_name: "",
-      order_type: "NEW",
-      module: "",
-      department: userDepartment,
-      responsible_person: user?.full_name || "",
-      priority: "HIGH",
-      due_date: "",
-      project: null,
-      current_state: "",
-      requested_change: "",
-      reason: "",
-      affected_modules: "",
-      dependent_systems: "",
-      change_nature: "BOTH",
-      additional_materials: "",
-    });
-    setFiles([]);
-    setDraftRestored(false);
-    setAutoSaveStatus("idle");
-    setLastSavedTime(null);
-  }
+
 
   // Yangi buyurtmada akkaunt ma'lumotlari yuklangach bo'linma va mas'ul shaxsni avtomatik to'ldirish
   useEffect(() => {
@@ -506,39 +480,7 @@ export default function OrderForm() {
       <div className="content">
         <ErrorMsg error={error} />
 
-        {draftRestored && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "rgba(59, 130, 246, 0.08)",
-              border: "1px solid rgba(59, 130, 246, 0.3)",
-              borderRadius: 8,
-              padding: "10px 14px",
-              marginBottom: 14,
-              fontSize: 13,
-              color: "var(--color-fg-default)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span>📝</span>
-              <span>
-                <strong>{tx("orders.draft_restored_title")}</strong> {tx("orders.draft_restored_desc")}
-              </span>
-            </div>
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={clearDraft}
-              style={{ color: "var(--color-danger, #ef4444)" }}
-            >
-              {tx("orders.draft_clear")}
-            </button>
-          </div>
-        )}
-
-        <form id={formId} onSubmit={submit}>
+                <form id={formId} onSubmit={submit}>
           <div style={{ maxWidth: 840, margin: "0 auto" }}>
             <Card title={tx("orders.asosiy_malumotlar")}>
               <div className="field">
