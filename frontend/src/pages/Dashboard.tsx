@@ -719,47 +719,6 @@ function DepartmentDashboard() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 40 }}>
-      {/* Yuqori o'ng tugmalar: Yangi TZ yuborish & Barcha buyurtmalar */}
-      <div className="row end middle" style={{ gap: 12 }}>
-        <Link
-          to="/buyurtma/yangi"
-          className="btn"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 18px",
-            borderRadius: 8,
-            fontSize: 13.5,
-            fontWeight: 600,
-            background: "#0f172a",
-            color: "#fff",
-            border: "1px solid #0f172a",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-          }}
-        >
-          <IconPlus size={15} /> {tx("dashboard.yangi_tz_yuborish")}
-        </Link>
-        <Link
-          to="/buyurtmalar"
-          className="btn"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 18px",
-            borderRadius: 8,
-            fontSize: 13.5,
-            fontWeight: 600,
-            background: "#fff",
-            border: "1px solid #e2e8f0",
-            color: "#0f172a",
-          }}
-        >
-          <ListIcon size={15} color="#64748b" /> {tx("dashboard.barcha_buyurtmalar")}
-        </Link>
-      </div>
-
       {/* Agar Boshqarma tasdiqlashi kutilayotgan ishlar bo'lsa ogohlantiruvchi kartochka */}
       {readyForReviewCount > 0 && (
         <div
