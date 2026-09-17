@@ -138,6 +138,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         "created_at",
         "due_date",
         "pm_deadline",
+        "id",
     ]
     ordering = ["-created_at"]
 
@@ -600,6 +601,8 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 order.pm_deadline = request.data.get("pm_deadline")
             if "pm_start_date" in request.data and request.data.get("pm_start_date"):
                 order.pm_start_date = request.data.get("pm_start_date")
+            if order.pm_start_date and order.pm_deadline and str(order.pm_deadline) < str(order.pm_start_date):
+                raise ValidationError({"pm_deadline": "Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas."})
             if "pm_notes" in request.data:
                 order.pm_notes = request.data.get("pm_notes") or ""
             if "assigned_developer" in request.data:

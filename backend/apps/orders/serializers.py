@@ -343,6 +343,21 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             check_upload(value)
         return value
 
+    def validate(self, attrs):
+        req_date = attrs.get("request_date", getattr(self.instance, "request_date", None))
+        due_date = attrs.get("due_date", getattr(self.instance, "due_date", None))
+        if req_date and due_date and due_date < req_date:
+            raise serializers.ValidationError({
+                "due_date": "Tugash muddati buyurtma sanasidan oldin bo'lishi mumkin emas."
+            })
+        start_date = attrs.get("pm_start_date", getattr(self.instance, "pm_start_date", None))
+        pm_deadline = attrs.get("pm_deadline", getattr(self.instance, "pm_deadline", None))
+        if start_date and pm_deadline and pm_deadline < start_date:
+            raise serializers.ValidationError({
+                "pm_deadline": "Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas."
+            })
+        return attrs
+
     def get_is_locked(self, obj):
         return obj.status in [
             ChangeRequestStatus.ACCEPTED,
@@ -595,6 +610,12 @@ class PMDecisionSerializer(serializers.Serializer):
     def validate(self, attrs):
         status = attrs.get("status")
         pm_notes = attrs.get("pm_notes", "").strip()
+        start = attrs.get("pm_start_date")
+        deadline = attrs.get("pm_deadline")
+        if start and deadline and deadline < start:
+            raise serializers.ValidationError({
+                "pm_deadline": "Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas."
+            })
         if status == ChangeRequestStatus.REJECTED:
             if not pm_notes:
                 raise serializers.ValidationError(

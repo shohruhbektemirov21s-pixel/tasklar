@@ -402,12 +402,24 @@ function TaskAdder({ priorities, value, onValue, onSubmit, onCancel }: {
         <label className="pick-date">
           <small className="muted">{tx("common.boshlanish")}</small>
           <DateField value={value.start_date} max={value.due_date || undefined}
-                     onChange={(v) => set({ start_date: v })} />
+                     onChange={(v) => {
+                       if (v && value.due_date && value.due_date < v) {
+                         set({ start_date: v, due_date: v });
+                       } else {
+                         set({ start_date: v });
+                       }
+                     }} />
         </label>
         <label className="pick-date">
           <small className="muted">{tx("team_picker.tugash")}</small>
           <DateField value={value.due_date} min={value.start_date || undefined}
-                     onChange={(v) => set({ due_date: v })} />
+                     onChange={(v) => {
+                       if (v && value.start_date && v < value.start_date) {
+                         set({ due_date: value.start_date });
+                       } else {
+                         set({ due_date: v });
+                       }
+                     }} />
         </label>
       </div>
 

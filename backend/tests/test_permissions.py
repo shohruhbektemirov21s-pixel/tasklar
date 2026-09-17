@@ -32,15 +32,15 @@ class ProjectVisibilityTest(ApiTestCase):
 
     def test_boshqa_maydondagi_ochiq_loyiha_korinmaydi(self):
         c = self.client_for(self.outsider)
-        self.assertEqual(c.get("/api/projects/{}/".format(self.other_project.pk)).status_code, 200)
-        self.assertEqual(c.get("/api/tasks/{}/".format(self.other_task.pk)).status_code, 200)
+        self.assertEqual(c.get("/api/projects/{}/".format(self.other_project.pk)).status_code, 403)
+        self.assertEqual(c.get("/api/tasks/{}/".format(self.other_task.pk)).status_code, 403)
         self.assertEqual(
             c.get("/api/projects/{}/files/".format(self.other_project.pk)).status_code, 403)
 
     def test_ochiq_loyiha_royxatlarda_ham_korinmaydi(self):
         c = self.client_for(self.outsider)
         ids = [t["id"] for t in c.get("/api/tasks/").data["results"]]
-        self.assertIn(self.other_task.pk, ids)
+        self.assertNotIn(self.other_task.pk, ids)
 
         found = [p["id"] for p in c.get("/api/projects/", {"scope": "discover"}).data["results"]]
         self.assertNotIn(self.other_project.pk, found)

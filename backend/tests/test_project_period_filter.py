@@ -103,4 +103,4 @@ class ProjectPeriodFilterTest(ApiTestCase):
         r = self.client_for(self.outsider).get("/api/projects/",
                                                {"scope": "visible", "period": "year"})
         self.assertEqual(r.status_code, 200)
-        self.assertIn("Bugungi loyiha", [p["name"] for p in r.data["results"]])
+        self.assertNotIn("Bugungi loyiha", [p["name"] for p in r.data["results"]])

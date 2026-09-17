@@ -7,16 +7,18 @@
  * - Muhimlilik turi va qanchada tugashi: PM o'zi vaqtni va muddatni belgilaydi.
  * - Rasmiy Word (.docx) blanki va biriktirilgan TZ fayllarini yuklab olish.
  */
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, listOf, pagesOf, totalOf } from "@/api/client";
-import { claimOrder, uploadVersion, approveVersion, rejectVersion, deleteOrder, sendOrder, downloadOrderDocx } from "@/api/orders";
+
+const ProjectFormModal = lazy(() => import("@/pages/ProjectForm"));
+const DistributeTasksModal = lazy(() => import("@/components/DistributeTasksModal"));
+import { claimOrder, uploadVersion, approveVersion, rejectVersion, deleteOrder, sendOrder } from "@/api/orders";
 import type { ChangeRequestItem, OrderStats, UserBrief } from "@/api/types";
 import { useFetch } from "@/api/useFetch";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import {
-  IconDownload,
   IconPaperclip,
   IconPlus,
   IconSearch,
@@ -62,6 +64,8 @@ export default function ChangeRequests() {
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
   const [viewingItem, setViewingItem] = useState<ChangeRequestItem | null>(null);
+  const [projectModalItem, setProjectModalItem] = useState<ChangeRequestItem | null>(null);
+  const [distributeModalItem, setDistributeModalItem] = useState<ChangeRequestItem | null>(null);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [pmDecisionForm, setPmDecisionForm] = useState<{
     status: ChangeRequestItem["status"];
@@ -297,6 +301,10 @@ export default function ChangeRequests() {
   const handleClaimSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!claimModalItem) return;
+    if (claimStartDate && claimDeadline && claimDeadline < claimStartDate) {
+      alert("Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas.");
+      return;
+    }
     setClaimSubmitting(true);
     try {
       const updated = await claimOrder(claimModalItem.id, {
@@ -1360,6 +1368,39 @@ export default function ChangeRequests() {
                                 (user?.is_platform_admin || user?.is_boss || item.assigned_pm === user?.id) &&
                                 item.status !== "COMPLETED" &&
                                 item.status !== "READY_FOR_REVIEW" &&
+                                item.status !== "REJECTED" &&
+                                item.status !== "CANCELLED" &&
+                                item.status !== "DRAFT" && (
+                                  <>
+                                    {!(item.project || item.project_detail?.id) ? (
+                                      <button
+                                        className="btn btn-ghost btn-sm"
+                                        style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#059669", fontWeight: 600 }}
+                                        onClick={() => {
+                                          setActiveActionMenuId(null);
+                                          setProjectModalItem(item);
+                                        }}
+                                      >
+                                        🚀 {tx("orders.loyihani_taqsimlash", undefined, "Loyihani taqsimlash")}
+                                      </button>
+                                    ) : (
+                                      <button
+                                        className="btn btn-ghost btn-sm"
+                                        style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#2563eb", fontWeight: 600 }}
+                                        onClick={() => {
+                                          setActiveActionMenuId(null);
+                                          setDistributeModalItem(item);
+                                        }}
+                                      >
+                                        📋 {tx("orders.vazifalarni_taqsimlash", undefined, "Vazifalarni taqsimlash")}
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              {isPMOrAdmin &&
+                                (user?.is_platform_admin || user?.is_boss || item.assigned_pm === user?.id) &&
+                                item.status !== "COMPLETED" &&
+                                item.status !== "READY_FOR_REVIEW" &&
                                 item.status !== "REJECTED" && (
                                   <button
                                     className="btn btn-ghost btn-sm"
@@ -1732,7 +1773,7 @@ export default function ChangeRequests() {
                       style={{ width: "100%" }}
                     >
                       <option value="">(O'zingizga olish)</option>
-                      {pmList.map((u: any) => (
+                      {pmList.map((u: UserBrief) => (
                         <option key={u.id} value={u.id}>{u.full_name}</option>
                       ))}
                     </select>
@@ -1746,6 +1787,7 @@ export default function ChangeRequests() {
                     type="date"
                     className="input"
                     value={claimStartDate}
+                    max={claimDeadline || undefined}
                     onChange={(e) => setClaimStartDate(e.target.value)}
                     style={{ width: "100%" }}
                   />
@@ -1759,7 +1801,9 @@ export default function ChangeRequests() {
                   <input
                     type="date"
                     required
-                    min={new Date().toISOString().split("T")[0]}
+                    min={claimStartDate && claimStartDate > new Date().toISOString().split("T")[0]
+                      ? claimStartDate
+                      : new Date().toISOString().split("T")[0]}
                     className="input"
                     value={claimDeadline}
                     onChange={(e) => setClaimDeadline(e.target.value)}
@@ -3109,6 +3153,31 @@ export default function ChangeRequests() {
             file={previewFile}
             onClose={() => setPreviewFile(null)}
           />
+        )}
+        {projectModalItem && (
+          <Suspense fallback={null}>
+            <ProjectFormModal
+              initialOrderId={projectModalItem.id}
+              initialOrder={projectModalItem}
+              onClose={() => setProjectModalItem(null)}
+              onSuccess={() => {
+                setProjectModalItem(null);
+                reload();
+              }}
+            />
+          </Suspense>
+        )}
+        {distributeModalItem && (distributeModalItem.project || distributeModalItem.project_detail?.id) && (
+          <Suspense fallback={null}>
+            <DistributeTasksModal
+              projectId={Number(distributeModalItem.project || distributeModalItem.project_detail?.id)}
+              order={distributeModalItem}
+              onClose={() => setDistributeModalItem(null)}
+              onTasksUpdated={() => {
+                reload();
+              }}
+            />
+          </Suspense>
         )}
       </>
     );

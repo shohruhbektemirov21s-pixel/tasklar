@@ -413,6 +413,10 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
   async function handleSaveTeamMember(e: React.FormEvent) {
     e.preventDefault();
     if (!task || !teamMemberId) return;
+    if (teamStartDate && teamDueDate && teamDueDate < teamStartDate) {
+      setError("Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas.");
+      return;
+    }
     await run(async () => {
       const payload = {
         user_id: Number(teamMemberId),
@@ -627,7 +631,9 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                 <DateTimeField
                   style={{ width: 210 }}
                   value={due}
-                  min={new Date().toISOString().split("T")[0] + "T00:00"}
+                  min={task.start_date && toDateTimeInput(task.start_date) > (new Date().toISOString().split("T")[0] + "T00:00")
+                    ? toDateTimeInput(task.start_date)
+                    : (new Date().toISOString().split("T")[0] + "T00:00")}
                   onChange={setDue}
                 />
                 <button className="btn btn-sm btn-primary" onClick={() => void run(async () => {
@@ -636,6 +642,13 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                     if (due.split("T")[0] < today) {
                       setError("Muddat bugungi kundan oldingi sana bo'lishi mumkin emas.");
                       return;
+                    }
+                    if (task.start_date) {
+                      const startDay = task.start_date.split("T")[0];
+                      if (due.split("T")[0] < startDay) {
+                        setError("Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas.");
+                        return;
+                      }
                     }
                   }
                   await api.patch(`/tasks/${task.id}/`, { due_date: fromDateTimeInput(due) });
@@ -1914,7 +1927,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
               <div className="row" style={{ gap: 12, marginBottom: 12 }}>
                 <div className="field" style={{ flex: 1 }}>
                   <label>{tx("task_detail.boshlanish_vaqti", undefined, "Boshlanish sanasi va vaqti")}</label>
-                  <DateTimeField value={teamStartDate} onChange={setTeamStartDate} />
+                  <DateTimeField value={teamStartDate} max={teamDueDate || undefined} onChange={setTeamStartDate} />
                 </div>
                 <div className="field" style={{ flex: 1 }}>
                   <label>{tx("task_detail.tugash_vaqti", undefined, "Tugash muddati (sana va vaqt)")}</label>
@@ -1986,7 +1999,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: 99999,
+          zIndex: 100010,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

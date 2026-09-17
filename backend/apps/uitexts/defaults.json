@@ -1084,7 +1084,7 @@
     "note": "pages/Dashboard.tsx"
   },
   "dashboard.qidiruv_placeholder": {
-    "value": "Talabnoma raqami yoki mazmuni bo'yicha qidirish...",
+    "value": "Tizim nomi yoki talab mazmuni bo'yicha qidirish...",
     "note": "pages/Dashboard.tsx"
   },
   "dashboard.rad_etilgan": {
@@ -1145,6 +1145,10 @@
   },
   "dashboard.talab_mazmuni": {
     "value": "Talab mazmuni",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.sanasi": {
+    "value": "Sanasi",
     "note": "pages/Dashboard.tsx"
   },
   "dashboard.talabnoma_no": {
@@ -3363,6 +3367,38 @@
     "value": "Loyiha turi",
     "note": "pages/OrderForm.tsx"
   },
+  "orders.loyihani_taqsimlash": {
+    "value": "Loyihani taqsimlash",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.vazifalarni_taqsimlash": {
+    "value": "Vazifalarni taqsimlash",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.loyiha_vazifalari": {
+    "value": "Loyiha vazifalari",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.yangi_vazifalar_taqsimlash": {
+    "value": "Yangi vazifalar taqsimlash",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.mavjud_vazifalar": {
+    "value": "Mavjud vazifalar",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.vazifa_biriktirish": {
+    "value": "Vazifalarni biriktirish",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.vazifalar_muvaffaqiyatli_biriktirildi": {
+    "value": "Vazifalar muvaffaqiyatli biriktirildi",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.hozircha_vazifalar_yoq": {
+    "value": "Hozircha vazifalar mavjud emas",
+    "note": "pages/OrderDetail.tsx"
+  },
   "orders.masul": {
     "value": "Masul",
     "note": "pages/ChangeRequests.tsx"
@@ -4286,6 +4322,10 @@
   "orders.xatolik_sababli_qaytarish_sarlavha": {
     "value": "Xatolik sababli qaytarish sarlavha",
     "note": "pages/ChangeRequests.tsx"
+  },
+  "orders.yakunlash": {
+    "value": "Yakunlash",
+    "note": "pages/OrderDetail.tsx"
   },
   "orders.yana_fayl_qoshish": {
     "value": "Yana fayl qo'shish",
@@ -5385,6 +5425,10 @@
   },
   "project_form.tavsif": {
     "value": "Tavsif",
+    "note": "pages/ProjectForm.tsx"
+  },
+  "project_form.tugash_boshlanishdan_oldin_bolmasin": {
+    "value": "Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas.",
     "note": "pages/ProjectForm.tsx"
   },
   "project_form.tugash_sanasi_muddat": {

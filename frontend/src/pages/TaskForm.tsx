@@ -271,6 +271,12 @@ export default function TaskForm() {
         return;
       }
     }
+    if (f.start_date && f.due_date && f.due_date < f.start_date) {
+      const msg = "Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas.";
+      setErrors({ due_date: msg });
+      setError(msg);
+      return;
+    }
     setBusy(true);
     setError(null);
     setErrors({});
@@ -797,14 +803,40 @@ export default function TaskForm() {
                     <label htmlFor={`${fid}-7`}>{tx("common.boshlanish")}</label>
                     <DateTimeField id={`${fid}-7`} value={f.start_date}
                                    max={f.due_date || undefined}
-                                   onChange={(v) => set("start_date", v)} />
+                                   onChange={(v) => {
+                                     set("start_date", v);
+                                     if (f.due_date && v && f.due_date < v) {
+                                       setErrors((p) => ({ ...p, due_date: "Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas." }));
+                                     } else {
+                                       setErrors((p) => {
+                                         const next = { ...p };
+                                         if (next.due_date === "Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas.") {
+                                           delete next.due_date;
+                                         }
+                                         return next;
+                                       });
+                                     }
+                                   }} />
                   </div>
                   <div className="field" style={{ flex: 1, minWidth: 190 }}>
                     <label htmlFor={`${fid}-9`}>{tx("common.muddat")}</label>
                     {/* min: muddat boshlanishdan oldin va bugungi kundan oldin bo'lib qolmasin */}
                     <DateTimeField id={`${fid}-9`} value={f.due_date}
                                    min={f.start_date && f.start_date.split("T")[0] > new Date().toISOString().split("T")[0] ? f.start_date : (new Date().toISOString().split("T")[0] + "T00:00")}
-                                   onChange={(v) => set("due_date", v)} />
+                                   onChange={(v) => {
+                                     set("due_date", v);
+                                     if (f.start_date && v && v < f.start_date) {
+                                       setErrors((p) => ({ ...p, due_date: "Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas." }));
+                                     } else {
+                                       setErrors((p) => {
+                                         const next = { ...p };
+                                         if (next.due_date === "Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas.") {
+                                           delete next.due_date;
+                                         }
+                                         return next;
+                                       });
+                                     }
+                                   }} />
                     {errors.due_date && <div className="err">{errors.due_date}</div>}
                   </div>
                 </div>

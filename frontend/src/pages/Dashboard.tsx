@@ -14,9 +14,9 @@
  * Hamma raqam `/api/dashboard/` dan keladi va u Db2 ni ORM orqali o'qiydi:
  * bu yerda hech qanday hisob-kitob ham, namuna qiymat ham yo'q.
  */
-import { useId, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { listOf } from "@/api/client";
+import { Suspense, lazy, useId, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { api, listOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import type {
   ChangeRequestItem,
@@ -36,8 +36,10 @@ import {
 } from "@/components/ui";
 import { IconPlus } from "@/components/icons";
 import TaskDrawer from "@/components/TaskDrawer";
-import { toOrder, toTask } from "@/nav";
+import { toTask } from "@/nav";
 import { tx } from "@/i18n";
+
+const OrderDetailModal = lazy(() => import("@/pages/OrderDetail"));
 const LABELS: Record<DashboardPeriod, string> = {
   year: tx("dashboard.yil_boshidan"),
   month: tx("dashboard.oy_boshidan"),
@@ -504,18 +506,6 @@ function FilterIcon({ size = 15, color = "currentColor" }: { size?: number; colo
     </svg>
   );
 }
-function ListIcon({ size = 15, color = "currentColor" }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="8" y1="6" x2="21" y2="6" />
-      <line x1="8" y1="12" x2="21" y2="12" />
-      <line x1="8" y1="18" x2="21" y2="18" />
-      <line x1="3" y1="6" x2="3.01" y2="6" />
-      <line x1="3" y1="12" x2="3.01" y2="12" />
-      <line x1="3" y1="18" x2="3.01" y2="18" />
-    </svg>
-  );
-}
 function getStatusPill(status: string) {
   switch (status) {
     case "ACCEPTED":
@@ -575,11 +565,11 @@ const PERIOD_THEMES: Record<
 /** Boshqarma foydalanuvchisi uchun to'liq bosh panel ko'rinishi (yangi UX dizayn) */
 function DepartmentDashboard() {
   const { meta } = useAuth();
-  const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<"submitted" | "approved" | "in_progress" | "completed" | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [openOrderId, setOpenOrderId] = useState<number | null>(null);
   const scrollToOrders = () => {
     const el = document.getElementById("department-orders-section");
     if (el) {
@@ -588,7 +578,7 @@ function DepartmentDashboard() {
   };
   const { data: stats, reload: reloadStats } = useFetch<OrderStats>("/orders/stats/", { mine: 1 });
   const queryParams = useMemo(() => {
-    const p: Record<string, string | number> = { mine: 1, page_size: 20, ordering: "-id" };
+    const p: Record<string, string | number> = { mine: 1, page_size: 20, ordering: "-request_date,-id" };
     if (selectedPeriod) p.period = selectedPeriod;
     if (selectedMetric) p.metric = selectedMetric;
     if (statusFilter) p.status = statusFilter;
@@ -609,20 +599,43 @@ function DepartmentDashboard() {
       reloadOrders();
     }
   }, 800);
-  const total = stats?.total ?? 0;
-  const inProgressCount =
-    (stats?.in_progress ?? 0) + (stats?.assigned_to_dev ?? 0) + (stats?.testing ?? 0);
-  const completed = stats?.completed ?? 0;
   const readyForReviewCount = stats?.ready_for_review ?? 0;
   const orders = useMemo(() => {
     if (!ordersData) return [];
     return listOf<ChangeRequestItem>(ordersData);
   }, [ordersData]);
   const periods: OrderPeriodRow[] = stats?.periods || [];
+
+  const handleOpenReviewOrder = async () => {
+    setStatusFilter("READY_FOR_REVIEW");
+    const cached = orders.find((o) => o.status === "READY_FOR_REVIEW");
+    if (cached) {
+      setOpenOrderId(cached.id);
+      return;
+    }
+    try {
+      const res = await api.get<PaginatedResponse<ChangeRequestItem>>("/orders/", {
+        mine: 1,
+        status: "READY_FOR_REVIEW",
+        page_size: 1,
+      });
+      const items = listOf<ChangeRequestItem>(res);
+      if (items.length > 0 && items[0]) {
+        setOpenOrderId(items[0].id);
+      } else {
+        scrollToOrders();
+      }
+    } catch {
+      scrollToOrders();
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 40 }}>
       {readyForReviewCount > 0 && (
         <div
+          role="button"
+          tabIndex={0}
           style={{
             background: "#fffbeb",
             border: "1px solid #fcd34d",
@@ -633,6 +646,14 @@ function DepartmentDashboard() {
             justifyContent: "space-between",
             flexWrap: "wrap",
             gap: 12,
+            cursor: "pointer",
+          }}
+          onClick={() => void handleOpenReviewOrder()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              void handleOpenReviewOrder();
+            }
           }}
         >
           <div>
@@ -647,7 +668,10 @@ function DepartmentDashboard() {
             type="button"
             className="btn btn-sm"
             style={{ background: "#0f172a", color: "#fff", border: "1px solid #0f172a", borderRadius: 6 }}
-            onClick={() => setStatusFilter("READY_FOR_REVIEW")}
+            onClick={(e) => {
+              e.stopPropagation();
+              void handleOpenReviewOrder();
+            }}
           >
             {tx("dashboard.korish")} →
           </button>
@@ -1150,12 +1174,12 @@ function DepartmentDashboard() {
                     }}
                   >
                     <th style={{ width: 44, textAlign: "center", padding: "12px 14px" }}>№</th>
-                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.talabnoma_no")}</th>
                     <th style={{ padding: "12px 14px" }}>{tx("dashboard.axborot_tizimi")}</th>
                     <th style={{ padding: "12px 14px" }}>{tx("dashboard.talab_mazmuni")}</th>
                     <th style={{ padding: "12px 14px" }}>{tx("dashboard.muddati")}</th>
                     <th style={{ padding: "12px 14px" }}>{tx("dashboard.holati")}</th>
                     <th style={{ padding: "12px 14px" }}>{tx("dashboard.masul_pm")}</th>
+                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.sanasi")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1165,7 +1189,7 @@ function DepartmentDashboard() {
                     return (
                       <tr
                         key={o.id}
-                        onClick={() => navigate(toOrder(o.id).to)}
+                        onClick={() => setOpenOrderId(o.id)}
                         style={{
                           borderBottom: "1px solid #f4f4f5",
                           transition: "background 0.1s ease",
@@ -1188,24 +1212,6 @@ function DepartmentDashboard() {
                           }}
                         >
                           {idx + 1}
-                        </td>
-                        <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
-                          <Link
-                            {...toOrder(o.id)}
-                            style={{
-                              fontWeight: 700,
-                              fontSize: 13.5,
-                              color: "#18181b",
-                              textDecoration: "none",
-                            }}
-                          >
-                            {`#${o.id}`}
-                          </Link>
-                          {o.request_date && (
-                            <div style={{ fontSize: 11.5, color: "#71717a", marginTop: 2 }}>
-                              {fmtDate(o.request_date)}
-                            </div>
-                          )}
                         </td>
                         <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
                           <div style={{ fontWeight: 600, fontSize: 13.5, color: "#18181b" }}>
@@ -1285,6 +1291,13 @@ function DepartmentDashboard() {
                             <span style={{ color: "#a1a1aa", fontSize: 13 }}>—</span>
                           )}
                         </td>
+                        <td style={{ padding: "14px", whiteSpace: "nowrap", fontSize: 12.5, color: "#52525b" }}>
+                          {o.request_date ? (
+                            fmtDate(o.request_date)
+                          ) : (
+                            <span style={{ color: "#a1a1aa" }}>—</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -1294,6 +1307,18 @@ function DepartmentDashboard() {
           )}
         </div>
       </div>
+      {openOrderId && (
+        <Suspense fallback={null}>
+          <OrderDetailModal
+            orderId={openOrderId}
+            onClose={() => {
+              setOpenOrderId(null);
+              reloadOrders();
+              reloadStats();
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

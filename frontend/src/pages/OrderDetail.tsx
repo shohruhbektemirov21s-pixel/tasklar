@@ -20,9 +20,15 @@
  *    - Buyurtma holati va ijrosi (Mas'ul xodim, PM muddati, oxirgi yangilanish)
  *    - Biriktirilgan TZ fayli va rasmiy Word blanki
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, lazy, Suspense } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { ApiError, listOf } from "@/api/client";
+
+const ProjectFormModal = lazy(() => import("@/pages/ProjectForm"));
+const DistributeTasksModal = lazy(() => import("@/components/DistributeTasksModal"));
+const TaskDetailModal = lazy(() => import("@/pages/TaskDetail"));
+import { lockScroll, unlockScroll } from "@/components/scrollLock";
+import { ApiError, api, listOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import {
   claimOrder,
@@ -38,15 +44,15 @@ import {
   rejectVersion,
   createOrderTask,
 } from "@/api/orders";
-import type { ChangeRequestItem, UserBrief } from "@/api/types";
+import type { ChangeRequestItem, Task, UserBrief } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { tx } from "@/i18n";
 import { confirmDialog } from "@/components/Confirm";
 import { PageHead } from "@/components/Layout";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
-import { Card, Empty, ErrorMsg, Loading, OkMsg, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
-import { toEditOrder, toOrders, toProject, toTask, useEntityNum, useGo } from "@/nav";
+import { Avatar, Card, Empty, ErrorMsg, Loading, OkMsg, Priority, StatusBadge, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
+import { toEditOrder, toOrders, toProject, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge } from "./ChangeRequests";
 const UserOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
@@ -80,11 +86,6 @@ const HourglassOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number;
     <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
   </svg>
 );
-const ChatOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-  </svg>
-);
 const PaperclipOutlineIcon = ({ size = 16, color = "#3b82f6" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l7.88-7.88" />
@@ -109,15 +110,31 @@ const ChevronDownOutlineIcon = ({ size = 16, color = "#64748b" }: { size?: numbe
     <polyline points="6 9 12 15 18 9" />
   </svg>
 );
-const ChevronRightOutlineIcon = ({ size = 16, color = "#64748b" }: { size?: number; color?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6" />
-  </svg>
-);
-export default function OrderDetail() {
+
+export interface OrderDetailProps {
+  orderId?: number | string;
+  onClose?: () => void;
+}
+
+export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDetailProps = {}) {
   const { user, meta } = useAuth();
-  const id = useEntityNum("order");
+  const routeOrderId = useEntityNum("order");
+  const id = propOrderId ? Number(propOrderId) : routeOrderId;
+  const isModal = Boolean(onClose);
   const go = useGo();
+
+  useEffect(() => {
+    if (!isModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    document.addEventListener("keydown", onKey);
+    lockScroll();
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      unlockScroll();
+    };
+  }, [isModal, onClose]);
   const [item, setItem] = useState<ChangeRequestItem | null>(null);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -134,7 +151,35 @@ export default function OrderDetail() {
   const [completionNote, setCompletionNote] = useState("");
   const [completionSubmitting, setCompletionSubmitting] = useState(false);
   const [completionError, setCompletionError] = useState<string | null>(null);
-  const [expandDesc, setExpandDesc] = useState(false);
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [distributeTasksModalOpen, setDistributeTasksModalOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [projectTasks, setProjectTasks] = useState<Task[]>([]);
+  const [projectTasksLoading, setProjectTasksLoading] = useState(false);
+
+  const loadProjectTasks = useCallback(async () => {
+    const pId = item?.project || item?.project_detail?.id;
+    if (!pId) {
+      setProjectTasks([]);
+      return;
+    }
+    setProjectTasksLoading(true);
+    try {
+      const res = await api.get<Task[] | { results: Task[] }>(`/tasks/`, {
+        project: pId,
+        page_size: 100,
+      });
+      setProjectTasks(listOf<Task>(res));
+    } catch {
+      setProjectTasks([]);
+    } finally {
+      setProjectTasksLoading(false);
+    }
+  }, [item?.project, item?.project_detail?.id]);
+
+  useEffect(() => {
+    void loadProjectTasks();
+  }, [loadProjectTasks]);
   const [pmPanelOpen, setPmPanelOpen] = useState(false);
   const [pmStatus, setPmStatus] = useState<ChangeRequestItem["status"]>("ACCEPTED");
   const [pmStartDate, setPmStartDate] = useState("");
@@ -249,6 +294,17 @@ export default function OrderDetail() {
       item.status !== "REJECTED" &&
       item.status !== "DRAFT"
   );
+  const hasProject = Boolean(item?.project || item?.project_detail?.id);
+  const canDistribute = Boolean(
+    isPMOrAdmin &&
+      (user?.is_platform_admin || user?.is_boss || item?.assigned_pm === user?.id) &&
+      item &&
+      item.status !== "COMPLETED" &&
+      item.status !== "READY_FOR_REVIEW" &&
+      item.status !== "REJECTED" &&
+      item.status !== "CANCELLED" &&
+      item.status !== "DRAFT"
+  );
   const canEdit = false;
   const canDelete = false;
   const [sendingOrder, setSendingOrder] = useState(false);
@@ -299,6 +355,10 @@ export default function OrderDetail() {
   async function handleClaimSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
+    if (claimStartDateInput && claimDeadlineInput && claimDeadlineInput < claimStartDateInput) {
+      setActionError("Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas.");
+      return;
+    }
     setClaimSubmitting(true);
     setActionError(null);
     try {
@@ -323,6 +383,10 @@ export default function OrderDetail() {
   async function handleSavePM(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
+    if (pmStartDate && pmDeadline && pmDeadline < pmStartDate) {
+      setActionError("Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas.");
+      return;
+    }
     setPmSaving(true);
     setActionError(null);
     try {
@@ -528,7 +592,7 @@ export default function OrderDetail() {
       setRejectVersionSubmitting(false);
     }
   }
-  function handleOpenCreateTask() {
+  function _handleOpenCreateTask() {
     setTaskTitle(item?.requested_change ? `Topshiriq: ${item.system_name} - ${item.module || 'TZ ijrosi'}` : "");
     setTaskDescription(item?.requested_change || "");
     setTaskAssignee(item?.assigned_developer || null);
@@ -563,6 +627,42 @@ export default function OrderDetail() {
     }
   }
   if (!id) {
+    if (isModal) {
+      return createPortal(
+        <div
+          className="modal-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px 16px",
+            background: "rgba(8, 11, 16, 0.72)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+          }}
+          onClick={onClose}
+        >
+          <div
+            className="modal-window card"
+            style={{ width: "min(500px, 90vw)", padding: 30, textAlign: "center", borderRadius: 12 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Empty
+              icon="📄"
+              title={tx("orders.buyurtma_tanlanmagan")}
+              text={tx("orders.biror_buyurtmani_tanlang")}
+            />
+            <button type="button" className="btn" style={{ marginTop: 16 }} onClick={onClose}>
+              {tx("common.yopish")}
+            </button>
+          </div>
+        </div>,
+        document.body
+      );
+    }
     return (
       <>
         <PageHead title={<strong>{tx("orders.sarlavha")}</strong>} />
@@ -583,6 +683,35 @@ export default function OrderDetail() {
     );
   }
   if (loading && !item) {
+    if (isModal) {
+      return createPortal(
+        <div
+          className="modal-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px 16px",
+            background: "rgba(8, 11, 16, 0.72)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+          }}
+          onClick={onClose}
+        >
+          <div
+            className="modal-window card"
+            style={{ width: "min(400px, 90vw)", padding: "36px 20px", textAlign: "center", borderRadius: 12, background: "var(--card-bg, #fff)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Loading text="Buyurtma ma'lumotlari yuklanmoqda..." />
+          </div>
+        </div>,
+        document.body
+      );
+    }
     return (
       <>
         <PageHead title={<strong>{tx("orders.sarlavha")}</strong>} />
@@ -593,6 +722,38 @@ export default function OrderDetail() {
     );
   }
   if (error || !item) {
+    if (isModal) {
+      return createPortal(
+        <div
+          className="modal-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px 16px",
+            background: "rgba(8, 11, 16, 0.72)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+          }}
+          onClick={onClose}
+        >
+          <div
+            className="modal-window card"
+            style={{ width: "min(500px, 90vw)", padding: 30, textAlign: "center", borderRadius: 12, background: "var(--card-bg, #fff)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ErrorMsg error={error || "Buyurtma topilmadi"} />
+            <button type="button" className="btn" style={{ marginTop: 16 }} onClick={onClose}>
+              {tx("common.yopish")}
+            </button>
+          </div>
+        </div>,
+        document.body
+      );
+    }
     return (
       <>
         <PageHead title={<strong>{tx("orders.sarlavha")}</strong>} />
@@ -606,112 +767,98 @@ export default function OrderDetail() {
     );
   }
 
-  return (
-    <>
-      <PageHead
-        title={
-          <span className="row middle" style={{ gap: 8, display: "inline-flex", alignItems: "center" }}>
-            <Link
-              to="/buyurtmalar"
-              className="muted"
-              style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none" }}
-              onClick={(e) => e.stopPropagation()}
+  const orderActions = (
+    <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
+      {item.status === "DRAFT" && (
+        <button
+          type="button"
+          className="btn btn-sm btn-primary row middle"
+          style={{ gap: 6 }}
+          onClick={() => void handleSendDraftOrder()}
+          disabled={sendingOrder}
+        >
+          <span>🚀</span>
+          <span>{sendingOrder ? tx("common.yuborilmoqda") : tx("orders.send_order")}</span>
+        </button>
+      )}
+      {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && (
+        <button
+          type="button"
+          className="btn btn-sm btn-outline"
+          onClick={handleOpenUploadVersion}
+        >
+          + {tx("orders.yangi_tz_versiyasi")}
+        </button>
+      )}
+      {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
+        <>
+          {canSubmitCompletion && (
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={handleOpenSubmitCompletion}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
             >
-              {tx("orders.buyurtmalarga_qaytish")}
-            </Link>
-            <span className="muted" style={{ opacity: 0.5 }}>/</span>
-            <span className="badge badge-brand" style={{ fontSize: 12, fontWeight: 700 }}>
-              {item.system_name}
-            </span>
-            {(item.version || 1) > 1 && (
-              <span className="badge" style={{ fontSize: 11, fontWeight: 700 }}>
-                v{item.version}
-              </span>
-            )}
-            <OrderStatusBadge status={item.status} label={item.status_display} />
-          </span>
-        }
-        actions={
-          <div className="row middle" style={{ gap: 8 }}>
-            {item.status === "DRAFT" && (
+              <span>📁</span>
+              <span>{tx("orders.yakunlash", undefined, "Yakunlash")}</span>
+            </button>
+          )}
+          {canDistribute && (
+            hasProject ? (
               <button
                 type="button"
-                className="btn btn-sm btn-primary row middle"
-                style={{ gap: 6 }}
-                onClick={() => void handleSendDraftOrder()}
-                disabled={sendingOrder}
+                className="btn btn-sm btn-outline"
+                onClick={() => setDistributeTasksModalOpen(true)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <span>📋</span>
+                <span>{tx("orders.vazifalarni_taqsimlash", undefined, "Vazifalarni taqsimlash")}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline"
+                onClick={() => setProjectModalOpen(true)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
               >
                 <span>🚀</span>
-                <span>{sendingOrder ? tx("common.yuborilmoqda") : tx("orders.send_order")}</span>
+                <span>{tx("orders.loyihani_taqsimlash", undefined, "Loyihani taqsimlash")}</span>
               </button>
-            )}
-            {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && (
-              <button
-                type="button"
-                className="btn btn-sm btn-outline"
-                onClick={handleOpenUploadVersion}
-              >
-                + {tx("orders.yangi_tz_versiyasi")}
-              </button>
-            )}
-            {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
-              <>
-                {canSubmitCompletion && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-primary"
-                    onClick={handleOpenSubmitCompletion}
-                    style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-                  >
-                    <span>📁</span>
-                    <span>{tx("orders.tugatilgan_ishni_topshirish")}</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline"
-                  onClick={() => { setPmPanelOpen((v) => !v); setPmAssignedPm(item?.assigned_pm || ""); }}
-                >
-                  {pmPanelOpen ? tx("orders.pm_panelni_yopish", undefined, "Panelni yopish") : tx("orders.pm_holat_muddatni_ozgartirish", undefined, "Tahrirlash")}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline"
-                  onClick={handleOpenCreateTask}
-                >
-                  + {tx("orders.vazifa_yaratish", undefined, "Vazifa yaratish")}
-                </button>
-              </>
-            )}
-            {canEdit && (
-              <button
-                type="button"
-                className="btn btn-sm btn-outline"
-                onClick={() => go(toEditOrder(item.id))}
-              >
-                {tx("common.tahrirlash")}
-              </button>
-            )}
-            {canDelete && (
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                style={{ color: "var(--danger, #dc2626)", padding: "5px 8px" }}
-                onClick={() => void handleDelete()}
-                title={tx("common.ochirish")}
-              >
-                {tx("common.ochirish")}
-              </button>
-            )}
-          </div>
-        }
-      />
+            )
+          )}
+        </>
+      )}
+      {canEdit && (
+        <button
+          type="button"
+          className="btn btn-sm btn-outline"
+          onClick={() => go(toEditOrder(item.id))}
+        >
+          {tx("common.tahrirlash")}
+        </button>
+      )}
+      {canDelete && (
+        <button
+          type="button"
+          className="btn btn-sm btn-ghost"
+          style={{ color: "var(--danger, #dc2626)", padding: "5px 8px" }}
+          onClick={() => void handleDelete()}
+          title={tx("common.ochirish")}
+        >
+          {tx("common.ochirish")}
+        </button>
+      )}
+    </div>
+  );
+
+  const mainView = (
+    <>
       <div
-        className="content"
+        className={isModal ? undefined : "content"}
         style={{
-          maxWidth: 960,
+          maxWidth: 1440,
           margin: "0 auto",
-          padding: "16px",
+          padding: isModal ? 0 : "16px",
           display: "flex",
           flexDirection: "column",
           gap: 16,
@@ -1060,18 +1207,18 @@ export default function OrderDetail() {
             <span>{item.pm_notes || item.client_feedback_note}</span>
           </div>
         )}
-        <section
-          className="card padded"
-          style={{
-            borderRadius: 16,
-            border: "1px solid var(--border-color, #e2e8f0)",
-            padding: "24px 28px",
-            background: "var(--surface, #ffffff)",
-            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.03)",
-          }}
-        >
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 340px", gap: 32, alignItems: "start" }}>
-            {/* CHAP USTUN */}
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2.2fr) minmax(380px, 1fr)", gap: 32, alignItems: "start" }}>
+          {/* CHAP USTUN */}
+          <section
+            className="card padded"
+            style={{
+              borderRadius: 16,
+              border: "1px solid var(--border-color, #e2e8f0)",
+              padding: "24px 28px",
+              background: "var(--surface, #ffffff)",
+              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.03)",
+            }}
+          >
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
             <div style={{ paddingTop: 2, color: "#3b82f6", display: "inline-flex" }}>
@@ -1316,7 +1463,7 @@ export default function OrderDetail() {
                       onChange={(e) => setPmAssignedPm(e.target.value ? Number(e.target.value) : "")}
                     >
                       <option value="">(O'zgarishsiz qoldirish / O'zingizga olish)</option>
-                      {pmList.map((u: any) => (
+                      {pmList.map((u: UserBrief) => (
                         <option key={u.id} value={u.id}>{u.full_name}</option>
                       ))}
                     </select>
@@ -1365,303 +1512,515 @@ export default function OrderDetail() {
           )}
 
             </div>
+          </section>
 
-            {/* O'NG USTUN */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div
-            style={{
-              background: "var(--surface-2, #f8fafc)",
-              border: "1px solid var(--border-color, #e2e8f0)",
-              borderRadius: 12,
-              padding: "14px 18px",
-              marginTop: 14,
-              cursor: "pointer",
-              userSelect: "none",
-            }}
-            onClick={() => setFilesOpen((v) => !v)}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <PaperclipOutlineIcon size={18} color="#3b82f6" />
-                <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #334155)" }}>
-                  {tx("orders.fayllar", undefined, "Fayllar")}
-                </span>
-                <span
+          {/* O'NG USTUN */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div
+              style={{
+                background: "var(--surface-2, #f8fafc)",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                borderRadius: 12,
+                padding: "14px 18px",
+                marginTop: 14,
+                cursor: "pointer",
+                userSelect: "none",
+                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.02)",
+              }}
+              onClick={() => setFilesOpen((v) => !v)}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <PaperclipOutlineIcon size={18} color="#3b82f6" />
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #334155)" }}>
+                    {tx("orders.fayllar", undefined, "Fayllar")}
+                  </span>
+                  <span
+                    style={{
+                      background: "#e2e8f0",
+                      color: "#475569",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "1px 8px",
+                      borderRadius: 10,
+                    }}
+                  >
+                    {totalFilesCount} {tx("common.ta")}
+                  </span>
+                </div>
+                <div
                   style={{
-                    background: "#e2e8f0",
-                    color: "#475569",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "1px 8px",
-                    borderRadius: 10,
+                    color: "#64748b",
+                    display: "inline-flex",
+                    transition: "transform 0.2s ease",
+                    transform: filesOpen ? "rotate(180deg)" : "none",
                   }}
                 >
-                  {totalFilesCount} {tx("common.ta")}
-                </span>
+                  <ChevronDownOutlineIcon size={16} color="#64748b" />
+                </div>
               </div>
-              <div
-                style={{
-                  color: "#64748b",
-                  display: "inline-flex",
-                  transition: "transform 0.2s ease",
-                  transform: filesOpen ? "rotate(180deg)" : "none",
-                }}
-              >
-                <ChevronDownOutlineIcon size={16} color="#64748b" />
-              </div>
-            </div>
-            {filesOpen && (
-              <div
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  marginTop: 14,
-                  paddingTop: 14,
-                  borderTop: "1px solid var(--border-color, #e2e8f0)",
-                  display: "flex",
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  gap: 10,
-                  cursor: "default",
-                }}
-              >
-                {item.attachments && item.attachments.length > 0 ? (
-                  item.attachments.map((att) => (
+              {filesOpen && (
+                <div
+                  style={{
+                    marginTop: 14,
+                    paddingTop: 12,
+                    borderTop: "1px solid var(--border-color, #e2e8f0)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {item.attachments && item.attachments.length > 0 ? (
+                    item.attachments.map((att) => (
+                      <button
+                        key={att.id}
+                        type="button"
+                        onClick={() => setPreviewFile({ url: att.url, name: att.original_name, size: att.size_display })}
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid var(--border-color, #e2e8f0)",
+                          borderRadius: 8,
+                          padding: "8px 12px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          cursor: "pointer",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "var(--text, #1e293b)",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                          textAlign: "left",
+                          width: "100%",
+                        }}
+                        title={tx("orders.veb_saytda_ochish")}
+                      >
+                        <DocLilacIcon size={18} color="#8b5cf6" />
+                        <span style={{ textAlign: "left", flex: 1, wordBreak: "break-word" }}>
+                          {att.original_name} {att.size_display ? `(${att.size_display})` : ""}
+                        </span>
+                      </button>
+                    ))
+                  ) : item.tz_file_url ? (
                     <button
-                      key={att.id}
                       type="button"
-                      onClick={() => setPreviewFile({ url: att.url, name: att.original_name, size: att.size_display })}
+                      onClick={() => setPreviewFile({ url: item.tz_file_url!, name: item.tz_file_name || "TZ_fayli", size: item.tz_file_size_display })}
                       style={{
                         background: "#ffffff",
                         border: "1px solid var(--border-color, #e2e8f0)",
                         borderRadius: 8,
-                        padding: "6px 14px",
-                        display: "inline-flex",
+                        padding: "8px 12px",
+                        display: "flex",
                         alignItems: "center",
-                        gap: 8,
+                        gap: 10,
                         cursor: "pointer",
-                        fontSize: 12.5,
+                        fontSize: 13,
                         fontWeight: 600,
                         color: "var(--text, #1e293b)",
                         boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                        textAlign: "left",
+                        width: "100%",
                       }}
                       title={tx("orders.veb_saytda_ochish")}
                     >
-                      <DocLilacIcon size={15} color="#8b5cf6" />
-                      <span>{att.original_name} {att.size_display ? `(${att.size_display})` : ""}</span>
+                      <DocLilacIcon size={18} color="#8b5cf6" />
+                      <span style={{ textAlign: "left", flex: 1, wordBreak: "break-word" }}>
+                        {item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}
+                      </span>
                     </button>
-                  ))
-                ) : item.tz_file_url ? (
+                  ) : (
+                    <div style={{ padding: "8px", fontSize: 12.5, color: "#64748b", textAlign: "center" }}>
+                      {tx("orders.fayllar_yoq", undefined, "Fayllar mavjud emas")}
+                    </div>
+                  )}
+                  {item.completion_file_url && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewFile({ url: item.completion_file_url!, name: item.completion_file_name || "Hisobot_hujjati" })}
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid var(--border-color, #e2e8f0)",
+                        borderRadius: 8,
+                        padding: "8px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        cursor: "pointer",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--text, #1e293b)",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                        textAlign: "left",
+                        width: "100%",
+                      }}
+                      title={tx("orders.hisobot_korish")}
+                    >
+                      <DocLilacIcon size={18} color="#8b5cf6" />
+                      <span style={{ textAlign: "left", flex: 1, wordBreak: "break-word" }}>
+                        {item.completion_file_name || "Hisobot fayli"}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                background: "var(--surface-2, #f8fafc)",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                borderRadius: 12,
+                padding: "14px 18px",
+                cursor: "pointer",
+                userSelect: "none",
+                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.02)",
+              }}
+              onClick={() => setHistoryOpen((v) => !v)}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <FolderFilledIcon size={18} />
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #334155)" }}>
+                    {tx("orders.avvalgi_tz_versiyalari", undefined, "Avvalgi TZ versiyalari (Tarix)")}
+                  </span>
+                  {olderVersions.length > 0 && (
+                    <span
+                      style={{
+                        background: "#e2e8f0",
+                        color: "#475569",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: "1px 8px",
+                        borderRadius: 10,
+                      }}
+                    >
+                      {olderVersions.length} {tx("common.ta")}
+                    </span>
+                  )}
+                </div>
+                <div
+                  style={{
+                    color: "#64748b",
+                    display: "inline-flex",
+                    transition: "transform 0.2s ease",
+                    transform: historyOpen ? "rotate(180deg)" : "none",
+                  }}
+                >
+                  <ChevronDownOutlineIcon size={16} color="#64748b" />
+                </div>
+              </div>
+              {historyOpen && (
+                <div
+                  style={{
+                    marginTop: 14,
+                    paddingTop: 12,
+                    borderTop: "1px solid var(--border-color, #e2e8f0)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {olderVersions.length === 0 ? (
+                    <div style={{ padding: "10px", fontSize: 12.5, color: "#64748b", textAlign: "center" }}>
+                      Avvalgi versiyalar tarixi mavjud emas
+                    </div>
+                  ) : (
+                    olderVersions.map((ver) => {
+                      const isRejected = ver.status === "REJECTED";
+                      return (
+                        <div
+                          key={ver.id || ver.version}
+                          style={{
+                            padding: "10px 12px",
+                            borderRadius: 8,
+                            border: "1px solid var(--border-color, #e2e8f0)",
+                            background: isRejected ? "rgba(239, 68, 68, 0.03)" : "#ffffff",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                <span
+                                  style={{
+                                    fontFamily: "var(--mono)",
+                                    fontWeight: 700,
+                                    fontSize: 11,
+                                    padding: "1px 5px",
+                                    borderRadius: 4,
+                                    background: isRejected ? "var(--danger-soft, #fee2e2)" : "var(--brand-soft, #eff6ff)",
+                                    color: isRejected ? "var(--danger, #ef4444)" : "var(--brand, #2563eb)",
+                                  }}
+                                >
+                                  v{ver.version}
+                                </span>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+                                  {ver.tz_file_name || `TZ v${ver.version}`}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 11, color: "var(--muted)" }}>
+                                <span
+                                  className={`badge ${
+                                    isRejected
+                                      ? "badge-danger"
+                                      : ver.status === "CANCELLED"
+                                      ? "badge-ghost"
+                                      : "badge-outline"
+                                  }`}
+                                  style={{ fontSize: 10 }}
+                                >
+                                  {isRejected
+                                    ? tx("orders.rad_etilgan")
+                                    : ver.version === 1
+                                    ? tx("orders.dastlabki_tz_eski")
+                                    : tx("orders.eski_versiya_bekor_qilingan")}
+                                </span>
+                                {ver.uploaded_by_name && (
+                                  <span>• {ver.uploaded_by_name}</span>
+                                )}
+                                {ver.created_at && (
+                                  <span>• {fmtDateTime(ver.created_at)}</span>
+                                )}
+                              </div>
+                            </div>
+                            {ver.tz_file_url && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewFile({
+                                  url: ver.tz_file_url!,
+                                  name: ver.tz_file_name || `TZ_v${ver.version}.docx`,
+                                  size: ver.tz_file_size_display,
+                                })}
+                                style={{
+                                  background: "#f1f5f9",
+                                  border: "none",
+                                  borderRadius: 6,
+                                  padding: "4px 8px",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  cursor: "pointer",
+                                  fontSize: 11.5,
+                                  fontWeight: 600,
+                                  color: "#475569",
+                                  flexShrink: 0,
+                                }}
+                                title={tx("orders.veb_saytda_ochish")}
+                              >
+                                <span>📄</span>
+                                {ver.tz_file_size_display && <span>{ver.tz_file_size_display}</span>}
+                              </button>
+                            )}
+                          </div>
+                          {(ver.change_note || ver.decision_note) && (
+                            <div
+                              style={{
+                                width: "100%",
+                                fontSize: 11.5,
+                                color: isRejected ? "var(--danger)" : "var(--text-muted, #475569)",
+                                background: isRejected ? "rgba(239, 68, 68, 0.06)" : "var(--surface-2, #f8fafc)",
+                                padding: "6px 8px",
+                                borderRadius: 6,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 3,
+                              }}
+                            >
+                              {ver.change_note && <div><strong>{tx("orders.ozgarish_izohi")}:</strong> {ver.change_note}</div>}
+                              {ver.decision_note && <div><strong>{tx("orders.pm_qarori")}:</strong> {ver.decision_note}</div>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Loyiha vazifalari bo'limi */}
+        {hasProject && (
+          <div
+            className="card"
+            style={{
+              padding: "20px 24px",
+              borderRadius: 14,
+              border: "1px solid var(--border-color, #e2e8f0)",
+              background: "#ffffff",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              marginTop: 16,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 16,
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "rgba(37, 99, 235, 0.1)",
+                    color: "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                  }}
+                >
+                  📋
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text, #0f172a)" }}>
+                    {tx("orders.loyiha_vazifalari", undefined, "Loyiha vazifalari")} ({projectTasks.length})
+                  </h3>
+                  <div style={{ fontSize: 12.5, color: "#64748b", marginTop: 2 }}>
+                    Ushbu buyurtma asosida ochilgan loyiha vazifalari
+                  </div>
+                </div>
+              </div>
+
+              {canDistribute && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline"
+                  onClick={() => setDistributeTasksModalOpen(true)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+                >
+                  <span>⚡</span>
+                  <span>{tx("orders.vazifalarni_taqsimlash", undefined, "Vazifalarni taqsimlash")}</span>
+                </button>
+              )}
+            </div>
+
+            {projectTasksLoading ? (
+              <Loading text={tx("common.yuklanmoqda")} />
+            ) : projectTasks.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "32px 16px",
+                  background: "#f8fafc",
+                  borderRadius: 10,
+                  border: "1px dashed #cbd5e1",
+                }}
+              >
+                <div style={{ fontSize: 14, color: "#64748b", marginBottom: 12 }}>
+                  {tx("orders.hozircha_vazifalar_yoq", undefined, "Hozircha vazifalar mavjud emas.")}
+                </div>
+                {canDistribute && (
                   <button
                     type="button"
-                    onClick={() => setPreviewFile({ url: item.tz_file_url!, name: item.tz_file_name || "TZ_fayli", size: item.tz_file_size_display })}
-                    style={{
-                      background: "#ffffff",
-                      border: "1px solid var(--border-color, #e2e8f0)",
-                      borderRadius: 8,
-                      padding: "6px 14px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                      cursor: "pointer",
-                      fontSize: 12.5,
-                      fontWeight: 600,
-                      color: "var(--text, #1e293b)",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                    }}
-                    title={tx("orders.veb_saytda_ochish")}
+                    className="btn btn-sm btn-primary"
+                    onClick={() => setDistributeTasksModalOpen(true)}
                   >
-                    <DocLilacIcon size={15} color="#8b5cf6" />
-                    <span>{item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}</span>
-                  </button>
-                ) : null}
-                {item.completion_file_url && (
-                  <button
-                    type="button"
-                    onClick={() => setPreviewFile({ url: item.completion_file_url!, name: item.completion_file_name || "Hisobot_hujjati" })}
-                    style={{
-                      background: "#ffffff",
-                      border: "1px solid var(--border-color, #e2e8f0)",
-                      borderRadius: 8,
-                      padding: "6px 14px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                      cursor: "pointer",
-                      fontSize: 12.5,
-                      fontWeight: 600,
-                      color: "var(--text, #1e293b)",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                    }}
-                    title={tx("orders.hisobot_korish")}
-                  >
-                    <DocLilacIcon size={15} color="#8b5cf6" />
-                    <span>{item.completion_file_name || "Hisobot fayli"}</span>
+                    + {tx("orders.vazifalarni_taqsimlash", undefined, "Vazifalarni taqsimlash")}
                   </button>
                 )}
               </div>
-            )}
-          </div>
-          <div
-            style={{
-              background: "var(--surface-2, #f8fafc)",
-              border: "1px solid var(--border-color, #e2e8f0)",
-              borderRadius: 12,
-              padding: "14px 18px",
-              marginTop: 12,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              cursor: "pointer",
-              userSelect: "none",
-            }}
-            onClick={() => setHistoryOpen((v) => !v)}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <FolderFilledIcon size={18} />
-              <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #334155)" }}>
-                {tx("orders.avvalgi_tz_versiyalari", undefined, "Avvalgi TZ versiyalari (Tarix)")}
-              </span>
-              {olderVersions.length > 0 && (
-                <span
-                  style={{
-                    background: "#e2e8f0",
-                    color: "#475569",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "1px 8px",
-                    borderRadius: 10,
-                  }}
-                >
-                  {olderVersions.length} {tx("common.ta")}
-                </span>
-              )}
-            </div>
-            <div
-              style={{
-                color: "#64748b",
-                display: "inline-flex",
-                transform: historyOpen ? "rotate(90deg)" : "none",
-                transition: "transform 0.15s ease",
-              }}
-            >
-              <ChevronRightOutlineIcon size={16} color="#64748b" />
-            </div>
-          </div>
-          {historyOpen && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-              {olderVersions.length === 0 ? (
-                <div style={{ padding: "12px", fontSize: 12.5, color: "#64748b", textAlign: "center", background: "var(--surface-2, #f8fafc)", borderRadius: 8 }}>
-                  Avvalgi versiyalar tarixi mavjud emas
-                </div>
-              ) : (
-                olderVersions.map((ver) => {
-                  const isRejected = ver.status === "REJECTED";
-                  return (
-                    <div
-                      key={ver.id || ver.version}
-                      style={{
-                        padding: "10px 14px",
-                        borderRadius: 8,
-                        border: "1px solid var(--border-color, #e2e8f0)",
-                        background: isRejected ? "rgba(239, 68, 68, 0.03)" : "var(--surface-2, #f8fafc)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: 10,
-                      }}
-                    >
-                      <div className="row middle" style={{ gap: 8, flex: 1, minWidth: 260, flexWrap: "wrap" }}>
-                        <span
-                          style={{
-                            fontFamily: "var(--mono)",
-                            fontWeight: 700,
-                            fontSize: 11,
-                            padding: "2px 6px",
-                            borderRadius: 4,
-                            background: isRejected ? "var(--danger-soft, #fee2e2)" : "var(--surface-3, #e2e8f0)",
-                            color: isRejected ? "var(--danger, #ef4444)" : "var(--text-muted, #64748b)",
-                          }}
-                        >
-                          v{ver.version}
-                        </span>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}>
-                          {ver.tz_file_name || `TZ v${ver.version}`}
-                        </span>
-                        {ver.tz_file_size_display && (
-                          <span style={{ fontSize: 11.5, color: "var(--muted)" }}>
-                            ({ver.tz_file_size_display})
-                          </span>
-                        )}
-                        <span
-                          className={`badge ${
-                            isRejected
-                              ? "badge-danger"
-                              : ver.status === "CANCELLED"
-                              ? "badge-ghost"
-                              : "badge-outline"
-                          }`}
-                          style={{ fontSize: 10.5 }}
-                        >
-                          {isRejected
-                            ? tx("orders.rad_etilgan")
-                            : ver.version === 1
-                            ? tx("orders.dastlabki_tz_eski")
-                            : tx("orders.eski_versiya_bekor_qilingan")}
-                        </span>
-                        {ver.uploaded_by_name && (
-                          <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                            • {tx("orders.yuklagan")}: {ver.uploaded_by_name}
-                          </span>
-                        )}
-                        {ver.created_at && (
-                          <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                            • {fmtDateTime(ver.created_at)}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        {ver.tz_file_url && (
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc", borderBottom: "1px solid var(--border)", fontSize: 12, color: "#64748b", textAlign: "left" }}>
+                      <th style={{ padding: "10px 14px", width: 44, textAlign: "center" }}>#</th>
+                      <th style={{ padding: "10px 14px" }}>Vazifa nomi</th>
+                      <th style={{ padding: "10px 14px" }}>Ijrochilar</th>
+                      <th style={{ padding: "10px 14px" }}>Holat</th>
+                      <th style={{ padding: "10px 14px" }}>Muhimlik</th>
+                      <th style={{ padding: "10px 14px" }}>Boshlanish</th>
+                      <th style={{ padding: "10px 14px" }}>Muddat</th>
+                      <th style={{ padding: "10px 14px", textAlign: "right" }}>Amal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projectTasks.map((t, idx) => (
+                      <tr
+                        key={t.id}
+                        style={{
+                          borderBottom: "1px solid #f1f5f9",
+                          cursor: "pointer",
+                          transition: "background 0.15s ease",
+                        }}
+                        onClick={() => setSelectedTaskId(t.id)}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <td style={{ padding: "12px 14px", textAlign: "center", fontSize: 12.5, color: "#94a3b8", fontWeight: 600 }}>
+                          {idx + 1}
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <div style={{ fontWeight: 600, fontSize: 13.5, color: "#0f172a" }}>
+                            {t.title}
+                          </div>
+                          {t.acceptance_criteria && (
+                            <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2, maxWidth: 360, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {t.acceptance_criteria}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          {t.assignees && t.assignees.length > 0 ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              {t.assignees.map((a) => (
+                                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                  <Avatar user={a} size="sm" />
+                                  <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 500 }}>
+                                    {a.full_name}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: 12, color: "#94a3b8" }}>—</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <StatusBadge task={t} />
+                        </td>
+                        <td style={{ padding: "12px 14px" }}>
+                          <Priority task={t} />
+                        </td>
+                        <td style={{ padding: "12px 14px", fontSize: 12.5, color: "#64748b", whiteSpace: "nowrap" }}>
+                          {t.start_date ? fmtDate(t.start_date) : "—"}
+                        </td>
+                        <td style={{ padding: "12px 14px", fontSize: 12.5, color: "#64748b", whiteSpace: "nowrap" }}>
+                          {t.due_date ? fmtDate(t.due_date) : "—"}
+                        </td>
+                        <td style={{ padding: "12px 14px", textAlign: "right" }}>
                           <button
                             type="button"
-                            onClick={() => setPreviewFile({
-                              url: ver.tz_file_url!,
-                              name: ver.tz_file_name || `TZ_v${ver.version}.docx`,
-                              size: ver.tz_file_size_display,
-                            })}
-                            className="btn btn-xs btn-outline"
-                            title={tx("orders.veb_saytda_ochish")}
+                            className="btn btn-sm btn-ghost"
+                            style={{ color: "#2563eb", fontWeight: 600, fontSize: 12 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTaskId(t.id);
+                            }}
                           >
-                            <span>📄</span> {tx("orders.faylni_yuklab_olish")}
+                            Ko'rish →
                           </button>
-                        )}
-                      </div>
-                      {(ver.change_note || ver.decision_note) && (
-                        <div
-                          style={{
-                            width: "100%",
-                            fontSize: 11.5,
-                            color: isRejected ? "var(--danger)" : "var(--muted)",
-                            background: isRejected ? "rgba(239, 68, 68, 0.06)" : "var(--surface)",
-                            padding: "4px 8px",
-                            borderRadius: 4,
-                            marginTop: 2,
-                          }}
-                        >
-                          {ver.change_note && <span>tx("orders.ozgarish_izohi") + ": "{ver.change_note}</span>}
-                          {ver.change_note && ver.decision_note && <span> • </span>}
-                          {ver.decision_note && <span>tx("orders.pm_qarori") + ": "{ver.decision_note}</span>}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          )}
-            </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        </section>
+        )}
       </div>
       {versionModal && (
         <div className="modal-overlay" onClick={() => setVersionModal(false)}>
@@ -1860,7 +2219,7 @@ export default function OrderDetail() {
                       style={{ width: "100%" }}
                     >
                       <option value="">(O'zingizga olish)</option>
-                      {pmList.map((u: any) => (
+                      {pmList.map((u: UserBrief) => (
                         <option key={u.id} value={u.id}>{u.full_name}</option>
                       ))}
                     </select>
@@ -1875,6 +2234,7 @@ export default function OrderDetail() {
                       type="date"
                       className="input"
                       value={claimStartDateInput}
+                      max={claimDeadlineInput || undefined}
                       onChange={(e) => setClaimStartDateInput(e.target.value)}
                       style={{ width: "100%" }}
                     />
@@ -1888,7 +2248,9 @@ export default function OrderDetail() {
                   <input
                     type="date"
                     required
-                    min={new Date().toISOString().split("T")[0]}
+                    min={claimStartDateInput && claimStartDateInput > new Date().toISOString().split("T")[0]
+                      ? claimStartDateInput
+                      : new Date().toISOString().split("T")[0]}
                     className="input"
                     value={claimDeadlineInput}
                     onChange={(e) => setClaimDeadlineInput(e.target.value)}
@@ -2540,6 +2902,162 @@ export default function OrderDetail() {
           onClose={() => setPreviewFile(null)}
         />
       )}
+      {projectModalOpen && item && (
+        <Suspense fallback={null}>
+          <ProjectFormModal
+            initialOrderId={item.id}
+            initialOrder={item}
+            onClose={() => setProjectModalOpen(false)}
+            onSuccess={() => {
+              setProjectModalOpen(false);
+              void load();
+            }}
+          />
+        </Suspense>
+      )}
+      {distributeTasksModalOpen && item && (item.project || item.project_detail?.id) && (
+        <Suspense fallback={null}>
+          <DistributeTasksModal
+            projectId={Number(item.project || item.project_detail?.id)}
+            order={item}
+            onClose={() => setDistributeTasksModalOpen(false)}
+            onTasksUpdated={() => {
+              void loadProjectTasks();
+              void load();
+            }}
+          />
+        </Suspense>
+      )}
+      {selectedTaskId && (
+        <Suspense fallback={null}>
+          <TaskDetailModal
+            taskId={selectedTaskId}
+            onClose={() => {
+              setSelectedTaskId(null);
+              void loadProjectTasks();
+              void load();
+            }}
+          />
+        </Suspense>
+      )}
+    </>
+  );
+
+  if (isModal) {
+    return createPortal(
+      <div
+        className="modal-overlay"
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 99999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px 16px",
+          background: "rgba(8, 11, 16, 0.72)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          overflow: "hidden",
+        }}
+        onClick={onClose}
+      >
+        <div
+          className="modal-window card"
+          style={{
+            width: "min(1420px, 96vw)",
+            height: "92vh",
+            display: "flex",
+            flexDirection: "column",
+            borderRadius: 12,
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            overflow: "hidden",
+            background: "var(--bg, #f8fafc)",
+            border: "1px solid var(--border)",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Modal Header */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 20px",
+              borderBottom: "1px solid var(--border)",
+              background: "var(--card-bg, #ffffff)",
+              flexShrink: 0,
+              gap: 12,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" }}>
+              <span className="badge badge-brand" style={{ fontSize: 13, fontWeight: 700 }}>
+                {item.system_name}
+              </span>
+              {item.module && (
+                <span className="muted" style={{ fontSize: 13, fontWeight: 500 }}>
+                  ({item.module})
+                </span>
+              )}
+              {(item.version || 1) > 1 && (
+                <span className="badge" style={{ fontSize: 11, fontWeight: 700 }}>
+                  v{item.version}
+                </span>
+              )}
+              <OrderStatusBadge status={item.status} label={item.status_display} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              {orderActions}
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={onClose}
+                style={{ fontSize: 18, lineHeight: 1, padding: "4px 8px" }}
+                title={tx("common.yopish")}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Scrollable Content */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+            {mainView}
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  }
+
+  return (
+    <>
+      <PageHead
+        title={
+          <span className="row middle" style={{ gap: 8, display: "inline-flex", alignItems: "center" }}>
+            <Link
+              to="/buyurtmalar"
+              className="muted"
+              style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {tx("orders.buyurtmalarga_qaytish")}
+            </Link>
+            <span className="muted" style={{ opacity: 0.5 }}>/</span>
+            <span className="badge badge-brand" style={{ fontSize: 12, fontWeight: 700 }}>
+              {item.system_name}
+            </span>
+            {(item.version || 1) > 1 && (
+              <span className="badge" style={{ fontSize: 11, fontWeight: 700 }}>
+                v{item.version}
+              </span>
+            )}
+            <OrderStatusBadge status={item.status} label={item.status_display} />
+          </span>
+        }
+        actions={orderActions}
+      />
+      {mainView}
     </>
   );
 }

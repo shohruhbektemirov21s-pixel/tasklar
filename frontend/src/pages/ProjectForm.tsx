@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { ApiError, api } from "@/api/client";
 import { deleteProject } from "@/api/projects";
 import { getOrders } from "@/api/orders";
@@ -7,6 +8,7 @@ import TeamPicker, { addPickedMembers, createPickedTasks, taskCount }
   from "@/components/TeamPicker";
 import type { Pick as TeamPick } from "@/components/TeamPicker";
 import type { Access, Brief, ChangeRequestItem, Project } from "@/api/types";
+import { lockScroll, unlockScroll } from "@/components/scrollLock";
 
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
@@ -14,7 +16,19 @@ import { Card, DateField, ErrorMsg, Loading } from "@/components/ui";
 import { toProject, useEntityId, useGo, useIsPath } from "@/nav";
 import { tx } from "@/i18n";
 
-export default function ProjectForm() {
+export interface ProjectFormProps {
+  initialOrderId?: number | null;
+  initialOrder?: ChangeRequestItem | null;
+  onClose?: () => void;
+  onSuccess?: (project: Project) => void;
+}
+
+export default function ProjectForm({
+  initialOrderId,
+  initialOrder,
+  onClose,
+  onSuccess,
+}: ProjectFormProps = {}) {
   const fid = useId();
   // Saqlash tugmasi sarlavhada, ya'ni `<form>` dan tashqarida turadi -
   // `form` atributi orqali bog'lanadi, shuning uchun formaga id kerak.
@@ -24,10 +38,24 @@ export default function ProjectForm() {
   // ketardi va odam yangi loyiha o'rniga eskisini o'zgartirib qo'yardi.
   const creating = useIsPath("/loyiha/yangi");
   const stored = useEntityId("project");
-  const id = creating ? null : stored;
+  const isModal = Boolean(onClose);
+  const id = isModal ? null : (creating ? null : stored);
   const go = useGo();
   const { meta, user } = useAuth();
   const editing = Boolean(id);
+
+  useEffect(() => {
+    if (!isModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    document.addEventListener("keydown", onKey);
+    lockScroll();
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      unlockScroll();
+    };
+  }, [isModal, onClose]);
 
   const [loaded, setLoaded] = useState(!editing);
   const [error, setError] = useState<string | null>(null);
@@ -49,16 +77,46 @@ export default function ProjectForm() {
     pitfalls: "",
   });
 
-  const [f, setF] = useState({
-    name: "", description: "",
-    status: "ACTIVE", project_type: "NEW", start_date: "", due_date: "",
-    // Ish maydoni ichida ochiq - standart holat, jamoa bir-birining ishini
-    // ko'rib tursin. Tashqariga chiqarish esa ATAYLAB belgilanadi.
-    is_public: true, is_listed: false,
-    order_id: null as number | null,
+  const targetOrderId = initialOrderId ?? initialOrder?.id ?? null;
+
+  const [f, setF] = useState(() => {
+    if (initialOrder) {
+      const ordDate = initialOrder.request_date ? initialOrder.request_date.split("T")[0] : "";
+      const startDate = initialOrder.pm_start_date || ordDate || "";
+      let dueDate = initialOrder.pm_deadline || initialOrder.due_date || "";
+      if (startDate && dueDate && dueDate < startDate) {
+        dueDate = startDate;
+      }
+      return {
+        name: initialOrder.system_name || `Buyurtma #${initialOrder.id}`,
+        description: initialOrder.requested_change || "",
+        status: "ACTIVE",
+        project_type: initialOrder.order_type || "NEW",
+        start_date: startDate,
+        due_date: dueDate,
+        is_public: true,
+        is_listed: true,
+        order_id: initialOrder.id,
+      };
+    }
+    return {
+      name: "",
+      description: "",
+      status: "ACTIVE",
+      project_type: "NEW",
+      start_date: "",
+      due_date: "",
+      // Ish maydoni ichida ochiq - standart holat, jamoa bir-birining ishini
+      // ko'rib tursin. Tashqariga chiqarish esa ATAYLAB belgilanadi.
+      is_public: true,
+      is_listed: true,
+      order_id: targetOrderId,
+    };
   });
 
-  const [orders, setOrders] = useState<ChangeRequestItem[]>([]);
+  const [orders, setOrders] = useState<ChangeRequestItem[]>(() => {
+    return initialOrder ? [initialOrder] : [];
+  });
   const [ordersLoading, setOrdersLoading] = useState(false);
 
   useEffect(() => {
@@ -67,7 +125,12 @@ export default function ProjectForm() {
     getOrders({ page_size: 200 })
       .then((res) => {
         if (!alive) return;
-        setOrders(res.results || []);
+        const list = res.results || [];
+        if (initialOrder && !list.some((o) => o.id === initialOrder.id)) {
+          setOrders([initialOrder, ...list]);
+        } else {
+          setOrders(list);
+        }
       })
       .catch(() => {
         // Buyurtmalar ruxsati bo'lmasa yoki xato bo'lsa ro'yxat bo'sh qoladi
@@ -76,7 +139,7 @@ export default function ProjectForm() {
         if (alive) setOrdersLoading(false);
       });
     return () => { alive = false; };
-  }, []);
+  }, [initialOrder]);
 
   useEffect(() => {
     let alive = true;
@@ -113,7 +176,6 @@ export default function ProjectForm() {
     return () => { alive = false; };
   }, [id, editing]);
 
-
   function set(k: string, v: unknown) {
     setF((p) => ({ ...p, [k]: v }));
   }
@@ -124,19 +186,80 @@ export default function ProjectForm() {
       const ord = orders.find((o) => o.id === selectedId);
       if (ord) {
         const ordDate = ord.request_date ? ord.request_date.split("T")[0] : "";
-        setF((prev) => ({
-          ...prev,
-          order_id: selectedId,
-          name: prev.name.trim() ? prev.name : (ord.system_name || `Buyurtma #${ord.system_name}`),
-          description: prev.description.trim() ? prev.description : (ord.requested_change || ""),
-          project_type: ord.order_type || prev.project_type,
-          start_date: prev.start_date && ordDate && prev.start_date < ordDate ? ordDate : prev.start_date,
-        }));
+        setF((prev) => {
+          const newStart = prev.start_date && ordDate && prev.start_date < ordDate
+            ? ordDate
+            : (prev.start_date || ord.pm_start_date || ordDate || "");
+          let newDue = prev.due_date || ord.pm_deadline || ord.due_date || "";
+          if (newStart && newDue && newDue < newStart) {
+            newDue = newStart;
+          }
+          return {
+            ...prev,
+            order_id: selectedId,
+            name: prev.name.trim() ? prev.name : (ord.system_name || `Buyurtma #${ord.id}`),
+            description: prev.description.trim() ? prev.description : (ord.requested_change || ""),
+            project_type: ord.order_type || prev.project_type,
+            start_date: newStart,
+            due_date: newDue,
+          };
+        });
       }
     }
   }
 
-  const selectedOrder = f.order_id ? orders.find((o) => o.id === f.order_id) : null;
+  function handleStartDateChange(v: string) {
+    set("start_date", v);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.start_date;
+      if (orderDate && v && v < orderDate) {
+        next.start_date = tx(
+          "project_form.boshlanish_buyurtmadan_oldin_bolmasin",
+          undefined,
+          "Loyiha boshlanish sanasi buyurtma sanasidan oldin bo'lishi mumkin emas."
+        );
+      }
+      if (f.due_date && v && f.due_date < v) {
+        next.due_date = tx(
+          "project_form.tugash_boshlanishdan_oldin_bolmasin",
+          undefined,
+          "Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas."
+        );
+      } else if (next.due_date === tx("project_form.tugash_boshlanishdan_oldin_bolmasin", undefined, "Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas.")) {
+        delete next.due_date;
+      }
+      return next;
+    });
+  }
+
+  function handleDueDateChange(v: string) {
+    set("due_date", v);
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (f.start_date && v && v < f.start_date) {
+        next.due_date = tx(
+          "project_form.tugash_boshlanishdan_oldin_bolmasin",
+          undefined,
+          "Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas."
+        );
+      } else {
+        delete next.due_date;
+      }
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    if (targetOrderId && !f.name && orders.length > 0) {
+      const found = orders.find((o) => o.id === targetOrderId);
+      if (found) {
+        handleOrderChange(targetOrderId);
+      }
+    }
+  }, [targetOrderId, orders]);
+
+  const selectedOrder = f.order_id ? orders.find((o) => o.id === f.order_id) : (initialOrder || null);
   const orderDate = selectedOrder?.request_date
     ? selectedOrder.request_date.split("T")[0]
     : undefined;
@@ -158,6 +281,16 @@ export default function ProjectForm() {
         "Loyiha boshlanish sanasi buyurtma sanasidan oldin bo'lishi mumkin emas."
       );
       setErrors({ start_date: msg });
+      setError(msg);
+      return;
+    }
+    if (f.start_date && f.due_date && f.due_date < f.start_date) {
+      const msg = tx(
+        "project_form.tugash_boshlanishdan_oldin_bolmasin",
+        undefined,
+        "Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas."
+      );
+      setErrors({ due_date: msg });
       setError(msg);
       return;
     }
@@ -200,7 +333,6 @@ export default function ProjectForm() {
       }
 
       // Loyiha saqlandi. Fayl yuklanmasa ham loyiha yo'qolmasin: xato aytiladi,
-
       // odam fayllarni "Fayllar" bo'limidan qayta yuklay oladi.
       if (files.length) {
         try {
@@ -210,6 +342,10 @@ export default function ProjectForm() {
           setBusy(false);
           setError(tx("project_form.loyiha_yaratildi_lekin_fayllarni_yuklab")
                    + tx("project_form.ularni_fayllar_bolimidan_qayta_yuklang"));
+          if (isModal) {
+            onClose?.();
+            return;
+          }
           go(toProject(saved.id, "fayllar"));
           return;
         }
@@ -234,11 +370,22 @@ export default function ProjectForm() {
           setBusy(false);
           setError(tx("project_form.loyiha_yaratildi_lekin") + parts.join("; ")
                    + tx("project_form.jamoa_va_doska_bolimidan_qayta"));
+          if (isModal) {
+            onClose?.();
+            return;
+          }
           go(toProject(saved.id, failedMembers.length ? "jamoa" : "doska"));
           return;
         }
       }
 
+      if (onSuccess) {
+        onSuccess(saved);
+      }
+      if (isModal) {
+        onClose?.();
+        return;
+      }
       // Vazifa yozilgan bolsa darrov doskani ochamiz - odam ishlar joyiga
       // tushganini oz kozi bilan korsin.
       go(toProject(saved.id, tasks ? "doska" : "brif"));
@@ -267,7 +414,321 @@ export default function ProjectForm() {
     setBusy(false);
   }
 
-  if (!loaded) return <div className="content"><Loading /></div>;
+  if (!loaded) {
+    if (isModal) {
+      return createPortal(
+        <div
+          className="modal-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100001,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px 16px",
+            background: "rgba(8, 11, 16, 0.72)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+          }}
+          onClick={onClose}
+        >
+          <div
+            className="modal-window card"
+            style={{ width: "min(400px, 90vw)", padding: "36px 20px", textAlign: "center", borderRadius: 12, background: "var(--card-bg, #fff)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Loading text="Loyiha ma'lumotlari yuklanmoqda..." />
+          </div>
+        </div>,
+        document.body
+      );
+    }
+    return <div className="content"><Loading /></div>;
+  }
+
+  const formFields = (
+    <div className="split">
+      {/* Chap ustun: asosiy maydonlar va boshlang'ich fayllar */}
+      <div>
+        <Card title={tx("project_form.asosiy_malumot")}>
+          <div className="field">
+            <label htmlFor={`${fid}-order`}>
+              {tx("project_form.boglanadigan_buyurtma")}
+              <span style={{ fontSize: 12, fontWeight: "normal", color: "var(--color-fg-muted)", marginLeft: 6 }}>
+                ({tx("common.ixtiyoriy")})
+              </span>
+            </label>
+            <select
+              id={`${fid}-order`}
+              value={f.order_id || ""}
+              onChange={(e) => {
+                const val = e.target.value ? Number(e.target.value) : null;
+                handleOrderChange(val);
+              }}
+              disabled={ordersLoading}
+            >
+              <option value="">{tx("project_form.buyurtma_tanlanmagan", undefined, "— Tanlanmagan (Buyurtmasiz yangi) —")}</option>
+              {orders.filter((ord) => ord.status !== "DRAFT").map((ord) => (
+                <option key={ord.id} value={ord.id}>
+                  {ord.system_name} — {ord.module || ord.system_name} ({ord.status_display})
+                </option>
+              ))}
+              {f.order_id && !orders.some((o) => o.id === f.order_id) && (
+                <option value={f.order_id}>
+                  Buyurtma #{f.order_id}
+                </option>
+              )}
+            </select>
+            <div style={{ fontSize: 11, color: "var(--color-fg-muted)", marginTop: 4 }}>
+              {tx("project_form.buyurtma_tanlash_izohi")}
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor={`${fid}-0`}>{tx("project_form.loyiha_nomi")}</label>
+            <input id={`${fid}-0`} value={f.name} required onChange={(e) => set("name", e.target.value)}
+                   placeholder={tx("project_form.masalan_mobil_ilova_v2")} />
+            {errors.name && <div className="err">{errors.name}</div>}
+          </div>
+          <div className="field">
+            <label htmlFor={`${fid}-type`}>{tx("orders.loyiha_turi_label")}</label>
+            <select
+              id={`${fid}-ptype`}
+              value={f.project_type}
+              onChange={(e) => set("project_type", e.target.value)}
+            >
+              {(meta?.project_type || meta?.order_type || []).map((t) => (
+                <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor={`${fid}-1`}>{tx("project_form.tavsif")}</label>
+            <textarea id={`${fid}-1`} rows={3} value={f.description}
+                      onChange={(e) => set("description", e.target.value)} />
+          </div>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor={`${fid}-2`}>{tx("project_form.boshlanish_sanasi")}</label>
+              <DateField id={`${fid}-2`} value={f.start_date}
+                         min={orderDate || undefined}
+                         max={f.due_date || undefined}
+                         onChange={handleStartDateChange} />
+              {errors.start_date && <div className="err">{errors.start_date}</div>}
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor={`${fid}-4`}>{tx("project_form.tugash_sanasi_muddat")}</label>
+              {/* min: tugash boshlanishdan oldin bo'lib qolmasin */}
+              <DateField id={`${fid}-4`} value={f.due_date}
+                         min={f.start_date || undefined}
+                         onChange={handleDueDateChange} />
+              {errors.due_date && <div className="err">{errors.due_date}</div>}
+            </div>
+          </div>
+        </Card>
+
+        <Card title={tx("project_detail.arxitekturasi")}>
+          <div className="field">
+            <label htmlFor={`${fid}-arch`}>{tx("project_brief.arxitektura")}</label>
+            <textarea
+              id={`${fid}-arch`}
+              rows={3}
+              value={brief.architecture}
+              onChange={(e) => setBrief((b) => ({ ...b, architecture: e.target.value }))}
+              placeholder="Monorepo, backend/frontend, REST API, mikroservislar..."
+            />
+          </div>
+          <div className="field">
+            <label htmlFor={`${fid}-tech`}>{tx("project_brief.texnologiyalar")}</label>
+            <input
+              id={`${fid}-tech`}
+              value={brief.tech_stack}
+              onChange={(e) => setBrief((b) => ({ ...b, tech_stack: e.target.value }))}
+              placeholder="Django, React, IBM Db2, Redis, Docker..."
+            />
+          </div>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor={`${fid}-goal`}>{tx("project_brief.loyiha_maqsadi")}</label>
+              <input
+                id={`${fid}-goal`}
+                value={brief.goal}
+                onChange={(e) => setBrief((b) => ({ ...b, goal: e.target.value }))}
+                placeholder="Loyihaning asosiy maqsadi"
+              />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor={`${fid}-pitfalls`}>{tx("project_brief.ehtiyot_boling")}</label>
+              <input
+                id={`${fid}-pitfalls`}
+                value={brief.pitfalls}
+                onChange={(e) => setBrief((b) => ({ ...b, pitfalls: e.target.value }))}
+                placeholder="Ehtiyot bo'lish kerak bo'lgan jihatlar"
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Tahrirlashda fayllar alohida «Fayllar» bolimida boshqariladi -
+            bu yerda faqat yangi loyiha uchun boshlangich hujjatlar. */}
+        {!editing && (
+          <Card title={tx("project_form.boshlangich_fayllar")}>
+            <FilePicker
+              files={files}
+              onChange={setFiles}
+              withDescription
+              description={fileNote}
+              onDescription={setFileNote}
+              withDates
+              date={fileDate}
+              onDate={setFileDate}
+              /* Hujjat sanasi loyiha oralig'idan chiqmasin - chegaralar
+                 shu formaning o'zidagi maydonlardan olinadi. */
+              minDate={f.start_date || undefined}
+              maxDate={f.due_date || undefined}
+            />
+          </Card>
+        )}
+      </div>
+
+      <div>
+        {/* O'chirish huquqini SERVER aytadi (`can_delete_project`):
+            menejer, tizim admini va boshliq. Ilgari shart bu yerda
+            qo'lda takrorlangan edi va serverdagi qoidadan uzilib
+            qolgandi. */}
+        {editing && acc?.can_delete_project && (
+          <Card title={tx("project_form.loyihani_ochirish")}>
+            <button type="button" className="btn btn-danger btn-block" disabled={busy}
+                    onClick={() => void removeProject()}>
+              {tx("project_form.loyihani_butunlay_ochirish")}
+            </button>
+          </Card>
+        )}
+
+        {/* Tahrirlashda jamoa «Jamoa» bolimida boshqariladi - bu yerda
+            faqat yangi loyihaga qoshiladigan odamlar. */}
+        {!editing && (
+          <Card title={tx("project_form.jamoa_va_vazifalar")}>
+            <TeamPicker
+              picks={team}
+              onChange={setTeam}
+              /* Menejer siz bolasiz - bu royxatdan menejer roli berilmaydi */
+              roles={(meta?.project_role || []).filter((r) => r.value !== "MANAGER")}
+              priorities={meta?.task_priority || []}
+              defaultRole="DEVELOPER"
+              excludeId={user?.id}
+            />
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+
+  if (isModal) {
+    return createPortal(
+      <div
+        className="modal-overlay"
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 100001,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px 16px",
+          background: "rgba(8, 11, 16, 0.72)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          overflow: "hidden",
+        }}
+        onClick={onClose}
+      >
+        <div
+          className="modal-window card"
+          style={{
+            width: "min(1420px, 96vw)",
+            height: "92vh",
+            display: "flex",
+            flexDirection: "column",
+            borderRadius: 12,
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            overflow: "hidden",
+            background: "var(--bg, #f8fafc)",
+            border: "1px solid var(--border)",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Modal Header */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 20px",
+              borderBottom: "1px solid var(--border)",
+              background: "var(--card-bg, #ffffff)",
+              flexShrink: 0,
+              gap: 12,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <strong style={{ fontSize: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {editing ? tx("project_form.loyiha_sozlamalari") : tx("common.yangi_loyiha")}
+              </strong>
+              {(selectedOrder || initialOrder) && (
+                <>
+                  <span className="muted">/</span>
+                  <span className="muted" style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {(selectedOrder || initialOrder)?.system_name}
+                  </span>
+                </>
+              )}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              <select
+                aria-label={tx("project_form.loyiha_holati")}
+                title={tx("project_form.loyiha_holati")}
+                value={f.status}
+                style={{ width: "auto", minWidth: 140 }}
+                onChange={(e) => set("status", e.target.value)}
+              >
+                {(meta?.project_status || []).map((s) => (
+                  <option key={s.value} value={String(s.value)}>{s.label}</option>
+                ))}
+              </select>
+              <button className="btn btn-primary" form={formId} disabled={busy}>
+                {busy ? tx("common.saqlanmoqda") : editing ? tx("common.saqlash") : tx("project_form.loyiha_yaratish")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={onClose}
+                style={{ fontSize: 18, lineHeight: 1, padding: "4px 8px" }}
+                title={tx("common.yopish")}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Scrollable Body */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "20px",
+            }}
+          >
+            <ErrorMsg error={error} />
+            <form id={formId} onSubmit={submit}>
+              {formFields}
+            </form>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
+  }
 
   return (
     <>
@@ -296,202 +757,7 @@ export default function ProjectForm() {
       <div className="content">
         <ErrorMsg error={error} />
         <form id={formId} onSubmit={submit}>
-          <div className="split">
-            {/* Chap ustun: asosiy maydonlar va boshlang'ich fayllar */}
-            <div>
-            <Card title={tx("project_form.asosiy_malumot")}>
-              <div className="field">
-                <label htmlFor={`${fid}-order`}>
-                  {tx("project_form.boglanadigan_buyurtma")}
-                  <span style={{ fontSize: 12, fontWeight: "normal", color: "var(--color-fg-muted)", marginLeft: 6 }}>
-                    ({tx("common.ixtiyoriy")})
-                  </span>
-                </label>
-                <select
-                  id={`${fid}-order`}
-                  value={f.order_id || ""}
-                  onChange={(e) => {
-                    const val = e.target.value ? Number(e.target.value) : null;
-                    handleOrderChange(val);
-                  }}
-                  disabled={ordersLoading}
-                >
-                  <option value="">{tx("project_form.buyurtma_tanlanmagan", undefined, "— Tanlanmagan (Buyurtmasiz yangi) —")}</option>
-                  {orders.filter((ord) => ord.status !== "DRAFT").map((ord) => (
-                    <option key={ord.id} value={ord.id}>
-                      {ord.system_name} — {ord.system_name} ({ord.status_display})
-                    </option>
-                  ))}
-                  {f.order_id && !orders.some((o) => o.id === f.order_id) && (
-                    <option value={f.order_id}>
-                      Buyurtma #{f.order_id}
-                    </option>
-                  )}
-                </select>
-                <div style={{ fontSize: 11, color: "var(--color-fg-muted)", marginTop: 4 }}>
-                  {tx("project_form.buyurtma_tanlash_izohi")}
-                </div>
-              </div>
-              <div className="field">
-                <label htmlFor={`${fid}-0`}>{tx("project_form.loyiha_nomi")}</label>
-                <input id={`${fid}-0`} value={f.name} required onChange={(e) => set("name", e.target.value)}
-                       placeholder={tx("project_form.masalan_mobil_ilova_v2")} />
-                {errors.name && <div className="err">{errors.name}</div>}
-              </div>
-              <div className="field">
-                <label htmlFor={`${fid}-type`}>{tx("orders.loyiha_turi_label")}</label>
-                <select
-                  id={`${fid}-ptype`}
-                  value={f.project_type}
-                  onChange={(e) => set("project_type", e.target.value)}
-                >
-                  {(meta?.project_type || meta?.order_type || []).map((t) => (
-                    <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor={`${fid}-1`}>{tx("project_form.tavsif")}</label>
-                <textarea id={`${fid}-1`} rows={3} value={f.description}
-                          onChange={(e) => set("description", e.target.value)} />
-              </div>
-              <div className="row">
-                <div className="field" style={{ flex: 1 }}>
-                  <label htmlFor={`${fid}-2`}>{tx("project_form.boshlanish_sanasi")}</label>
-                  <DateField id={`${fid}-2`} value={f.start_date}
-                             min={orderDate || undefined}
-                             max={f.due_date || undefined}
-                             onChange={(v) => {
-                               set("start_date", v);
-                               if (orderDate && v && v < orderDate) {
-                                 setErrors((prev) => ({
-                                   ...prev,
-                                   start_date: tx(
-                                     "project_form.boshlanish_buyurtmadan_oldin_bolmasin",
-                                     undefined,
-                                     "Loyiha boshlanish sanasi buyurtma sanasidan oldin bo'lishi mumkin emas."
-                                   ),
-                                 }));
-                               } else {
-                                 setErrors((prev) => {
-                                   const next = { ...prev };
-                                   delete next.start_date;
-                                   return next;
-                                 });
-                               }
-                             }} />
-                  {errors.start_date && <div className="err">{errors.start_date}</div>}
-                </div>
-                <div className="field" style={{ flex: 1 }}>
-                  <label htmlFor={`${fid}-4`}>{tx("project_form.tugash_sanasi_muddat")}</label>
-                  {/* min: tugash boshlanishdan oldin bo'lib qolmasin */}
-                  <DateField id={`${fid}-4`} value={f.due_date}
-                             min={f.start_date || undefined}
-                             onChange={(v) => set("due_date", v)} />
-                  {errors.due_date && <div className="err">{errors.due_date}</div>}
-                </div>
-              </div>
-
-
-            </Card>
-
-            <Card title={tx("project_detail.arxitekturasi")}>
-              <div className="field">
-                <label htmlFor={`${fid}-arch`}>{tx("project_brief.arxitektura")}</label>
-                <textarea
-                  id={`${fid}-arch`}
-                  rows={3}
-                  value={brief.architecture}
-                  onChange={(e) => setBrief((b) => ({ ...b, architecture: e.target.value }))}
-                  placeholder="Monorepo, backend/frontend, REST API, mikroservislar..."
-                />
-              </div>
-              <div className="field">
-                <label htmlFor={`${fid}-tech`}>{tx("project_brief.texnologiyalar")}</label>
-                <input
-                  id={`${fid}-tech`}
-                  value={brief.tech_stack}
-                  onChange={(e) => setBrief((b) => ({ ...b, tech_stack: e.target.value }))}
-                  placeholder="Django, React, IBM Db2, Redis, Docker..."
-                />
-              </div>
-              <div className="row">
-                <div className="field" style={{ flex: 1 }}>
-                  <label htmlFor={`${fid}-goal`}>{tx("project_brief.loyiha_maqsadi")}</label>
-                  <input
-                    id={`${fid}-goal`}
-                    value={brief.goal}
-                    onChange={(e) => setBrief((b) => ({ ...b, goal: e.target.value }))}
-                    placeholder="Loyihaning asosiy maqsadi"
-                  />
-                </div>
-                <div className="field" style={{ flex: 1 }}>
-                  <label htmlFor={`${fid}-pitfalls`}>{tx("project_brief.ehtiyot_boling")}</label>
-                  <input
-                    id={`${fid}-pitfalls`}
-                    value={brief.pitfalls}
-                    onChange={(e) => setBrief((b) => ({ ...b, pitfalls: e.target.value }))}
-                    placeholder="Ehtiyot bo'lish kerak bo'lgan jihatlar"
-                  />
-                </div>
-              </div>
-            </Card>
-
-            {/* Tahrirlashda fayllar alohida «Fayllar» bolimida boshqariladi -
-                bu yerda faqat yangi loyiha uchun boshlangich hujjatlar. */}
-            {!editing && (
-              <Card title={tx("project_form.boshlangich_fayllar")}>
-
-                <FilePicker
-                  files={files}
-                  onChange={setFiles}
-                  withDescription
-                  description={fileNote}
-                  onDescription={setFileNote}
-                  withDates
-                  date={fileDate}
-                  onDate={setFileDate}
-                  /* Hujjat sanasi loyiha oralig'idan chiqmasin - chegaralar
-                     shu formaning o'zidagi maydonlardan olinadi. */
-                  minDate={f.start_date || undefined}
-                  maxDate={f.due_date || undefined}
-                />
-              </Card>
-            )}
-            </div>
-
-            <div>
-              {/* O'chirish huquqini SERVER aytadi (`can_delete_project`):
-                  menejer, tizim admini va boshliq. Ilgari shart bu yerda
-                  qo'lda takrorlangan edi va serverdagi qoidadan uzilib
-                  qolgandi. */}
-              {editing && acc?.can_delete_project && (
-                <Card title={tx("project_form.loyihani_ochirish")}>
-                  <button type="button" className="btn btn-danger btn-block" disabled={busy}
-                          onClick={() => void removeProject()}>
-                    {tx("project_form.loyihani_butunlay_ochirish")}
-                  </button>
-                </Card>
-              )}
-
-              {/* Tahrirlashda jamoa «Jamoa» bolimida boshqariladi - bu yerda
-                  faqat yangi loyihaga qoshiladigan odamlar. */}
-              {!editing && (
-                <Card title={tx("project_form.jamoa_va_vazifalar")}>
-                  <TeamPicker
-                    picks={team}
-                    onChange={setTeam}
-                    /* Menejer siz bolasiz - bu royxatdan menejer roli berilmaydi */
-                    roles={(meta?.project_role || []).filter((r) => r.value !== "MANAGER")}
-                    priorities={meta?.task_priority || []}
-                    defaultRole="DEVELOPER"
-                    excludeId={user?.id}
-                  />
-                </Card>
-              )}
-            </div>
-          </div>
-
+          {formFields}
         </form>
       </div>
     </>
