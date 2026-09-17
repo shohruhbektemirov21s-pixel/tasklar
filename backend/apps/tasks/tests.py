@@ -134,7 +134,7 @@ class TaskTeamCollaborationTests(ApiTestCase):
             )
 
         self.task = Task.objects.create(
-            project=self.project, title="Katta modulni ishlab chiqish", created_by=self.pm_user
+            project=self.project, title="Katta modulni ishlab chiqish", created_by=self.dev1
         )
 
     def test_developer_can_add_team_members_with_datetime(self):

@@ -642,22 +642,26 @@ const PERIOD_THEMES: Record<
     iconBg: string;
     iconColor: string;
     title: string;
+    activeBg: string;
   }
 > = {
   year: {
-    iconBg: "#f4f4f5",
-    iconColor: "#18181b",
+    iconBg: "#fef3c7",
+    iconColor: "#d97706",
     title: tx("dashboard.yil_boshidan"),
+    activeBg: "#fffbeb",
   },
   month: {
-    iconBg: "#f4f4f5",
-    iconColor: "#18181b",
+    iconBg: "#e0e7ff",
+    iconColor: "#4f46e5",
     title: tx("dashboard.oy_boshidan"),
+    activeBg: "#eef2ff",
   },
   week: {
-    iconBg: "#f4f4f5",
-    iconColor: "#18181b",
+    iconBg: "#d1fae5",
+    iconColor: "#059669",
     title: tx("dashboard.hafta_boshidan"),
+    activeBg: "#ecfdf5",
   },
 };
 
@@ -723,8 +727,8 @@ function DepartmentDashboard() {
       {readyForReviewCount > 0 && (
         <div
           style={{
-            background: "#f8fafc",
-            border: "1px solid #e2e8f0",
+            background: "#fffbeb",
+            border: "1px solid #fcd34d",
             borderRadius: 12,
             padding: "12px 18px",
             display: "flex",
@@ -769,9 +773,9 @@ function DepartmentDashboard() {
             <div
               key={p.key}
               style={{
-                background: "#fff",
+                background: isSelected ? theme.activeBg : "#fff",
                 borderRadius: 14,
-                border: isSelected ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                border: isSelected ? `2px solid ${theme.iconColor}` : "1px solid #e2e8f0",
                 boxShadow: isSelected
                   ? "0 4px 12px rgba(15,23,42,0.06)"
                   : "0 1px 3px rgba(0,0,0,0.02)",
@@ -860,11 +864,11 @@ function DepartmentDashboard() {
                     transition: "all 0.15s ease",
                     background:
                       selectedPeriod === p.key && selectedMetric === "submitted"
-                        ? "#18181b"
+                        ? theme.iconColor
                         : "#ffffff",
                     border:
                       selectedPeriod === p.key && selectedMetric === "submitted"
-                        ? "1px solid #18181b"
+                        ? `1px solid ${theme.iconColor}`
                         : "1px solid #e4e4e7",
                     boxShadow:
                       selectedPeriod === p.key && selectedMetric === "submitted"
@@ -890,7 +894,7 @@ function DepartmentDashboard() {
                       fontSize: 11.5,
                       color:
                         selectedPeriod === p.key && selectedMetric === "submitted"
-                          ? "#a1a1aa"
+                          ? "#ffffff"
                           : "#71717a",
                       fontWeight: 600,
                       marginBottom: 4,
@@ -934,11 +938,11 @@ function DepartmentDashboard() {
                     transition: "all 0.15s ease",
                     background:
                       selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
-                        ? "#18181b"
+                        ? theme.iconColor
                         : "#ffffff",
                     border:
                       selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
-                        ? "1px solid #18181b"
+                        ? `1px solid ${theme.iconColor}`
                         : "1px solid #e4e4e7",
                     boxShadow:
                       selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
@@ -964,7 +968,7 @@ function DepartmentDashboard() {
                       fontSize: 11.5,
                       color:
                         selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
-                          ? "#a1a1aa"
+                          ? "#ffffff"
                           : "#71717a",
                       fontWeight: 600,
                       marginBottom: 4,
@@ -1008,11 +1012,11 @@ function DepartmentDashboard() {
                     transition: "all 0.15s ease",
                     background:
                       selectedPeriod === p.key && selectedMetric === "completed"
-                        ? "#18181b"
+                        ? theme.iconColor
                         : "#ffffff",
                     border:
                       selectedPeriod === p.key && selectedMetric === "completed"
-                        ? "1px solid #18181b"
+                        ? `1px solid ${theme.iconColor}`
                         : "1px solid #e4e4e7",
                     boxShadow:
                       selectedPeriod === p.key && selectedMetric === "completed"
@@ -1038,7 +1042,7 @@ function DepartmentDashboard() {
                       fontSize: 11.5,
                       color:
                         selectedPeriod === p.key && selectedMetric === "completed"
-                          ? "#a1a1aa"
+                          ? "#ffffff"
                           : "#71717a",
                       fontWeight: 600,
                       marginBottom: 4,

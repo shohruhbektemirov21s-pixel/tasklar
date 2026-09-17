@@ -59,11 +59,6 @@ class CanAccessOrders(permissions.BasePermission):
         )
         
         if not can_access:
-            # Agar foydalanuvchi oddiy dasturchi bo'lsa ham, o'ziga biriktirilgan
-            # buyurtmani ko'rish huquqiga ega bo'lishi kerak. Detail o'qishda bu
-            # queryset orqali ham cheklanadi.
-            if getattr(view, "action", "") in ["retrieve", "list", "stats"]:
-                return True
             return False
 
         # Yangi buyurtma yaratish (POST create) faqat sohaviy boshqarma va admin/boss uchun.

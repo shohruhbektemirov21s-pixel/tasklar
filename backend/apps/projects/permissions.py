@@ -232,7 +232,7 @@ def visible_projects_q(user, path=""):
     in_ws = Exists(WorkspaceMember.objects.filter(
         workspace=OuterRef(path + "workspace_id"), user=user))
     owns_ws = Q(**{path + "workspace__owner": user})
-    return member_of | Q(**{path + "is_public": True}) | (in_ws | owns_ws)
+    return member_of | (Q(**{path + "is_public": True}) & (in_ws | owns_ws))
 
 
 def task_scope_q(user):
@@ -391,11 +391,11 @@ class ProjectAccess:
             if getattr(self.user, "department_id", None):
                 cr_q |= Q(project=self.project, created_by__department_id=self.user.department_id)
             return ChangeRequest.objects.filter(cr_q).exists()
-        if self.project.is_public:
-            return True
         if self._in_workspace is None:
             self._in_workspace = in_workspace(self.user, self.project)
-        return self._in_workspace
+        if self.project.is_public and self._in_workspace:
+            return True
+        return False
 
     @property
     def can_manage(self):

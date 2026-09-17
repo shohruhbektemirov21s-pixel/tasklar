@@ -374,8 +374,6 @@ class OrderNotificationSuite(ApiTestCase):
         self.sohaviy1 = make_user("sohaviy1@boshqarma.uz", role=GlobalRole.SOHAVIY, specialty=Specialty.SOHAVIY)
         self.sohaviy2 = make_user("sohaviy2@boshqarma.uz", role=GlobalRole.SOHAVIY, specialty=Specialty.SOHAVIY)
         self.admin = make_user("admin_notif@boshqarma.uz", role=GlobalRole.ADMIN)
-        self.admin.can_access_orders = True
-        self.admin.save()
         self.dev = make_user("dev_notif@boshqarma.uz", role=GlobalRole.DEVELOPER, specialty=Specialty.DEVELOPER)
 
     def test_sidebar_counts_includes_orders_for_sohaviy_profile(self):
