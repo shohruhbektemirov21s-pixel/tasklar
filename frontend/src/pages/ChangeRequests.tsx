@@ -1526,7 +1526,7 @@ export default function ChangeRequests() {
                                 style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5 }}
                                 onClick={() => {
                                   setActiveActionMenuId(null);
-                                  handleOpenView(item);
+                                  setViewingItem(item);
                                 }}
                               >
                                 🕒 {tx("orders.tarix", undefined, "Tarix (Word fayllar)")}
