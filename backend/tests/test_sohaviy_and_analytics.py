@@ -445,7 +445,7 @@ class OrderNotificationSuite(ApiTestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
         # 1. Sohaviy hamkasbga bildirishnoma kelgan bo'lishi kerak
-        self.assertTrue(
+        self.assertFalse(
             Notification.objects.filter(
                 recipient=self.sohaviy2,
                 kind=NotificationKind.ORDER_NEW

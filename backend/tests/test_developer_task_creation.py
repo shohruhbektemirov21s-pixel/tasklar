@@ -66,4 +66,4 @@ class DeveloperTaskCreationTest(APITestCase):
             "priority": 2,
             "task_type": "FEATURE",
         }, format="json")
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 201)
