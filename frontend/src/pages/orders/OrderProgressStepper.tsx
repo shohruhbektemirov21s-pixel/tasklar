@@ -1,5 +1,6 @@
 import type { ChangeRequestItem } from "@/api/types";
 import { ORDER_STATUS_CONFIG } from "./OrderBadges";
+import { tx } from "@/i18n";
 
 export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
   if (item.status === "REJECTED") {
@@ -15,11 +16,11 @@ export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
       >
         <div className="row middle" style={{ gap: 8, color: "#991b1b", fontWeight: 700, fontSize: 13.5 }}>
           <span style={{ fontSize: 18 }}>❌</span>
-          <span>Ushbu talabnoma rad etilgan</span>
+          <span>{tx("orders.stepper_rad_etilgan")}</span>
         </div>
         {item.pm_notes && (
           <div style={{ marginTop: 6, fontSize: 12.5, color: "#7f1d1d", whiteSpace: "pre-wrap" }}>
-            <strong>Sabab / Izoh:</strong> {item.pm_notes}
+            <strong>{tx("orders.stepper_sabab_izoh")}</strong> {item.pm_notes}
           </div>
         )}
       </div>
@@ -33,45 +34,45 @@ export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
   const steps = [
     {
       num: 1,
-      title: "Yuborildi",
+      title: tx("orders.step_yuborildi"),
       icon: "📝",
-      sub: item.department || "Boshqarma",
+      sub: item.department || item.created_by_department || "—",
     },
     {
       num: 2,
-      title: "PM ko'rib chiqdi",
+      title: tx("orders.step_pm_korib_chiqdi"),
       icon: "📋",
-      sub: item.assigned_pm_name ? `PM: ${item.assigned_pm_name}` : "Loyiha menejeri",
+      sub: item.assigned_pm_name ? `PM: ${item.assigned_pm_name}` : tx("orders.step_loyiha_menejeri"),
     },
     {
       num: 3,
-      title: "Dasturchiga yo'naltirildi",
+      title: tx("orders.step_dasturchiga_berildi"),
       icon: "💻",
-      sub: item.assigned_developer_name ? `👨‍💻 ${item.assigned_developer_name}` : "Ijrochi tayinlanmoqda",
+      sub: item.assigned_developer_name ? `👨‍💻 ${item.assigned_developer_name}` : tx("orders.step_ijrochi_tayinlanmoqda"),
     },
     {
       num: 4,
-      title: "Jarayonda",
+      title: tx("orders.step_jarayonda"),
       icon: "⚙️",
-      sub: item.pm_estimated_duration ? `⏱ ${item.pm_estimated_duration}` : "Amaliy ishlab chiqish",
+      sub: item.pm_estimated_duration ? `⏱ ${item.pm_estimated_duration}` : tx("orders.step_amaliy_ishlab_chiqish"),
     },
     {
       num: 5,
-      title: "Testda",
+      title: tx("orders.step_testda"),
       icon: "🧪",
-      sub: "Sinov va tekshirish",
+      sub: tx("orders.step_sinov_tekshirish"),
     },
     {
       num: 6,
-      title: "Tasdiqlashda",
+      title: tx("orders.step_tasdiqlashda"),
       icon: "📑",
-      sub: "Boshqarma tasdig'i",
+      sub: tx("orders.step_boshqarma_tasdigi"),
     },
     {
       num: 7,
-      title: "Bajarildi",
+      title: tx("orders.step_bajarildi"),
       icon: "✅",
-      sub: "Qabul qilindi va yopildi",
+      sub: tx("orders.step_qabul_qilindi_yopildi"),
     },
   ];
 
@@ -87,13 +88,13 @@ export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
     >
       <div className="row between middle" style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text)" }}>
-          📌 Ishning joriy holati va bosqichlari:{" "}
+          📌 {tx("orders.stepper_sarlavha")}:{" "}
           <span style={{ color: ORDER_STATUS_CONFIG[item.status]?.color }}>
             {item.status_display || ORDER_STATUS_CONFIG[item.status]?.label}
           </span>
         </div>
         <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--brand, #2563eb)" }}>
-          Bosqich {Math.min(currentStep, 6)} / 6
+          {tx("orders.stepper_bosqich")} {Math.min(currentStep, 6)} / 6
         </div>
       </div>
 

@@ -476,7 +476,7 @@ export default function Profile() {
                           <Link {...toOrder(ord.id)} style={{ fontWeight: 700, fontSize: 14 }}>
                             №{ord.request_no}
                           </Link>
-                          <span className="badge">{ord.system_name || ord.project_detail?.name || "TeamFlow"}</span>
+                          <span className="badge">{ord.system_name || ord.project_detail?.name || "—"}</span>
                           {ord.module && <span className="badge badge-info">{ord.module}</span>}
                           {ord.due_date && (
                             <span className="muted" style={{ fontSize: 12 }}>
@@ -885,7 +885,7 @@ export default function Profile() {
             <form onSubmit={handleRejectSubmit}>
               <div className="modal-body" style={{ padding: 20 }}>
                 <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
-                  Buyurtma: <strong>№{rejectModalItem.request_no}</strong> ({rejectModalItem.system_name || rejectModalItem.project_detail?.name || "TeamFlow"})
+                  Buyurtma: <strong>№{rejectModalItem.request_no}</strong> ({rejectModalItem.system_name || rejectModalItem.project_detail?.name || "—"})
                   {rejectModalItem.assigned_pm_name && (
                     <span> • PM: <strong>{rejectModalItem.assigned_pm_name}</strong></span>
                   )}

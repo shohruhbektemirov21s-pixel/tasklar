@@ -1682,13 +1682,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                     <div className="field" style={{ flex: 1 }}>
                       <label htmlFor="st-type">{tx("common.turi")}</label>
                       <select id="st-type" value={stType} onChange={(e) => setStType(e.target.value)}>
-                        {(meta?.task_type || [
-                          { value: "FEATURE", label: "Yangi funksiya" },
-                          { value: "BUG", label: "Xatolik" },
-                          { value: "CHORE", label: "Texnik ish" },
-                          { value: "DOCS", label: "Hujjat" },
-                          { value: "RESEARCH", label: "Tadqiqot" },
-                        ]).map((t) => (
+                        {(meta?.task_type || []).map((t) => (
                           <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
                         ))}
                       </select>
@@ -1696,12 +1690,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                     <div className="field" style={{ flex: 1 }}>
                       <label htmlFor="st-priority">{tx("common.muhimlik")}</label>
                       <select id="st-priority" value={stPriority} onChange={(e) => setStPriority(Number(e.target.value))}>
-                        {(meta?.task_priority || [
-                          { value: 1, label: "Past" },
-                          { value: 2, label: "O'rtacha" },
-                          { value: 3, label: "Yuqori" },
-                          { value: 4, label: "Shoshilinch" },
-                        ]).map((p) => (
+                        {(meta?.task_priority || []).map((p) => (
                           <option key={String(p.value)} value={Number(p.value)}>{p.label}</option>
                         ))}
                       </select>

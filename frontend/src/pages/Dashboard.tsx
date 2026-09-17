@@ -715,36 +715,7 @@ function DepartmentDashboard() {
     return listOf<ChangeRequestItem>(ordersData);
   }, [ordersData]);
 
-  const defaultSince = new Date().toISOString();
-  const periods: OrderPeriodRow[] = stats?.periods || [
-    {
-      key: "year",
-      since: defaultSince,
-      submitted: total,
-      in_progress: inProgressCount,
-      approved: inProgressCount,
-      completed: completed,
-      rejected: stats?.rejected ?? 0,
-    },
-    {
-      key: "month",
-      since: defaultSince,
-      submitted: total,
-      in_progress: inProgressCount,
-      approved: inProgressCount,
-      completed: completed,
-      rejected: stats?.rejected ?? 0,
-    },
-    {
-      key: "week",
-      since: defaultSince,
-      submitted: total,
-      in_progress: inProgressCount,
-      approved: inProgressCount,
-      completed: completed,
-      rejected: stats?.rejected ?? 0,
-    },
-  ];
+  const periods: OrderPeriodRow[] = stats?.periods || [];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, paddingBottom: 40 }}>
@@ -867,7 +838,7 @@ function DepartmentDashboard() {
                   justifyContent: "space-between",
                   cursor: "pointer",
                 }}
-                title={`${theme.title} bo'yicha barcha buyurtmalarni ko'rish`}
+                title={tx("orders.davr_buyurtmalarini_korish", { davr: theme.title })}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div
@@ -1142,15 +1113,15 @@ function DepartmentDashboard() {
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: "#0f172a" }}>
               {selectedMetric === "approved"
-                ? `${tx("dashboard.tasdiqlangan")} buyurtmalar`
+                ? tx("dashboard.tasdiqlangan_buyurtmalar")
                 : selectedMetric === "completed"
-                ? `${tx("dashboard.bajarilgan")} buyurtmalar`
+                ? tx("dashboard.bajarilgan_buyurtmalar")
                 : selectedMetric === "submitted"
-                ? `${tx("dashboard.jami")} buyurtmalar`
+                ? tx("dashboard.jami_buyurtmalar")
                 : tx("dashboard.buyurtmalar")}
             </h2>
             <span style={{ fontSize: 13.5, fontWeight: 600, color: "#64748b" }}>
-              ({orders.length} ta)
+              ({orders.length} {tx("common.ta")})
             </span>
             {selectedPeriod && (
               <span
@@ -1197,7 +1168,7 @@ function DepartmentDashboard() {
                     fontWeight: 700,
                     marginLeft: 4,
                   }}
-                  title="Filtrni olib tashlash"
+                  title={tx("common.filtrni_tozalash")}
                 >
                   ✕
                 </button>
@@ -1277,14 +1248,7 @@ function DepartmentDashboard() {
               }}
             >
               <option value="">{tx("dashboard.barcha_holatlar")}</option>
-              {(meta?.order_status || [
-                { value: "ACCEPTED", label: tx("dashboard.tasdiqlangan") },
-                { value: "IN_PROGRESS", label: tx("dashboard.jarayonda") },
-                { value: "COMPLETED", label: tx("dashboard.bajarilgan") },
-                { value: "NEW", label: tx("dashboard.kutilyapti") },
-                { value: "REJECTED", label: tx("dashboard.rad_etilgan") },
-                { value: "READY_FOR_REVIEW", label: tx("dashboard.boshqarma_tasdigida") },
-              ]).map((s) => (
+              {(meta?.order_status || []).map((s) => (
                 <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
               ))}
             </select>

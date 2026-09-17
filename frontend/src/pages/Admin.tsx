@@ -27,7 +27,7 @@ import { tx } from "@/i18n";
 type Tab = "users" | "specialties" | "projects";
 
 const ROLE_TONE: Record<string, string> = {
-  ADMIN: "badge-danger", MANAGER: "badge-info", DEVELOPER: "", QA: "",
+  ADMIN: "badge-danger", BOSS: "badge-warning", MANAGER: "badge-info", DEVELOPER: "", QA: "",
 };
 
 /** Yangi hisob formasi — bo'sh holati bir joyda tursin. */
@@ -201,6 +201,7 @@ export default function Admin() {
   const counts = {
     users: users?.length ?? 0,
     admins: users?.filter((u) => u.global_role === "ADMIN").length ?? 0,
+    bosses: users?.filter((u) => u.global_role === "BOSS").length ?? 0,
     projects: projects?.length ?? 0,
   };
 
@@ -284,7 +285,7 @@ export default function Admin() {
                     </div>
                   </div>
                   <div className="row wrap" style={{ gap: 12 }}>
-                    <div className="field" style={{ flex: "1 1 160px" }}>
+                    <div className="field" style={{ flex: "1 1 150px" }}>
                       <label htmlFor="nu-role">{tx("common.rol")}</label>
                       <select id="nu-role" value={form.global_role}
                               onChange={(e) => setForm({ ...form, global_role: e.target.value })}>
@@ -293,7 +294,13 @@ export default function Admin() {
                         ))}
                       </select>
                     </div>
-                    <div className="field" style={{ flex: "1 1 200px" }}>
+                    <div className="field" style={{ flex: "1 1 180px" }}>
+                      <label htmlFor="nu-job-title">{tx("admin.lavozim") || "Lavozimi"}</label>
+                      <input id="nu-job-title" value={form.job_title}
+                             onChange={(e) => setForm({ ...form, job_title: e.target.value })}
+                             placeholder={tx("admin.lavozim_namuna") || "Masalan: Boshliq / Kompaniya direktori"} />
+                    </div>
+                    <div className="field" style={{ flex: "1 1 180px" }}>
                       <label htmlFor="nu-spec">{tx("common.mutaxassislik")}</label>
                       <select id="nu-spec" value={form.specialty}
                               onChange={(e) => setForm({ ...form, specialty: e.target.value })}>
@@ -303,7 +310,7 @@ export default function Admin() {
                         ))}
                       </select>
                     </div>
-                    <div className="field" style={{ flex: "1 1 200px" }}>
+                    <div className="field" style={{ flex: "1 1 180px" }}>
                       <label htmlFor="nu-dept">{tx("admin.bolim") || "Bo'lim"}</label>
                       <select id="nu-dept" value={form.department}
                               onChange={(e) => setForm({ ...form, department: e.target.value })}>
@@ -330,7 +337,14 @@ export default function Admin() {
               <Card><Empty title={tx("common.hech_kim_topilmadi")}
                            text={tx("admin.qidiruvni_yoki_filtrni_ozgartiring")} /></Card>
             ) : (
-              <Card padded={false} badge={<span className="badge">{counts.admins} {tx("admin.admin")}</span>}
+              <Card padded={false} badge={
+                <span className="row" style={{ gap: 6 }}>
+                  <span className="badge">{counts.admins} {tx("admin.admin")}</span>
+                  {counts.bosses > 0 && (
+                    <span className="badge badge-warning">👑 {counts.bosses} {tx("admin.boshliq")}</span>
+                  )}
+                </span>
+              }
                     title={tx("admin.hisoblar")}>
                 <div className="table-wrap"><table className="table">
                   <thead>
@@ -358,7 +372,9 @@ export default function Admin() {
                                 </span>
                               )}
                               <br />
-                              <small className="muted">{u.specialty_display || "—"}</small>
+                              <small className="muted">
+                                {u.job_title ? (u.specialty_display ? `${u.job_title} · ${u.specialty_display}` : u.job_title) : (u.specialty_display || "—")}
+                              </small>
                             </div>
                           </div>
                         </td>
@@ -378,6 +394,9 @@ export default function Admin() {
                           </select>
                           {u.is_platform_admin && (
                             <span className={`badge ${ROLE_TONE.ADMIN}`}> {tx("admin.admin")}</span>
+                          )}
+                          {u.global_role === "BOSS" && (
+                            <span className="badge badge-warning"> 👑 {tx("admin.boshliq")}</span>
                           )}
                         </td>
                         <td className="right">{u.project_count ?? 0}</td>

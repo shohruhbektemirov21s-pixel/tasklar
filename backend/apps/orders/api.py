@@ -893,6 +893,19 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         if not (is_owner or is_sohaviy or is_admin_or_boss):
             raise ValidationError({"detail": "Yangi versiya yuborish faqat buyurtmachi boshqarma vakillariga ruxsat etilgan."})
 
+        # 1-TZ tasdiqlanmaguncha 2-TZ yuborib bo'lmaydi:
+        if order.status == ChangeRequestStatus.NEW:
+            raise ValidationError({
+                "detail": "Buyurtmaning 1-chi TZsi tasdiqlanmaguncha 2-chi TZ yuborib bo'lmaydi. Avval 1-TZ ko'rib chiqilishi kerak."
+            })
+
+        # Agar oldingi yuborilgan TZ versiyasi hali ko'rib chiqilmagan bo'lsa:
+        pending_ver = order.versions.filter(status=ChangeRequestStatus.NEW).first()
+        if pending_ver:
+            raise ValidationError({
+                "detail": f"Oldingi TZ versiyasi (v{pending_ver.version}) hali tasdiqlanmagan. 1-tasi tasdiqlanmaguncha ikkinchisi yuborilmaydi."
+            })
+
         tz_file = request.FILES.get("tz_file")
         if not tz_file:
             raise ValidationError({"tz_file": "Yangi TZ faylini yuklang."})
@@ -987,14 +1000,33 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         if version_num:
             target_version = order.versions.filter(version=version_num).first()
         else:
-            # Agar versiya raqami ko'rsatilmagan bo'lsa, eng oxirgi NEW versiya olinadi
-            target_version = order.versions.filter(status=ChangeRequestStatus.NEW).order_by("-version").first()
+            # Agar versiya raqami ko'rsatilmagan bo'lsa, eng birinchi (kichik) NEW versiya olinadi
+            target_version = order.versions.filter(status=ChangeRequestStatus.NEW).order_by("version").first()
 
         if not target_version:
             raise ValidationError({"detail": "Tasdiqlash uchun yangi versiya topilmadi."})
 
         if target_version.status == ChangeRequestStatus.ACCEPTED and target_version.version == order.version:
             raise ValidationError({"detail": "Ushbu versiya allaqachon tasdiqlangan va amalda."})
+
+        # Qoida: Buyurtmaning TZ sini 1-tasi tasdiqlanmaguncha 2-chisi tasdiqlanmasin!
+        if target_version.version > 1:
+            # 1-versiya tasdiqlangan bo'lishi shart
+            v1 = order.versions.filter(version=1).first()
+            if not v1 or v1.status != ChangeRequestStatus.ACCEPTED:
+                raise ValidationError({
+                    "detail": "Buyurtmaning 1-chi TZsi tasdiqlanmaguncha 2-chi TZ tasdiqlanmaydi. Avval 1-versiyani tasdiqlang."
+                })
+
+            # target_version dan oldingi barcha versiyalar ko'rib chiqilgan bo'lishi shart
+            unapproved_prev = order.versions.filter(
+                version__lt=target_version.version,
+                status=ChangeRequestStatus.NEW
+            ).order_by("version").first()
+            if unapproved_prev:
+                raise ValidationError({
+                    "detail": f"Buyurtmaning {unapproved_prev.version}-chi TZsi hali tasdiqlanmagan. 1-tasi tasdiqlanmaguncha ikkinchisi tasdiqlanmaydi."
+                })
 
         decision_note = (request.data.get("decision_note") or "").strip()
         pm_estimated_duration = (request.data.get("pm_estimated_duration") or "").strip()

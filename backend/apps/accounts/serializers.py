@@ -236,6 +236,11 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
 
     def create(self, data):
         password = data.pop("password")
+        if data.get("global_role") == GlobalRole.BOSS:
+            if not data.get("job_title"):
+                data["job_title"] = "Boshliq"
+            if not data.get("specialty") or data.get("specialty") == Specialty.DEVELOPER:
+                data["specialty"] = Specialty.PM
         user = User(**data)
         user.set_password(password)
         user.save()

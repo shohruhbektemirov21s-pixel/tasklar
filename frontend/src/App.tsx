@@ -186,6 +186,7 @@ export default function App() {
         <Route path="/sorovlar" element={<Navigate to="/panel" replace />} />
         {/* Axborot tizimiga o'zgartirish kiritish so'rovlari (Буюртма.docx) */}
         <Route path="/buyurtmalar" element={<ChangeRequests />} />
+        <Route path="/buyurtmalar/:id" element={<Resolve kind="order" />} />
         <Route path="/buyurtma" element={<OrderDetail />} />
         <Route path="/buyurtma/:id" element={<Resolve kind="order" />} />
         <Route path="/buyurtma/yangi" element={<OrderForm />} />

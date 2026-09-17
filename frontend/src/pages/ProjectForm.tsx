@@ -339,19 +339,13 @@ export default function ProjectForm() {
                 {errors.name && <div className="err">{errors.name}</div>}
               </div>
               <div className="field">
-                <label htmlFor={`${fid}-type`}>Loyiha turi</label>
+                <label htmlFor={`${fid}-type`}>{tx("orders.loyiha_turi_label")}</label>
                 <select
                   id={`${fid}-ptype`}
                   value={f.project_type}
                   onChange={(e) => set("project_type", e.target.value)}
                 >
-                  {(meta?.project_type || [
-                    { value: "NEW", label: "Yangi loyiha" },
-                    { value: "CONTINUATION", label: "Davom ettiriladigan" },
-                    { value: "NEEDS_CLASSIFICATION", label: "Turlash kerak bo'lgan" },
-                    { value: "MODERNIZATION", label: "Modernizatsiya va takomillashtirish" },
-                    { value: "MAINTENANCE", label: "Texnik qo'llab-quvvatlash" },
-                  ]).map((t) => (
+                  {(meta?.project_type || meta?.order_type || []).map((t) => (
                     <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
                   ))}
                 </select>

@@ -7,38 +7,96 @@ from apps.notifications.models import NotificationKind
 from apps.notifications.services import notify, notify_many
 
 logger = logging.getLogger(__name__)
+
+
 def order_url(order):
     order_id = getattr(order, "pk", None) or getattr(order, "id", None) or order
-    return f"/buyurtmalar/{order_id}"
+    return f"/buyurtma/{order_id}"
 
 
 def get_order_notification_recipients(order=None, exclude_id=None):
-    """Buyurtma bildirishnomalarini qabul qiluvchilar:
-    Sohaviy boshqarmalar xodimlari, tizim ma'murlari (adminlar), boshliq va
-    loyiha menejerlari (PM). Dasturchilarga buyurtma bildirishnomalari bormaydi.
-    """
-    qs = User.objects.filter(
-        Q(is_superuser=True)
-        | Q(global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS, GlobalRole.MANAGER, GlobalRole.SOHAVIY])
-        | Q(specialty=Specialty.SOHAVIY),
-        is_active=True,
-    ).exclude(global_role=GlobalRole.DEVELOPER)
-    if exclude_id:
-        qs = qs.exclude(pk=exclude_id)
-    recipients = [u for u in qs if getattr(u, "can_access_orders", False)]
+    """Buyurtmaga bevosita aloqador foydalanuvchilar (realtime va bildirishnoma uchun):
+    - Buyurtma egasi (order.created_by)
+    - Mas'ul PM (order.assigned_pm)
+    - Loyiha menejeri (order.project.manager)
+    - Mas'ul dasturchi (order.assigned_developer)
+    - Agar PM tayinlanmagan bo'lsa: IT boshqaruvchilari.
+    Boshqa aloqasiz sohaviy boshqarma xodimlariga MUTLAQO bormaydi."""
+    recipients = []
+    if order:
+        if order.created_by and order.created_by_id != exclude_id:
+            recipients.append(order.created_by)
+        if getattr(order, "assigned_pm", None):
+            pm = order.assigned_pm
+            if pm.is_active and pm.id != exclude_id and pm not in recipients:
+                recipients.append(pm)
+        if getattr(order, "project", None) and order.project.manager:
+            pm = order.project.manager
+            if pm.is_active and pm.id != exclude_id and pm not in recipients:
+                recipients.append(pm)
+        if getattr(order, "assigned_developer", None):
+            dev = order.assigned_developer
+            if dev.is_active and dev.id != exclude_id and dev not in recipients:
+                recipients.append(dev)
 
-    # Agar buyurtma aniq bir loyihaga biriktirilgan bo'lsa va uning o'z menejeri bo'lsa
+    # Agar hali birorta ham PM / mas'ul bo'lmasa, IT ma'muriyatiga
+    if not any(getattr(u, "global_role", None) in [GlobalRole.ADMIN, GlobalRole.BOSS, GlobalRole.MANAGER] for u in recipients):
+        qs = User.objects.filter(
+            Q(is_superuser=True) | Q(global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS, GlobalRole.MANAGER]),
+            is_active=True,
+        ).exclude(global_role=GlobalRole.DEVELOPER).exclude(global_role=GlobalRole.SOHAVIY)
+        if exclude_id:
+            qs = qs.exclude(pk=exclude_id)
+        for u in qs:
+            if getattr(u, "can_access_orders", False) and u not in recipients:
+                recipients.append(u)
+
+    return recipients
+
+
+def get_order_pm_recipients(order=None, exclude_id=None):
+    """Yangi buyurtma tushganda yoki buyurtmachi yangi TZ versiyasini yuklaganda
+    bildirishnoma oluvchi mas'ul PM yoki IT ma'muriyati.
+    Faqat ushbu buyurtmaga mas'ul PM yoki loyiha menejeriga boradi.
+    Agar hali PM biriktirilmagan bo'lsa (yangi buyurtmada), IT boshqaruvchilariga boradi.
+    Sohaviy boshqarmalarga MUTLAQO bormaydi."""
+    recipients = []
+
+    # 1. Buyurtmaga biriktirilgan aniq PM
+    if order and getattr(order, "assigned_pm", None):
+        pm = order.assigned_pm
+        if pm.is_active and pm.id != exclude_id:
+            recipients.append(pm)
+
+    # 2. Agar buyurtma loyihaga biriktirilgan bo'lsa va unda PM bo'lsa
     if order and getattr(order, "project", None) and order.project.manager:
         pm = order.project.manager
-        if pm.is_active and pm.id != exclude_id and getattr(pm, "can_access_orders", False) and pm not in recipients:
+        if pm.is_active and pm.id != exclude_id and pm not in recipients:
             recipients.append(pm)
+
+    # 3. Agar hali aniq mas'ul PM bo'lmasa (masalan, yangi buyurtma endi tushganda),
+    # buyurtmalarni qabul qiluvchi IT menejerlari va adminlarga yuboramiz
+    if not recipients:
+        qs = User.objects.filter(
+            Q(is_superuser=True)
+            | Q(global_role__in=[GlobalRole.ADMIN, GlobalRole.BOSS, GlobalRole.MANAGER]),
+            is_active=True,
+        ).exclude(global_role=GlobalRole.DEVELOPER).exclude(global_role=GlobalRole.SOHAVIY)
+
+        if exclude_id:
+            qs = qs.exclude(pk=exclude_id)
+
+        for u in qs:
+            if getattr(u, "can_access_orders", False) and u not in recipients:
+                recipients.append(u)
 
     return recipients
 
 
 def notify_order_created(order):
-    """Yangi buyurtma (TZ) yaratilganda manfaatdorlarga bildirishnoma yuborish."""
-    recipients = get_order_notification_recipients(order=order, exclude_id=order.created_by_id)
+    """Yangi buyurtma (TZ) yaratilganda/yuborilganda IT ma'murlariga va mas'ul PMga bildirishnoma yuborish.
+    Boshqa sohaviy boshqarma xodimlariga bormaydi."""
+    recipients = get_order_pm_recipients(order=order, exclude_id=order.created_by_id)
     if not recipients:
         return 0
 
@@ -59,7 +117,7 @@ def notify_order_created(order):
 
 
 def notify_order_status(order, actor, old_status, new_status):
-    """Buyurtma holati o'zgarganda muallifga va manfaatdorlarga bildirishnoma yuborish."""
+    """Buyurtma holati o'zgarganda FAQAT buyurtma yaratuvchisiga bildirishnoma yuborish."""
     if not order.created_by:
         return None
     if actor and getattr(actor, "pk", None) == order.created_by_id:
@@ -78,7 +136,7 @@ def notify_order_status(order, actor, old_status, new_status):
 
 
 def notify_pm_decision(order, pm_user):
-    """PM buyurtma bo'yicha muddat va holatni belgilaganda buyurtmachiga bildirishnoma yuborish."""
+    """PM buyurtma bo'yicha muddat va holatni belgilaganda FAQAT buyurtmachiga bildirishnoma yuborish."""
     parts = [f"Holati: {order.get_status_display()}"]
     if order.assigned_developer:
         parts.append(f"Mas'ul dasturchi: {order.assigned_developer.full_name}")
@@ -107,8 +165,9 @@ def notify_pm_decision(order, pm_user):
 
 
 def notify_order_new_version(order, version_obj, actor):
-    """Buyurtma (TZ) ning yangi versiyasi yuklanganda PM va manfaatdorlarga bildirishnoma yuborish."""
-    recipients = get_order_notification_recipients(order=order, exclude_id=actor.id)
+    """Buyurtma (TZ) ning yangi versiyasi yuklanganda FAQAT mas'ul PMga bildirishnoma yuborish.
+    Boshqa sohaviy xodimlarga va begona PMlarga bormaydi."""
+    recipients = get_order_pm_recipients(order=order, exclude_id=actor.id)
     if not recipients:
         return 0
 
@@ -131,8 +190,11 @@ def notify_order_new_version(order, version_obj, actor):
 
 
 def notify_order_completion_submitted(order, actor):
-    """PM tugatilgan ish hujjati bilan boshqarmaga topshirganda bildirishnoma."""
-    recipients = get_order_notification_recipients(order=order, exclude_id=actor.id)
+    """PM tugatilgan ish hujjati bilan boshqarmaga topshirganda FAQAT buyurtmachiga bildirishnoma boradi."""
+    recipients = []
+    if order.created_by and order.created_by_id != actor.id:
+        recipients.append(order.created_by)
+
     if not recipients:
         return 0
 
@@ -148,10 +210,12 @@ def notify_order_completion_submitted(order, actor):
 
 
 def notify_order_client_approved(order, actor):
-    """Boshqarma ishni tasdiqlab qabul qilganda (yopilganda) bildirishnoma."""
+    """Boshqarma ishni tasdiqlab qabul qilganda (yopilganda) FAQAT mas'ul PM va dasturchiga bildirishnoma boradi."""
     recipients = []
-    if order.assigned_pm:
+    if order.assigned_pm and order.assigned_pm_id != actor.id:
         recipients.append(order.assigned_pm)
+    if order.assigned_developer and order.assigned_developer_id != actor.id and order.assigned_developer not in recipients:
+        recipients.append(order.assigned_developer)
 
     if not recipients:
         return 0
@@ -168,9 +232,9 @@ def notify_order_client_approved(order, actor):
 
 
 def notify_order_completion_rejected(order, actor, feedback_note):
-    """Boshqarma ishda kamchilik aniqlab qayta ishlashga yuborganda bildirishnoma."""
+    """Boshqarma ishda kamchilik aniqlab qayta ishlashga yuborganda FAQAT mas'ul PMga bildirishnoma boradi."""
     recipients = []
-    if order.assigned_pm:
+    if order.assigned_pm and order.assigned_pm_id != actor.id:
         recipients.append(order.assigned_pm)
 
     if not recipients:
@@ -190,8 +254,13 @@ def notify_order_completion_rejected(order, actor, feedback_note):
 
 
 def notify_order_version_approved(order, version_obj, actor, decision_note=""):
-    """PM yangi TZ versiyasini tasdiqlaganda bildirishnoma."""
-    recipients = get_order_notification_recipients(order=order, exclude_id=actor.id)
+    """PM yangi TZ versiyasini tasdiqlaganda FAQAT buyurtmachi va versiyani yuklaganga bildirishnoma boradi."""
+    recipients = []
+    if order.created_by and order.created_by_id != actor.id:
+        recipients.append(order.created_by)
+    if version_obj.uploaded_by and version_obj.uploaded_by_id != actor.id and version_obj.uploaded_by not in recipients:
+        recipients.append(version_obj.uploaded_by)
+
     if not recipients:
         return 0
 
@@ -210,7 +279,7 @@ def notify_order_version_approved(order, version_obj, actor, decision_note=""):
 
 
 def notify_order_version_rejected(order, version_obj, actor, reason):
-    """PM yangi TZ versiyasini rad etganda bildirishnoma."""
+    """PM yangi TZ versiyasini rad etganda FAQAT buyurtmachi va versiyani yuklaganga bildirishnoma boradi."""
     recipients = []
     if order.created_by and order.created_by_id != actor.id:
         recipients.append(order.created_by)
@@ -231,4 +300,3 @@ def notify_order_version_rejected(order, version_obj, actor, reason):
         actor=actor,
         meta={"order_id": order.pk, "version": version_obj.version, "reason": reason_clean, "status": "REJECTED"},
     )
-

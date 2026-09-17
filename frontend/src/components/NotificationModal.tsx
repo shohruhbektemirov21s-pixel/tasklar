@@ -162,18 +162,24 @@ export default function NotificationModal({
     isReason = true;
   }
 
-  const targetUrl =
-    meta && typeof meta.order_id === "number"
-      ? `/buyurtmalar/${meta.order_id}`
-      : notification.url
-      ? safePath(notification.url)
+  const isOrderKind = notification.kind.startsWith("order.");
+  const orderId =
+    meta && (meta.order_id != null || meta.id != null)
+      ? Number(meta.order_id ?? meta.id)
       : null;
 
+  let targetUrl: string | null = null;
+  if (orderId && Number.isFinite(orderId)) {
+    targetUrl = `/buyurtma/${orderId}`;
+  } else if (notification.url) {
+    targetUrl = safePath(notification.url);
+  } else if (isOrderKind) {
+    targetUrl = "/buyurtmalar";
+  }
+
   const actionLabel =
-    meta && typeof meta.order_id === "number"
-      ? tx("notifications.buyurtmaga_otish")
-      : notification.kind.startsWith("order.")
-      ? tx("notifications.buyurtmaga_otish")
+    isOrderKind || (orderId && Number.isFinite(orderId))
+      ? tx("notifications.buyurtmaga_otish", undefined, "Buyurtmaga o'tish")
       : notification.kind.startsWith("task.")
       ? tx("notifications.vazifaga_otish")
       : notification.kind.startsWith("chat.")
@@ -188,7 +194,20 @@ export default function NotificationModal({
     onClose();
     if (onAction) {
       onAction(notification);
-    } else if (targetUrl) {
+      return;
+    }
+
+    if (orderId && Number.isFinite(orderId)) {
+      nav("/buyurtma", { state: { order: orderId } });
+      return;
+    }
+
+    if (targetUrl) {
+      const m = targetUrl.match(/\/(?:buyurtma|buyurtmalar)\/(\d+)/);
+      if (m && m[1]) {
+        nav("/buyurtma", { state: { order: Number(m[1]) } });
+        return;
+      }
       nav(targetUrl);
     }
   };

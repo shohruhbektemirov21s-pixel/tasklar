@@ -55,9 +55,6 @@ export default function OrderForm() {
     if (!user) return "";
     if (user.department_name && user.department_name.trim()) return user.department_name.trim();
     if (user.department && typeof user.department === "string" && user.department.trim()) return user.department.trim();
-    if (user.is_sohaviy_boshqarma || user.global_role === "SOHAVIY" || user.specialty === "SOHAVIY") {
-      return "Sohaviy boshqarmalar";
-    }
     return "";
   }, [user]);
 
@@ -70,10 +67,17 @@ export default function OrderForm() {
     priority: "URGENT" | "HIGH" | "MEDIUM" | "LOW";
     due_date: string;
     project: number | null;
+    current_state: string;
+    requested_change: string;
+    reason: string;
+    affected_modules: string;
+    dependent_systems: string;
+    change_nature: "USER_FACING" | "BACKEND" | "BOTH";
+    additional_materials: string;
     tz_file_url?: string;
     tz_file_name?: string;
   }>({
-    system_name: "TeamFlow",
+    system_name: "",
     order_type: "NEW",
     module: "",
     department: userDepartment,
@@ -81,13 +85,20 @@ export default function OrderForm() {
     priority: "HIGH",
     due_date: "",
     project: null,
+    current_state: "",
+    requested_change: "",
+    reason: "",
+    affected_modules: "",
+    dependent_systems: "",
+    change_nature: "BOTH",
+    additional_materials: "",
   });
 
   // Foydalanuvchi profili yuklanganda profilidagi bo'linma va ism avtomatik o'rnatiladi
   useEffect(() => {
     if (!editing && userDepartment) {
       setF((prev) => {
-        if (!prev.department || prev.department === "Axborot texnologiyalari (IT) boshqarmasi") {
+        if (!prev.department) {
           return { ...prev, department: userDepartment };
         }
         return prev;
@@ -129,10 +140,13 @@ export default function OrderForm() {
         const parsed = JSON.parse(raw);
         if (
           parsed?.f &&
-          ((parsed.f.system_name && parsed.f.system_name !== "TeamFlow") ||
+          (parsed.f.system_name?.trim() ||
             parsed.f.module?.trim() ||
             parsed.f.due_date ||
             parsed.f.project ||
+            parsed.f.requested_change?.trim() ||
+            parsed.f.current_state?.trim() ||
+            parsed.f.reason?.trim() ||
             (parsed.f.order_type && parsed.f.order_type !== "NEW"))
         ) {
           setF((prev) => ({
@@ -160,10 +174,13 @@ export default function OrderForm() {
   useEffect(() => {
     if (editing) return;
     const isDirty = Boolean(
-      (f.system_name && f.system_name.trim() && f.system_name !== "TeamFlow") ||
+      f.system_name?.trim() ||
         f.module?.trim() ||
         f.due_date ||
         f.project ||
+        f.requested_change?.trim() ||
+        f.current_state?.trim() ||
+        f.reason?.trim() ||
         f.order_type !== "NEW" ||
         (userDepartment && f.department && f.department !== userDepartment) ||
         (user?.full_name && f.responsible_person && f.responsible_person !== user.full_name)
@@ -185,10 +202,13 @@ export default function OrderForm() {
   useEffect(() => {
     if (editing || isPM) return;
     const hasData = Boolean(
-      (f.system_name && f.system_name.trim() && f.system_name !== "TeamFlow") ||
+      f.system_name?.trim() ||
         f.module?.trim() ||
         f.due_date ||
         f.project ||
+        f.requested_change?.trim() ||
+        f.current_state?.trim() ||
+        f.reason?.trim() ||
         files.length > 0
     );
     if (!hasData) return;
@@ -249,7 +269,7 @@ export default function OrderForm() {
     localStorage.removeItem(ORDER_DRAFT_KEY);
     setServerDraftId(null);
     setF({
-      system_name: "TeamFlow",
+      system_name: "",
       order_type: "NEW",
       module: "",
       department: userDepartment,
@@ -257,6 +277,13 @@ export default function OrderForm() {
       priority: "HIGH",
       due_date: "",
       project: null,
+      current_state: "",
+      requested_change: "",
+      reason: "",
+      affected_modules: "",
+      dependent_systems: "",
+      change_nature: "BOTH",
+      additional_materials: "",
     });
     setFiles([]);
     setDraftRestored(false);
@@ -286,7 +313,7 @@ export default function OrderForm() {
         setExistingItem(item);
         setExistingAttachments(item.attachments || []);
         setF({
-          system_name: item.system_name || "TeamFlow",
+          system_name: item.system_name || "",
           order_type: item.order_type || "NEW",
           module: item.module || "",
           department: item.department || "",
@@ -294,11 +321,18 @@ export default function OrderForm() {
           priority: item.priority || "HIGH",
           due_date: item.due_date ? item.due_date.split("T")[0] : "",
           project: item.project || null,
+          current_state: item.current_state || "",
+          requested_change: item.requested_change || "",
+          reason: item.reason || "",
+          affected_modules: item.affected_modules || "",
+          dependent_systems: item.dependent_systems || "",
+          change_nature: item.change_nature || "BOTH",
+          additional_materials: item.additional_materials || "",
         });
         setLoaded(true);
       } catch (e) {
         if (alive) {
-          setError(e instanceof ApiError ? e.message : "Buyurtmani yuklab bo'lmadi.");
+          setError(e instanceof ApiError ? e.message : tx("orders.buyurtmani_yuklab_bolmadi"));
           setLoaded(true);
         }
       }
@@ -321,10 +355,10 @@ export default function OrderForm() {
     if (f.due_date) {
       const today = new Date().toISOString().split("T")[0];
       if (f.due_date < today) {
-        setErrors((p) => ({ ...p, due_date: "Muddat bugungi kundan oldingi sana bo'lishi mumkin emas." }));
-        setError("Muddat bugungi kundan oldingi sana bo'lishi mumkin emas.");
+        setErrors((p) => ({ ...p, due_date: tx("orders.muddat_otgan_xatolik") }));
+        setError(tx("orders.muddat_otgan_xatolik"));
         return;
-      }
+    }
     }
     setBusy(true);
     setError(null);
@@ -366,7 +400,7 @@ export default function OrderForm() {
         setErrors(err.fields);
         setError(err.message);
       } else {
-        setError(err instanceof Error ? err.message : "Buyurtmani saqlashda xatolik yuz berdi.");
+        setError(err instanceof Error ? err.message : tx("orders.saqlashda_xatolik"));
       }
     } finally {
       setBusy(false);
@@ -378,12 +412,12 @@ export default function OrderForm() {
       <div className="content">
         <div className="card" style={{ maxWidth: 540, margin: "40px auto", padding: 32, textAlign: "center" }}>
           <div style={{ fontSize: 44, marginBottom: 12 }}>🚫</div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Ruxsat berilmagan</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{tx("orders.ruxsat_berilmagan")}</h2>
           <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
-            Yangi buyurtma (TZ) yaratish faqat sohaviy boshqarma vakillariga ruxsat etilgan. Loyiha menejeri (PM) buyurtma yarata olmaydi.
+            {tx("orders.pm_yaratish_taqiq_desc")}
           </p>
           <button className="btn btn-primary" onClick={() => go(toOrders())}>
-            Buyurtmalar ro'yxatiga qaytish
+            {tx("orders.buyurtmalarga_qaytish")}
           </button>
         </div>
       </div>
@@ -413,10 +447,10 @@ export default function OrderForm() {
           <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
           <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{tx("orders.locked_after_send_title")}</h2>
           <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
-            «{existingItem?.request_no}» raqamli buyurtma rasman yuborilgan. Yuborilgan buyurtmani tahrirlab yoki o'chirib bo'lmaydi.
+            «{existingItem?.request_no}» {tx("orders.locked_after_send_desc")}
           </p>
           <button className="btn btn-primary" onClick={() => go(toOrders())}>
-            Buyurtmalar ro'yxatiga qaytish
+            {tx("orders.buyurtmalarga_qaytish")}
           </button>
         </div>
       </div>
@@ -427,12 +461,12 @@ export default function OrderForm() {
     return (
       <div className="content">
         <div className="msg msg-error" style={{ margin: "40px auto", maxWidth: 500, textAlign: "center", padding: 24, borderRadius: 10 }}>
-          <h3 style={{ margin: "0 0 10px 0" }}>Buyurtmani tahrirlash taqiqlangan</h3>
+          <h3 style={{ margin: "0 0 10px 0" }}>{tx("orders.tahrirlash_taqiqlangan")}</h3>
           <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-            Tizim qoidalariga muvofiq, buyurtmalarni tahrirlash imkoniyati mavjud emas.
+            {tx("orders.tahrirlash_taqiq_desc")}
           </p>
           <button type="button" className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => go(toOrders())}>
-            Buyurtmalar ro'yxatiga qaytish
+            {tx("orders.buyurtmalarga_qaytish")}
           </button>
         </div>
       </div>
@@ -444,7 +478,7 @@ export default function OrderForm() {
       <PageHead
         title={
           <div className="row middle" style={{ gap: 12, flexWrap: "wrap" }}>
-            <strong>{editing ? "Buyurtmani tahrirlash" : "Yangi buyurtma (TZ)"}</strong>
+            <strong>{editing ? tx("orders.buyurtmani_tahrirlash") : tx("orders.yangi_buyurtma_tz")}</strong>
             {autoSaveStatus === "saving" && (
               <span style={{ fontSize: 12, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 500 }}>
                 <span>⏳</span> {tx("orders.autosave_saving")}
@@ -460,10 +494,10 @@ export default function OrderForm() {
         actions={
           <div className="row" style={{ gap: 8 }}>
             <button className="btn btn-primary" form={formId} disabled={busy}>
-              {busy ? tx("orders.submitting", undefined, "Yuborilmoqda...") : tx("orders.send_order", undefined, "Buyurtma yuborish")}
+              {busy ? tx("orders.submitting") : tx("orders.send_order")}
             </button>
             <button type="button" className="btn" onClick={handleCancelOrExit}>
-              {tx("common.bekor_qilish", undefined, "Bekor qilish")}
+              {tx("common.bekor_qilish")}
             </button>
           </div>
         }
@@ -506,47 +540,73 @@ export default function OrderForm() {
 
         <form id={formId} onSubmit={submit}>
           <div style={{ maxWidth: 840, margin: "0 auto" }}>
-            <Card title="Asosiy ma'lumot">
+            <Card title={tx("orders.asosiy_malumotlar")}>
               <div className="field">
-                <label htmlFor={`${fid}-sys`}>Tizim nomi *</label>
+                <label htmlFor={`${fid}-sys`}>{tx("orders.tizim_nomi_label")} *</label>
                 <input
                   id={`${fid}-sys`}
+                  list={`${fid}-systems-list`}
                   value={f.system_name}
                   required
-                  onChange={(e) => set("system_name", e.target.value)}
+                  placeholder={tx("orders.tizim_nomi_placeholder")}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const matchedProj = projects.find((p) => p.name.toLowerCase() === val.toLowerCase());
+                    setF((prev) => ({
+                      ...prev,
+                      system_name: val,
+                      project: matchedProj ? matchedProj.id : prev.project,
+                    }));
+                  }}
                 />
+                <datalist id={`${fid}-systems-list`}>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.name}>
+                      {p.key ? `(${p.key})` : ""}
+                    </option>
+                  ))}
+                </datalist>
                 {errors.system_name && <div className="err">{errors.system_name}</div>}
               </div>
 
-              <div className="field">
-                <label htmlFor={`${fid}-type`}>Loyiha turi *</label>
-                <select
-                  id={`${fid}-type`}
-                  value={f.order_type}
-                  onChange={(e) => {
-                    const val = e.target.value as OrderTypeValue;
-                    setF((prev) => ({
-                      ...prev,
-                      order_type: val,
-                      project: val === "NEW" ? null : prev.project,
-                    }));
-                  }}
-                >
-                  {(meta?.order_type || meta?.project_type || [
-                    { value: "NEW", label: "Yangi loyiha" },
-                    { value: "CONTINUATION", label: "Davom ettiriladigan" },
-                    { value: "NEEDS_CLASSIFICATION", label: "Turlash kerak bo'lgan" },
-                    { value: "MODERNIZATION", label: "Modernizatsiya" },
-                    { value: "MAINTENANCE", label: "Texnik xizmat" },
-                  ]).map((t) => (
-                    <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
-                  ))}
-                </select>
+              <div className="row" style={{ gap: 12 }}>
+                <div className="field" style={{ flex: 1 }}>
+                  <label htmlFor={`${fid}-type`}>{tx("orders.loyiha_turi_label")} *</label>
+                  <select
+                    id={`${fid}-type`}
+                    value={f.order_type}
+                    onChange={(e) => {
+                      const val = e.target.value as OrderTypeValue;
+                      setF((prev) => ({
+                        ...prev,
+                        order_type: val,
+                        project: val === "NEW" ? null : prev.project,
+                      }));
+                    }}
+                  >
+                    {(meta?.order_type || meta?.project_type || []).map((t) => (
+                      <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="field" style={{ flex: 1 }}>
+                  <label htmlFor={`${fid}-priority`}>{tx("orders.muhimlik_label")} *</label>
+                  <select
+                    id={`${fid}-priority`}
+                    value={f.priority}
+                    onChange={(e) => set("priority", e.target.value)}
+                  >
+                    {(meta?.order_priority || []).map((p) => (
+                      <option key={String(p.value)} value={String(p.value)}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {f.order_type !== "NEW" && (
                 <div className="field">
-                  <label htmlFor={`${fid}-proj`}>Tegishli loyiha</label>
+                  <label htmlFor={`${fid}-proj`}>{tx("orders.tegishli_loyiha_label")}</label>
                   <select
                     id={`${fid}-proj`}
                     value={f.project || ""}
@@ -560,10 +620,10 @@ export default function OrderForm() {
                       }));
                     }}
                   >
-                    <option value="">-- Loyihani tanlang (ixtiyoriy) --</option>
+                    <option value="">{tx("orders.loyiha_tanlang_placeholder")}</option>
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name}
+                        {p.name} {p.key ? `(${p.key})` : ""}
                       </option>
                     ))}
                   </select>
@@ -571,11 +631,11 @@ export default function OrderForm() {
               )}
 
               <div className="field">
-                <label htmlFor={`${fid}-mod`}>Loyiha haqida izoh</label>
+                <label htmlFor={`${fid}-mod`}>{tx("orders.loyiha_izoh_label")}</label>
                 <input
                   id={`${fid}-mod`}
                   value={f.module}
-                  placeholder="Loyiha haqida qisqacha izoh yoki qo'shimcha ma'lumot..."
+                  placeholder={tx("orders.loyiha_izoh_placeholder")}
                   onChange={(e) => set("module", e.target.value)}
                 />
                 {errors.module && <div className="err">{errors.module}</div>}
@@ -583,18 +643,27 @@ export default function OrderForm() {
 
               <div className="row" style={{ gap: 12 }}>
                 <div className="field" style={{ flex: 1 }}>
-                  <label htmlFor={`${fid}-dep`}>Buyurtma qilayotgan bo'linma *</label>
+                  <label htmlFor={`${fid}-dep`}>{tx("orders.bolinma_label")} *</label>
                   <input
                     id={`${fid}-dep`}
+                    list={`${fid}-dept-list`}
                     value={f.department}
                     required
+                    placeholder={tx("orders.bolinma_placeholder")}
                     onChange={(e) => set("department", e.target.value)}
                   />
+                  <datalist id={`${fid}-dept-list`}>
+                    {(meta?.departments || []).map((d) => (
+                      <option key={d.id} value={d.name}>
+                        {d.code ? `(${d.code})` : ""}
+                      </option>
+                    ))}
+                  </datalist>
                   {errors.department && <div className="err">{errors.department}</div>}
                 </div>
 
                 <div className="field" style={{ flex: 1 }}>
-                  <label htmlFor={`${fid}-resp`}>Mas'ul shaxs (F.I.Sh.) *</label>
+                  <label htmlFor={`${fid}-resp`}>{tx("orders.masul_shaxs_label")} *</label>
                   <input
                     id={`${fid}-resp`}
                     value={f.responsible_person}
@@ -606,7 +675,7 @@ export default function OrderForm() {
               </div>
 
               <div className="field">
-                <label htmlFor={`${fid}-due`}>Kerakli muddat</label>
+                <label htmlFor={`${fid}-due`}>{tx("orders.kerakli_muddat_label")}</label>
                 <input
                   id={`${fid}-due`}
                   type="date"
@@ -616,11 +685,109 @@ export default function OrderForm() {
                 />
                 {errors.due_date && <div className="err">{errors.due_date}</div>}
               </div>
+            </Card>
+
+            <Card title={tx("orders.bolim1_nomi")}>
+              <div className="field">
+                <label htmlFor={`${fid}-requested-change`}>
+                  {tx("orders.talab_qilinayotgan_ozgartirish")}
+                </label>
+                <textarea
+                  id={`${fid}-requested-change`}
+                  rows={3}
+                  value={f.requested_change}
+                  placeholder={tx("orders.requested_change_placeholder")}
+                  onChange={(e) => set("requested_change", e.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor={`${fid}-current-state`}>
+                  {tx("orders.joriy_holat")}
+                </label>
+                <textarea
+                  id={`${fid}-current-state`}
+                  rows={2}
+                  value={f.current_state}
+                  placeholder={tx("orders.current_state_placeholder")}
+                  onChange={(e) => set("current_state", e.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor={`${fid}-reason`}>
+                  {tx("orders.sabab_maqsad")}
+                </label>
+                <input
+                  id={`${fid}-reason`}
+                  value={f.reason}
+                  placeholder={tx("orders.reason_placeholder")}
+                  onChange={(e) => set("reason", e.target.value)}
+                />
+              </div>
+            </Card>
+
+            <Card title={tx("orders.bolim2_nomi")}>
+              <div className="row" style={{ gap: 12 }}>
+                <div className="field" style={{ flex: 1 }}>
+                  <label htmlFor={`${fid}-affected-mod`}>
+                    {tx("orders.tasir_modullar")}
+                  </label>
+                  <input
+                    id={`${fid}-affected-mod`}
+                    value={f.affected_modules}
+                    placeholder={tx("orders.affected_modules_placeholder")}
+                    onChange={(e) => set("affected_modules", e.target.value)}
+                  />
+                </div>
+
+                <div className="field" style={{ flex: 1 }}>
+                  <label htmlFor={`${fid}-change-nature`}>
+                    {tx("orders.ozgarish_xarakteri")}
+                  </label>
+                  <select
+                    id={`${fid}-change-nature`}
+                    value={f.change_nature}
+                    onChange={(e) => set("change_nature", e.target.value as "USER_FACING" | "BACKEND" | "BOTH")}
+                  >
+                    {(meta?.change_nature || []).map((cn) => (
+                      <option key={String(cn.value)} value={String(cn.value)}>{cn.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="field">
+                <label htmlFor={`${fid}-dep-systems`}>
+                  {tx("orders.bogliq_tizimlar")}
+                </label>
+                <input
+                  id={`${fid}-dep-systems`}
+                  value={f.dependent_systems}
+                  placeholder={tx("orders.dep_systems_placeholder")}
+                  onChange={(e) => set("dependent_systems", e.target.value)}
+                />
+              </div>
+            </Card>
+
+            <Card title={tx("orders.bolim3_nomi")}>
+              <div className="field">
+                <label htmlFor={`${fid}-add-mat`}>
+                  {tx("orders.qoshimcha_materiallar")}
+                </label>
+                <textarea
+                  id={`${fid}-add-mat`}
+                  rows={2}
+                  value={f.additional_materials}
+                  placeholder={tx("orders.additional_materials_placeholder")}
+                  onChange={(e) => set("additional_materials", e.target.value)}
+                />
+              </div>
 
               <div className="field" style={{ marginTop: 16 }}>
                 <label htmlFor={`${fid}-files`} style={{ fontWeight: 600, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span>Biriktirilgan hujjatlar va fayllar (TZ, texnik topshiriq)</span>
-                  <span className="muted" style={{ fontSize: 11.5, fontWeight: 400 }}>Ko'p fayl yuklash mumkin</span>
+                  <span>{tx("orders.biriktirilgan_fayllar_label")}</span>
+                  <span className="muted" style={{ fontSize: 11.5, fontWeight: 400 }}>{tx("orders.koplab_fayl_yuklash")}</span>
                 </label>
                 <div
                   style={{
@@ -649,10 +816,10 @@ export default function OrderForm() {
                   />
                   <div style={{ fontSize: 24, marginBottom: 4 }}>📎</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text, #0f172a)" }}>
-                    Fayllarni tanlash yoki bu yerga bosing
+                    {tx("orders.dropzone_prompt")}
                   </div>
                   <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>
-                    PDF, Word (.doc, .docx), Excel (.xls, .xlsx), ZIP, rasmlar (har biri 50MB gacha)
+                    {tx("orders.dropzone_hint")}
                   </div>
                 </div>
 
@@ -660,7 +827,7 @@ export default function OrderForm() {
                 {files.length > 0 && (
                   <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)" }}>
-                      Yuklanadigan fayllar ({files.length}):
+                      {tx("orders.files_to_upload")} ({files.length}):
                     </div>
                     {files.map((file, idx) => (
                       <div
@@ -692,7 +859,7 @@ export default function OrderForm() {
                             e.stopPropagation();
                             setFiles((prev) => prev.filter((_, i) => i !== idx));
                           }}
-                          title="O'chirish"
+                          title={tx("common.ochirish")}
                         >
                           ✕
                         </button>
@@ -705,7 +872,7 @@ export default function OrderForm() {
                 {editing && existingAttachments.length > 0 && (
                   <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 6 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)" }}>
-                      Mavjud biriktirilgan fayllar ({existingAttachments.length}):
+                      {tx("orders.existing_files")} ({existingAttachments.length}):
                     </div>
                     {existingAttachments.map((att) => (
                       <div
@@ -745,16 +912,16 @@ export default function OrderForm() {
                           onClick={async (e) => {
                             e.stopPropagation();
                             if (!id) return;
-                            if (window.confirm("Ushbu biriktirilgan faylni o'chirishni tasdiqlaysizmi?")) {
+                            if (window.confirm(tx("orders.confirm_delete_attachment"))) {
                               try {
                                 await deleteOrderAttachment(id, att.id);
                                 setExistingAttachments((prev) => prev.filter((a) => a.id !== att.id));
                               } catch (err) {
-                                setError(err instanceof Error ? err.message : "Faylni o'chirishda xatolik.");
+                                setError(err instanceof Error ? err.message : tx("orders.delete_attachment_error"));
                               }
                             }
                           }}
-                          title="Faylni o'chirish"
+                          title={tx("orders.faylni_ochirish")}
                         >
                           ✕
                         </button>
@@ -790,7 +957,7 @@ export default function OrderForm() {
                   }}
                 >
                   <span style={{ color: "#475569", fontWeight: 500 }}>
-                    {editing ? "Yaratilgan vaqti:" : "Sana va vaqt:"}
+                    {editing ? tx("orders.yaratilgan_vaqti_label") : tx("orders.sana_vaqt_label")}
                   </span>
                   <strong style={{ fontWeight: 700, color: "#000000" }}>
                     {editing && existingItem?.created_at

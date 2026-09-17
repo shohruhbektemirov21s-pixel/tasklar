@@ -10,7 +10,7 @@ export const ORDER_TYPE_CONFIG: Record<
     bg: "rgba(16, 185, 129, 0.12)",
     color: "#059669",
     border: "rgba(16, 185, 129, 0.3)",
-    desc: "Noldan boshlanadigan yangi dasturiy ta'minot yoki axborot tizimi",
+    get desc() { return tx("orders.type_new_desc"); },
   },
   CONTINUATION: {
     get label() { return tx("orders.davom_ettiriladigan"); },
@@ -18,7 +18,7 @@ export const ORDER_TYPE_CONFIG: Record<
     bg: "rgba(37, 99, 235, 0.12)",
     color: "#2563eb",
     border: "rgba(37, 99, 235, 0.3)",
-    desc: "Mavjud tizimni davom ettirish / navbatdagi bosqich",
+    get desc() { return tx("orders.type_continuation_desc"); },
   },
   NEEDS_CLASSIFICATION: {
     get label() { return tx("orders.turlash_kerak"); },
@@ -26,7 +26,7 @@ export const ORDER_TYPE_CONFIG: Record<
     bg: "rgba(217, 119, 6, 0.12)",
     color: "#d97706",
     border: "rgba(217, 119, 6, 0.3)",
-    desc: "Boshqarma taklifi / PM tomonidan tahlil va turlash talab etiladi",
+    get desc() { return tx("orders.type_needs_classification_desc"); },
   },
   MODERNIZATION: {
     get label() { return tx("orders.modernizatsiya"); },
@@ -34,7 +34,7 @@ export const ORDER_TYPE_CONFIG: Record<
     bg: "rgba(139, 92, 246, 0.12)",
     color: "#7c3aed",
     border: "rgba(139, 92, 246, 0.3)",
-    desc: "Amaldagi funksionallikni kengaytirish va yangilash",
+    get desc() { return tx("orders.type_modernization_desc"); },
   },
   MAINTENANCE: {
     get label() { return tx("orders.texnik_xizmat"); },
@@ -42,7 +42,7 @@ export const ORDER_TYPE_CONFIG: Record<
     bg: "rgba(100, 116, 139, 0.12)",
     color: "#475569",
     border: "rgba(100, 116, 139, 0.3)",
-    desc: "Xatoliklarni tuzatish va tizimni qo'llab-quvvatlash",
+    get desc() { return tx("orders.type_maintenance_desc"); },
   },
 };
 
@@ -81,7 +81,7 @@ export const ORDER_STATUS_CONFIG: Record<
     color: "#64748b",
     border: "#cbd5e1",
     step: 0,
-    desc: "Qoralama: buyurtma faqat uni yaratgan shaxsga ko'rinadi va hali rasman yuborilmagan",
+    get desc() { return tx("orders.status_draft_desc"); },
     icon: "✏️",
   },
   NEW: {
@@ -90,7 +90,7 @@ export const ORDER_STATUS_CONFIG: Record<
     color: "#1d4ed8",
     border: "#bfdbfe",
     step: 1,
-    desc: "Yangi buyurtma: sohaviy boshqarma tomonidan yuborilgan, PM qabul qilishi kutilmoqda",
+    get desc() { return tx("orders.status_new_desc"); },
     icon: "📥",
   },
   ACCEPTED: {
@@ -99,7 +99,7 @@ export const ORDER_STATUS_CONFIG: Record<
     color: "#15803d",
     border: "#bbf7d0",
     step: 2,
-    desc: "PM tomonidan qabul qilingan va muddat belgilangan",
+    get desc() { return tx("orders.status_accepted_desc"); },
     icon: "👍",
   },
   ASSIGNED_TO_DEV: {
@@ -108,7 +108,7 @@ export const ORDER_STATUS_CONFIG: Record<
     color: "#4338ca",
     border: "#c7d2fe",
     step: 3,
-    desc: "Dasturchi (ijrochi) biriktirilgan, ish jarayoni boshlanmoqda",
+    get desc() { return tx("orders.status_assigned_dev_desc"); },
     icon: "👨‍💻",
   },
   IN_DEVELOPMENT: {
@@ -117,7 +117,7 @@ export const ORDER_STATUS_CONFIG: Record<
     color: "#b45309",
     border: "#fde68a",
     step: 4,
-    desc: "Dasturchi tomonidan o'zgartirishlar kiritilmoqda",
+    get desc() { return tx("orders.status_in_dev_desc"); },
     icon: "⚙️",
   },
   TESTING: {
@@ -126,7 +126,7 @@ export const ORDER_STATUS_CONFIG: Record<
     color: "#6d28d9",
     border: "#ddd6fe",
     step: 5,
-    desc: "Dasturiy ta'minot sinovdan o'tkazilmoqda",
+    get desc() { return tx("orders.status_testing_desc"); },
     icon: "🧪",
   },
   WAITING_CLIENT: {
@@ -135,7 +135,7 @@ export const ORDER_STATUS_CONFIG: Record<
     color: "#c2410c",
     border: "#fed7aa",
     step: 6,
-    desc: "Ish yakunlandi va hisobot sohaviy boshqarma tasdig'iga yuborildi",
+    get desc() { return tx("orders.status_waiting_client_desc"); },
     icon: "📬",
   },
   COMPLETED: {
@@ -144,7 +144,7 @@ export const ORDER_STATUS_CONFIG: Record<
     color: "#047857",
     border: "#a7f3d0",
     step: 7,
-    desc: "Boshqarma tomonidan to'liq qabul qilingan va topshirilgan",
+    get desc() { return tx("orders.status_completed_desc"); },
     icon: "✅",
   },
   REJECTED: {
@@ -153,7 +153,7 @@ export const ORDER_STATUS_CONFIG: Record<
     color: "#b91c1c",
     border: "#fecaca",
     step: 0,
-    desc: "Rad etilgan",
+    get desc() { return tx("orders.status_rejected_desc"); },
     icon: "❌",
   },
 };
@@ -201,7 +201,7 @@ export function OrderStatusBadge({
             borderRadius: 4,
             border: "1px solid #fde68a",
           }}
-          title="Boshqarma yangilangan TZ versiyasini yuborgan. PM qarori kutilmoqda."
+          title={tx("orders.pending_version_tooltip")}
         >
           {tx("orders.yangi_versiya_kutilmoqda")}
         </span>

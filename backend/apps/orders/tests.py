@@ -749,3 +749,88 @@ class OrdersSeniorDevTests(ApiTestCase):
         # PM ham o'chira olmasligi
         del_pm_res = pm_client.delete(f"/api/orders/{order_id}/")
         self.assertEqual(del_pm_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_version_2_cannot_be_approved_before_version_1_is_approved(self):
+        """Buyurtmaning 1-chi TZsi tasdiqlanmaguncha 2-chi TZ tasdiqlanmasligini tekshirish."""
+        from apps.orders.models import ChangeRequestVersion
+
+        sohaviy_client = APIClient()
+        sohaviy_client.force_authenticate(user=self.sohaviy_user)
+
+        # 1. Buyurtma yaratamiz (v1 status=NEW)
+        test_file = SimpleUploadedFile("tz_v1.pdf", b"TZ v1 mazmuni", content_type="application/pdf")
+        res = sohaviy_client.post("/api/orders/", {
+            "system_name": "Test Tizim",
+            "order_type": ChangeRequestType.NEW,
+            "department": "IT",
+            "responsible_person": "Aliyev",
+            "tz_file": test_file,
+        }, format="multipart")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        order_id = res.json()["id"]
+        order = ChangeRequest.objects.get(id=order_id)
+        self.assertEqual(order.status, ChangeRequestStatus.NEW)
+
+        # 2. 2-versiyani yaratamiz
+        v2_file = SimpleUploadedFile("tz_v2.pdf", b"TZ v2 mazmuni", content_type="application/pdf")
+        ChangeRequestVersion.objects.create(
+            order=order,
+            version=2,
+            tz_file=v2_file,
+            tz_file_name="tz_v2.pdf",
+            change_note="2-chi versiya",
+            status=ChangeRequestStatus.NEW,
+            uploaded_by=self.sohaviy_user,
+        )
+
+        pm_client = APIClient()
+        pm_client.force_authenticate(user=self.pm_user)
+
+        # 3. PM 1-versiya tasdiqlanmasdan 2-versiyani tasdiqlamoqchi bo'ladi -> 400 xatolik
+        appr_v2_res = pm_client.post(f"/api/orders/{order_id}/approve-version/", {
+            "version": 2,
+            "decision_note": "2-versiyani tasdiqlamoqchi",
+        })
+        self.assertEqual(appr_v2_res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("1-chi TZsi tasdiqlanmaguncha", str(appr_v2_res.data))
+
+        # 4. PM avval 1-versiyani tasdiqlaydi -> 200 OK
+        appr_v1_res = pm_client.post(f"/api/orders/{order_id}/approve-version/", {
+            "version": 1,
+            "decision_note": "1-versiya qabul qilindi",
+        })
+        self.assertEqual(appr_v1_res.status_code, status.HTTP_200_OK)
+
+        # 5. Endi 2-versiyani tasdiqlay oladi -> 200 OK
+        appr_v2_ok = pm_client.post(f"/api/orders/{order_id}/approve-version/", {
+            "version": 2,
+            "decision_note": "2-versiya tasdiqlandi",
+        })
+        self.assertEqual(appr_v2_ok.status_code, status.HTTP_200_OK)
+        order.refresh_from_db()
+        self.assertEqual(order.version, 2)
+
+    def test_version_2_cannot_be_uploaded_before_version_1_is_approved(self):
+        """Buyurtmaning 1-chi TZsi tasdiqlanmaguncha (NEW bo'lsa) 2-chi TZ yuborib bo'lmasligi."""
+        sohaviy_client = APIClient()
+        sohaviy_client.force_authenticate(user=self.sohaviy_user)
+
+        test_file = SimpleUploadedFile("tz_v1.pdf", b"TZ v1 mazmuni", content_type="application/pdf")
+        res = sohaviy_client.post("/api/orders/", {
+            "system_name": "Test Tizim 2",
+            "order_type": ChangeRequestType.NEW,
+            "department": "IT",
+            "responsible_person": "Valiyev",
+            "tz_file": test_file,
+        }, format="multipart")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        order_id = res.json()["id"]
+
+        # Hali PM qabul qilmagan (NEW holatda) bo'lganda v2 yuklashga urinish -> 400
+        v2_file = SimpleUploadedFile("tz_v2.pdf", b"TZ v2 mazmuni", content_type="application/pdf")
+        up_res = sohaviy_client.post(f"/api/orders/{order_id}/upload-version/", {
+            "tz_file": v2_file,
+            "change_note": "Yangi o'zgarishlar",
+        }, format="multipart")
+        self.assertEqual(up_res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("1-chi TZsi tasdiqlanmaguncha", str(up_res.data))

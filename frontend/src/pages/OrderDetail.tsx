@@ -47,7 +47,7 @@ import { PageHead } from "@/components/Layout";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { Card, Empty, ErrorMsg, Loading, OkMsg, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
-import { toEditOrder, toOrders, toProject, useEntityNum, useGo } from "@/nav";
+import { toEditOrder, toOrders, toProject, toTask, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge } from "./ChangeRequests";
 
 const UserOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
@@ -243,7 +243,7 @@ export default function OrderDetail() {
       setPmNotes(data.pm_notes || "");
       setError(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Buyurtma ma'lumotlarini yuklab bo'lmadi.");
+      setError(err instanceof ApiError ? err.message : tx("orders.buyurtma_yuklab_bolmadi"));
     } finally {
       setLoading(false);
     }
@@ -313,7 +313,7 @@ export default function OrderDetail() {
       const updated = await sendOrder(item.id);
       setItem(updated);
     } catch (err: unknown) {
-      setActionError((err as { message?: string })?.message || "Buyurtmani yuborishda xatolik yuz berdi.");
+      setActionError((err as { message?: string })?.message || tx("orders.yuborishda_xatolik"));
     } finally {
       setSendingOrder(false);
     }
@@ -324,8 +324,8 @@ export default function OrderDetail() {
     if (!item) return;
     const ok = await confirmDialog({
       title: `«${item.request_no}» buyurtmasi o'chirilsinmi?`,
-      body: "Ushbu amalni ortga qaytarib bo'lmaydi.",
-      confirmText: "O'chirish",
+      body: tx("orders.amalni_ortga_qaytarib_bolmaydi"),
+      confirmText: tx("common.ochirish"),
       danger: true,
     });
     if (!ok) return;
@@ -335,7 +335,7 @@ export default function OrderDetail() {
       await deleteOrder(item.id);
       go(toOrders());
     } catch (err: unknown) {
-      setActionError((err as { message?: string })?.message || "O'chirishda xatolik yuz berdi.");
+      setActionError((err as { message?: string })?.message || tx("orders.ochirishda_xatolik"));
     }
   }
 
@@ -372,9 +372,9 @@ export default function OrderDetail() {
       setPmDeadline(updated.pm_deadline || "");
       setPmNotes(updated.pm_notes || "");
       setClaimModalOpen(false);
-      setActionOk("Buyurtma muvaffaqiyatli qabul qilindi.");
+      setActionOk(tx("orders.buyurtma_qabul_qilindi"));
     } catch (err: unknown) {
-      setActionError((err as { message?: string })?.message || "Qabul qilishda xatolik yuz berdi.");
+      setActionError((err as { message?: string })?.message || tx("orders.qabul_qilishda_xatolik"));
     } finally {
       setClaimSubmitting(false);
     }
@@ -394,9 +394,9 @@ export default function OrderDetail() {
       });
       setItem(updated);
       setPmPanelOpen(false);
-      setActionOk("PM qarori va muddatlar muvaffaqiyatli saqlandi.");
+      setActionOk(tx("orders.pm_qarori_saqlandi"));
     } catch (err: unknown) {
-      setActionError((err as { message?: string })?.message || "Qarorni saqlashda xatolik yuz berdi.");
+      setActionError((err as { message?: string })?.message || tx("orders.qarorni_saqlashda_xatolik"));
     } finally {
       setPmSaving(false);
     }
@@ -406,18 +406,18 @@ export default function OrderDetail() {
   async function handleClientApprove() {
     if (!item) return;
     const ok = await confirmDialog({
-      title: `Buyurtma «${item.request_no}» qabul qilinsinmi?`,
-      body: "Ish to'liq yakunlangan deb hisoblanadi va buyurtma yopiladi.",
-      confirmText: "Tasdiqlash",
+      title: tx("orders.buyurtma_qabul_qilinsinmi", { request_no: item.request_no }),
+      body: tx("orders.ish_yakunlanadi_va_yopiladi"),
+      confirmText: tx("common.tasdiqlash"),
     });
     if (!ok) return;
     setActionError(null);
     try {
       const updated = await clientApprove(item.id);
       setItem(updated);
-      setActionOk("Buyurtma muvaffaqiyatli tasdiqlandi va yakunlandi.");
+      setActionOk(tx("orders.tasdiqlandi_va_yakunlandi"));
     } catch (err: unknown) {
-      setActionError((err as { message?: string })?.message || "Tasdiqlashda xatolik yuz berdi.");
+      setActionError((err as { message?: string })?.message || tx("orders.tasdiqlashda_xatolik"));
     }
   }
 
@@ -433,7 +433,7 @@ export default function OrderDetail() {
     e.preventDefault();
     if (!item) return;
     if (!rejectReason.trim() && !rejectFile) {
-      setActionError("Kamchilik izohini yozing yoki yangilangan TZ/kamchilik faylini biriktiring.");
+      setActionError(tx("orders.kamchilik_izohini_yozing"));
       return;
     }
     setRejectSubmitting(true);
@@ -449,9 +449,9 @@ export default function OrderDetail() {
       setRejectReason("");
       setRejectFile(null);
       setRejectIsNewTz(false);
-      setActionOk("Buyurtma kamchiliklar ko'rsatilib, qayta ishlash uchun qaytarildi.");
+      setActionOk(tx("orders.qayta_ishlash_uchun_qaytarildi"));
     } catch (err: unknown) {
-      setActionError((err as { message?: string })?.message || "Qaytarishda xatolik yuz berdi.");
+      setActionError((err as { message?: string })?.message || tx("orders.qaytarishda_xatolik"));
     } finally {
       setRejectSubmitting(false);
     }
@@ -469,7 +469,7 @@ export default function OrderDetail() {
     e.preventDefault();
     if (!item) return;
     if (!completionFile && !completionNote.trim()) {
-      setCompletionError("Tugatilgan ish haqidagi hujjatni (fayl/rasm) yoki hisobot izohini kiriting.");
+      setCompletionError(tx("orders.tugatilgan_ish_hujjati"));
       return;
     }
     setCompletionSubmitting(true);
@@ -487,9 +487,9 @@ export default function OrderDetail() {
       setCompletionModalOpen(false);
       setCompletionFile(null);
       setCompletionNote("");
-      setActionOk("Bajarilgan ish boshqarma tasdig'iga muvaffaqiyatli topshirildi.");
+      setActionOk(tx("orders.ish_topshirildi"));
     } catch (err: unknown) {
-      setCompletionError((err as { message?: string })?.message || "Hisobotni topshirishda xatolik yuz berdi.");
+      setCompletionError((err as { message?: string })?.message || tx("orders.hisobot_topshirishda_xatolik"));
     } finally {
       setCompletionSubmitting(false);
     }
@@ -512,15 +512,43 @@ export default function OrderDetail() {
       setVersionNote("");
       setActionOk("Yangi versiya muvaffaqiyatli yuklandi!");
     } catch (err: unknown) {
-      setActionError((err as { message?: string })?.message || "Yuklashda xatolik yuz berdi.");
+      setActionError((err as { message?: string })?.message || tx("orders.yuklashda_xatolik"));
     } finally {
       setVersionSubmitting(false);
     }
   }
 
+  // Yangi TZ versiyasini yuklashni ochish (boshqarma)
+  function handleOpenUploadVersion() {
+    if (item?.status === "NEW") {
+      setActionError(
+        tx("orders.tz_birinchisi_tasdiqlanmaguncha_yuklash_mumkin_emas") ||
+        "Buyurtmaning 1-chi TZsi tasdiqlanmaguncha 2-chi TZ yuborib bo'lmaydi. Avval 1-TZ ko'rib chiqilishi kerak."
+      );
+      return;
+    }
+    if (item?.pending_version) {
+      setActionError(
+        "Avvalgi yuborilgan TZ versiyasi hali tasdiqlanmagan. 1-tasi tasdiqlanmaguncha ikkinchisi yuborilmaydi."
+      );
+      return;
+    }
+    setVersionModal(true);
+  }
+
   // Yangi TZ versiyasini tasdiqlashni ochish (PM)
   function handleOpenApproveVersion(verNum?: number) {
-    setApproveVersionTarget(verNum || item?.pending_version?.version || null);
+    const targetVer = verNum || item?.pending_version?.version || null;
+    const v1 = item?.versions?.find((v) => v.version === 1);
+    const isV1Accepted = v1 ? v1.status === "ACCEPTED" : item?.status !== "NEW";
+    if (targetVer && targetVer > 1 && !isV1Accepted) {
+      setActionError(
+        tx("orders.tz_birinchisi_tasdiqlanmaguncha_ikkinchisi_mumkin_emas") ||
+        "Buyurtmaning 1-chi TZsi tasdiqlanmaguncha 2-chi TZ tasdiqlanmaydi. Avval 1-versiyani tasdiqlang."
+      );
+      return;
+    }
+    setApproveVersionTarget(targetVer);
     setApproveDeadline(item?.pm_deadline || item?.due_date || "");
     setApproveDuration(item?.pm_estimated_duration || "");
     setApproveDeveloper(item?.assigned_developer || null);
@@ -545,7 +573,7 @@ export default function OrderDetail() {
       setApproveVersionModal(false);
       setActionOk("Yangi TZ versiyasi muvaffaqiyatli tasdiqlandi va amalda kuchga kirdi!");
     } catch (err: unknown) {
-      setActionError((err as { message?: string })?.message || "Versiyani tasdiqlashda xatolik yuz berdi.");
+      setActionError((err as { message?: string })?.message || tx("orders.versiyani_tasdiqlashda_xatolik"));
     } finally {
       setApproveSubmitting(false);
     }
@@ -572,7 +600,7 @@ export default function OrderDetail() {
       setRejectVersionModal(false);
       setActionOk("Yangi TZ versiyasi rad etildi (avvalgi TZ amalda qoladi).");
     } catch (err: unknown) {
-      setActionError((err as { message?: string })?.message || "Versiyani rad etishda xatolik yuz berdi.");
+      setActionError((err as { message?: string })?.message || tx("orders.versiyani_rad_etishda_xatolik"));
     } finally {
       setRejectVersionSubmitting(false);
     }
@@ -607,9 +635,9 @@ export default function OrderDetail() {
       setTaskModalOpen(false);
       setTaskTitle("");
       setTaskDescription("");
-      setActionOk("Vazifa muvaffaqiyatli yaratildi va buyurtmaga biriktirildi!");
+      setActionOk(tx("orders.vazifa_yaratildi"));
     } catch (err: unknown) {
-      setActionError((err as { message?: string })?.message || "Vazifa yaratishda xatolik yuz berdi.");
+      setActionError((err as { message?: string })?.message || tx("orders.vazifa_yaratishda_xatolik"));
     } finally {
       setTaskSubmitting(false);
     }
@@ -623,8 +651,8 @@ export default function OrderDetail() {
           <Card padded>
             <Empty
               icon="📄"
-              title="Buyurtma tanlanmagan"
-              text="Buyurtmalar ro'yxatidan biror buyurtmani tanlang."
+              title={tx("orders.buyurtma_tanlanmagan")}
+              text={tx("orders.biror_buyurtmani_tanlang")}
             >
               <button className="btn btn-primary" onClick={() => go(toOrders())}>
                 Buyurtmalar ro'yxatiga qaytish
@@ -661,7 +689,7 @@ export default function OrderDetail() {
     );
   }
 
-  const descText = item.requested_change || item.current_state || "Tavsif kiritilmagan";
+  const descText = item.requested_change || item.current_state || tx("common.tavsif_kiritilmagan");
   const isLongText = descText.length > 180;
 
   return (
@@ -700,7 +728,7 @@ export default function OrderDetail() {
                 disabled={sendingOrder}
               >
                 <span>🚀</span>
-                <span>{sendingOrder ? "Yuborilmoqda..." : tx("orders.send_order")}</span>
+                <span>{sendingOrder ? tx("common.yuborilmoqda") : tx("orders.send_order")}</span>
               </button>
             )}
 
@@ -708,7 +736,7 @@ export default function OrderDetail() {
               <button
                 type="button"
                 className="btn btn-sm btn-outline"
-                onClick={() => setVersionModal(true)}
+                onClick={handleOpenUploadVersion}
               >
                 + {tx("orders.yangi_tz_versiyasi")}
               </button>
@@ -817,7 +845,7 @@ export default function OrderDetail() {
                   {tx("orders.new_tz_uploaded_title", { v: item.pending_version.version })}
                 </div>
                 <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
-                  Yuklangan: <strong>{item.pending_version.uploaded_by_name || "Buyurtmachi"}</strong> • {fmtDateTime(item.pending_version.created_at)}
+                  Yuklangan: <strong>{item.pending_version.uploaded_by_name || tx("orders.buyurtmachi")}</strong> • {fmtDateTime(item.pending_version.created_at)}
                 </div>
               </div>
             </div>
@@ -828,7 +856,7 @@ export default function OrderDetail() {
                   type="button"
                   onClick={() => setPreviewFile({
                     url: item.pending_version!.tz_file_url!,
-                    name: item.pending_version!.tz_file_name || "Yangi_TZ.docx",
+                    name: item.pending_version!.tz_file_name || tx("orders.yangi_tz_fayli"),
                     size: item.pending_version!.tz_file_size_display,
                   })}
                   style={{
@@ -842,11 +870,11 @@ export default function OrderDetail() {
                     cursor: "pointer",
                     boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
                   }}
-                  title="Yangi TZ faylini ko'rish"
+                  title={tx("orders.yangi_tz_korish")}
                 >
                   <DocLilacIcon size={16} color="#8b5cf6" />
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text, #1e293b)" }}>
-                    {item.pending_version.tz_file_name || "Yangi TZ fayli"}
+                    {item.pending_version.tz_file_name || tx("orders.yangi_tz_fayli")}
                   </span>
                   {item.pending_version.tz_file_size_display && (
                     <span style={{ background: "#f1f5f9", color: "#64748b", fontSize: 11.5, fontWeight: 600, padding: "2px 8px", borderRadius: 6 }}>
@@ -953,7 +981,7 @@ export default function OrderDetail() {
               style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
             >
               <span>🚀</span>
-              <span>{sendingOrder ? "Yuborilmoqda..." : tx("orders.send_order")}</span>
+              <span>{sendingOrder ? tx("common.yuborilmoqda") : tx("orders.send_order")}</span>
             </button>
           </div>
         )}
@@ -1023,7 +1051,7 @@ export default function OrderDetail() {
                     className="btn btn-xs btn-outline"
                     onClick={() => setPreviewFile({
                       url: item.completion_file_url!,
-                      name: item.completion_file_name || "Hisobot_hujjati",
+                      name: item.completion_file_name || tx("orders.hisobot_hujjati"),
                       size: item.completion_file_size_display,
                     })}
                     style={{ background: "#ffffff", borderColor: "#c084fc", color: "#7e22ce", gap: 6, fontWeight: 600 }}
@@ -1096,13 +1124,13 @@ export default function OrderDetail() {
                     className="btn btn-xs btn-outline"
                     onClick={() => setPreviewFile({
                       url: item.client_feedback_file_url!,
-                      name: item.client_feedback_file_name || "Tuzatish_hujjati",
+                      name: item.client_feedback_file_name || tx("orders.tuzatish_hujjati"),
                       size: item.client_feedback_file_size_display,
                     })}
                     style={{ background: "#ffffff", borderColor: "#fcd34d", color: "#92400e", gap: 6, fontWeight: 600 }}
                   >
                     <span>📎</span>
-                    <span>{tx("orders.tuzatish_hujjati_fayli")}: {item.client_feedback_file_name || "Fayl"}</span>
+                    <span>{tx("orders.tuzatish_hujjati_fayli")}: {item.client_feedback_file_name || tx("common.fayl")}</span>
                     {item.client_feedback_file_size_display && <span style={{ opacity: 0.7 }}>({item.client_feedback_file_size_display})</span>}
                   </button>
                 </div>
@@ -1341,63 +1369,200 @@ export default function OrderDetail() {
 
           <div style={{ height: 1, background: "var(--border-muted, #f1f5f9)", margin: "20px 0" }} />
 
-          {/* Tavsif */}
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b", marginBottom: 6 }}>
-              <ChatOutlineIcon size={15} color="#64748b" />
-              <span>{tx("orders.tavsif", undefined, "Tavsif")}</span>
+          {/* 1-BO'LIM: Tizimga qo'shimcha va o'zgartirish kiritish */}
+          <div
+            style={{
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: 12,
+              padding: "16px 20px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <div style={{ width: 4, height: 16, borderRadius: 2, background: "#3b82f6" }} />
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)" }}>
+                {tx("orders.bolim_1_title", undefined, "1. Tizimga qo'shimcha va o'zgartirish kiritish")}
+              </span>
             </div>
-            <div
-              style={{
-                fontSize: 13.5,
-                color: "var(--text, #334155)",
-                lineHeight: 1.5,
-                whiteSpace: "pre-wrap",
-                display: !expandDesc && isLongText ? "-webkit-box" : "block",
-                WebkitLineClamp: !expandDesc && isLongText ? 3 : undefined,
-                WebkitBoxOrient: !expandDesc && isLongText ? "vertical" : undefined,
-                overflow: !expandDesc && isLongText ? "hidden" : "visible",
-              }}
-            >
-              {descText}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4 }}>
+                  {tx("orders.kiritilayotgan_ozgarish", undefined, "Kiritilayotgan o'zgartirish")}:
+                </div>
+                <div
+                  style={{
+                    fontSize: 13.5,
+                    color: "var(--text, #334155)",
+                    lineHeight: 1.55,
+                    whiteSpace: "pre-wrap",
+                    background: "var(--surface, #ffffff)",
+                    padding: "10px 14px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border-color, #e2e8f0)",
+                  }}
+                >
+                  {item.requested_change || descText}
+                </div>
+              </div>
+
+              {item.current_state && (
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4 }}>
+                    {tx("orders.joriy_holat", undefined, "Mavjud tizimning joriy holati")}:
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13.5,
+                      color: "var(--text, #334155)",
+                      lineHeight: 1.55,
+                      whiteSpace: "pre-wrap",
+                      background: "var(--surface, #ffffff)",
+                      padding: "10px 14px",
+                      borderRadius: 8,
+                      border: "1px solid var(--border-color, #e2e8f0)",
+                    }}
+                  >
+                    {item.current_state}
+                  </div>
+                </div>
+              )}
+
+              {item.reason && (
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4 }}>
+                    {tx("orders.ozgartirish_sababi", undefined, "O'zgartirish kiritish sababi va asosi")}:
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13.5,
+                      color: "var(--text, #334155)",
+                      lineHeight: 1.55,
+                      whiteSpace: "pre-wrap",
+                      background: "var(--surface, #ffffff)",
+                      padding: "10px 14px",
+                      borderRadius: 8,
+                      border: "1px solid var(--border-color, #e2e8f0)",
+                    }}
+                  >
+                    {item.reason}
+                  </div>
+                </div>
+              )}
             </div>
-            {isLongText && (
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
-                style={{ fontSize: 11, padding: "2px 6px", marginTop: 4 }}
-                onClick={() => setExpandDesc((v) => !v)}
+          </div>
+
+          {/* 2-BO'LIM: O'zgarishlar kiritishning ta'sir doirasi */}
+          <div
+            style={{
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: 12,
+              padding: "16px 20px",
+              marginTop: 14,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <div style={{ width: 4, height: 16, borderRadius: 2, background: "#8b5cf6" }} />
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)" }}>
+                {tx("orders.bolim_2_title", undefined, "2. O'zgarishlar kiritishning ta'sir doirasi")}
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+              <div
+                style={{
+                  background: "var(--surface, #ffffff)",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                }}
               >
-                {expandDesc ? "Qisqartirish" : "Batafsil ko'rish"}
-              </button>
-            )}
-            {item.reason && (
-              <div style={{ marginTop: 8, fontSize: 12.5, color: "#64748b" }}>
-                <strong>{tx("orders.asos_sabab")}:</strong> {item.reason}
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+                  {tx("orders.tasir_etuvchi_modullar", undefined, "Ta'sir etuvchi modullar")}
+                </div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #0f172a)", marginTop: 4 }}>
+                  {item.affected_modules || item.module || "—"}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "var(--surface, #ffffff)",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+                  {tx("orders.ozgarish_xarakteri", undefined, "O'zgarish xarakteri")}
+                </div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #0f172a)", marginTop: 4 }}>
+                  {item.change_nature_display || (
+                    item.change_nature === "USER_FACING"
+                      ? tx("orders.xarakter_yangi", undefined, "Yangi funksional")
+                      : item.change_nature === "BACKEND"
+                      ? tx("orders.xarakter_yangilash", undefined, "Mavjud funksionalni yangilash")
+                      : item.change_nature === "BOTH"
+                      ? tx("orders.xarakter_tuzatish", undefined, "Xatolikni tuzatish")
+                      : item.change_nature || "—"
+                  )}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "var(--surface, #ffffff)",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+                  {tx("orders.boglik_tizimlar", undefined, "Bog'liq axborot tizimlari")}
+                </div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #0f172a)", marginTop: 4 }}>
+                  {item.dependent_systems || "—"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3-BO'LIM: Qo'shimcha materiallar */}
+          <div
+            style={{
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: 12,
+              padding: "16px 20px",
+              marginTop: 14,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: item.additional_materials ? 10 : 0 }}>
+              <div style={{ width: 4, height: 16, borderRadius: 2, background: "#06b6d4" }} />
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)" }}>
+                {tx("orders.bolim_3_title", undefined, "3. Qo'shimcha materiallar")}
+              </span>
+            </div>
+
+            {item.additional_materials && (
+              <div
+                style={{
+                  fontSize: 13.5,
+                  color: "var(--text, #334155)",
+                  lineHeight: 1.55,
+                  whiteSpace: "pre-wrap",
+                  background: "var(--surface, #ffffff)",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                  marginTop: 6,
+                }}
+              >
+                {item.additional_materials}
               </div>
             )}
           </div>
-
-          {/* Izohlar / Ko'rsatmalar (agar mavjud bo'lsa) */}
-          {(item.pm_notes || item.client_feedback_note || item.completion_note) && (
-            <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
-              {item.pm_notes && (
-                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
-                  <strong>{tx("orders.pm_izohi")}:</strong> {item.pm_notes}
-                </div>
-              )}
-              {item.client_feedback_note && (
-                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 8, border: "1px solid #fecaca", color: "var(--danger, #dc2626)" }}>
-                  <strong>{tx("orders.boshqarma_etirozi")}:</strong> {item.client_feedback_note}
-                </div>
-              )}
-              {item.completion_note && (
-                <div style={{ fontSize: 12.5, background: "var(--surface-2, #f8fafc)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
-                  <strong>{tx("orders.hisobot_izohi")}:</strong> {item.completion_note}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Fayllar Accordion (ochilib-yopiladigan blok) */}
           <div
@@ -1406,7 +1571,7 @@ export default function OrderDetail() {
               border: "1px solid var(--border-color, #e2e8f0)",
               borderRadius: 12,
               padding: "14px 18px",
-              marginTop: 20,
+              marginTop: 14,
               cursor: "pointer",
               userSelect: "none",
             }}
@@ -1428,7 +1593,7 @@ export default function OrderDetail() {
                     borderRadius: 10,
                   }}
                 >
-                  {totalFilesCount} ta
+                  {totalFilesCount} {tx("common.ta")}
                 </span>
               </div>
 
@@ -1478,7 +1643,7 @@ export default function OrderDetail() {
                         color: "var(--text, #1e293b)",
                         boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
                       }}
-                      title="Veb-saytda ochish"
+                      title={tx("orders.veb_saytda_ochish")}
                     >
                       <DocLilacIcon size={15} color="#8b5cf6" />
                       <span>{att.original_name} {att.size_display ? `(${att.size_display})` : ""}</span>
@@ -1487,7 +1652,7 @@ export default function OrderDetail() {
                 ) : item.tz_file_url ? (
                   <button
                     type="button"
-                    onClick={() => setPreviewFile({ url: item.tz_file_url!, name: item.tz_file_name || "TZ_fayli.docx", size: item.tz_file_size_display })}
+                    onClick={() => setPreviewFile({ url: item.tz_file_url!, name: item.tz_file_name || "TZ_fayli", size: item.tz_file_size_display })}
                     style={{
                       background: "#ffffff",
                       border: "1px solid var(--border-color, #e2e8f0)",
@@ -1502,7 +1667,7 @@ export default function OrderDetail() {
                       color: "var(--text, #1e293b)",
                       boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
                     }}
-                    title="Veb-saytda ochish"
+                    title={tx("orders.veb_saytda_ochish")}
                   >
                     <DocLilacIcon size={15} color="#8b5cf6" />
                     <span>{item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}</span>
@@ -1512,7 +1677,7 @@ export default function OrderDetail() {
                 {item.completion_file_url && (
                   <button
                     type="button"
-                    onClick={() => setPreviewFile({ url: item.completion_file_url!, name: item.completion_file_name || "Hisobot_hujjati.docx" })}
+                    onClick={() => setPreviewFile({ url: item.completion_file_url!, name: item.completion_file_name || "Hisobot_hujjati" })}
                     style={{
                       background: "#ffffff",
                       border: "1px solid var(--border-color, #e2e8f0)",
@@ -1527,7 +1692,7 @@ export default function OrderDetail() {
                       color: "var(--text, #1e293b)",
                       boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
                     }}
-                    title="Hisobot faylini ko'rish"
+                    title={tx("orders.hisobot_korish")}
                   >
                     <DocLilacIcon size={15} color="#8b5cf6" />
                     <span>{item.completion_file_name || "Hisobot fayli"}</span>
@@ -1555,10 +1720,10 @@ export default function OrderDetail() {
                     color: "var(--text, #1e293b)",
                     boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
                   }}
-                  title="Rasmiy Word (.docx) blankini ko'rish / yuklab olish"
+                  title={tx("orders.rasmiy_word_blankini_korish")}
                 >
                   <span style={{ background: "#2563eb", color: "#fff", fontWeight: 800, fontSize: 10, padding: "2px 5px", borderRadius: 3, lineHeight: 1 }}>W</span>
-                  <span>Word (.docx) blanki</span>
+                  <span>{tx("orders.word_blanki")}</span>
                 </button>
               </div>
             )}
@@ -1596,7 +1761,7 @@ export default function OrderDetail() {
                     borderRadius: 10,
                   }}
                 >
-                  {olderVersions.length} ta
+                  {olderVersions.length} {tx("common.ta")}
                 </span>
               )}
             </div>
@@ -1671,14 +1836,14 @@ export default function OrderDetail() {
                           style={{ fontSize: 10.5 }}
                         >
                           {isRejected
-                            ? "Rad etilgan"
+                            ? tx("orders.rad_etilgan")
                             : ver.version === 1
-                            ? "Dastlabki TZ (Eski versiya)"
-                            : "Eski versiya (Bekor qilingan)"}
+                            ? tx("orders.dastlabki_tz_eski")
+                            : tx("orders.eski_versiya_bekor_qilingan")}
                         </span>
                         {ver.uploaded_by_name && (
                           <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                            • Yuklagan: {ver.uploaded_by_name}
+                            • {tx("orders.yuklagan")}: {ver.uploaded_by_name}
                           </span>
                         )}
                         {ver.created_at && (
@@ -1697,7 +1862,7 @@ export default function OrderDetail() {
                               size: ver.tz_file_size_display,
                             })}
                             className="btn btn-xs btn-outline"
-                            title="Veb-saytda ochish"
+                            title={tx("orders.veb_saytda_ochish")}
                           >
                             <span>📄</span> {tx("orders.faylni_yuklab_olish")}
                           </button>
@@ -1715,9 +1880,9 @@ export default function OrderDetail() {
                             marginTop: 2,
                           }}
                         >
-                          {ver.change_note && <span>O'zgarish izohi: {ver.change_note}</span>}
+                          {ver.change_note && <span>tx("orders.ozgarish_izohi") + ": "{ver.change_note}</span>}
                           {ver.change_note && ver.decision_note && <span> • </span>}
-                          {ver.decision_note && <span>PM qarori: {ver.decision_note}</span>}
+                          {ver.decision_note && <span>tx("orders.pm_qarori") + ": "{ver.decision_note}</span>}
                         </div>
                       )}
                     </div>
@@ -1726,6 +1891,231 @@ export default function OrderDetail() {
               )}
             </div>
           )}
+
+          {/* 4-BO'LIM: O'zgarishni test qilish */}
+          <div
+            style={{
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: 12,
+              padding: "16px 20px",
+              marginTop: 14,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <div style={{ width: 4, height: 16, borderRadius: 2, background: "#10b981" }} />
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)" }}>
+                {tx("orders.bolim_4_title", undefined, "4. O'zgarishni test qilish")}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div
+                style={{
+                  background: "var(--surface, #ffffff)",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4 }}>
+                  {tx("orders.test_natijasi", undefined, "Test natijasi")}:
+                </div>
+                <div style={{ fontSize: 13.5, color: item.test_result ? "var(--text, #334155)" : "#94a3b8", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
+                  {item.test_result || tx("orders.kutilmoqda", undefined, "Kutilmoqda...")}
+                </div>
+              </div>
+
+              {(item.completion_note || item.client_feedback_note) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+                  {item.completion_note && (
+                    <div style={{ fontSize: 12.5, background: "var(--surface, #ffffff)", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
+                      <strong style={{ color: "#059669" }}>{tx("orders.hisobot_izohi")}:</strong> {item.completion_note}
+                    </div>
+                  )}
+                  {item.client_feedback_note && (
+                    <div style={{ fontSize: 12.5, background: "#fef2f2", padding: "10px 14px", borderRadius: 8, border: "1px solid #fecaca", color: "var(--danger, #dc2626)" }}>
+                      <strong>{tx("orders.boshqarma_etirozi")}:</strong> {item.client_feedback_note}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 5-BO'LIM: Kelishish va tasdiqlash */}
+          <div
+            style={{
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: 12,
+              padding: "16px 20px",
+              marginTop: 14,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <div style={{ width: 4, height: 16, borderRadius: 2, background: "#f59e0b" }} />
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)" }}>
+                {tx("orders.bolim_5_title", undefined, "5. Kelishish va tasdiqlash")}
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+              <div
+                style={{
+                  background: "var(--surface, #ffffff)",
+                  padding: "12px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+                  {tx("orders.buyurtmachi_imzosi", undefined, "Buyurtmachi imzosi")}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text, #0f172a)", marginTop: 4 }}>
+                  {item.client_signer || item.responsible_person || item.created_by_name || "—"}
+                </div>
+                {(item.department || item.created_by_department) && (
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                    {item.department || item.created_by_department}
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  background: "var(--surface, #ffffff)",
+                  padding: "12px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+                  {tx("orders.ijrochi_imzosi", undefined, "Ijrochi imzosi")}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text, #0f172a)", marginTop: 4 }}>
+                  {item.executor_signer || item.assigned_pm_name || "—"}
+                </div>
+                {item.assigned_developer_name && (
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                    tx("orders.dasturchi") + ": "{item.assigned_developer_name}
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  background: "var(--surface, #ffffff)",
+                  padding: "12px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+                  {tx("orders.kutilayotgan_resurslar", undefined, "Baholangan mehnat sarfi")}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text, #0f172a)", marginTop: 4 }}>
+                  {item.estimated_resources || item.pm_estimated_duration || "—"}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "var(--surface, #ffffff)",
+                  padding: "12px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+                  {tx("orders.pm_muddat", undefined, "Ijrochi (PM) tasdiqlagan muddat")}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text, #0f172a)", marginTop: 4 }}>
+                  {item.pm_deadline ? fmtDate(item.pm_deadline) : (item.due_date ? fmtDate(item.due_date) : "—")}
+                </div>
+              </div>
+            </div>
+
+            {/* Biriktirilgan topshiriqlar */}
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>
+                {tx("orders.biriktirilgan_topshiriq", undefined, "Tizimdagi topshiriq")}:
+              </div>
+              {item.linked_task_detail || (item.tasks && item.tasks.length > 0) ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {item.linked_task_detail && (
+                    <Link
+                      {...toTask(item.linked_task_detail.id)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        background: "var(--surface, #ffffff)",
+                        border: "1px solid var(--border-color, #e2e8f0)",
+                        borderRadius: 8,
+                        padding: "6px 12px",
+                        textDecoration: "none",
+                        color: "var(--text, #0f172a)",
+                        fontSize: 13,
+                        fontWeight: 600,
+                      }}
+                    >
+                      <span className="badge badge-brand" style={{ fontSize: 11 }}>
+                        {item.linked_task_detail.code || `#${item.linked_task_detail.number}`}
+                      </span>
+                      <span>{item.linked_task_detail.title}</span>
+                      <span className="badge badge-ghost" style={{ fontSize: 10.5 }}>
+                        {item.linked_task_detail.status_display || item.linked_task_detail.status}
+                      </span>
+                    </Link>
+                  )}
+                  {item.tasks &&
+                    item.tasks
+                      .filter((t) => !item.linked_task_detail || t.id !== item.linked_task_detail.id)
+                      .map((t) => (
+                        <Link
+                          key={t.id}
+                          {...toTask(t.id)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            background: "var(--surface, #ffffff)",
+                            border: "1px solid var(--border-color, #e2e8f0)",
+                            borderRadius: 8,
+                            padding: "6px 12px",
+                            textDecoration: "none",
+                            color: "var(--text, #0f172a)",
+                            fontSize: 13,
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span className="badge badge-brand" style={{ fontSize: 11 }}>
+                            {t.code || `#${t.number}`}
+                          </span>
+                          <span>{t.title}</span>
+                          <span className="badge badge-ghost" style={{ fontSize: 10.5 }}>
+                            {t.status_display || t.status}
+                          </span>
+                        </Link>
+                      ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, color: "#94a3b8", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span>{tx("orders.topshiriq_biriktirilmagan")}</span>
+                  {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-outline"
+                      onClick={handleOpenCreateTask}
+                    >
+                      + {tx("orders.vazifa_yaratish", undefined, "Vazifa yaratish")}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* PM tahrir paneli (ochilganda) */}
           {pmPanelOpen && (
@@ -1742,24 +2132,18 @@ export default function OrderDetail() {
             >
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                 <div className="field">
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>Yangi holat</label>
+                  <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.yangi_holat")}</label>
                   <select
                     value={pmStatus}
                     onChange={(e) => setPmStatus(e.target.value as ChangeRequestItem["status"])}
                   >
-                    {(meta?.order_status || [
-                      { value: "ACCEPTED", label: "Qabul qilindi" },
-                      { value: "ASSIGNED_TO_DEV", label: "Dasturchiga yo'naltirildi" },
-                      { value: "IN_PROGRESS", label: "Jarayonda" },
-                      { value: "TESTING", label: "Testda" },
-                      { value: "REJECTED", label: "Rad etildi" },
-                    ]).filter((s) => s.value !== "COMPLETED" && s.value !== "READY_FOR_REVIEW" && s.value !== "NEW").map((s) => (
+                    {(meta?.order_status || []).filter((s) => s.value !== "COMPLETED" && s.value !== "READY_FOR_REVIEW" && s.value !== "NEW").map((s) => (
                       <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
                     ))}
                   </select>
                 </div>
                 <div className="field">
-                  <label style={{ fontSize: 11, fontWeight: 600 }}>PM yakuniy muddati</label>
+                  <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.pm_yakuniy_muddati")}</label>
                   <input
                     type="date"
                     min={new Date().toISOString().split("T")[0]}
@@ -1772,7 +2156,7 @@ export default function OrderDetail() {
                 <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.pm_izohi")}</label>
                 <input
                   type="text"
-                  placeholder="Qisqa ko'rsatma..."
+                  placeholder={tx("orders.qisqa_korsatma")}
                   value={pmNotes}
                   onChange={(e) => setPmNotes(e.target.value)}
                 />
@@ -1786,7 +2170,7 @@ export default function OrderDetail() {
                   Bekor qilish
                 </button>
                 <button type="submit" className="btn btn-xs btn-primary" disabled={pmSaving}>
-                  {pmSaving ? "Saqlanmoqda..." : "Saqlash"}
+                  {pmSaving ? tx("common.saqlanmoqda") : tx("common.saqlash")}
                 </button>
               </div>
             </form>
@@ -1870,7 +2254,7 @@ export default function OrderDetail() {
                   className="btn btn-primary"
                   disabled={versionSubmitting || !versionFile}
                 >
-                  {versionSubmitting ? "Yuklanmoqda..." : "Yuborish"}
+                  {versionSubmitting ? tx("common.yuklanmoqda") : tx("common.yuborish")}
                 </button>
               </div>
             </form>
@@ -2231,7 +2615,7 @@ export default function OrderDetail() {
                   className="btn btn-warning"
                   disabled={rejectSubmitting || (!rejectReason.trim() && !rejectFile)}
                 >
-                  {rejectSubmitting ? "Yuborilmoqda..." : tx("orders.kamchilik_bilan_qaytarish")}
+                  {rejectSubmitting ? tx("common.yuborilmoqda") : tx("orders.kamchilik_bilan_qaytarish")}
                 </button>
               </div>
             </form>
@@ -2331,7 +2715,7 @@ export default function OrderDetail() {
                   className="btn btn-primary"
                   disabled={completionSubmitting || (!completionFile && !completionNote.trim())}
                 >
-                  {completionSubmitting ? "Topshirilmoqda..." : "Topshirish"}
+                  {completionSubmitting ? tx("common.topshirilmoqda") : tx("common.topshirish")}
                 </button>
               </div>
             </form>
@@ -2415,10 +2799,10 @@ export default function OrderDetail() {
                       onChange={(e) => setTaskAssignee(e.target.value ? Number(e.target.value) : null)}
                       style={{ width: "100%" }}
                     >
-                      <option value="">Tanlanmagan</option>
+                      <option value="">{tx("common.tanlanmagan")}</option>
                       {developersList.map((dev) => (
                         <option key={dev.id} value={dev.id}>
-                          {dev.full_name} ({dev.specialty || "Dasturchi"})
+                          {dev.full_name} ({dev.specialty || tx("orders.dasturchi")})
                         </option>
                       ))}
                     </select>
@@ -2486,7 +2870,7 @@ export default function OrderDetail() {
                   disabled={taskSubmitting || !taskTitle.trim()}
                   style={{ fontWeight: 600 }}
                 >
-                  {taskSubmitting ? "Yaratilmoqda..." : tx("orders.task_submit_btn")}
+                  {taskSubmitting ? tx("common.yaratilmoqda") : tx("orders.task_submit_btn")}
                 </button>
               </div>
             </form>
@@ -2524,7 +2908,7 @@ export default function OrderDetail() {
                 <div>
                   <strong style={{ fontSize: 16 }}>Yangi TZ versiyasini tasdiqlash</strong>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {item.request_no} • Versiya: <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || item.pending_version?.version || "yangi"}</strong>
+                    {item.request_no} • Versiya: <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || item.pending_version?.version || tx("orders.yangi")}</strong>
                   </div>
                 </div>
               </div>
@@ -2603,7 +2987,7 @@ export default function OrderDetail() {
                   disabled={approveSubmitting}
                   style={{ fontWeight: 600 }}
                 >
-                  {approveSubmitting ? "Tasdiqlanmoqda..." : "✓ Tasdiqlash va amalda qo'llash"}
+                  {approveSubmitting ? tx("common.tasdiqlanmoqda") : "✓ Tasdiqlash va amalda qo'llash"}
                 </button>
               </div>
             </form>
@@ -2641,7 +3025,7 @@ export default function OrderDetail() {
                 <div>
                   <strong style={{ fontSize: 16 }}>Yangi TZ versiyasini rad etish</strong>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {item.request_no} • Versiya: v{rejectVersionTarget || item.pending_version?.version || "yangi"}
+                    {item.request_no} • Versiya: v{rejectVersionTarget || item.pending_version?.version || tx("orders.yangi")}
                   </div>
                 </div>
               </div>
@@ -2704,7 +3088,7 @@ export default function OrderDetail() {
                   disabled={rejectVersionSubmitting || !rejectVersionReason.trim()}
                   style={{ fontWeight: 600 }}
                 >
-                  {rejectVersionSubmitting ? "Rad etilmoqda..." : "✕ Rad etish"}
+                  {rejectVersionSubmitting ? tx("common.rad_etilmoqda") : "✕ Rad etish"}
                 </button>
               </div>
             </form>
