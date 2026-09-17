@@ -595,6 +595,8 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 order.pm_estimated_duration = request.data.get("pm_estimated_duration") or ""
             if "pm_deadline" in request.data and request.data.get("pm_deadline"):
                 order.pm_deadline = request.data.get("pm_deadline")
+            if "pm_start_date" in request.data and request.data.get("pm_start_date"):
+                order.pm_start_date = request.data.get("pm_start_date")
             if "pm_notes" in request.data:
                 order.pm_notes = request.data.get("pm_notes") or ""
             if "assigned_developer" in request.data:
@@ -663,6 +665,8 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 order.pm_estimated_duration = data["pm_estimated_duration"]
             if "pm_deadline" in data:
                 order.pm_deadline = data["pm_deadline"]
+            if "pm_start_date" in data:
+                order.pm_start_date = data["pm_start_date"]
             if "pm_notes" in data:
                 order.pm_notes = data["pm_notes"]
             if "assigned_developer" in data:

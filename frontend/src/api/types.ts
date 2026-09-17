@@ -1108,6 +1108,7 @@ export interface ChangeRequestItem {
   estimated_resources: string;
   pm_estimated_duration?: string;
   pm_deadline?: string | null;
+  pm_start_date?: string | null;
   assigned_pm?: number | null;
   assigned_pm_name?: string;
   assigned_developer?: number | null;

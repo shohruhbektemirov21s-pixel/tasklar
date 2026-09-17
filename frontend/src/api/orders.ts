@@ -188,6 +188,7 @@ export interface OrderFilters {
 export interface PMDecisionPayload {
   status: ChangeRequestItem["status"];
   pm_estimated_duration?: string;
+  pm_start_date?: string;
   pm_deadline?: string;
   pm_notes?: string;
   assigned_developer?: number | null;
@@ -227,6 +228,7 @@ export async function getOrder(id: number | string): Promise<ChangeRequestItem> 
 
 export interface ClaimOrderPayload {
   pm_estimated_duration?: string;
+  pm_start_date?: string;
   pm_deadline?: string;
   pm_notes?: string;
   assigned_developer?: number | null;
@@ -335,6 +337,7 @@ export async function approveVersion(
     version?: number;
     decision_note?: string;
     pm_estimated_duration?: string;
+    pm_start_date?: string;
     pm_deadline?: string;
     assigned_developer?: number | null;
     status?: string;

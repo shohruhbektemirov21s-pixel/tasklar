@@ -134,6 +134,12 @@ class ChangeRequest(models.Model):
         blank=True,
         help_text="Loyiha menejeri tomonidan tasdiqlangan topshirish sanasi",
     )
+    pm_start_date = models.DateField(
+        "PM belgilagan boshlanish sanasi",
+        null=True,
+        blank=True,
+        help_text="Topshiriqni bajarishni boshlash sanasi",
+    )
     assigned_pm = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

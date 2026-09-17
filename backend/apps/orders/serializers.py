@@ -148,6 +148,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     request_date = SafeDateField(required=False)
     due_date = SafeDateField(required=False, allow_null=True)
     pm_deadline = SafeDateField(required=False, allow_null=True)
+    pm_start_date = SafeDateField(required=False, allow_null=True)
 
     current_state = serializers.CharField(required=False, allow_blank=True, default="")
     requested_change = serializers.CharField(required=False, allow_blank=True, default="")
@@ -272,6 +273,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "estimated_resources",
             "pm_estimated_duration",
             "pm_deadline",
+            "pm_start_date",
             "completion_file",
             "completion_file_url",
             "completion_file_name",
@@ -567,6 +569,7 @@ class PMDecisionSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=ChangeRequestStatus.choices)
     pm_estimated_duration = serializers.CharField(max_length=150, required=False, allow_blank=True)
     pm_deadline = SafeDateField(required=False, allow_null=True)
+    pm_start_date = SafeDateField(required=False, allow_null=True)
     pm_notes = serializers.CharField(required=False, allow_blank=True)
     executor_signer = serializers.CharField(max_length=200, required=False, allow_blank=True)
     assigned_developer = serializers.PrimaryKeyRelatedField(

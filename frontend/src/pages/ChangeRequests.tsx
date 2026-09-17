@@ -278,6 +278,7 @@ export default function ChangeRequests() {
   };
   const [claimModalItem, setClaimModalItem] = useState<ChangeRequestItem | null>(null);
   const [claimDuration, setClaimDuration] = useState("");
+  const [claimStartDate, setClaimStartDate] = useState("");
   const [claimDeadline, setClaimDeadline] = useState("");
   const [claimNotes, setClaimNotes] = useState("");
   const [claimSubmitting, setClaimSubmitting] = useState(false);
@@ -285,6 +286,7 @@ export default function ChangeRequests() {
   const handleOpenClaim = (item: ChangeRequestItem) => {
     setClaimModalItem(item);
     setClaimDuration(item.pm_estimated_duration || "");
+    setClaimStartDate(item.pm_start_date || "");
     setClaimDeadline(item.pm_deadline || item.due_date || "");
     setClaimNotes("");
   };
@@ -302,6 +304,7 @@ export default function ChangeRequests() {
     try {
       const updated = await claimOrder(claimModalItem.id, {
         pm_estimated_duration: claimDuration.trim() || undefined,
+        pm_start_date: claimStartDate || undefined,
         pm_deadline: claimDeadline || undefined,
         pm_notes: claimNotes.trim() || undefined,
       });
@@ -1736,6 +1739,18 @@ export default function ChangeRequests() {
                     </button>
                   </div>
                 )}
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    {tx("orders.boshlanish_sanasi", undefined, "Boshlanish sanasi")}
+                  </label>
+                  <input
+                    type="date"
+                    className="input"
+                    value={claimStartDate}
+                    onChange={(e) => setClaimStartDate(e.target.value)}
+                    style={{ width: "100%" }}
+                  />
+                </div>
                 <div className="field">
                   <div className="row between middle" style={{ marginBottom: 6 }}>
                     <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0 }}>

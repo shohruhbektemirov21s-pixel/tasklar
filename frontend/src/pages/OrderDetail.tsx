@@ -137,11 +137,13 @@ export default function OrderDetail() {
   const [expandDesc, setExpandDesc] = useState(false);
   const [pmPanelOpen, setPmPanelOpen] = useState(false);
   const [pmStatus, setPmStatus] = useState<ChangeRequestItem["status"]>("ACCEPTED");
+  const [pmStartDate, setPmStartDate] = useState("");
   const [pmDeadline, setPmDeadline] = useState("");
   const [pmNotes, setPmNotes] = useState("");
   const [pmSaving, setPmSaving] = useState(false);
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [claimDuration, setClaimDuration] = useState("");
+  const [claimStartDateInput, setClaimStartDateInput] = useState("");
   const [claimDeadlineInput, setClaimDeadlineInput] = useState("");
   const [claimNotesInput, setClaimNotesInput] = useState("");
   const [claimSubmitting, setClaimSubmitting] = useState(false);
@@ -304,6 +306,7 @@ export default function OrderDetail() {
     try {
       const updated = await claimOrder(item.id, {
         pm_estimated_duration: claimDuration.trim() || undefined,
+        pm_start_date: claimStartDateInput || undefined,
         pm_deadline: claimDeadlineInput || undefined,
         pm_notes: claimNotesInput.trim() || undefined,
       });
@@ -327,6 +330,7 @@ export default function OrderDetail() {
     try {
       const updated = await setPmDecision(item.id, {
         status: pmStatus,
+        pm_start_date: pmStartDate || undefined,
         pm_deadline: pmDeadline || undefined,
         pm_notes: pmNotes.trim() || undefined,
       });
@@ -1567,219 +1571,6 @@ export default function OrderDetail() {
               )}
             </div>
           )}
-          <div
-            style={{
-              background: "var(--surface-2, #f8fafc)",
-              border: "1px solid var(--border-color, #e2e8f0)",
-              borderRadius: 12,
-              padding: "16px 20px",
-              marginTop: 14,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <div style={{ width: 4, height: 16, borderRadius: 2, background: "#10b981" }} />
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)" }}>
-                {tx("orders.bolim_4_title", undefined, "4. O'zgarishni test qilish")}
-              </span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div
-                style={{
-                  background: "var(--surface, #ffffff)",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  border: "1px solid var(--border-color, #e2e8f0)",
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 4 }}>
-                  {tx("orders.test_natijasi", undefined, "Test natijasi")}:
-                </div>
-                <div style={{ fontSize: 13.5, color: item.test_result ? "var(--text, #334155)" : "#94a3b8", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
-                  {item.test_result || tx("orders.kutilmoqda", undefined, "Kutilmoqda...")}
-                </div>
-              </div>
-              {(item.completion_note || item.client_feedback_note) && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
-                  {item.completion_note && (
-                    <div style={{ fontSize: 12.5, background: "var(--surface, #ffffff)", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
-                      <strong style={{ color: "#059669" }}>{tx("orders.hisobot_izohi")}:</strong> {item.completion_note}
-                    </div>
-                  )}
-                  {item.client_feedback_note && (
-                    <div style={{ fontSize: 12.5, background: "#fef2f2", padding: "10px 14px", borderRadius: 8, border: "1px solid #fecaca", color: "var(--danger, #dc2626)" }}>
-                      <strong>{tx("orders.boshqarma_etirozi")}:</strong> {item.client_feedback_note}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-          <div
-            style={{
-              background: "var(--surface-2, #f8fafc)",
-              border: "1px solid var(--border-color, #e2e8f0)",
-              borderRadius: 12,
-              padding: "16px 20px",
-              marginTop: 14,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <div style={{ width: 4, height: 16, borderRadius: 2, background: "#f59e0b" }} />
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)" }}>
-                {tx("orders.bolim_5_title", undefined, "5. Kelishish va tasdiqlash")}
-              </span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
-              <div
-                style={{
-                  background: "var(--surface, #ffffff)",
-                  padding: "12px 14px",
-                  borderRadius: 8,
-                  border: "1px solid var(--border-color, #e2e8f0)",
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
-                  {tx("orders.buyurtmachi_imzosi", undefined, "Buyurtmachi imzosi")}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text, #0f172a)", marginTop: 4 }}>
-                  {item.client_signer || item.responsible_person || item.created_by_name || "—"}
-                </div>
-                {(item.department || item.created_by_department) && (
-                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-                    {item.department || item.created_by_department}
-                  </div>
-                )}
-              </div>
-              <div
-                style={{
-                  background: "var(--surface, #ffffff)",
-                  padding: "12px 14px",
-                  borderRadius: 8,
-                  border: "1px solid var(--border-color, #e2e8f0)",
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
-                  {tx("orders.ijrochi_imzosi", undefined, "Ijrochi imzosi")}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text, #0f172a)", marginTop: 4 }}>
-                  {item.executor_signer || item.assigned_pm_name || "—"}
-                </div>
-                {item.assigned_developer_name && (
-                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-                    tx("orders.dasturchi") + ": "{item.assigned_developer_name}
-                  </div>
-                )}
-              </div>
-              <div
-                style={{
-                  background: "var(--surface, #ffffff)",
-                  padding: "12px 14px",
-                  borderRadius: 8,
-                  border: "1px solid var(--border-color, #e2e8f0)",
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
-                  {tx("orders.kutilayotgan_resurslar", undefined, "Baholangan mehnat sarfi")}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text, #0f172a)", marginTop: 4 }}>
-                  {item.estimated_resources || item.pm_estimated_duration || "—"}
-                </div>
-              </div>
-              <div
-                style={{
-                  background: "var(--surface, #ffffff)",
-                  padding: "12px 14px",
-                  borderRadius: 8,
-                  border: "1px solid var(--border-color, #e2e8f0)",
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>
-                  {tx("orders.pm_muddat", undefined, "Ijrochi (PM) tasdiqlagan muddat")}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text, #0f172a)", marginTop: 4 }}>
-                  {item.pm_deadline ? fmtDate(item.pm_deadline) : (item.due_date ? fmtDate(item.due_date) : "—")}
-                </div>
-              </div>
-            </div>
-            <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 6 }}>
-                {tx("orders.biriktirilgan_topshiriq", undefined, "Tizimdagi topshiriq")}:
-              </div>
-              {item.linked_task_detail || (item.tasks && item.tasks.length > 0) ? (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {item.linked_task_detail && (
-                    <Link
-                      {...toTask(item.linked_task_detail.id)}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 8,
-                        background: "var(--surface, #ffffff)",
-                        border: "1px solid var(--border-color, #e2e8f0)",
-                        borderRadius: 8,
-                        padding: "6px 12px",
-                        textDecoration: "none",
-                        color: "var(--text, #0f172a)",
-                        fontSize: 13,
-                        fontWeight: 600,
-                      }}
-                    >
-                      <span className="badge badge-brand" style={{ fontSize: 11 }}>
-                        {item.linked_task_detail.code || `#${item.linked_task_detail.number}`}
-                      </span>
-                      <span>{item.linked_task_detail.title}</span>
-                      <span className="badge badge-ghost" style={{ fontSize: 10.5 }}>
-                        {item.linked_task_detail.status_display || item.linked_task_detail.status}
-                      </span>
-                    </Link>
-                  )}
-                  {item.tasks &&
-                    item.tasks
-                      .filter((t) => !item.linked_task_detail || t.id !== item.linked_task_detail.id)
-                      .map((t) => (
-                        <Link
-                          key={t.id}
-                          {...toTask(t.id)}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 8,
-                            background: "var(--surface, #ffffff)",
-                            border: "1px solid var(--border-color, #e2e8f0)",
-                            borderRadius: 8,
-                            padding: "6px 12px",
-                            textDecoration: "none",
-                            color: "var(--text, #0f172a)",
-                            fontSize: 13,
-                            fontWeight: 600,
-                          }}
-                        >
-                          <span className="badge badge-brand" style={{ fontSize: 11 }}>
-                            {t.code || `#${t.number}`}
-                          </span>
-                          <span>{t.title}</span>
-                          <span className="badge badge-ghost" style={{ fontSize: 10.5 }}>
-                            {t.status_display || t.status}
-                          </span>
-                        </Link>
-                      ))}
-                </div>
-              ) : (
-                <div style={{ fontSize: 13, color: "#94a3b8", display: "flex", alignItems: "center", gap: 10 }}>
-                  <span>{tx("orders.topshiriq_biriktirilmagan")}</span>
-                  {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-outline"
-                      onClick={handleOpenCreateTask}
-                    >
-                      + {tx("orders.vazifa_yaratish", undefined, "Vazifa yaratish")}
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
           {pmPanelOpen && (
             <form
               onSubmit={handleSavePM}
@@ -1803,6 +1594,14 @@ export default function OrderDetail() {
                       <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
                     ))}
                   </select>
+                </div>
+                <div className="field">
+                  <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.boshlanish_sanasi", undefined, "Boshlanish sanasi")}</label>
+                  <input
+                    type="date"
+                    value={pmStartDate}
+                    onChange={(e) => setPmStartDate(e.target.value)}
+                  />
                 </div>
                 <div className="field">
                   <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.pm_yakuniy_muddati")}</label>
@@ -2040,11 +1839,24 @@ export default function OrderDetail() {
                     </button>
                   </div>
                 )}
-                <div className="field">
-                  <div className="row between middle" style={{ marginBottom: 6 }}>
-                    <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0 }}>
-                      {tx("orders.claim_deadline_label")} <span style={{ color: "var(--danger)" }}>*</span>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="field">
+                    <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0, display: "block", marginBottom: 6 }}>
+                      {tx("orders.boshlanish_sanasi", undefined, "Boshlanish sanasi")}
                     </label>
+                    <input
+                      type="date"
+                      className="input"
+                      value={claimStartDateInput}
+                      onChange={(e) => setClaimStartDateInput(e.target.value)}
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+                  <div className="field">
+                    <div className="row between middle" style={{ marginBottom: 6 }}>
+                      <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0 }}>
+                        {tx("orders.claim_deadline_label")} <span style={{ color: "var(--danger)" }}>*</span>
+                      </label>
                     <div className="row middle" style={{ gap: 4 }}>
                       <span style={{ fontSize: 11, color: "var(--muted)", marginRight: 2 }}>{tx("orders.claim_quick_label")}</span>
                       <button
@@ -2086,6 +1898,7 @@ export default function OrderDetail() {
                     onChange={(e) => setClaimDeadlineInput(e.target.value)}
                     style={{ width: "100%" }}
                   />
+                  </div>
                 </div>
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
