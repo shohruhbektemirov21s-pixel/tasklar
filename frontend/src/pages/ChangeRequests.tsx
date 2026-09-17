@@ -2034,30 +2034,6 @@ export default function ChangeRequests() {
                     </button>
                   )}
                 </div>
-              ) : viewingItem.assigned_pm !== user?.id && !user?.is_platform_admin && !user?.is_boss ? (
-                <div
-                  style={{
-                    background: "#f1f5f9",
-                    border: "1.5px solid #cbd5e1",
-                    borderRadius: 8,
-                    padding: "12px 16px",
-                    marginBottom: 16,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                  }}
-                >
-                  <span style={{ fontSize: 22 }}>🔒</span>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 13.5, color: "#334155" }}>
-                      {tx("orders.boshqa_pm_olgan_text")}{" "}
-                      <span style={{ color: "#0f172a" }}>{viewingItem.assigned_pm_name || tx("common.menejer")}</span>
-                    </div>
-                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-                      {tx("orders.boshqa_pm_blokirovka")}
-                    </div>
-                  </div>
-                </div>
               ) : (
                 <div
                   style={{
@@ -2110,25 +2086,7 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               )}
-              {isSohaviyOrAdmin && !user?.is_platform_admin && !user?.is_boss && (viewingItem.status !== "NEW" || viewingItem.assigned_pm) && (
-                <div
-                  style={{
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 6,
-                    padding: "8px 12px",
-                    marginBottom: 16,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontSize: 12,
-                    color: "#64748b",
-                  }}
-                >
-                  <span>🔒</span>
-                  <span>{tx("orders.pm_qabul_qilgan_tahrirlab_bolmaydi")}</span>
-                </div>
-              )}
+              
               {viewingItem.status === "READY_FOR_REVIEW" && (
                 <div
                   style={{
