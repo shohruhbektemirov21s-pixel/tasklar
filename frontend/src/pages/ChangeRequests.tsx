@@ -369,21 +369,6 @@ export default function ChangeRequests() {
     handleOpenClaim(item);
   };
 
-  // Word (.docx) ko'rish
-  const handlePreviewDocx = (id: number, requestNo: string) => {
-    setPreviewFile({
-      url: `/api/orders/${id}/export-docx/`,
-      name: `Buyurtma_TZ_${requestNo}.docx`,
-    });
-  };
-
-  // Word (.docx) yuklab olish
-  const handleDownloadDocx = (id: number, requestNo: string) => {
-    downloadOrderDocx(id, requestNo).catch((e: unknown) =>
-      alert(tx("orders.err_download_docx") + (e instanceof Error ? e.message : String(e)))
-    );
-  };
-
   // Batafsil ko'rishni ochish — yangi sodda tafsilotlar sahifasiga o'tadi
   const handleOpenView = (item: ChangeRequestItem) => {
     go(toOrder(item.id));
@@ -2033,14 +2018,7 @@ export default function ChangeRequests() {
                     📤 {tx("orders.upload_new_version")}
                   </button>
                 )}
-                <button
-                  type="button"
-                  className="btn btn-sm btn-primary"
-                  onClick={() => handlePreviewDocx(viewingItem.id, viewingItem.request_no)}
-                  title={tx("orders.word_blank_tooltip")}
-                >
-                  {tx("orders.word_blank_btn")}
-                </button>
+
                 {viewingItem.tz_file_url && (
                   <button
                     type="button"
@@ -2917,21 +2895,7 @@ export default function ChangeRequests() {
 
             <div className="modal-footer row between middle" style={{ padding: "12px 20px" }}>
               <div className="row middle" style={{ gap: 8 }}>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => handlePreviewDocx(viewingItem.id, viewingItem.request_no)}
-                  title={tx("orders.word_blank_tooltip")}
-                >
-                  {tx("orders.word_saytda_ochish")}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => handleDownloadDocx(viewingItem.id, viewingItem.request_no)}
-                >
-                  <IconDownload size={15} /> {tx("orders.yuklab_olish")}
-                </button>
+
               </div>
               <button className="btn btn-ghost" onClick={() => setViewingItem(null)}>
                 {tx("common.yopish")}

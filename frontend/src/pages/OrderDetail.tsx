@@ -1699,32 +1699,6 @@ export default function OrderDetail() {
                   </button>
                 )}
 
-                {/* Word (.docx) blanki */}
-                <button
-                  type="button"
-                  onClick={() => setPreviewFile({
-                    url: `/api/orders/${item.id}/export-docx/`,
-                    name: `Buyurtma_TZ_${item.request_no}.docx`,
-                  })}
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid var(--border-color, #e2e8f0)",
-                    borderRadius: 8,
-                    padding: "6px 14px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    cursor: "pointer",
-                    fontSize: 12.5,
-                    fontWeight: 600,
-                    color: "var(--text, #1e293b)",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                  }}
-                  title={tx("orders.rasmiy_word_blankini_korish")}
-                >
-                  <span style={{ background: "#2563eb", color: "#fff", fontWeight: 800, fontSize: 10, padding: "2px 5px", borderRadius: 3, lineHeight: 1 }}>W</span>
-                  <span>{tx("orders.word_blanki")}</span>
-                </button>
               </div>
             )}
           </div>
