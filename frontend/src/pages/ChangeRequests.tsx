@@ -1494,18 +1494,7 @@ export default function ChangeRequests() {
                                   </button>
                                 )}
 
-                              {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && (
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#0284c7", fontWeight: 600 }}
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    handleOpenUploadVersion(item);
-                                  }}
-                                >
-                                  {tx("orders.upload_new_version")}
-                                </button>
-                              )}
+
 
                               {isPMOrAdmin && item.has_pending_version && (user?.is_platform_admin || user?.is_boss || !item.assigned_pm || item.assigned_pm === user?.id) && (
                                 <>
@@ -1537,21 +1526,10 @@ export default function ChangeRequests() {
                                 style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5 }}
                                 onClick={() => {
                                   setActiveActionMenuId(null);
-                                  handlePreviewDocx(item.id, item.request_no);
+                                  handleOpenView(item);
                                 }}
                               >
-                                {tx("orders.word_korish")}
-                              </button>
-
-                              <button
-                                className="btn btn-ghost btn-sm"
-                                style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5 }}
-                                onClick={() => {
-                                  setActiveActionMenuId(null);
-                                  handleDownloadDocx(item.id, item.request_no);
-                                }}
-                              >
-                                {tx("orders.word_yuklash")}
+                                🕒 {tx("orders.tarix", undefined, "Tarix (Word fayllar)")}
                               </button>
 
                               {item.status === "DRAFT" && (
