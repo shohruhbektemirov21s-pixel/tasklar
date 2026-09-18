@@ -1410,7 +1410,6 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             "new": qs.filter(order_type=ChangeRequestType.NEW).count(),
             "continuation": qs.filter(order_type=ChangeRequestType.CONTINUATION).count(),
             "needs_classification": qs.filter(order_type=ChangeRequestType.NEEDS_CLASSIFICATION).count(),
-            "modernization": qs.filter(order_type=ChangeRequestType.MODERNIZATION).count(),
             "maintenance": qs.filter(order_type=ChangeRequestType.MAINTENANCE).count(),
         }
 

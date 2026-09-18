@@ -933,7 +933,6 @@ export type OrderTypeValue =
   | "NEW"
   | "CONTINUATION"
   | "NEEDS_CLASSIFICATION"
-  | "MODERNIZATION"
   | "MAINTENANCE";
 
 export interface OrderPeriodRow {

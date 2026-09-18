@@ -33,14 +33,6 @@ export const ORDER_TYPE_CONFIG: Record<
     border: "rgba(217, 119, 6, 0.3)",
     desc: "Boshqarma taklifi / PM tomonidan tahlil va tuzatish talab etiladi",
   },
-  MODERNIZATION: {
-    get label() { return tx("orders.modernizatsiya"); },
-    icon: "⚡",
-    bg: "rgba(139, 92, 246, 0.12)",
-    color: "#7c3aed",
-    border: "rgba(139, 92, 246, 0.3)",
-    desc: "Amaldagi funksionallikni kengaytirish va yangilash",
-  },
   MAINTENANCE: {
     get label() { return tx("orders.texnik_xizmat"); },
     icon: "🛠️",
