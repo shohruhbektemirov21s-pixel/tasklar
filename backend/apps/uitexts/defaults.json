@@ -2968,7 +2968,7 @@
     "note": "pages/OrderDetail.tsx"
   },
   "orders.claim_submit_btn": {
-    "value": "Qabul qilish va muddatni tasdiqlash",
+    "value": "Qabul qilish",
     "note": "pages/ChangeRequests.tsx"
   },
   "orders.claim_submitting": {
@@ -8358,5 +8358,49 @@
   "ui.yopish": {
     "value": "Yopish",
     "note": "components/dates.tsx"
+  },
+  "orders.status_yangi": {
+    "value": "Yangi",
+    "note": "orders filter status"
+  },
+  "orders.status_qabul_qilindi": {
+    "value": "Qabul qilindi",
+    "note": "orders filter status"
+  },
+  "orders.status_rad_etildi": {
+    "value": "Rad etildi",
+    "note": "orders filter status"
+  },
+  "orders.status_barchasi": {
+    "value": "Barchasi",
+    "note": "orders filter status"
+  },
+  "project_members.keyingi_dasturchi_uchun_topshiriq_eslatmasi": {
+    "value": "Keyingi dasturchi uchun topshiriq eslatmasi",
+    "note": "pages/project/Members.tsx"
+  },
+  "project_members.keyingi_dasturchi_uchun_eslatma_qoldiring": {
+    "value": "Keyingi dasturchi uchun eslatma qoldiring",
+    "note": "pages/project/Members.tsx"
+  },
+  "project_members.topshiriq_eslatmasi_tushuntirish": {
+    "value": "Keyingi dasturchi ushbu eslatmani ko'radi va loyiha tarixida saqlanadi.",
+    "note": "pages/project/Members.tsx"
+  },
+  "project_members.eslatma_placeholder": {
+    "value": "Topshiriq yoki loyiha bo'yicha muhim eslatmani yozing...",
+    "note": "pages/project/Members.tsx"
+  },
+  "orders.boshqa_pmga_topshirish": {
+    "value": "Boshqa PM ga topshirish",
+    "note": "pages/ChangeRequests.tsx"
+  },
+  "orders.reassign_pm_modal_title": {
+    "value": "Buyurtmani boshqa PM ga biriktirish",
+    "note": "pages/ChangeRequests.tsx"
+  },
+  "orders.pm_tanlang": {
+    "value": "Loyiha menejerini (PM) tanlang",
+    "note": "pages/ChangeRequests.tsx"
   }
 }

@@ -148,9 +148,14 @@ export default function OrderForm() {
             parsed.f.reason?.trim() ||
             (parsed.f.order_type && parsed.f.order_type !== "NEW"))
         ) {
+          const restoredOrderType: OrderTypeValue =
+            parsed.f.order_type === "CONTINUATION" || parsed.f.order_type === "NEEDS_CLASSIFICATION"
+              ? parsed.f.order_type
+              : "NEW";
           setF((prev) => ({
             ...prev,
             ...parsed.f,
+            order_type: restoredOrderType,
             department: userDepartment || parsed.f.department || prev.department,
             responsible_person: user?.full_name || parsed.f.responsible_person || prev.responsible_person,
           }));
@@ -287,11 +292,16 @@ export default function OrderForm() {
       try {
         const item = await api.get<ChangeRequestItem>(`/orders/${id}/`);
         if (!alive) return;
+        const rawType = item.order_type;
+        const validOrderType: OrderTypeValue =
+          rawType === "CONTINUATION" || rawType === "NEEDS_CLASSIFICATION"
+            ? rawType
+            : "NEW";
         setExistingItem(item);
         setExistingAttachments(item.attachments || []);
         setF({
           system_name: item.system_name || "",
-          order_type: item.order_type || "NEW",
+          order_type: validOrderType,
           module: item.module || "",
           department: item.department || "",
           responsible_person: item.responsible_person || "",
@@ -523,9 +533,11 @@ export default function OrderForm() {
                       }));
                     }}
                   >
-                    {(meta?.order_type || meta?.project_type || []).map((t) => (
-                      <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
-                    ))}
+                    {(meta?.order_type || meta?.project_type || [])
+                      .filter((t) => t.value === "NEW" || t.value === "CONTINUATION" || t.value === "NEEDS_CLASSIFICATION")
+                      .map((t) => (
+                        <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
+                      ))}
                   </select>
                 </div>
 
@@ -774,38 +786,17 @@ export default function OrderForm() {
                 )}
               </div>
 
-              {/* Pastki amallar va sana-vaqt bloki */}
+              {/* Pastki o'ng burchakdagi sana va vaqt (oq va qora uslubda) */}
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
+                  justifyContent: "flex-end",
                   alignItems: "center",
-                  marginTop: 24,
-                  paddingTop: 16,
+                  marginTop: 18,
+                  paddingTop: 12,
                   borderTop: "1px solid #f1f5f9",
-                  flexWrap: "wrap",
-                  gap: 12,
                 }}
               >
-                <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
-                  {(!existingItem || existingItem.status === "DRAFT") && (
-                    <button
-                      type="button"
-                      className="btn btn-outline"
-                      disabled={busy}
-                      onClick={() => void submit(undefined, "DRAFT")}
-                    >
-                      💾 {tx("orders.save_draft")}
-                    </button>
-                  )}
-                  <button className="btn btn-primary" form={formId} disabled={busy}>
-                    🚀 {busy ? tx("orders.submitting") : tx("orders.send_order")}
-                  </button>
-                  <button type="button" className="btn" onClick={handleCancelOrExit}>
-                    {tx("common.bekor_qilish")}
-                  </button>
-                </div>
-
                 <div
                   style={{
                     display: "inline-flex",

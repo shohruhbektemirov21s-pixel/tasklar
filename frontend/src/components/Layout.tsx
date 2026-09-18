@@ -110,6 +110,11 @@ export default function Layout() {
     user?.can_create_project ||
     user?.manages_projects
   );
+  const isPm = Boolean(
+    user?.is_manager ||
+    user?.global_role === "MANAGER" ||
+    user?.specialty === "PM"
+  );
   const { subscribe, connected, reload: reloadRealtime, unread } = useRealtime();
   const go = useGo();
   const loc = useLocation();
@@ -366,7 +371,7 @@ export default function Layout() {
             menejeri va admin. Ijrochida bu navbat har doim bo'sh edi
             (server uni boshqariladigan loyihalar bo'yicha qirqadi), ya'ni
             menyuda doim bo'sh sahifaga olib boradigan yozuv turardi. */}
-        {manages && (
+        {manages && !user?.is_boss && (
           <Link className="top-icon hide-sm" to="/tekshiruv" title={tx("common.tekshiruv_navbati")}>
             <IconInbox size={17} />
             {!!counts.reviews && <span className="dot">{counts.reviews}</span>}
@@ -398,7 +403,7 @@ export default function Layout() {
             {user?.is_boss ? (
               item("/qilingan-ishlar", <IconCheck />, tx("layout.qilingan_ishlar", undefined, "Qilingan ishlar"), undefined, false, tx("layout.tooltip_qilingan_ishlar", undefined, "Qilingan ishlar, izohlar va yangilanishlar"))
             ) : (
-              !user?.is_sohaviy_boshqarma &&
+              !user?.is_sohaviy_boshqarma && !isPm &&
               item("/mening-ishim", <IconTasks />, tx("layout.mening_ishim"), counts.open, false, tx("layout.tooltip_mening_ishim"))
             )}
             {user?.is_sohaviy_boshqarma &&
@@ -415,7 +420,7 @@ export default function Layout() {
           <div className="nav-section">
             <div className="nav-title">{tx("layout.bolim_muloqot")}</div>
             {item("/bildirishnomalar", <IconBell />, tx("common.bildirishnomalar"), notifCount, true, tx("layout.tooltip_bildirishnomalar"))}
-            {manages && item("/tekshiruv", <IconReview />, tx("common.tekshiruv_navbati"), counts.reviews, true, tx("layout.tooltip_tekshiruv"))}
+            {manages && !user?.is_boss && item("/tekshiruv", <IconReview />, tx("common.tekshiruv_navbati"), counts.reviews, true, tx("layout.tooltip_tekshiruv"))}
             {item("/takliflar", <IconIdea />, tx("layout.takliflar"), counts.suggestions, true, tx("layout.tooltip_takliflar"))}
             {itemTo(toMessages(), <IconChat />, tx("layout.xabarlar"), undefined, false, tx("layout.tooltip_xabarlar"))}
           </div>

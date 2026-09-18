@@ -19,6 +19,7 @@ import type { JoinRequest, Project, ProjectMember } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import AddMemberBox from "./AddMemberBox";
 import { Avatar, Card, ErrorMsg, SpecialtyTag, timeAgo } from "./ui";
+import { promptDialog } from "./Prompt";
 import { toProject, toUser } from "@/nav";
 import { tx } from "@/i18n";
 
@@ -178,15 +179,20 @@ export default function TeamBuilder({
                     ? <span className="badge" title={tx("team_builder.menejerga_tegib_bolmaydi_u_loyihadan")}>
                         {tx("team_builder.himoyalangan")}
                       </span>
-                    : <button className="btn btn-sm btn-danger" onClick={() => {
-                        const note = window.prompt(
-                          tx("team_builder.jamoadan_chiqariladi", { ism: m.user.full_name })
-                          + tx("team_builder.topshiriq_eslatmasi_tarixda_saqlanadi"), "");
+                    : <button className="btn btn-sm btn-danger" onClick={() => void (async () => {
+                        const note = await promptDialog({
+                          title: tx("team_builder.jamoadan_chiqariladi", { ism: m.user.full_name }),
+                          body: tx("team_builder.topshiriq_eslatmasi_tarixda_saqlanadi"),
+                          placeholder: tx("project_members.eslatma_placeholder"),
+                          confirmText: tx("team_builder.chiqarish"),
+                          danger: true,
+                          multiline: true,
+                        });
                         if (note === null) return;
-                        void act(() => api.post(`/projects/${projectId}/members/${m.id}/`, {
+                        await act(() => api.post(`/projects/${projectId}/members/${m.id}/`, {
                           action: "remove", handover_note: note,
                         }));
-                      }}>{tx("team_builder.chiqarish")}</button>
+                      })()}>{tx("team_builder.chiqarish")}</button>
                 )}
               </div>
             ))}

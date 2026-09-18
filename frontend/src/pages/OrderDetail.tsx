@@ -44,6 +44,7 @@ import {
   rejectVersion,
   createOrderTask,
   unclaimOrder,
+  reassignPm,
 } from "@/api/orders";
 import type { ChangeRequestItem, Task, UserBrief } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
@@ -202,7 +203,12 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
     [usersList]
   );
   const pmList = useMemo(
-    () => usersList.filter((u) => u.specialty === "PM" || u.global_role === "MANAGER" || u.global_role === "ADMIN" || u.global_role === "BOSS"),
+    () =>
+      usersList.filter((u) => {
+        if (u.global_role === "DEVELOPER" || u.specialty === "DEVELOPER") return false;
+        if (u.is_sohaviy_boshqarma || u.specialty === "SOHAVIY" || u.global_role === "SOHAVIY") return false;
+        return Boolean(u.specialty === "PM" || u.global_role === "MANAGER" || u.is_manager);
+      }),
     [usersList]
   );
   const [versionModal, setVersionModal] = useState(false);
@@ -238,6 +244,49 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskType, setTaskType] = useState("FEATURE");
   const [taskSubmitting, setTaskSubmitting] = useState(false);
+
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [transferSearch, setTransferSearch] = useState("");
+  const [selectedPmId, setSelectedPmId] = useState<number | null>(null);
+  const [transferNotes, setTransferNotes] = useState("");
+  const [transferSubmitting, setTransferSubmitting] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+
+
+  const filteredPms = useMemo(() => {
+    const q = transferSearch.trim().toLowerCase();
+    return pmList.filter((u) => {
+      if (u.id === item?.assigned_pm) return false;
+      if (!q) return true;
+      return (
+        u.full_name?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q)
+      );
+    });
+  }, [pmList, transferSearch, item?.assigned_pm]);
+
+  async function handleTransferPm(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    if (!item || !selectedPmId) return;
+    setTransferSubmitting(true);
+    setTransferError(null);
+    try {
+      const updated = await reassignPm(item.id, {
+        assigned_pm: selectedPmId,
+        notes: transferNotes.trim() || undefined,
+      });
+      setItem(updated);
+      setTransferModalOpen(false);
+      setSelectedPmId(null);
+      setTransferNotes("");
+      setTransferSearch("");
+      setActionOk(tx("orders.buyurtma_topshirildi", undefined, "Buyurtma yangi PM ga muvaffaqiyatli topshirildi."));
+    } catch (err: unknown) {
+      setTransferError((err as { message?: string })?.message || "Buyurtmani topshirishda xatolik yuz berdi.");
+    } finally {
+      setTransferSubmitting(false);
+    }
+  }
   const olderVersions = useMemo(() => {
     if (!item?.versions) return [];
     return item.versions
@@ -1216,16 +1265,26 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             }}
           >
             <div style={{ fontSize: 13, color: "var(--text)" }}>
-              Buyurtma sizga biriktirilgan. Agar uni davom ettira olmasangiz, orqaga qaytarishingiz mumkin:
+              {user?.is_platform_admin || user?.is_boss
+                ? `Mas'ul PM: ${item.assigned_pm_name || "Mavjud"}. Buyurtmani boshqa PM ga topshirishingiz mumkin:`
+                : "Buyurtma sizga biriktirilgan. Uni boshqa PM ga topshirishingiz mumkin:"}
             </div>
-            <button
-              type="button"
-              className="btn btn-xs btn-outline"
-              style={{ color: "var(--danger)", borderColor: "var(--danger)", fontWeight: 600 }}
-              onClick={handleUnclaim}
-            >
-              ↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")} (Yechish)
-            </button>
+            <div className="row middle" style={{ gap: 8 }}>
+              <button
+                type="button"
+                className="btn btn-xs btn-primary"
+                style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 6 }}
+                onClick={() => {
+                  setTransferModalOpen(true);
+                  setSelectedPmId(null);
+                  setTransferSearch("");
+                  setTransferNotes("");
+                  setTransferError(null);
+                }}
+              >
+                👥 {tx("orders.boshqa_pmga_topshirish", undefined, "Boshqa PM ga topshirish")}
+              </button>
+            </div>
           </div>
         )}
         {item.status === "READY_FOR_REVIEW" && (
@@ -2138,7 +2197,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         <div className="modal-overlay" onClick={() => !claimSubmitting && setClaimModalOpen(false)}>
           <div
             className="modal-card"
-            style={{ maxWidth: 540, width: "95%" }}
+            style={{ maxWidth: 580, width: "95%" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
@@ -2162,7 +2221,9 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </div>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>
-                    {tx("orders.claim_modal_title")}
+                    {item.assigned_pm && (user?.is_platform_admin || user?.is_boss)
+                      ? tx("orders.reassign_pm_modal_title", undefined, "Buyurtmani boshqa PM ga biriktirish")
+                      : tx("orders.claim_modal_title")}
                   </div>
                   <div className="row middle" style={{ gap: 6, marginTop: 3 }}>
                     <span
@@ -2306,8 +2367,18 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   </div>
                 </div>
               </div>
-              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <div className="row middle" style={{ gap: 8 }}>
+              <div
+                className="modal-footer"
+                style={{
+                  padding: "14px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 10,
+                }}
+              >
+                <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
                   <button
                     type="button"
                     className="btn btn-ghost"
@@ -2336,6 +2407,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     alignItems: "center",
                     gap: 6,
                     fontWeight: 600,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {claimSubmitting ? (
@@ -2346,7 +2418,211 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   ) : (
                     <>
                       <span>✓</span>
-                      <span>{tx("orders.claim_submit_btn")}</span>
+                      <span>{tx("orders.claim_submit_btn", undefined, "Qabul qilish")}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {transferModalOpen && item && (
+        <div className="modal-overlay" onClick={() => !transferSubmitting && setTransferModalOpen(false)}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: 580, width: "95%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
+              <div className="row middle" style={{ gap: 12 }}>
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 10,
+                    background: "rgba(37, 99, 235, 0.12)",
+                    color: "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    flexShrink: 0,
+                  }}
+                >
+                  👥
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>
+                    {tx("orders.boshqa_pmga_topshirish", undefined, "Boshqa PM ga topshirish")}
+                  </div>
+                  <div className="row middle" style={{ gap: 6, marginTop: 3 }}>
+                    <span
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontWeight: 600,
+                        fontSize: 11.5,
+                        padding: "1px 7px",
+                        background: "var(--surface-3)",
+                        borderRadius: 4,
+                        color: "var(--text)",
+                      }}
+                    >
+                      {item.system_name}
+                    </span>
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>•</span>
+                    <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 500 }}>
+                      {item.project_detail?.name || item.system_name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-xs btn-ghost"
+                onClick={() => setTransferModalOpen(false)}
+                disabled={transferSubmitting}
+                style={{ fontSize: 15, width: 30, height: 30, padding: 0 }}
+                title={tx("common.bekor_qilish")}
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleTransferPm}>
+              <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+                {transferError && <ErrorMsg error={transferError} />}
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 13, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    Yangi mas'ul loyiha menejeri (PM) <span style={{ color: "var(--danger)" }}>*</span>
+                  </label>
+                  <div style={{ position: "relative", marginBottom: 8 }}>
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="PM ismi yoki familiyasi bo'yicha qidirish..."
+                      value={transferSearch}
+                      onChange={(e) => setTransferSearch(e.target.value)}
+                      style={{ width: "100%", paddingLeft: 34 }}
+                      autoFocus
+                    />
+                    <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--muted)", pointerEvents: "none" }}>
+                      🔍
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      maxHeight: 180,
+                      overflowY: "auto",
+                      border: "1px solid var(--border-color, #e2e8f0)",
+                      borderRadius: 8,
+                      padding: 4,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
+                      background: "var(--surface-1, #fff)",
+                    }}
+                  >
+                    {filteredPms.length === 0 ? (
+                      <div style={{ padding: "14px", textAlign: "center", color: "var(--muted)", fontSize: 12.5 }}>
+                        Bunday ism yoki familiyali PM topilmadi
+                      </div>
+                    ) : (
+                      filteredPms.map((u) => {
+                        const isSelected = selectedPmId === u.id;
+                        return (
+                          <div
+                            key={u.id}
+                            onClick={() => setSelectedPmId(u.id)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "8px 12px",
+                              borderRadius: 6,
+                              cursor: "pointer",
+                              background: isSelected ? "rgba(37, 99, 235, 0.08)" : "transparent",
+                              border: isSelected ? "1.5px solid #2563eb" : "1.5px solid transparent",
+                              transition: "all 0.15s",
+                            }}
+                          >
+                            <div className="row middle" style={{ gap: 10 }}>
+                              <Avatar user={u} size="sm" />
+                              <div>
+                                <div style={{ fontWeight: isSelected ? 700 : 500, fontSize: 13, color: "var(--text)" }}>
+                                  {u.full_name}
+                                </div>
+                                <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                                  {u.job_title || "Loyiha menejeri"} {u.department_name ? `• ${u.department_name}` : ""}
+                                </div>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <span style={{ color: "#2563eb", fontWeight: "bold", fontSize: 14 }}>✓</span>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 13, color: "var(--text)", display: "block", marginBottom: 6 }}>
+                    Izoh / ko'rsatma
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="textarea"
+                    placeholder="Topshirish sababi yoki yangi PM uchun muhim ko'rsatmalar..."
+                    value={transferNotes}
+                    onChange={(e) => setTransferNotes(e.target.value)}
+                    style={{ width: "100%", resize: "vertical" }}
+                  />
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+                    Ushbu izoh buyurtma tarixida qayd etiladi va yangi PM bildirishnomasiga yoziladi
+                  </div>
+                </div>
+              </div>
+              <div
+                className="modal-footer"
+                style={{
+                  padding: "14px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 10,
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setTransferModalOpen(false)}
+                  disabled={transferSubmitting}
+                >
+                  {tx("common.bekor_qilish")}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={transferSubmitting || !selectedPmId}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontWeight: 600,
+                  }}
+                >
+                  {transferSubmitting ? (
+                    <>
+                      <span className="spinner-xs" />
+                      <span>Topshirilmoqda...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>✓</span>
+                      <span>Topshirish</span>
                     </>
                   )}
                 </button>

@@ -6,6 +6,7 @@ import { useAuth } from "@/auth/AuthContext";
 import AddMemberBox from "@/components/AddMemberBox";
 import { Avatar, Card, Empty, ErrorMsg, Loading, SpecialtyTag, fmtDate, timeAgo } from "@/components/ui";
 import { confirmDialog } from "@/components/Confirm";
+import { promptDialog } from "@/components/Prompt";
 import { useProjectLive } from "@/realtime/RealtimeContext";
 import { toDeveloper, toProjectJoin } from "@/nav";
 import { tx } from "@/i18n";
@@ -233,14 +234,20 @@ export default function Members({ project, onChange }: { project: Project; onCha
                             {tx("project_members.himoyalangan")}
                           </span>
                         ) : (
-                          <button className="btn btn-sm btn-danger" onClick={() => {
-                            const note = window.prompt(
-                              tx("project_members.keyingi_dasturchi_uchun_topshiriq_eslatmasi"), "");
+                          <button className="btn btn-sm btn-danger" onClick={() => void (async () => {
+                            const note = await promptDialog({
+                              title: tx("project_members.keyingi_dasturchi_uchun_topshiriq_eslatmasi"),
+                              body: tx("project_members.topshiriq_eslatmasi_tushuntirish"),
+                              placeholder: tx("project_members.eslatma_placeholder"),
+                              confirmText: tx("project_members.chiqarish"),
+                              danger: true,
+                              multiline: true,
+                            });
                             if (note === null) return;
-                            void act(() => api.post(`/projects/${project.id}/members/${m.id}/`, {
+                            await act(() => api.post(`/projects/${project.id}/members/${m.id}/`, {
                               action: "remove", handover_note: note,
                             }));
-                          }}>{tx("project_members.chiqarish")}</button>
+                          })()}>{tx("project_members.chiqarish")}</button>
                         )
                       )}
                       </div>
@@ -335,7 +342,14 @@ export default function Members({ project, onChange }: { project: Project; onCha
                   });
                   if (!ok) return;
                 }
-                const note = window.prompt(tx("project_members.keyingi_dasturchi_uchun_eslatma_qoldiring"), "");
+                const note = await promptDialog({
+                  title: tx("project_members.keyingi_dasturchi_uchun_eslatma_qoldiring"),
+                  body: tx("project_members.topshiriq_eslatmasi_tushuntirish"),
+                  placeholder: tx("project_members.eslatma_placeholder"),
+                  confirmText: tx("common.chiqish"),
+                  danger: true,
+                  multiline: true,
+                });
                 if (note === null) return;
                 await act(() => api.post(`/projects/${project.id}/leave/`,
                                          { handover_note: note }));

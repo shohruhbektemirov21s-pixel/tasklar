@@ -614,11 +614,27 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                     )
 
             if "assigned_pm" in request.data and request.data.get("assigned_pm"):
-                order.assigned_pm_id = request.data.get("assigned_pm")
+                new_pm_id = request.data.get("assigned_pm")
+                from apps.accounts.models import User
+                target_user = User.objects.filter(id=new_pm_id, is_active=True).first()
+                if not target_user:
+                    raise ValidationError({"assigned_pm": "Tanlangan loyiha menejeri topilmadi."})
+                is_target_pm = bool(
+                    target_user.is_platform_admin
+                    or target_user.is_boss
+                    or target_user.is_manager
+                    or target_user.global_role == "MANAGER"
+                    or target_user.specialty == "PM"
+                )
+                if not is_target_pm or target_user.specialty == "DEVELOPER" or target_user.global_role == "DEVELOPER":
+                    raise ValidationError({"assigned_pm": "Buyurtmani faqat loyiha menejeriga (PM) biriktirish mumkin. Dasturchilarga biriktirilmaydi."})
+                order.assigned_pm = target_user
+                target_role = getattr(target_user, "get_global_role_display", lambda: "PM")()
+                order.executor_signer = f"{target_user.full_name} ({target_role})"
             else:
                 order.assigned_pm = user
-            role_label = getattr(user, "get_global_role_display", lambda: "PM")()
-            order.executor_signer = f"{user.full_name} ({role_label})"
+                role_label = getattr(user, "get_global_role_display", lambda: "PM")()
+                order.executor_signer = f"{user.full_name} ({role_label})"
             if order.status == ChangeRequestStatus.NEW:
                 order.status = ChangeRequestStatus.ACCEPTED
 
@@ -652,6 +668,74 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             notify_pm_decision(order, user)
         except Exception:
             logger.exception("PM qabul qilishi bildirishnomasida xatolik: %s", order.pk)
+
+        return Response(ChangeRequestSerializer(order, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"], url_path="reassign-pm")
+    def reassign_pm(self, request, pk=None):
+        """Buyurtmani boshqa PM ga topshirish (o'tkazish). Faqat PMlarga o'tkaziladi."""
+        user = request.user
+        target_pk = self.get_object().pk
+        with transaction.atomic():
+            order = ChangeRequest.objects.select_for_update().select_related("assigned_pm").get(pk=target_pk)
+            can_reassign = bool(
+                user.is_platform_admin
+                or getattr(user, "is_boss", False)
+                or (order.assigned_pm_id and order.assigned_pm_id == user.id)
+            )
+            if not can_reassign:
+                return Response(
+                    {"detail": "Faqat mas'ul PM, boshliq yoki admin buyurtmani boshqa PM ga topshira oladi."},
+                    status=403,
+                )
+
+            new_pm_id = request.data.get("assigned_pm")
+            if not new_pm_id:
+                raise ValidationError({"assigned_pm": "Yangi mas'ul PM ni tanlang."})
+
+            from apps.accounts.models import User
+            target_user = User.objects.filter(id=new_pm_id, is_active=True).first()
+            if not target_user:
+                raise ValidationError({"assigned_pm": "Tanlangan foydalanuvchi topilmadi."})
+
+            is_target_pm = bool(
+                target_user.is_platform_admin
+                or target_user.is_boss
+                or target_user.is_manager
+                or target_user.global_role == "MANAGER"
+                or target_user.specialty == "PM"
+            )
+            if not is_target_pm or target_user.specialty == "DEVELOPER" or target_user.global_role == "DEVELOPER":
+                raise ValidationError({"assigned_pm": "Buyurtmani faqat loyiha menejeriga (PM) topshirish mumkin. Dasturchilarga topshirilmaydi."})
+
+            note = (request.data.get("notes") or request.data.get("pm_notes") or "").strip()
+            order.assigned_pm = target_user
+            target_role = getattr(target_user, "get_global_role_display", lambda: "PM")()
+            order.executor_signer = f"{target_user.full_name} ({target_role})"
+            if note:
+                existing_notes = order.pm_notes.strip() if order.pm_notes else ""
+                order.pm_notes = f"{existing_notes}\n[Topshirildi {user.full_name} -> {target_user.full_name}]: {note}".strip()
+            order.save()
+
+            cur_ver = order.versions.filter(version=order.version).first()
+            if cur_ver:
+                cur_ver.decided_by = target_user
+                cur_ver.save()
+
+        try:
+            from apps.notifications.services import notify
+            from apps.notifications.models import NotificationKind
+            notify(
+                target_user,
+                NotificationKind.ORDER_STATUS,
+                title=f"Buyurtma sizga topshirildi: {order.system_name}",
+                body=f"{user.full_name} buyurtmani sizga topshirdi." + (f" Izoh: {note}" if note else ""),
+                url=order_url(order),
+                actor=user,
+                meta={"order_id": order.pk, "status": order.status},
+            )
+        except Exception:
+            logger.exception("Topshirish bildirishnomasida xatolik: %s", order.pk)
 
         return Response(ChangeRequestSerializer(order, context={"request": request}).data)
 

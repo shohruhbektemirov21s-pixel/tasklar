@@ -123,7 +123,12 @@ export default function ChangeRequests() {
     [usersList]
   );
   const pmList = useMemo(
-    () => usersList.filter((u) => u.specialty === "PM" || u.global_role === "MANAGER" || u.global_role === "ADMIN" || u.global_role === "BOSS"),
+    () =>
+      usersList.filter((u) => {
+        if (u.global_role === "DEVELOPER" || u.specialty === "DEVELOPER") return false;
+        if (u.is_sohaviy_boshqarma || u.specialty === "SOHAVIY" || u.global_role === "SOHAVIY") return false;
+        return Boolean(u.specialty === "PM" || u.global_role === "MANAGER" || u.is_manager);
+      }),
     [usersList]
   );
   const total = totalOf(data);
@@ -997,12 +1002,10 @@ export default function ChangeRequests() {
                 fontWeight: 500,
               }}
             >
-              <option value="">{tx("orders.barcha_holatlar")}</option>
-              {(meta?.order_status || []).map((s) => (
-                <option key={String(s.value)} value={String(s.value)}>
-                  {s.label}
-                </option>
-              ))}
+              <option value="">{tx("orders.barcha_holatlar", undefined, "Barcha holatlar")}</option>
+              <option value="NEW">{tx("orders.status_yangi", undefined, "Yangi")}</option>
+              <option value="ACCEPTED">{tx("orders.status_qabul_qilindi", undefined, "Qabul qilindi")}</option>
+              <option value="REJECTED">{tx("orders.status_rad_etildi", undefined, "Rad etildi")}</option>
             </select>
             <span
               style={{
@@ -1044,11 +1047,13 @@ export default function ChangeRequests() {
                 }}
               >
                 <option value="">{tx("orders.barcha_turlar")}</option>
-                {meta?.order_type?.map((t) => (
-                  <option key={String(t.value)} value={String(t.value)}>
-                    {t.label}
-                  </option>
-                ))}
+                {meta?.order_type
+                  ?.filter((t) => t.value === "NEW" || t.value === "CONTINUATION" || t.value === "NEEDS_CLASSIFICATION")
+                  .map((t) => (
+                    <option key={String(t.value)} value={String(t.value)}>
+                      {t.label}
+                    </option>
+                  ))}
               </select>
               <span
                 style={{
@@ -1287,29 +1292,76 @@ export default function ChangeRequests() {
                     displayItems.map((item, idx) => {
                       const rowNum = (page - 1) * PER_PAGE + idx + 1;
                     return (
-                      <tr key={item.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <tr
+                        key={item.id}
+                        className="clickable"
+                        style={{
+                          borderBottom: "1px solid #f1f5f9",
+                          cursor: "pointer",
+                          transition: "background 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#f8fafc";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                        onClick={() => {
+                          if (item.status === "DRAFT" && canEditOrder(item)) {
+                            go(toEditOrder(item.id));
+                          } else {
+                            handleOpenView(item);
+                          }
+                        }}
+                        title={
+                          item.status === "DRAFT" && canEditOrder(item)
+                            ? tx("orders.buyurtmani_tahrirlash")
+                            : tx("orders.batafsil_korish")
+                        }
+                      >
                         <td style={{ textAlign: "center", fontWeight: 700, fontSize: 13, color: "#0f172a", padding: "12px 14px" }}>
                           {rowNum}
                         </td>
-                        <td
-                          style={{ padding: "12px 14px", cursor: "pointer" }}
-                          onClick={() => {
-                            if (item.status === "DRAFT" && canEditOrder(item)) {
-                              go(toEditOrder(item.id));
-                            } else {
-                              handleOpenView(item);
-                            }
-                          }}
-                          title={
-                            item.status === "DRAFT" && canEditOrder(item)
-                              ? tx("orders.buyurtmani_tahrirlash")
-                              : tx("orders.batafsil_korish")
-                          }
-                        >
+                        <td style={{ padding: "12px 14px" }}>
                           <div>
-                            <div style={{ fontWeight: 600, fontSize: 13.5, color: "#2563eb", lineHeight: 1.3 }}>
+                            <Link
+                              {...toOrder(item.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (item.status === "DRAFT" && canEditOrder(item)) {
+                                  e.preventDefault();
+                                  go(toEditOrder(item.id));
+                                } else {
+                                  e.preventDefault();
+                                  handleOpenView(item);
+                                }
+                              }}
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 13.5,
+                                color: "#2563eb",
+                                lineHeight: 1.3,
+                                textDecoration: "none",
+                                cursor: "pointer",
+                                display: "inline-block",
+                                transition: "color 0.12s ease",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.textDecoration = "underline";
+                                e.currentTarget.style.color = "#1d4ed8";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.textDecoration = "none";
+                                e.currentTarget.style.color = "#2563eb";
+                              }}
+                              title={
+                                item.status === "DRAFT" && canEditOrder(item)
+                                  ? tx("orders.buyurtmani_tahrirlash")
+                                  : tx("orders.batafsil_korish")
+                              }
+                            >
                               {item.project_detail?.name || item.system_name || "—"}
-                            </div>
+                            </Link>
                             {item.module && (
                               <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
                                 {item.module}
@@ -1357,30 +1409,17 @@ export default function ChangeRequests() {
                               : "—"}
                           </div>
                         </td>
-                        <td
-                          style={{
-                            padding: "12px 14px",
-                            whiteSpace: "nowrap",
-                            cursor: item.status === "DRAFT" && canEditOrder(item) ? "pointer" : "default",
-                          }}
-                          onClick={() => {
-                            if (item.status === "DRAFT" && canEditOrder(item)) {
-                              go(toEditOrder(item.id));
-                            }
-                          }}
-                          title={
-                            item.status === "DRAFT" && canEditOrder(item)
-                              ? tx("orders.buyurtmani_tahrirlash")
-                              : undefined
-                          }
-                        >
+                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
                           <OrderStatusBadge
                             status={item.status}
                             label={item.status_display}
                             hasPendingVersion={Boolean(item.has_pending_version)}
                           />
                         </td>
-                        <td style={{ textAlign: "right", position: "relative", padding: "16px 18px" }}>
+                        <td
+                          style={{ textAlign: "right", position: "relative", padding: "16px 18px", cursor: "default" }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <button
                             type="button"
                             className="btn btn-ghost btn-sm"
@@ -1447,6 +1486,25 @@ export default function ChangeRequests() {
                                   disabled={claimingId === item.id}
                                 >
                                   📌 {claimingId === item.id ? tx("orders.claim_submitting") : tx("orders.ishni_qabul_qilish")}
+                                </button>
+                              )}
+                              {item.assigned_pm && (user?.is_platform_admin || user?.is_boss) && item.status !== "DRAFT" && item.status !== "COMPLETED" && (
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  style={{
+                                    width: "100%",
+                                    justifyContent: "flex-start",
+                                    fontSize: 12.5,
+                                    color: "#2563eb",
+                                    fontWeight: 600,
+                                  }}
+                                  onClick={() => {
+                                    setActiveActionMenuId(null);
+                                    handleClaimOrder(item);
+                                  }}
+                                  disabled={claimingId === item.id}
+                                >
+                                  👥 {tx("orders.boshqa_pmga_topshirish", undefined, "Boshqa PM ga topshirish")}
                                 </button>
                               )}
                               {item.status === "READY_FOR_REVIEW" && (isSohaviyOrAdmin || (user && item.created_by === user.id)) && (
@@ -1781,7 +1839,7 @@ export default function ChangeRequests() {
         <div className="modal-overlay" onClick={() => !claimSubmitting && setClaimModalItem(null)}>
           <div
             className="modal-card"
-            style={{ maxWidth: 540, width: "95%" }}
+            style={{ maxWidth: 580, width: "95%" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-header row between middle" style={{ padding: "16px 20px" }}>
@@ -1805,7 +1863,9 @@ export default function ChangeRequests() {
                 </div>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>
-                    {tx("orders.claim_modal_title")}
+                    {claimModalItem.assigned_pm && (user?.is_platform_admin || user?.is_boss)
+                      ? tx("orders.reassign_pm_modal_title", undefined, "Buyurtmani boshqa PM ga biriktirish")
+                      : tx("orders.claim_modal_title")}
                   </div>
                   <div className="row middle" style={{ gap: 6, marginTop: 3 }}>
                     <span
@@ -1946,8 +2006,18 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               </div>
-              <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <div className="row middle" style={{ gap: 8 }}>
+              <div
+                className="modal-footer"
+                style={{
+                  padding: "14px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 10,
+                }}
+              >
+                <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
                   <button
                     type="button"
                     className="btn btn-ghost"
@@ -1976,6 +2046,7 @@ export default function ChangeRequests() {
                     alignItems: "center",
                     gap: 6,
                     fontWeight: 600,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {claimSubmitting ? (
@@ -1986,7 +2057,7 @@ export default function ChangeRequests() {
                   ) : (
                     <>
                       <span>✓</span>
-                      <span>{tx("orders.claim_submit_btn")}</span>
+                      <span>{tx("orders.claim_submit_btn", undefined, "Qabul qilish")}</span>
                     </>
                   )}
                 </button>
@@ -2243,14 +2314,26 @@ export default function ChangeRequests() {
                     marginBottom: 16,
                     display: "flex",
                     alignItems: "center",
+                    justifyContent: "space-between",
                     gap: 8,
-                    color: "#065f46",
-                    fontSize: 13,
-                    fontWeight: 600,
+                    flexWrap: "wrap",
                   }}
                 >
-                  <span>🎯</span>
-                  <span>{tx("orders.masul_pm_label")} {viewingItem.assigned_pm_name || user?.full_name || tx("orders.siz")}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#065f46", fontSize: 13, fontWeight: 600 }}>
+                    <span>🎯</span>
+                    <span>{tx("orders.masul_pm_label")} {viewingItem.assigned_pm_name || user?.full_name || tx("orders.siz")}</span>
+                  </div>
+                  {(user?.is_platform_admin || user?.is_boss || viewingItem.assigned_pm === user?.id) && viewingItem.status !== "COMPLETED" && (
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-outline"
+                      style={{ fontSize: 12, fontWeight: 600, color: "#2563eb", borderColor: "#bfdbfe" }}
+                      onClick={() => handleClaimOrder(viewingItem)}
+                      disabled={claimingId === viewingItem.id}
+                    >
+                      👥 {tx("orders.boshqa_pmga_topshirish", undefined, "Boshqa PM ga topshirish")}
+                    </button>
+                  )}
                 </div>
               )}
               {viewingItem.status === "REJECTED" && (

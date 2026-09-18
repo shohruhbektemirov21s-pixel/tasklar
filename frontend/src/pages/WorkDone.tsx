@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useId, useMemo, useState } from "react";
 import { listOf, pagesOf, totalOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import type { Activity, ActivityStats, Paginated, Project, UserBrief } from "@/api/types";
+import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { Avatar, Empty, ErrorMsg, Loading, Pager, fmtDateTime, timeAgo } from "@/components/ui";
 import {
@@ -23,14 +24,17 @@ const PAGE_SIZE = 25;
 
 export default function WorkDone() {
   const fid = useId();
+  const { user } = useAuth();
   const [params, setParams] = useNavParams();
 
   // Filtr parametrlari URL orqali
   const activeTab = params.get("tab") || "all";
   const selectedProject = params.get("project") || "";
-  const selectedActor = params.get("actor") || "";
   const selectedDays = params.get("days") || "";
   const initialSearch = params.get("q") || "";
+
+  // Foydalanuvchi faqat O'ZINING qilingan ishlarini ko'radi
+  const currentActorId = user ? String(user.id) : undefined;
 
   const [search, setSearch] = useState(initialSearch);
   const [page, setPage] = useState(1);
@@ -131,21 +135,17 @@ export default function WorkDone() {
     }
   }, [activeTab]);
 
-  // Statistikalar (backend /api/activity/stats/ dan olinadi)
+  // Statistikalar (backend /api/activity/stats/ dan olinadi) - faqat o'ziniki
   const { data: stats, reload: reloadStats } = useFetch<ActivityStats>("/activity/stats/", {
     project: selectedProject || undefined,
-    actor: selectedActor || undefined,
+    actor: currentActorId,
   });
 
   // Loyihalar ro'yxati (filtr uchun)
   const { data: projectsData } = useFetch<Project[] | Paginated<Project>>("/projects/?page_size=200");
   const projects = useMemo(() => listOf<Project>(projectsData), [projectsData]);
 
-  // Xodimlar ro'yxati (filtr uchun)
-  const { data: usersData } = useFetch<UserBrief[] | Paginated<UserBrief>>("/users/?page_size=200");
-  const users = useMemo(() => listOf<UserBrief>(usersData), [usersData]);
-
-  // Faoliyat lentasi
+  // Faoliyat lentasi - faqat o'ziniki
   const queryParams = useMemo(() => ({
     page,
     page_size: PAGE_SIZE,
@@ -153,10 +153,10 @@ export default function WorkDone() {
     task_status: taskStatusFilter || undefined,
     overdue: overdueFilter ? "1" : undefined,
     project: selectedProject || undefined,
-    actor: selectedActor || undefined,
+    actor: currentActorId,
     days: selectedDays || undefined,
     search: debouncedSearch || undefined,
-  }), [page, verbFilter, taskStatusFilter, overdueFilter, selectedProject, selectedActor, selectedDays, debouncedSearch]);
+  }), [page, verbFilter, taskStatusFilter, overdueFilter, selectedProject, currentActorId, selectedDays, debouncedSearch]);
 
   const { data, loading, error, reload: reloadActivities } = useFetch<Paginated<Activity>>("/activity/", queryParams);
 
@@ -232,11 +232,10 @@ export default function WorkDone() {
   }
 
   const hasActiveFilters = Boolean(
-    selectedProject || selectedActor || selectedDays || search || (activeTab && activeTab !== "all")
+    selectedProject || selectedDays || search || (activeTab && activeTab !== "all")
   );
 
   const selectedProjectObj = projects.find((p) => String(p.id) === selectedProject);
-  const selectedActorObj = users.find((u) => String(u.id) === selectedActor);
 
   return (
     <div className="page-work-done" style={{ maxWidth: 1160, margin: "0 auto", padding: "0 8px 32px" }}>
@@ -647,31 +646,6 @@ export default function WorkDone() {
             </select>
           </div>
 
-          {/* Xodim tanlash */}
-          <div style={{ flex: "0 1 190px" }}>
-            <select
-              id={`${fid}-actor`}
-              className="input"
-              style={{
-                width: "100%",
-                borderRadius: 8,
-                height: 38,
-                fontSize: 13,
-                background: "var(--canvas-inset)",
-                border: "1px solid var(--border)",
-              }}
-              value={selectedActor}
-              onChange={(e) => updateParam("actor", e.target.value || undefined)}
-            >
-              <option value="">{tx("work_done.barcha_xodimlar", undefined, "Barcha xodimlar")}</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Davr tanlash */}
           <div style={{ flex: "0 1 140px" }}>
             <select
@@ -787,30 +761,6 @@ export default function WorkDone() {
               </span>
             )}
 
-            {selectedActorObj && (
-              <span
-                className="badge"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "3px 8px",
-                  fontSize: 12,
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <span>👤 {selectedActorObj.full_name}</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => updateParam("actor", undefined)}
-                  style={{ cursor: "pointer", color: "var(--muted)", fontWeight: 700 }}
-                >
-                  ✕
-                </span>
-              </span>
-            )}
 
             {selectedDays && (
               <span
@@ -907,28 +857,11 @@ export default function WorkDone() {
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     <div
-                      role={item.actor ? "button" : undefined}
-                      tabIndex={item.actor ? 0 : undefined}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (item.actor?.id) {
-                          updateParam("actor", selectedActor === String(item.actor.id) ? undefined : String(item.actor.id));
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (item.actor?.id && (e.key === "Enter" || e.key === " ")) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          updateParam("actor", selectedActor === String(item.actor.id) ? undefined : String(item.actor.id));
-                        }
-                      }}
                       style={{
-                        cursor: item.actor ? "pointer" : "default",
                         display: "flex",
                         alignItems: "center",
                         gap: 10,
                       }}
-                      title={item.actor ? tx("work_done.foydalanuvchi_boyicha_filtrlash", undefined, "Ushbu xodim bo'yicha filtrlash") : undefined}
                     >
                       <Avatar user={item.actor} size="sm" />
                       <div>

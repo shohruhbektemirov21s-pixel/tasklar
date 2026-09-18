@@ -652,7 +652,10 @@ def sidebar_counts(request):
     # `Project.objects` o'chirilgan loyihalarni allaqachon yashiradi -
     # `project__in=managed` bilan ular sanoqqa ham tushmaydi.
     managed = Project.objects.filter(managed_projects_q(user))
-    review_qs = Task.objects.filter(status=TaskStatus.IN_REVIEW, project__in=managed)
+    if getattr(user, "is_boss", False):
+        review_qs = Task.objects.none()
+    else:
+        review_qs = Task.objects.filter(status=TaskStatus.IN_REVIEW, project__in=managed)
     join_qs = JoinRequest.objects.filter(status=RequestStatus.PENDING,
                                          project__in=managed)
 
@@ -931,6 +934,11 @@ def meta(request):
             data["order_type"] = pack(order_fields["order_type"].choices)
         if "status" in order_fields:
             data["order_status"] = pack(order_fields["status"].choices)
+            data["order_filter_status"] = [
+                {"value": "NEW", "label": "Yangi"},
+                {"value": "ACCEPTED", "label": "Qabul qilindi"},
+                {"value": "REJECTED", "label": "Rad etildi"},
+            ]
         if "priority" in order_fields:
             data["order_priority"] = pack(order_fields["priority"].choices)
         if "change_nature" in order_fields:

@@ -29,7 +29,7 @@ export default function NotificationBell() {
   const { user } = useAuth();
   // Tekshiruv navbatiga havola faqat ishni qabul qiladigan odamga -
   // yon paneldagi yozuv bilan bir xil qoida.
-  const manages = Boolean(user?.can_create_project || user?.manages_projects);
+  const manages = Boolean(!user?.is_boss && (user?.can_create_project || user?.manages_projects));
   const [open, setOpen] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState<AppNotification | null>(null);
   const box = useRef<HTMLDivElement>(null);

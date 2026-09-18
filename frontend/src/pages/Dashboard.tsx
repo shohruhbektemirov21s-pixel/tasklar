@@ -1113,10 +1113,10 @@ function DepartmentDashboard() {
                 outline: "none",
               }}
             >
-              <option value="">{tx("dashboard.barcha_holatlar")}</option>
-              {(meta?.order_status || []).map((s) => (
-                <option key={String(s.value)} value={String(s.value)}>{s.label}</option>
-              ))}
+              <option value="">{tx("dashboard.barcha_holatlar", undefined, "Barcha holatlar")}</option>
+              <option value="NEW">{tx("orders.status_yangi", undefined, "Yangi")}</option>
+              <option value="ACCEPTED">{tx("orders.status_qabul_qilindi", undefined, "Qabul qilindi")}</option>
+              <option value="REJECTED">{tx("orders.status_rad_etildi", undefined, "Rad etildi")}</option>
             </select>
           </div>
         </div>

@@ -528,9 +528,11 @@ export default function ProjectForm({
               value={f.project_type}
               onChange={(e) => set("project_type", e.target.value)}
             >
-              {(meta?.project_type || meta?.order_type || []).map((t) => (
-                <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
-              ))}
+              {(meta?.project_type || meta?.order_type || [])
+                .filter((t) => t.value === "NEW" || t.value === "CONTINUATION" || t.value === "NEEDS_CLASSIFICATION")
+                .map((t) => (
+                  <option key={String(t.value)} value={String(t.value)}>{t.label}</option>
+                ))}
             </select>
           </div>
           <div className="field">

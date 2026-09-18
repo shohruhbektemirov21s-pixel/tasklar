@@ -48,6 +48,10 @@ const TERMS = [
 export default function MyWork() {
   const fid = useId();
   const { user } = useAuth();
+  const isPm = Boolean(user?.is_manager || user?.global_role === "MANAGER" || user?.specialty === "PM");
+  if (user?.is_boss || isPm) {
+    return <Navigate to="/panel" replace />;
+  }
 
   const [dragId, setDragId] = useState<number | null>(null);
   const dragRef = useRef<number | null>(null);
@@ -55,7 +59,8 @@ export default function MyWork() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [params, setParams] = useNavParams();
-  const period = params.get("period") || "";
+  const rawPeriod = params.get("period");
+  const period = rawPeriod === null ? "week" : rawPeriod;
   const projectId = params.get("project") || "";
   const half = params.get("half") || "";
   const scope = params.get("scope") || "";
@@ -64,7 +69,7 @@ export default function MyWork() {
 
   const { data, error: loadError, reload } = useFetch<MyWorkData>(!user?.is_boss ? "/my-work/" : null, {
     board: "due",
-    period,
+    period: period === "all" || period === "" ? "" : period,
     project: projectId,
     half,
     scope,
@@ -85,8 +90,10 @@ export default function MyWork() {
 
   const setPeriod = (v: string) => {
     const next = new URLSearchParams(params);
-    if (v) next.set("period", v);
-    else next.delete("period");
+    if (v === "week") next.delete("period");
+    else if (v === "all") next.set("period", "all");
+    else if (v) next.set("period", v);
+    else next.set("period", "all");
     COLUMNS.forEach((c) => next.delete(`page_${c.key.toLowerCase()}`));
     setParams(next, { replace: true });
   };
@@ -227,8 +234,8 @@ export default function MyWork() {
 
               <div className="f">
                 <label htmlFor={`${fid}-0`}>{tx("common.muddat")}</label>
-                <select id={`${fid}-0`} value={period} onChange={(e) => setPeriod(e.target.value)}>
-                  <option value="">{tx("my_work.barcha_muddatlar")}</option>
+                <select id={`${fid}-0`} value={period === "" ? "all" : period} onChange={(e) => setPeriod(e.target.value)}>
+                  <option value="all">{tx("my_work.barcha_muddatlar")}</option>
                   {TERMS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}

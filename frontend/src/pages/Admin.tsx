@@ -17,16 +17,20 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api, listOf, pagesOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
-import type { Project, User } from "@/api/types";
+import type { ChangeRequestItem, Project, User } from "@/api/types";
+import { claimOrder } from "@/api/orders";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { Avatar, Card, confirmDelete, Empty, ErrorMsg, fmtDate, Loading, Pager } from "@/components/ui";
-import { toProject, toProjectEdit, toUser } from "@/nav";
+import { DateField } from "@/components/dates";
+import { promptDialog } from "@/components/Prompt";
+import { toOrder, toProject, toProjectEdit, toUser } from "@/nav";
 import { tx } from "@/i18n";
 import { useSystemBranding, updateSystemBranding } from "@/api/branding";
 import { Logo } from "@/components/Logo";
+import { OrderStatusBadge } from "./ChangeRequests";
 
-type Tab = "users" | "specialties" | "projects" | "branding";
+type Tab = "users" | "specialties" | "projects" | "orders" | "branding";
 
 const ROLE_TONE: Record<string, string> = {
   ADMIN: "badge-danger", BOSS: "badge-warning", MANAGER: "badge-info", DEVELOPER: "", QA: "",
@@ -65,6 +69,14 @@ export default function Admin() {
   const [statusFilter, setStatusFilter] = useState<"active" | "pending" | "all">("all");
   const [userPage, setUserPage] = useState(1);
   const [projectPage, setProjectPage] = useState(1);
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderQ, setOrderQ] = useState("");
+  const [assignModalItem, setAssignModalItem] = useState<ChangeRequestItem | null>(null);
+  const [assignPmId, setAssignPmId] = useState<number | "">("");
+  const [assignDeadline, setAssignDeadline] = useState("");
+  const [assignStartDate, setAssignStartDate] = useState("");
+  const [assignNotes, setAssignNotes] = useState("");
+  const [assignBusy, setAssignBusy] = useState(false);
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [specForm, setSpecForm] = useState(EMPTY_SPEC_FORM);
@@ -94,6 +106,25 @@ export default function Admin() {
   const projects = useMemo(
     () => (projectData ? listOf<Project>(projectData) : null), [projectData]);
   const projectPages = pagesOf(projectData, PER_PAGE);
+
+  const { data: orderData, reload: reloadOrders, loading: ordersLoading } = useFetch<unknown>(
+    tab === "orders" ? "/orders/" : null,
+    { search: orderQ, page: orderPage, page_size: PER_PAGE },
+    { debounceMs: 300 });
+  const orders = useMemo(
+    () => (orderData ? listOf<ChangeRequestItem>(orderData) : null), [orderData]);
+  const orderPages = pagesOf(orderData, PER_PAGE);
+  const orderCount = orderData && typeof orderData === "object" && "count" in orderData
+    ? Number((orderData as { count?: number }).count || 0)
+    : 0;
+
+  const { data: pmUserData } = useFetch<unknown>(
+    tab === "orders" ? "/users/" : null,
+    { page_size: 200 });
+  const pms = useMemo(() => {
+    if (!pmUserData) return [];
+    return listOf<User>(pmUserData).filter((u) => u.global_role === "MANAGER" || u.specialty === "PM" || u.can_create_project);
+  }, [pmUserData]);
 
   const { data: specData, reload: reloadSpecs, loading: specsLoading } = useFetch<{ specialties?: SpecialtyItem[] }>(
     tab === "specialties" ? "/auth/specialties/" : null);
@@ -217,8 +248,13 @@ export default function Admin() {
   }
 
   async function resetPassword(target: User) {
-    const next = window.prompt(
-      tx("admin.yangi_parol_soraladi", { ism: target.full_name }), "");
+    const next = await promptDialog({
+      title: tx("admin.yangi_parol_soraladi", { ism: target.full_name }),
+      placeholder: tx("admin.yangi_parolni_kiriting", undefined, "Yangi parolni kiriting"),
+      confirmText: tx("common.saqlash", undefined, "Saqlash"),
+      inputType: "password",
+      required: true,
+    });
     if (next === null) return;
     setBusy(true);
     try {
@@ -239,11 +275,42 @@ export default function Admin() {
                       : tx("admin.hisob_qayta_yoqildi", { ism: target.full_name }));
   }
 
+  function handleOpenAssign(order: ChangeRequestItem) {
+    setAssignModalItem(order);
+    setAssignPmId(order.assigned_pm || "");
+    setAssignStartDate(order.pm_start_date || "");
+    setAssignDeadline(order.pm_deadline || order.due_date || "");
+    setAssignNotes(order.pm_notes || "");
+  }
+
+  async function handleAssignSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!assignModalItem) return;
+    setAssignBusy(true);
+    setError(null);
+    try {
+      await claimOrder(assignModalItem.id, {
+        assigned_pm: assignPmId || undefined,
+        pm_start_date: assignStartDate || undefined,
+        pm_deadline: assignDeadline || undefined,
+        pm_notes: assignNotes.trim() || undefined,
+      });
+      done(`Buyurtma (${assignModalItem.system_name}) muvaffaqiyatli PM ga topshirildi.`);
+      setAssignModalItem(null);
+      void reloadOrders();
+    } catch (err) {
+      failed(err, "Buyurtmani topshirib bo'lmadi");
+    } finally {
+      setAssignBusy(false);
+    }
+  }
+
   const counts = {
     users: users?.length ?? 0,
     admins: users?.filter((u) => u.global_role === "ADMIN").length ?? 0,
     bosses: users?.filter((u) => u.global_role === "BOSS").length ?? 0,
     projects: projects?.length ?? 0,
+    orders: orderCount,
   };
 
   return (
@@ -260,6 +327,9 @@ export default function Admin() {
           ["projects", counts.projects
             ? `${tx("common.loyihalar")} (${counts.projects})`
             : tx("common.loyihalar")],
+          ["orders", counts.orders
+            ? `Buyurtmalar (${counts.orders})`
+            : "Buyurtmalar"],
           ["branding", tx("admin.logo_va_loyiha_sozlamalari")],
         ].map(([value, label]) => (
           <button key={value} type="button"
@@ -689,6 +759,98 @@ export default function Admin() {
               </div>
             )}
           </Card>
+        ) : tab === "orders" ? (
+          <Card padded={false} title="Buyurtmalar (PM tayinlash va topshirish)">
+            <div className="filters card-body" style={{ paddingBottom: 12 }}>
+              <div className="f grow">
+                <label htmlFor="adm-order-q">{tx("common.qidiruv")}</label>
+                <input
+                  id="adm-order-q"
+                  value={orderQ}
+                  onChange={(e) => { setOrderQ(e.target.value); setOrderPage(1); }}
+                  placeholder="Tizim nomi yoki bo'linma bo'yicha qidiruv..."
+                />
+              </div>
+            </div>
+            {ordersLoading ? (
+              <Loading />
+            ) : !orders?.length ? (
+              <Empty title="Buyurtmalar mavjud emas" text="Hozircha birorta ham buyurtma kelib tushmagan." />
+            ) : (
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 60 }}>№</th>
+                      <th>Axborot tizimi / Modul</th>
+                      <th>Bo'linma</th>
+                      <th>Holati</th>
+                      <th>Mas'ul PM</th>
+                      <th>Muddati</th>
+                      <th className="right">Amal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((item, idx) => (
+                      <tr key={item.id}>
+                        <td>
+                          <span className="mono" style={{ fontSize: 12, fontWeight: 700 }}>
+                            {(orderPage - 1) * PER_PAGE + idx + 1}
+                          </span>
+                        </td>
+                        <td>
+                          <Link {...toOrder(item.id)} style={{ fontWeight: 600, color: "var(--accent)" }}>
+                            {item.project_detail?.name || item.system_name}
+                          </Link>
+                          {item.module && <div className="muted" style={{ fontSize: 12 }}>{item.module}</div>}
+                        </td>
+                        <td className="muted">{item.department || "—"}</td>
+                        <td>
+                          <OrderStatusBadge
+                            status={item.status}
+                            label={item.status_display}
+                            hasPendingVersion={Boolean(item.has_pending_version)}
+                          />
+                        </td>
+                        <td>
+                          {item.assigned_pm ? (
+                            <span style={{ fontWeight: 600, color: "var(--text)" }}>
+                              {item.assigned_pm_name || `PM #${item.assigned_pm}`}
+                            </span>
+                          ) : (
+                            <span className="badge badge-warning">Biriktirilmagan</span>
+                          )}
+                        </td>
+                        <td className="muted" style={{ fontSize: 12 }}>
+                          {item.pm_deadline ? fmtDate(item.pm_deadline) : item.due_date ? fmtDate(item.due_date) : "—"}
+                        </td>
+                        <td className="right nowrap">
+                          {item.status !== "DRAFT" && item.status !== "COMPLETED" ? (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-primary"
+                              onClick={() => handleOpenAssign(item)}
+                            >
+                              👥 {item.assigned_pm ? "Boshqa PM ga topshirish" : "PM tayinlash"}
+                            </button>
+                          ) : (
+                            <Link {...toOrder(item.id)} className="btn btn-sm btn-ghost">
+                              Ko'rish
+                            </Link>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {orderPages > 1 && (
+              <div className="card-body">
+                <Pager page={orderPage} pages={orderPages} onPick={setOrderPage} />
+              </div>
+            )}
+          </Card>
         ) : (
           <div style={{ maxWidth: 640, margin: "0 auto" }}>
             <Card title={tx("admin.tizim_sozlamalari_sarlavha")}>
@@ -785,6 +947,105 @@ export default function Admin() {
           </div>
         )}
       </div>
+
+      {assignModalItem && (
+        <div className="modal-scrim" onClick={() => !assignBusy && setAssignModalItem(null)}>
+          <div
+            className="modal-box"
+            style={{ maxWidth: 520, width: "95%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: 16.5, fontWeight: 700, margin: "0 0 12px" }}>
+              {assignModalItem.assigned_pm
+                ? "Buyurtmani boshqa PM ga topshirish"
+                : "Buyurtmaga PM tayinlash"}
+            </h3>
+            <p className="muted" style={{ margin: "0 0 14px", fontSize: 13.5 }}>
+              Buyurtma: <strong>{assignModalItem.system_name}</strong> ({assignModalItem.department || "Bo'linma ko'rsatilmagan"})
+            </p>
+            <form onSubmit={handleAssignSubmit}>
+              <div className="field" style={{ marginBottom: 12 }}>
+                <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                  Loyiha menejeri (PM) <span style={{ color: "var(--danger)" }}>*</span>
+                </label>
+                <select
+                  className="input"
+                  required
+                  value={assignPmId}
+                  onChange={(e) => setAssignPmId(e.target.value ? Number(e.target.value) : "")}
+                  style={{ width: "100%" }}
+                >
+                  <option value="">PM ni tanlang...</option>
+                  {pms.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.full_name} ({p.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                    Boshlanish sanasi
+                  </label>
+                  <DateField
+                    value={assignStartDate}
+                    min={new Date().toLocaleDateString("en-CA")}
+                    onChange={(v) => {
+                      setAssignStartDate(v);
+                      if (v && assignDeadline && assignDeadline < v) {
+                        setAssignDeadline(v);
+                      }
+                    }}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                    Yakuniy muddat
+                  </label>
+                  <DateField
+                    value={assignDeadline}
+                    min={assignStartDate || new Date().toLocaleDateString("en-CA")}
+                    onChange={(v) => setAssignDeadline(v)}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </div>
+              <div className="field" style={{ marginBottom: 16 }}>
+                <label style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>
+                  Topshiriq ko'rsatmalari / PM izohi
+                </label>
+                <textarea
+                  className="textarea"
+                  rows={3}
+                  value={assignNotes}
+                  onChange={(e) => setAssignNotes(e.target.value)}
+                  placeholder="Yangi PM uchun ko'rsatma yoki vazifa tafsilotlari..."
+                  style={{ width: "100%", resize: "vertical" }}
+                />
+              </div>
+              <div className="modal-actions" style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={assignBusy}
+                  onClick={() => setAssignModalItem(null)}
+                >
+                  {tx("common.bekor_qilish")}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={assignBusy || !assignPmId}
+                >
+                  {assignBusy ? "Saqlanmoqda..." : "Topshirish"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

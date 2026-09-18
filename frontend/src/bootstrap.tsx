@@ -11,6 +11,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { AuthProvider } from "./auth/AuthContext";
 import ConfirmHost from "./components/Confirm";
+import PromptHost from "./components/Prompt";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { RealtimeProvider } from "./realtime/RealtimeContext";
 import { fetchSystemBranding } from "./api/branding";
@@ -27,6 +28,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <App />
             {/* Tasdiqlash oynasi - `window.confirm` o'rniga, bir marta. */}
             <ConfirmHost />
+            {/* Matn kiritish oynasi - `window.prompt` o'rniga, bir marta. */}
+            <PromptHost />
           </RealtimeProvider>
         </AuthProvider>
       </BrowserRouter>

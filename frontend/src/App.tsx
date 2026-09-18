@@ -104,7 +104,18 @@ function BossOnly({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
   if (!user?.is_boss && !user?.is_platform_admin) {
-    return <Navigate to="/mening-ishim" replace />;
+    return <Navigate to="/panel" replace />;
+  }
+  return <>{children}</>;
+}
+
+/** «Mening ishim» sahifasi — faqat ijrochi xodimlarga (Boshliq va PM uchun emas) */
+function NonPmOnly({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <Loading />;
+  const isPm = Boolean(user?.is_manager || user?.global_role === "MANAGER" || user?.specialty === "PM");
+  if (user?.is_boss || isPm) {
+    return <Navigate to="/panel" replace />;
   }
   return <>{children}</>;
 }
@@ -138,7 +149,7 @@ export default function App() {
 
       <Route element={<Protected><Layout /></Protected>}>
         <Route path="/panel" element={<Dashboard />} />
-        <Route path="/mening-ishim" element={<MyWork />} />
+        <Route path="/mening-ishim" element={<NonPmOnly><MyWork /></NonPmOnly>} />
         <Route path="/qilingan-ishlar" element={<BossOnly><WorkDone /></BossOnly>} />
         <Route path="/loyihalar" element={<Projects />} />
         <Route path="/vazifalar" element={<ManagesOnly><Tasks /></ManagesOnly>} />

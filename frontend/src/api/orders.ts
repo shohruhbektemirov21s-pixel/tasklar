@@ -376,3 +376,17 @@ export async function createOrderTask(
 export async function downloadOrderDocx(id: number | string, requestNo: string): Promise<void> {
   await api.download(`/orders/${id}/export-docx/`, `Buyurtma_${requestNo}.docx`);
 }
+
+/**
+ * Buyurtmani boshqa PM ga topshirish (o'tkazish).
+ */
+export async function reassignPm(
+  id: number | string,
+  payload: {
+    assigned_pm: number;
+    notes?: string;
+  }
+): Promise<ChangeRequestItem> {
+  return api.post<ChangeRequestItem>(`/orders/${id}/reassign-pm/`, payload);
+}
+
