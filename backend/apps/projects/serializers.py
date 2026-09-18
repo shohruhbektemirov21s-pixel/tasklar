@@ -107,6 +107,8 @@ class ProjectSerializer(serializers.ModelSerializer):
         child=serializers.CharField(max_length=20), required=False)
     order_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     linked_order = serializers.SerializerMethodField(read_only=True)
+    deleted_by = UserBriefSerializer(read_only=True)
+    is_deleted = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Project
@@ -118,7 +120,8 @@ class ProjectSerializer(serializers.ModelSerializer):
                   "created_at", "updated_at",
                   "member_count", "open_tasks", "done_tasks", "my_tasks", "progress", "access",
                   "needed_specialties", "needed_specialty_labels", "team_composition",
-                  "specialty_gaps", "matches_my_specialty", "order_id", "linked_order"]
+                  "specialty_gaps", "matches_my_specialty", "order_id", "linked_order",
+                  "deleted_at", "deleted_by", "is_deleted"]
         read_only_fields = ["created_by", "key", "color"]
         # Ish maydoni forma orqali so'ralmaydi - yuborilmasa server o'zi tanlaydi
         # (`api.resolve_workspace`). Yuborilsa esa oldingidek ishlaydi.

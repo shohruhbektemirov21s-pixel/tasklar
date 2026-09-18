@@ -114,3 +114,10 @@ export async function reopenProject(id: number | string): Promise<boolean> {
   return true;
 }
 
+/**
+ * O'chirilgan loyihani qayta tiklash.
+ */
+export async function restoreProject(id: number | string): Promise<void> {
+  await api.post(`/projects/${id}/restore/`);
+}
+

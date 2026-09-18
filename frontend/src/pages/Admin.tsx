@@ -17,8 +17,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api, listOf, pagesOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
-import type { ChangeRequestItem, Project, User } from "@/api/types";
+import type { ChangeRequestItem, Project, Task, User } from "@/api/types";
 import { claimOrder } from "@/api/orders";
+import { restoreProject } from "@/api/projects";
+import { restoreTask } from "@/api/tasks";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { Avatar, Card, confirmDelete, Empty, ErrorMsg, fmtDate, Loading, Pager } from "@/components/ui";
@@ -30,7 +32,7 @@ import { useSystemBranding, updateSystemBranding } from "@/api/branding";
 import { Logo } from "@/components/Logo";
 import { OrderStatusBadge } from "./ChangeRequests";
 
-type Tab = "users" | "specialties" | "projects" | "orders" | "branding";
+type Tab = "users" | "specialties" | "projects" | "orders" | "trash" | "branding";
 
 const ROLE_TONE: Record<string, string> = {
   ADMIN: "badge-danger", BOSS: "badge-warning", MANAGER: "badge-info", DEVELOPER: "", QA: "",
@@ -67,10 +69,14 @@ export default function Admin() {
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
   const [statusFilter, setStatusFilter] = useState<"active" | "pending" | "all">("all");
+  const [projectStatusFilter, setProjectStatusFilter] = useState<"all" | "active" | "deleted">("all");
   const [userPage, setUserPage] = useState(1);
   const [projectPage, setProjectPage] = useState(1);
   const [orderPage, setOrderPage] = useState(1);
   const [orderQ, setOrderQ] = useState("");
+  const [trashSubTab, setTrashSubTab] = useState<"projects" | "tasks">("projects");
+  const [trashProjectPage, setTrashProjectPage] = useState(1);
+  const [trashTaskPage, setTrashTaskPage] = useState(1);
   const [assignModalItem, setAssignModalItem] = useState<ChangeRequestItem | null>(null);
   const [assignPmId, setAssignPmId] = useState<number | "">("");
   const [assignDeadline, setAssignDeadline] = useState("");
@@ -102,10 +108,38 @@ export default function Admin() {
 
   const { data: projectData, reload: reloadProjects } = useFetch<unknown>(
     tab === "projects" ? "/projects/" : null,
-    { scope: "all", page: projectPage, page_size: PER_PAGE });
+    {
+      scope: "all",
+      deleted_status: projectStatusFilter !== "all" ? projectStatusFilter : "",
+      page: projectPage,
+      page_size: PER_PAGE,
+    });
   const projects = useMemo(
     () => (projectData ? listOf<Project>(projectData) : null), [projectData]);
   const projectPages = pagesOf(projectData, PER_PAGE);
+
+  const { data: trashProjectData, reload: reloadTrashProjects, loading: trashProjectsLoading } = useFetch<unknown>(
+    tab === "trash" && trashSubTab === "projects" ? "/projects/" : null,
+    {
+      scope: "all",
+      deleted_status: "deleted",
+      page: trashProjectPage,
+      page_size: PER_PAGE,
+    });
+  const trashProjects = useMemo(
+    () => (trashProjectData ? listOf<Project>(trashProjectData) : null), [trashProjectData]);
+  const trashProjectPages = pagesOf(trashProjectData, PER_PAGE);
+
+  const { data: trashTaskData, reload: reloadTrashTasks, loading: trashTasksLoading } = useFetch<unknown>(
+    tab === "trash" && trashSubTab === "tasks" ? "/tasks/" : null,
+    {
+      deleted_only: "1",
+      page: trashTaskPage,
+      page_size: PER_PAGE,
+    });
+  const trashTasks = useMemo(
+    () => (trashTaskData ? listOf<Task>(trashTaskData) : null), [trashTaskData]);
+  const trashTaskPages = pagesOf(trashTaskData, PER_PAGE);
 
   const { data: orderData, reload: reloadOrders, loading: ordersLoading } = useFetch<unknown>(
     tab === "orders" ? "/orders/" : null,
@@ -176,6 +210,34 @@ export default function Admin() {
     reload();
     reloadProjects();
     reloadSpecs();
+    reloadTrashProjects();
+    reloadTrashTasks();
+  }
+
+  async function handleRestoreProject(id: number, name: string) {
+    if (!confirm(`«${name}» loyihasini qayta tiklashni tasdiqlaysizmi?`)) return;
+    setBusy(true);
+    try {
+      await restoreProject(id);
+      done(tx("admin.loyiha_tiklandi", { nom: name }));
+    } catch (err) {
+      failed(err, "Loyihani tiklashda xatolik yuz berdi.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRestoreTask(id: number, title: string) {
+    if (!confirm(`«${title}» vazifasini qayta tiklashni tasdiqlaysizmi?`)) return;
+    setBusy(true);
+    try {
+      await restoreTask(id);
+      done(tx("admin.vazifa_tiklandi", { nom: title }));
+    } catch (err) {
+      failed(err, "Vazifani tiklashda xatolik yuz berdi.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function failed(err: unknown, fallback: string) {
@@ -330,6 +392,7 @@ export default function Admin() {
           ["orders", counts.orders
             ? `Buyurtmalar (${counts.orders})`
             : "Buyurtmalar"],
+          ["trash", `🗑️ ${tx("admin.ochirilganlar")}`],
           ["branding", tx("admin.logo_va_loyiha_sozlamalari")],
         ].map(([value, label]) => (
           <button key={value} type="button"
@@ -716,6 +779,23 @@ export default function Admin() {
           </>
         ) : tab === "projects" ? (
           <Card padded={false} title={tx("common.barcha_loyihalar")}>
+            <div className="filters card-body" style={{ paddingBottom: 12 }}>
+              <div className="f">
+                <label htmlFor="adm-proj-status">{tx("common.holat")}</label>
+                <select
+                  id="adm-proj-status"
+                  value={projectStatusFilter}
+                  onChange={(e) => {
+                    setProjectStatusFilter(e.target.value as "all" | "active" | "deleted");
+                    setProjectPage(1);
+                  }}
+                >
+                  <option value="all">{tx("admin.holat_barchasi")}</option>
+                  <option value="active">{tx("admin.holat_faol")}</option>
+                  <option value="deleted">{tx("admin.holat_ochirilgan")}</option>
+                </select>
+              </div>
+            </div>
             {!projects?.length ? (
               <Empty title={tx("admin.loyiha_yoq")} text={tx("admin.hali_birorta_loyiha_ochilmagan")} />
             ) : (
@@ -733,10 +813,21 @@ export default function Admin() {
                 </thead>
                 <tbody>
                   {projects.map((p) => (
-                    <tr key={p.id}>
+                    <tr key={p.id} style={p.is_deleted ? { opacity: 0.75, background: "rgba(239, 68, 68, 0.04)" } : undefined}>
                       <td>
                         <span className="lang-dot" style={{ background: p.color }} />{" "}
-                        <Link {...toProject(p.id)}>{p.name}</Link>
+                        {p.is_deleted ? (
+                          <span style={{ textDecoration: "line-through", color: "var(--text-muted)" }}>
+                            {p.name}
+                          </span>
+                        ) : (
+                          <Link {...toProject(p.id)}>{p.name}</Link>
+                        )}
+                        {p.is_deleted && (
+                          <span className="badge badge-danger" style={{ marginLeft: 6, fontSize: 11 }}>
+                            {tx("admin.holat_ochirilgan")}
+                          </span>
+                        )}
                       </td>
                       <td className="muted">{p.workspace_name}</td>
                       <td>{p.manager?.full_name || "—"}</td>
@@ -744,9 +835,20 @@ export default function Admin() {
                       <td className="right">{p.open_tasks}</td>
                       <td className="right">{p.progress}%</td>
                       <td className="right nowrap">
-                        <Link {...toProjectEdit(p.id)} className="btn btn-sm btn-outline">
-                          ✏️ {tx("common.tahrirlash")}
-                        </Link>
+                        {p.is_deleted ? (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline"
+                            disabled={busy}
+                            onClick={() => void handleRestoreProject(p.id, p.name)}
+                          >
+                            ♻️ {tx("admin.qayta_tiklash")}
+                          </button>
+                        ) : (
+                          <Link {...toProjectEdit(p.id)} className="btn btn-sm btn-outline">
+                            ✏️ {tx("common.tahrirlash")}
+                          </Link>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -849,6 +951,144 @@ export default function Admin() {
               <div className="card-body">
                 <Pager page={orderPage} pages={orderPages} onPick={setOrderPage} />
               </div>
+            )}
+          </Card>
+        ) : tab === "trash" ? (
+          <Card padded={false} title={`🗑️ ${tx("admin.ochirilganlar")}`}>
+            <div className="card-body" style={{ borderBottom: "1px solid var(--border)", display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                className={`btn btn-sm ${trashSubTab === "projects" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => { setTrashSubTab("projects"); setTrashProjectPage(1); }}
+              >
+                📁 {tx("admin.ochirilgan_loyihalar")}
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${trashSubTab === "tasks" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => { setTrashSubTab("tasks"); setTrashTaskPage(1); }}
+              >
+                ✓ {tx("admin.ochirilgan_vazifalar")}
+              </button>
+            </div>
+
+            {trashSubTab === "projects" ? (
+              trashProjectsLoading ? (
+                <Loading />
+              ) : !trashProjects?.length ? (
+                <Empty
+                  title={tx("admin.ochirilgan_narsalar_yoq")}
+                  text="Hozircha birorta ham o'chirilgan loyiha yo'q."
+                />
+              ) : (
+                <div className="table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>{tx("common.loyiha")}</th>
+                        <th>{tx("admin.ish_maydoni")}</th>
+                        <th>{tx("admin.menejer")}</th>
+                        <th>{tx("admin.ochirilgan_sana")}</th>
+                        <th>{tx("admin.ochirgan_shaxs")}</th>
+                        <th className="right">{tx("orders.amallar", undefined, "Amallar")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {trashProjects.map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            <span className="lang-dot" style={{ background: p.color }} />{" "}
+                            <strong>{p.name}</strong>{" "}
+                            <span className="muted" style={{ fontSize: 12 }}>({p.key})</span>
+                          </td>
+                          <td className="muted">{p.workspace_name}</td>
+                          <td>{p.manager?.full_name || "—"}</td>
+                          <td className="muted" style={{ fontSize: 12.5 }}>
+                            {p.deleted_at ? fmtDate(p.deleted_at) : "—"}
+                          </td>
+                          <td>{p.deleted_by?.full_name || "—"}</td>
+                          <td className="right nowrap">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-primary"
+                              disabled={busy}
+                              onClick={() => void handleRestoreProject(p.id, p.name)}
+                            >
+                              ♻️ {tx("admin.qayta_tiklash")}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {trashProjectPages > 1 && (
+                    <div className="card-body">
+                      <Pager page={trashProjectPage} pages={trashProjectPages} onPick={setTrashProjectPage} />
+                    </div>
+                  )}
+                </div>
+              )
+            ) : (
+              trashTasksLoading ? (
+                <Loading />
+              ) : !trashTasks?.length ? (
+                <Empty
+                  title={tx("admin.ochirilgan_narsalar_yoq")}
+                  text="Hozircha birorta ham o'chirilgan vazifa yo'q."
+                />
+              ) : (
+                <div className="table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Kod / Nomi</th>
+                        <th>Loyiha</th>
+                        <th>Holati</th>
+                        <th>Ijrochilar</th>
+                        <th>{tx("admin.ochirilgan_sana")}</th>
+                        <th className="right">{tx("orders.amallar", undefined, "Amallar")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {trashTasks.map((t) => (
+                        <tr key={t.id}>
+                          <td>
+                            <span className="mono" style={{ fontSize: 12, fontWeight: 700, marginRight: 6 }}>
+                              {t.code}
+                            </span>
+                            <strong>{t.title}</strong>
+                          </td>
+                          <td className="muted">{t.project_name || `Loyiha #${t.project}`}</td>
+                          <td>
+                            <span className="badge">{t.status_display || t.status}</span>
+                          </td>
+                          <td className="muted" style={{ fontSize: 12.5 }}>
+                            {t.assignees?.map((a) => a.full_name).join(", ") || "—"}
+                          </td>
+                          <td className="muted" style={{ fontSize: 12.5 }}>
+                            {t.deleted_at ? fmtDate(t.deleted_at) : "—"}
+                          </td>
+                          <td className="right nowrap">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-primary"
+                              disabled={busy}
+                              onClick={() => void handleRestoreTask(t.id, t.title)}
+                            >
+                              ♻️ {tx("admin.qayta_tiklash")}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {trashTaskPages > 1 && (
+                    <div className="card-body">
+                      <Pager page={trashTaskPage} pages={trashTaskPages} onPick={setTrashTaskPage} />
+                    </div>
+                  )}
+                </div>
+              )
             )}
           </Card>
         ) : (

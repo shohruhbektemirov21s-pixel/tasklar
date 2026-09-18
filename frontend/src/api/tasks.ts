@@ -1,4 +1,4 @@
-﻿import { api } from "./client";
+import { api } from "./client";
 import type { Task } from "./types";
 
 export interface CreateSubtaskPayload {
@@ -27,3 +27,11 @@ export async function unlinkSubtask(taskId: number, subtaskId: number): Promise<
 export async function getAvailableSubtasks(taskId: number, q?: string): Promise<Task[]> {
   return api.get<Task[]>(`/tasks/${taskId}/available-subtasks/`, q ? { q } : undefined);
 }
+
+/**
+ * O'chirilgan vazifani qayta tiklash.
+ */
+export async function restoreTask(taskId: number): Promise<Task> {
+  return api.post<Task>(`/tasks/${taskId}/restore/`);
+}
+

@@ -197,6 +197,9 @@ export interface Project {
     status: string;
     status_display: string;
   } | null;
+  deleted_at?: string | null;
+  deleted_by?: UserBrief | null;
+  is_deleted?: boolean;
 }
 
 export interface ProjectMember {

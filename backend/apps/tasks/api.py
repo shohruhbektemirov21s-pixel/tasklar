@@ -44,11 +44,18 @@ class TaskViewSet(viewsets.ModelViewSet):
     # ------------------------------------------------------------ queryset
     def get_queryset(self):
         user = self.request.user
-        base_mgr = Task.all_objects if self.action == "retrieve" else Task.objects
-        qs = (base_mgr.for_display()
-              # O'chirilgan loyihaning vazifalari hech qayerda ko'rinmaydi
-              # (yozuvlar bazada qoladi).
-              .filter(project__deleted_at__isnull=True))
+        p = self.request.query_params
+        include_deleted = (
+            p.get("deleted") == "1"
+            or p.get("include_deleted") == "1"
+            or p.get("deleted_only") == "1"
+        ) and (user.is_platform_admin or getattr(user, "is_boss", False))
+        base_mgr = Task.all_objects if (self.action in ("retrieve", "restore") or include_deleted) else Task.objects
+        qs = base_mgr.for_display()
+        if not include_deleted and self.action != "restore":
+            qs = qs.filter(project__deleted_at__isnull=True)
+        if p.get("deleted_only") == "1":
+            qs = qs.filter(deleted_at__isnull=False)
 
         # Ko'rish doirasi `ProjectAccess.can_view` bilan bir xil qoidadan
         # keladi: a'zo bo'lgan loyihalar + o'z ish maydonidagi ochiqlar.

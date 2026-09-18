@@ -8402,5 +8402,53 @@
   "orders.pm_tanlang": {
     "value": "Loyiha menejerini (PM) tanlang",
     "note": "pages/ChangeRequests.tsx"
+  },
+  "admin.ochirilganlar": {
+    "value": "Chiqindi qutisi",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.ochirilgan_loyihalar": {
+    "value": "O'chirilgan loyihalar",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.ochirilgan_vazifalar": {
+    "value": "O'chirilgan vazifalar",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.qayta_tiklash": {
+    "value": "Qayta tiklash",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.ochirilgan_sana": {
+    "value": "O'chirilgan sana",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.ochirgan_shaxs": {
+    "value": "Kim o'chirgan",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.loyiha_tiklandi": {
+    "value": "«{nom}» loyihasi muvaffaqiyatli qayta tiklandi.",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.vazifa_tiklandi": {
+    "value": "«{nom}» vazifasi muvaffaqiyatli qayta tiklandi.",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.ochirilgan_narsalar_yoq": {
+    "value": "O'chirilgan ma'lumotlar mavjud emas.",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.holat_barchasi": {
+    "value": "Barchasi",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.holat_faol": {
+    "value": "Faol",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.holat_ochirilgan": {
+    "value": "O'chirilgan",
+    "note": "pages/Admin.tsx"
   }
 }

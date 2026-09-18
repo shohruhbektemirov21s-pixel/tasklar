@@ -180,12 +180,19 @@ class ProjectViewSet(viewsets.ModelViewSet):
     # ------------------------------------------------------------ queryset
     def get_queryset(self):
         user = self.request.user
+        scope = self.request.query_params.get("scope", "mine")
+        include_deleted = (
+            self.request.query_params.get("include_deleted") == "1"
+            or self.request.query_params.get("deleted") == "1"
+            or (scope == "all" and sees_all_projects(user))
+        )
+        base_mgr = Project.all_objects if include_deleted else Project.objects
         # `specialties` va `memberships` seriyalizatorda har loyiha uchun
         # o'qiladi (kerakli yo'nalishlar, jamoa tarkibi, ruxsatlar). Oldindan
         # yuklanmasa har biri alohida so'rov bo'lardi - ro'yxat uzayganda
         # so'rovlar soni loyihalar soniga ko'payib ketardi.
-        qs = (Project.objects
-              .select_related("workspace", "manager", "created_by", "updated_by")
+        qs = (base_mgr
+              .select_related("workspace", "manager", "created_by", "updated_by", "deleted_by")
               .prefetch_related("specialties", "memberships__user")
               # `progress_pct` faqat TARTIB uchun - javobga chiqmaydi
               # (seriyalizatorda bunday maydon yo'q). Ekrandagi foizni
@@ -264,6 +271,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         status_param = self.request.query_params.get("status")
         if status_param:
             qs = qs.filter(status=status_param)
+
+        deleted_status = self.request.query_params.get("deleted_status")
+        if deleted_status == "deleted":
+            qs = qs.filter(deleted_at__isnull=False)
+        elif deleted_status == "active":
+            qs = qs.filter(deleted_at__isnull=True)
 
         # Qidiruv: nom, kalit, tavsif va LOYIHA HUJJATLARINING nomi. Odam
         # ko'pincha loyihani nomidan emas, undagi hujjatdan eslaydi -
@@ -603,6 +616,23 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # Yozuv bazadan yo'qolmaydi: vazifalar, fayllar va tarix joyida qoladi.
         live_project(instance, "deleted", self.request.user)
         instance.soft_delete(self.request.user)
+
+    @action(detail=True, methods=["post"], url_path="restore")
+    def restore(self, request, pk=None):
+        """O'chirilgan loyihani qayta tiklash - faqat admin yoki boshliq."""
+        user = request.user
+        if not (user.is_platform_admin or getattr(user, "is_boss", False)):
+            raise PermissionDenied("Faqat tizim admini yoki boshliq o'chirilgan loyihani tiklay oladi.")
+        project = Project.all_objects.filter(pk=pk).first()
+        if not project:
+            raise Http404("Loyiha topilmadi.")
+        if project.deleted_at:
+            project.restore()
+            log(actor=user, verb="project.restored", workspace=project.workspace,
+                summary="Loyiha tiklandi: " + project.name,
+                meta={"project": project.pk, "key": project.key})
+            live_project(project, "restored", user)
+        return Response(ProjectSerializer(project, context=self.get_serializer_context()).data)
 
     # ------------------------------------------------------------ brif
     @action(detail=True, methods=["get", "patch", "put"])
