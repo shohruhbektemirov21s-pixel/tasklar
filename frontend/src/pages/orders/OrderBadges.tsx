@@ -28,14 +28,6 @@ export const ORDER_TYPE_CONFIG: Record<
     border: "rgba(217, 119, 6, 0.3)",
     get desc() { return tx("orders.type_needs_classification_desc"); },
   },
-  MAINTENANCE: {
-    get label() { return tx("orders.texnik_xizmat"); },
-    icon: "🛠️",
-    bg: "rgba(100, 116, 139, 0.12)",
-    color: "#475569",
-    border: "rgba(100, 116, 139, 0.3)",
-    get desc() { return tx("orders.type_maintenance_desc"); },
-  },
 };
 
 export function OrderTypeBadge({ type }: { type?: string }) {

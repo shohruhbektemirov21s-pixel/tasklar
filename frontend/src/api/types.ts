@@ -932,8 +932,7 @@ export interface SidebarCounts {
 export type OrderTypeValue =
   | "NEW"
   | "CONTINUATION"
-  | "NEEDS_CLASSIFICATION"
-  | "MAINTENANCE";
+  | "NEEDS_CLASSIFICATION";
 
 export interface OrderPeriodRow {
   key: DashboardPeriod;

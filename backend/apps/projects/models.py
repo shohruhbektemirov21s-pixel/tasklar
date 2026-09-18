@@ -42,7 +42,6 @@ class ProjectType(models.TextChoices):
     NEW = "NEW", "Yangi loyiha"
     CONTINUATION = "CONTINUATION", "Davom ettiriladigan"
     NEEDS_CLASSIFICATION = "NEEDS_CLASSIFICATION", "Tuzatish kerak bo'lgan"
-    MAINTENANCE = "MAINTENANCE", "Texnik qo'llab-quvvatlash"
 
 
 class RequestStatus(models.TextChoices):
