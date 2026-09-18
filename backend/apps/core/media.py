@@ -24,6 +24,7 @@ Ruxsatning o'zi API qatlamida qoladi - u allaqachon to'g'ri ishlaydi:
 ro'yxatni ko'ra olsang, imzolangan manzilni ham olasan.
 """
 
+from urllib.parse import unquote
 from django.conf import settings
 from django.core import signing
 from django.core.exceptions import PermissionDenied
@@ -52,12 +53,21 @@ def media_url(fieldfile):
     except ValueError:
         # Fayl biriktirilmagan bo'lsa `.url` ValueError beradi.
         return None
+    # Brending va logotiplar ommaviy — muddatsiz va to'g'ridan-to'g'ri ochiladi
+    if fieldfile.name and fieldfile.name.startswith("branding/"):
+        return url
     token = signing.dumps(fieldfile.name, salt=MEDIA_SALT)
     return "{}?t={}".format(url, token)
 
 
 def serve_media(request, path):
-    """`/media/...` - faqat API bergan imzo bilan ochiladi."""
+    """`/media/...` - faqat API bergan imzo bilan ochiladi (branding/ bundan mustasno)."""
+    path_unquoted = unquote(path)
+
+    # Brending va logotiplar barcha uchun ommaviy (sayt logotipi, favicon, admin panel)
+    if path.startswith("branding/") or path_unquoted.startswith("branding/"):
+        return serve(request, path_unquoted, document_root=settings.MEDIA_ROOT)
+
     try:
         signed_path = signing.loads(request.GET.get("t", ""),
                                     salt=MEDIA_SALT, max_age=MEDIA_TTL)
@@ -66,12 +76,13 @@ def serve_media(request, path):
     except signing.BadSignature:
         raise PermissionDenied("Fayl manzili yaroqsiz.")
 
-    # Imzo aynan shu faylga berilganmi. Bo'lmasa - bitta faylning manzili
-    # bilan boshqasini ochib olish mumkin bo'lardi.
-    if signed_path != path:
+    # Imzo aynan shu faylga berilganmi. Brauzer URL-encode qilib yuborishi
+    # yoki server decode qilgan bo'lishi mumkin - har ikki ko'rinishda solishtiramiz.
+    signed_unquoted = unquote(signed_path)
+    if path not in (signed_path, signed_unquoted) and path_unquoted not in (signed_path, signed_unquoted):
         raise PermissionDenied("Fayl manzili yaroqsiz.")
 
-    response = serve(request, path, document_root=settings.MEDIA_ROOT)
+    response = serve(request, path_unquoted, document_root=settings.MEDIA_ROOT)
     ctype = (response.headers.get("Content-Type") or "").split(";")[0].strip()
     if ctype not in INLINE_SAFE:
         # Fayl nomi saqlanadi, faqat "inline" -> "attachment" ga almashadi.

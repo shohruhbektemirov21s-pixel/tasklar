@@ -75,8 +75,12 @@ export function subscribeBranding(fn: (b: SystemBranding) => void) {
   };
 }
 
-function notifyListeners(b: SystemBranding) {
-  if (typeof document !== "undefined" && b.app_name) {
+const DEFAULT_FAVICON =
+  "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9889;</text></svg>";
+
+export function applyBrandingToDocument(b: SystemBranding) {
+  if (typeof document === "undefined") return;
+  if (b.app_name) {
     const newName = b.app_name.trim();
     if (newName) {
       if (!document.title || document.title.includes("TeamFlow")) {
@@ -84,6 +88,26 @@ function notifyListeners(b: SystemBranding) {
       }
     }
   }
+  let iconLink = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+  if (!iconLink) {
+    iconLink = document.createElement("link");
+    iconLink.rel = "icon";
+    document.head.appendChild(iconLink);
+  }
+  iconLink.href = b.logo_url || DEFAULT_FAVICON;
+}
+
+// Sahifa birinchi yuklanganda keshdagi brending va favikonni darhol qo'llash
+if (typeof document !== "undefined") {
+  try {
+    applyBrandingToDocument(loadStoredBranding());
+  } catch {
+    // ignore
+  }
+}
+
+function notifyListeners(b: SystemBranding) {
+  applyBrandingToDocument(b);
   listeners.forEach((fn) => {
     try {
       fn(b);

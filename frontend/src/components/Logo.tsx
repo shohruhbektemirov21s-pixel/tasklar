@@ -1,7 +1,7 @@
 /**
  * Tizim brend belgisi (Logo va nomi).
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSystemBranding } from "@/api/branding";
 import { tx } from "@/i18n";
 
@@ -9,6 +9,10 @@ export function Logo({ size = 30 }: { size?: number }) {
   const branding = useSystemBranding();
 
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFailedUrl(null);
+  }, [branding.logo_url]);
 
   if (branding.logo_url && branding.logo_url !== failedUrl) {
     return (

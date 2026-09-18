@@ -24,6 +24,7 @@ def branding_context(request):
             settings.JAZZMIN_SETTINGS["site_title"] = f"{app_name} Admin"
             settings.JAZZMIN_SETTINGS["site_header"] = f"⚡ {app_name} Boshqaruv"
             settings.JAZZMIN_SETTINGS["site_brand"] = app_name
+            settings.JAZZMIN_SETTINGS["site_logo"] = logo_url
             settings.JAZZMIN_SETTINGS["welcome_sign"] = f"{app_name} Boshqaruv Paneliga xush kelibsiz!"
             settings.JAZZMIN_SETTINGS["copyright"] = app_name
 

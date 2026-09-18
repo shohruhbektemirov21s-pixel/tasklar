@@ -47,6 +47,13 @@ class UiText(models.Model):
         cache.delete("uitexts:version")
 
 
+def branding_logo_upload_to(instance, filename):
+    import os
+    import time
+    ext = os.path.splitext(filename)[1].lower() or ".png"
+    return f"branding/logo_{int(time.time())}{ext}"
+
+
 class SystemSetting(models.Model):
     """Tizim sozlamalari: brending, logotip va tizim nomi."""
 
@@ -59,7 +66,7 @@ class SystemSetting(models.Model):
     )
     logo = models.FileField(
         "Yangi logotip yuklash",
-        upload_to="branding/",
+        upload_to=branding_logo_upload_to,
         blank=True,
         null=True,
         help_text="Tizim logotipi uchun rasm faylini tanlang (PNG, SVG, JPG, WebP). Saqlash tugmasini bosishingiz bilan butun saytda yangi logotip ko'rinadi."
@@ -84,6 +91,14 @@ class SystemSetting(models.Model):
         return obj
 
     def save(self, *args, **kwargs):
+        # Eski logotip almashtirilsa, diskdagi eski faylni tozalash
+        if self.pk:
+            try:
+                old = SystemSetting.objects.filter(pk=self.pk).first()
+                if old and old.logo and old.logo != self.logo:
+                    old.logo.delete(save=False)
+            except Exception:
+                pass
         super().save(*args, **kwargs)
         from django.core.cache import cache
         from django.conf import settings
@@ -97,6 +112,7 @@ class SystemSetting(models.Model):
         cache.delete("uitexts:branding_obj")
 
         app_title = self.app_name or "TeamFlow"
+        logo_url = media_url(self.logo) if self.logo else None
 
         # 2. Django Admin va Jazzmin sarlavhalarini darhol yangilash
         try:
@@ -108,6 +124,7 @@ class SystemSetting(models.Model):
                 settings.JAZZMIN_SETTINGS["site_title"] = f"{app_title} Admin"
                 settings.JAZZMIN_SETTINGS["site_header"] = f"⚡ {app_title} Boshqaruv"
                 settings.JAZZMIN_SETTINGS["site_brand"] = app_title
+                settings.JAZZMIN_SETTINGS["site_logo"] = logo_url
                 settings.JAZZMIN_SETTINGS["welcome_sign"] = f"{app_title} Boshqaruv Paneliga xush kelibsiz!"
                 settings.JAZZMIN_SETTINGS["copyright"] = app_title
         except Exception:
