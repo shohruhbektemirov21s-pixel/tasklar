@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ApiError, api } from "@/api/client";
 import { deleteProject } from "@/api/projects";
@@ -30,6 +30,8 @@ export default function ProjectForm({
   onSuccess,
 }: ProjectFormProps = {}) {
   const fid = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const modalBodyRef = useRef<HTMLDivElement>(null);
   // Saqlash tugmasi sarlavhada, ya'ni `<form>` dan tashqarida turadi -
   // `form` atributi orqali bog'lanadi, shuning uchun formaga id kerak.
   const formId = `${fid}-form`;
@@ -180,16 +182,36 @@ export default function ProjectForm({
     setF((p) => ({ ...p, [k]: v }));
   }
 
+  const selectedOrder = f.order_id ? orders.find((o) => o.id === f.order_id) : (initialOrder || null);
+  const orderReqDate = selectedOrder?.request_date
+    ? selectedOrder.request_date.split("T")[0]
+    : undefined;
+  const orderPmStart = selectedOrder?.pm_start_date || undefined;
+  // Agar PM buyurtmada boshlanish sanasini belgilagan bo'lsa, loyiha ham shu sanadan boshlanishi mumkin.
+  const minAllowedDate = (orderReqDate && orderPmStart)
+    ? (orderPmStart < orderReqDate ? orderPmStart : orderReqDate)
+    : (orderPmStart || orderReqDate);
+
+  function showError(msg: string, fErrors?: Record<string, string>) {
+    setError(msg);
+    if (fErrors) setErrors((prev) => ({ ...prev, ...fErrors }));
+    modalBodyRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function handleOrderChange(selectedId: number | null) {
     set("order_id", selectedId);
     if (selectedId && !editing) {
       const ord = orders.find((o) => o.id === selectedId);
       if (ord) {
         const ordDate = ord.request_date ? ord.request_date.split("T")[0] : "";
+        const ordPmStart = ord.pm_start_date || "";
+        const ordMinDate = (ordDate && ordPmStart)
+          ? (ordPmStart < ordDate ? ordPmStart : ordDate)
+          : (ordPmStart || ordDate);
         setF((prev) => {
-          const newStart = prev.start_date && ordDate && prev.start_date < ordDate
-            ? ordDate
-            : (prev.start_date || ord.pm_start_date || ordDate || "");
+          const newStart = prev.start_date && ordMinDate && prev.start_date < ordMinDate
+            ? ordMinDate
+            : (prev.start_date || ordPmStart || ordDate || "");
           let newDue = prev.due_date || ord.pm_deadline || ord.due_date || "";
           if (newStart && newDue && newDue < newStart) {
             newDue = newStart;
@@ -213,7 +235,7 @@ export default function ProjectForm({
     setErrors((prev) => {
       const next = { ...prev };
       delete next.start_date;
-      if (orderDate && v && v < orderDate) {
+      if (minAllowedDate && v && v < minAllowedDate) {
         next.start_date = tx(
           "project_form.boshlanish_buyurtmadan_oldin_bolmasin",
           undefined,
@@ -259,11 +281,6 @@ export default function ProjectForm({
     }
   }, [targetOrderId, orders]);
 
-  const selectedOrder = f.order_id ? orders.find((o) => o.id === f.order_id) : (initialOrder || null);
-  const orderDate = selectedOrder?.request_date
-    ? selectedOrder.request_date.split("T")[0]
-    : undefined;
-
   useEffect(() => {
     try {
       localStorage.removeItem("teamflow_draft_new_project");
@@ -274,14 +291,18 @@ export default function ProjectForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (f.order_id && orderDate && f.start_date && f.start_date < orderDate) {
+    if (!f.name.trim()) {
+      const msg = tx("project_form.loyiha_nomini_kiriting", undefined, "Loyiha nomini kiriting.");
+      showError(msg, { name: msg });
+      return;
+    }
+    if (f.order_id && minAllowedDate && f.start_date && f.start_date < minAllowedDate) {
       const msg = tx(
         "project_form.boshlanish_buyurtmadan_oldin_bolmasin",
         undefined,
         "Loyiha boshlanish sanasi buyurtma sanasidan oldin bo'lishi mumkin emas."
       );
-      setErrors({ start_date: msg });
-      setError(msg);
+      showError(msg, { start_date: msg });
       return;
     }
     if (f.start_date && f.due_date && f.due_date < f.start_date) {
@@ -290,8 +311,7 @@ export default function ProjectForm({
         undefined,
         "Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas."
       );
-      setErrors({ due_date: msg });
-      setError(msg);
+      showError(msg, { due_date: msg });
       return;
     }
     // Hujjat nomsiz va sanasiz yuklanmaydi (server ham shunday tekshiradi) -
@@ -299,11 +319,11 @@ export default function ProjectForm({
     // qolar, odam esa uni «Hujjatlar» bo'limidan qayta yuklashi kerak edi.
     if (files.length) {
       if (!fileNote.trim()) {
-        setError(tx("project_form.fayllar_uchun_hujjat_nomini_yozing"));
+        showError(tx("project_form.fayllar_uchun_hujjat_nomini_yozing"));
         return;
       }
       if (!fileDate) {
-        setError(tx("project_form.hujjat_sanasi_korsatilmagan"));
+        showError(tx("project_form.hujjat_sanasi_korsatilmagan"));
         return;
       }
     }
@@ -391,9 +411,8 @@ export default function ProjectForm({
       go(toProject(saved.id, tasks ? "doska" : "brif"));
     } catch (err) {
       if (err instanceof ApiError) {
-        setErrors(err.fields);
-        setError(err.message);
-      } else setError(tx("common.saqlashda_xatolik"));
+        showError(err.message, err.fields);
+      } else showError(tx("common.saqlashda_xatolik"));
     } finally {
       setBusy(false);
     }
@@ -486,7 +505,7 @@ export default function ProjectForm({
           </div>
           <div className="field">
             <label htmlFor={`${fid}-0`}>{tx("project_form.loyiha_nomi")}</label>
-            <input id={`${fid}-0`} value={f.name} required onChange={(e) => set("name", e.target.value)}
+            <input id={`${fid}-0`} value={f.name} onChange={(e) => set("name", e.target.value)}
                    placeholder={tx("project_form.masalan_mobil_ilova_v2")} />
             {errors.name && <div className="err">{errors.name}</div>}
           </div>
@@ -511,7 +530,7 @@ export default function ProjectForm({
             <div className="field" style={{ flex: 1 }}>
               <label htmlFor={`${fid}-2`}>{tx("project_form.boshlanish_sanasi")}</label>
               <DateField id={`${fid}-2`} value={f.start_date}
-                         min={orderDate || undefined}
+                         min={minAllowedDate || undefined}
                          max={f.due_date || undefined}
                          onChange={handleStartDateChange} />
               {errors.start_date && <div className="err">{errors.start_date}</div>}
@@ -696,7 +715,20 @@ export default function ProjectForm({
                   <option key={s.value} value={String(s.value)}>{s.label}</option>
                 ))}
               </select>
-              <button className="btn btn-primary" form={formId} disabled={busy}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={busy}
+                onClick={() => {
+                  if (formRef.current) {
+                    if (formRef.current.requestSubmit) {
+                      formRef.current.requestSubmit();
+                    } else {
+                      formRef.current.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                    }
+                  }
+                }}
+              >
                 {busy ? tx("common.saqlanmoqda") : editing ? tx("common.saqlash") : tx("project_form.loyiha_yaratish")}
               </button>
               <button
@@ -713,6 +745,7 @@ export default function ProjectForm({
 
           {/* Modal Scrollable Body */}
           <div
+            ref={modalBodyRef}
             style={{
               flex: 1,
               overflowY: "auto",
@@ -720,7 +753,7 @@ export default function ProjectForm({
             }}
           >
             <ErrorMsg error={error} />
-            <form id={formId} onSubmit={submit}>
+            <form ref={formRef} id={formId} onSubmit={submit}>
               {formFields}
             </form>
           </div>
@@ -747,7 +780,20 @@ export default function ProjectForm({
                 <option key={s.value} value={String(s.value)}>{s.label}</option>
               ))}
             </select>
-            <button className="btn btn-primary" form={formId} disabled={busy}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={busy}
+              onClick={() => {
+                if (formRef.current) {
+                  if (formRef.current.requestSubmit) {
+                    formRef.current.requestSubmit();
+                  } else {
+                    formRef.current.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                  }
+                }
+              }}
+            >
               {busy ? tx("common.saqlanmoqda") : editing ? tx("common.saqlash") : tx("project_form.loyiha_yaratish")}
             </button>
             <button type="button" className="btn" onClick={() => go(-1)}>{tx("common.bekor_qilish")}</button>
@@ -756,7 +802,7 @@ export default function ProjectForm({
       />
       <div className="content">
         <ErrorMsg error={error} />
-        <form id={formId} onSubmit={submit}>
+        <form ref={formRef} id={formId} onSubmit={submit}>
           {formFields}
         </form>
       </div>

@@ -89,8 +89,11 @@ export async function addPickedMembers(projectId: number, picks: Pick[]) {
         user_id: p.user.id,
         role: p.role,
       });
-    } catch {
-      failed.push(p.user.full_name);
+    } catch (err: unknown) {
+      const msg = (err instanceof Error ? err.message : String(err || "")).toLowerCase();
+      if (!msg.includes("allaqachon")) {
+        failed.push(p.user.full_name);
+      }
     }
   }
   return failed;

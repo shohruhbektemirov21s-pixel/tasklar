@@ -106,9 +106,13 @@ def add_to_project(actor, project, target, role=None):
     if not ProjectAccess(actor, project).can_grant_role(role):
         raise PermissionDenied("Menejer rolini faqat amaldagi menejer bera oladi.")
     if target.pk == actor.pk:
+        existing_self = project.memberships.filter(user=target, is_active=True).first()
+        if existing_self:
+            return existing_self
         raise ValidationError({"user_id": "Ozingizni qosha olmaysiz."})
-    if project.memberships.filter(user=target, is_active=True).exists():
-        raise ValidationError({"user_id": "Bu odam allaqachon jamoada."})
+    existing = project.memberships.filter(user=target, is_active=True).first()
+    if existing:
+        return existing
 
     member, _ = ProjectMember.objects.update_or_create(
         project=project, user=target,

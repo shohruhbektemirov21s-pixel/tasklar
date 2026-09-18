@@ -144,9 +144,10 @@ class ProjectSerializer(serializers.ModelSerializer):
             order = ChangeRequest.objects.filter(pk=order_id).first()
             if order and start:
                 order_date = order.request_date or (order.created_at.date() if order.created_at else None)
-                if order_date and start < order_date:
+                min_allowed = min(filter(None, [order.pm_start_date, order_date])) if (order.pm_start_date or order_date) else None
+                if min_allowed and start < min_allowed:
                     raise serializers.ValidationError({
-                        "start_date": f"Loyihaning boshlanish sanasi buyurtma sanasidan ({order_date.strftime('%d.%m.%Y')}) oldin bo'lishi mumkin emas."
+                        "start_date": f"Loyihaning boshlanish sanasi buyurtma sanasidan ({min_allowed.strftime('%d.%m.%Y')}) oldin bo'lishi mumkin emas."
                     })
         return attrs
 
