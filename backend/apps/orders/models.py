@@ -33,7 +33,7 @@ class ChangeRequestStatus(models.TextChoices):
 class ChangeRequestType(models.TextChoices):
     NEW = "NEW", "Yangi loyiha"
     CONTINUATION = "CONTINUATION", "Davom ettiriladigan"
-    NEEDS_CLASSIFICATION = "NEEDS_CLASSIFICATION", "Turlash kerak bo'lgan"
+    NEEDS_CLASSIFICATION = "NEEDS_CLASSIFICATION", "Tuzatish kerak bo'lgan"
     MODERNIZATION = "MODERNIZATION", "Modernizatsiya va takomillashtirish"
     MAINTENANCE = "MAINTENANCE", "Texnik qo'llab-quvvatlash"
 
@@ -60,7 +60,7 @@ class ChangeRequest(models.Model):
         choices=ChangeRequestType.choices,
         default=ChangeRequestType.NEW,
         db_index=True,
-        help_text="Loyiha turi: Yangi loyiha, Davom ettiriladigan yoki Turlash kerak bo'lgan",
+        help_text="Loyiha turi: Yangi loyiha, Davom ettiriladigan yoki Tuzatish kerak bo'lgan",
     )
     request_date = models.DateField("Sana", default=timezone.localdate)
     department = models.CharField("Buyurtma qilayotgan bo'linma", max_length=200, blank=True, default="")

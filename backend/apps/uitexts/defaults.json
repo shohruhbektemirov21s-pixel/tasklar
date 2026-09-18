@@ -4188,7 +4188,7 @@
     "note": "pages/OrderDetail.tsx"
   },
   "orders.turlash_kerak": {
-    "value": "Turlash talab etiladi",
+    "value": "Tuzatish kerak",
     "note": "pages/ChangeRequests.tsx"
   },
   "orders.tuzatish_hujjati": {
@@ -4212,7 +4212,7 @@
     "note": "pages/orders/OrderBadges.tsx"
   },
   "orders.type_needs_classification_desc": {
-    "value": "Boshqarma taklifi / PM tomonidan tahlil va turlash talab etiladi",
+    "value": "Boshqarma taklifi / PM tomonidan tahlil va tuzatish talab etiladi",
     "note": "pages/orders/OrderBadges.tsx"
   },
   "orders.type_new_desc": {

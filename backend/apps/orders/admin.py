@@ -92,7 +92,7 @@ class ChangeRequestAdmin(admin.ModelAdmin):
         colors = {
             ChangeRequestType.NEW: ("#10b981", "🚀 Yangi loyiha"),
             ChangeRequestType.CONTINUATION: ("#2563eb", "🔄 Davom ettiriladigan"),
-            ChangeRequestType.NEEDS_CLASSIFICATION: ("#d97706", "🏷️ Turlash kerak"),
+            ChangeRequestType.NEEDS_CLASSIFICATION: ("#d97706", "🏷️ Tuzatish kerak"),
             ChangeRequestType.MODERNIZATION: ("#8b5cf6", "⚡ Modernizatsiya"),
             ChangeRequestType.MAINTENANCE: ("#64748b", "🛠️ Qo'llab-quvvatlash"),
         }

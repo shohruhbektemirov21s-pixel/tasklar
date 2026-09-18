@@ -458,7 +458,7 @@ class OrdersSeniorDevTests(ApiTestCase):
         )
         self.assertEqual(res_class.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res_class.json()["order_type"], ChangeRequestType.NEEDS_CLASSIFICATION)
-        self.assertEqual(res_class.json()["order_type_display"], "Turlash kerak bo'lgan")
+        self.assertEqual(res_class.json()["order_type_display"], "Tuzatish kerak bo'lgan")
 
         # 4. Filtr bo'yicha so'rovlar
         filter_res = client.get(f"/api/orders/?order_type={ChangeRequestType.CONTINUATION}")

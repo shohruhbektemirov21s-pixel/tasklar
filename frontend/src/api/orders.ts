@@ -31,7 +31,7 @@ export const ORDER_TYPE_CONFIG: Record<
     bg: "rgba(217, 119, 6, 0.12)",
     color: "#d97706",
     border: "rgba(217, 119, 6, 0.3)",
-    desc: "Boshqarma taklifi / PM tomonidan tahlil va turlash talab etiladi",
+    desc: "Boshqarma taklifi / PM tomonidan tahlil va tuzatish talab etiladi",
   },
   MODERNIZATION: {
     get label() { return tx("orders.modernizatsiya"); },
