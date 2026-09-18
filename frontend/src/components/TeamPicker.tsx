@@ -11,7 +11,7 @@
  * yangi loyihada hali a'zo yo'q, shuning uchun `/team/candidates/` dan
  * foydalanib bo'lmaydi — u mavjud loyihani talab qiladi.
  */
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, listOf } from "@/api/client";
 import type { Choice, Task, UserBrief } from "@/api/types";
 import { MAX_FILE_BYTES, fileSize, uploadFiles } from "./FilePicker";
@@ -168,10 +168,15 @@ interface Props {
   defaultRole?: string;
   /** O'zini qo'sha olmaydi — ro'yxatdan chiqarib tashlanadi. */
   excludeId?: number;
+  /** Loyiha boshlanish sanasi - vazifalar undan oldin boshlanishi mumkin emas */
+  projectStartDate?: string;
+  /** Loyiha tugash muddati */
+  projectDueDate?: string;
 }
 
 export default function TeamPicker({
   picks, onChange, roles, priorities, defaultRole = "DEVELOPER", excludeId,
+  projectStartDate, projectDueDate,
 }: Props) {
   const { user } = useAuth();
   const isBoss = Boolean(user?.is_boss || user?.global_role === "BOSS");
@@ -196,6 +201,47 @@ export default function TeamPicker({
   /** Bitta odamning yozuvini yangilaydi — qolganlariga tegmaydi. */
   const patch = (i: number, part: Partial<Pick>) =>
     onChange(picks.map((x, n) => (n === i ? { ...x, ...part } : x)));
+
+  // Loyihaning boshlanish sanasi o'zgarganda, barcha kiritilgan vazifalarning
+  // boshlanish sanasi loyiha boshlanishidan oldin bo'lib qolmasligini ta'minlash
+  useEffect(() => {
+    if (!projectStartDate) return;
+    let hasChange = false;
+    const nextPicks = picks.map((p) => {
+      let pChanged = false;
+      const nextTasks = p.tasks.map((t) => {
+        if (t.start_date && t.start_date < projectStartDate) {
+          pChanged = true;
+          const newDue = t.due_date && t.due_date < projectStartDate ? projectStartDate : t.due_date;
+          return { ...t, start_date: projectStartDate, due_date: newDue };
+        }
+        return t;
+      });
+      let nextDraft = p.draft;
+      if (p.draft.start_date && p.draft.start_date < projectStartDate) {
+        pChanged = true;
+        const newDue = p.draft.due_date && p.draft.due_date < projectStartDate ? projectStartDate : p.draft.due_date;
+        nextDraft = { ...p.draft, start_date: projectStartDate, due_date: newDue };
+      }
+      let nextEdit = p.edit;
+      if (p.edit?.task?.start_date && p.edit.task.start_date < projectStartDate) {
+        pChanged = true;
+        const newDue = p.edit.task.due_date && p.edit.task.due_date < projectStartDate ? projectStartDate : p.edit.task.due_date;
+        nextEdit = {
+          ...p.edit,
+          task: { ...p.edit.task, start_date: projectStartDate, due_date: newDue },
+        };
+      }
+      if (pChanged) {
+        hasChange = true;
+        return { ...p, tasks: nextTasks, draft: nextDraft, edit: nextEdit };
+      }
+      return p;
+    });
+    if (hasChange) {
+      onChange(nextPicks);
+    }
+  }, [projectStartDate]);
 
   const total = taskCount(picks);
 
@@ -261,6 +307,8 @@ export default function TeamPicker({
                           edit: null,
                         })}
                         onCancel={() => patch(i, { edit: null })}
+                        projectStartDate={projectStartDate}
+                        projectDueDate={projectDueDate}
                       />
                     ) : (
                       <div className="pick-task" key={n}>
@@ -311,6 +359,8 @@ export default function TeamPicker({
                       value={p.draft}
                       onValue={(d) => patch(i, { draft: d })}
                       onSubmit={(t) => patch(i, { tasks: [...p.tasks, t], draft: emptyTask() })}
+                      projectStartDate={projectStartDate}
+                      projectDueDate={projectDueDate}
                     />
                   )}
                 </div>
@@ -342,13 +392,15 @@ export default function TeamPicker({
  * saqlanadi. Avval qoralama shu komponent ichida turardi va jimgina
  * yo'qolib ketardi.
  */
-function TaskAdder({ priorities, value, onValue, onSubmit, onCancel }: {
+function TaskAdder({ priorities, value, onValue, onSubmit, onCancel, projectStartDate, projectDueDate }: {
   priorities: Choice[];
   value: PickTask;
   onValue: (task: PickTask) => void;
   onSubmit: (task: PickTask) => void;
   /** Berilsa - tahrir rejimi. */
   onCancel?: () => void;
+  projectStartDate?: string;
+  projectDueDate?: string;
 }) {
   const [tooBig, setTooBig] = useState<string[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -371,7 +423,18 @@ function TaskAdder({ priorities, value, onValue, onSubmit, onCancel }: {
   function submit() {
     const clean = value.title.trim();
     if (!clean) return;
-    onSubmit({ ...value, title: clean });
+    let startDate = value.start_date;
+    if (startDate && projectStartDate && startDate < projectStartDate) {
+      startDate = projectStartDate;
+    }
+    let dueDate = value.due_date;
+    if (dueDate && projectStartDate && dueDate < projectStartDate) {
+      dueDate = projectStartDate;
+    }
+    if (startDate && dueDate && dueDate < startDate) {
+      dueDate = startDate;
+    }
+    onSubmit({ ...value, title: clean, start_date: startDate, due_date: dueDate });
     setTooBig([]);
   }
 
@@ -404,25 +467,39 @@ function TaskAdder({ priorities, value, onValue, onSubmit, onCancel }: {
       <div className="row wrap">
         <label className="pick-date">
           <small className="muted">{tx("common.boshlanish")}</small>
-          <DateField value={value.start_date} max={value.due_date || undefined}
-                     onChange={(v) => {
-                       if (v && value.due_date && value.due_date < v) {
-                         set({ start_date: v, due_date: v });
-                       } else {
-                         set({ start_date: v });
-                       }
-                     }} />
+          <DateField
+            value={value.start_date}
+            min={projectStartDate || undefined}
+            max={value.due_date || projectDueDate || undefined}
+            onChange={(v) => {
+              if (v && projectStartDate && v < projectStartDate) {
+                v = projectStartDate;
+              }
+              if (v && value.due_date && value.due_date < v) {
+                set({ start_date: v, due_date: v });
+              } else {
+                set({ start_date: v });
+              }
+            }}
+          />
         </label>
         <label className="pick-date">
           <small className="muted">{tx("team_picker.tugash")}</small>
-          <DateField value={value.due_date} min={value.start_date || undefined}
-                     onChange={(v) => {
-                       if (v && value.start_date && v < value.start_date) {
-                         set({ due_date: value.start_date });
-                       } else {
-                         set({ due_date: v });
-                       }
-                     }} />
+          <DateField
+            value={value.due_date}
+            min={value.start_date || projectStartDate || undefined}
+            max={projectDueDate || undefined}
+            onChange={(v) => {
+              if (v && projectStartDate && v < projectStartDate) {
+                v = projectStartDate;
+              }
+              if (v && value.start_date && v < value.start_date) {
+                set({ due_date: value.start_date });
+              } else {
+                set({ due_date: v });
+              }
+            }}
+          />
         </label>
       </div>
 

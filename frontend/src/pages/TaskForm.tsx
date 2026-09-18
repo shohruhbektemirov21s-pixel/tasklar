@@ -802,8 +802,12 @@ export default function TaskForm() {
                   <div className="field" style={{ flex: 1, minWidth: 190 }}>
                     <label htmlFor={`${fid}-7`}>{tx("common.boshlanish")}</label>
                     <DateTimeField id={`${fid}-7`} value={f.start_date}
-                                   max={f.due_date || undefined}
+                                   min={project?.start_date ? `${project.start_date}T00:00` : undefined}
+                                   max={f.due_date || (project?.due_date ? `${project.due_date}T23:59` : undefined)}
                                    onChange={(v) => {
+                                     if (project?.start_date && v && v.split("T")[0] < project.start_date) {
+                                       v = `${project.start_date}T00:00`;
+                                     }
                                      set("start_date", v);
                                      if (f.due_date && v && f.due_date < v) {
                                        setErrors((p) => ({ ...p, due_date: "Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas." }));

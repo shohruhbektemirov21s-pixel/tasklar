@@ -4,7 +4,7 @@ import { ApiError, api } from "@/api/client";
 import { deleteProject } from "@/api/projects";
 import { getOrders } from "@/api/orders";
 import FilePicker, { uploadFiles } from "@/components/FilePicker";
-import TeamPicker, { addPickedMembers, createPickedTasks, taskCount }
+import TeamPicker, { addPickedMembers, createPickedTasks, taskCount, tasksOf }
   from "@/components/TeamPicker";
 import type { Pick as TeamPick } from "@/components/TeamPicker";
 import type { Access, Brief, ChangeRequestItem, Project } from "@/api/types";
@@ -313,6 +313,18 @@ export default function ProjectForm({
       );
       showError(msg, { due_date: msg });
       return;
+    }
+    if (f.start_date && !editing) {
+      for (const p of team) {
+        for (const t of tasksOf(p)) {
+          if (t.start_date && t.start_date < f.start_date) {
+            const formatted = f.start_date.split("-").reverse().join(".");
+            const msg = `«${t.title}» vazifasining boshlanish sanasi loyiha boshlanish sanasidan (${formatted}) oldin bo'lishi mumkin emas.`;
+            showError(msg);
+            return;
+          }
+        }
+      }
     }
     // Hujjat nomsiz va sanasiz yuklanmaydi (server ham shunday tekshiradi) -
     // buni loyiha yaratilgandan KEYIN aytish kech bo'lardi: fayl o'tmay
@@ -636,6 +648,8 @@ export default function ProjectForm({
               priorities={meta?.task_priority || []}
               defaultRole="DEVELOPER"
               excludeId={user?.id}
+              projectStartDate={f.start_date}
+              projectDueDate={f.due_date}
             />
           </Card>
         )}

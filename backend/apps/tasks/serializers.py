@@ -185,6 +185,22 @@ class TaskSerializer(serializers.ModelSerializer):
             if due_day < today and (not self.instance or self.instance.due_date != new_due):
                 raise serializers.ValidationError({
                     "due_date": "Muddat bugungi kundan oldingi sana bo'lishi mumkin emas."})
+
+        # Vazifaning boshlanish sanasi loyiha boshlanish sanasidan oldin bo'lmasin
+        project = attrs.get("project", getattr(self.instance, "project", None))
+        if not project and hasattr(self, "initial_data") and self.initial_data:
+            project_id = self.initial_data.get("project") or self.context.get("project_id")
+            if project_id:
+                from apps.projects.models import Project
+                try:
+                    project = Project.objects.filter(id=project_id).first()
+                except Exception:
+                    pass
+        if project and project.start_date and start:
+            start_day = timezone.localdate(start) if timezone.is_aware(start) else start.date()
+            if start_day < project.start_date:
+                raise serializers.ValidationError({
+                    "start_date": f"Vazifaning boshlanish sanasi loyiha boshlanish sanasidan ({project.start_date.strftime('%d.%m.%Y')}) oldin bo'lishi mumkin emas."})
         return attrs
 
     def validate_assignee_ids(self, value):
