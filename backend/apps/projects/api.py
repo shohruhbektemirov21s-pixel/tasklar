@@ -294,10 +294,19 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # aks holda ro'yxatdan yo'qolgan loyiha xatodek tuyulardi.
         from apps.core.periods import due_date_span
 
-        span = due_date_span(self.request.query_params.get("due"),
-                             self.request.query_params.get("period"))
+        due_from = self.request.query_params.get("due_from")
+        due_to = self.request.query_params.get("due_to")
+        span = due_date_span(
+            self.request.query_params.get("due"),
+            self.request.query_params.get("period"),
+            due_from=due_from,
+            due_to=due_to,
+        )
         if span:
-            qs = qs.filter(due_date__gte=span[0], due_date__lt=span[1])
+            if span[0] is not None:
+                qs = qs.filter(due_date__gte=span[0])
+            if span[1] is not None:
+                qs = qs.filter(due_date__lt=span[1])
         return qs
 
     def get_serializer_class(self):

@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useFetch } from "@/api/useFetch";
 import type { TeamWorkloadData, WorkloadRow, WorkloadStats } from "@/api/types";
@@ -6,7 +6,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { IconCalendar } from "@/components/icons";
 import {
-  Avatar, DUE_PERIODS, Empty, ErrorMsg, Loading, Pager, Progress,
+  Avatar, DUE_PERIODS, DateField, Empty, ErrorMsg, Loading, Pager, Progress,
   SpecialtyTag, fmtDate,
 } from "@/components/ui";
 import { toTask, toUser } from "@/nav";
@@ -38,7 +38,7 @@ export default function Tasks() {
   const { meta } = useAuth();
   // Filtrlar shu bo'limning ichida: manzilga ham, sahifa holatiga ham
   // yozilmaydi - yuqoridagi loyiha qidiruvi bilan chalkashmasin.
-  const [f, setF] = useState({ search: "", project: "", period: "", due: "", status: "" });
+  const [f, setF] = useState({ search: "", project: "", period: "week", due_from: "", due_to: "", status: "" });
   // Bir vaqtda BITTA odam ochiq turadi: ikkitasi ochilsa ro'yxat yana
   // cho'zilib ketardi va yig'ishdan maqsad yo'qolardi.
   const [open, setOpen] = useState<number | null>(null);
@@ -47,9 +47,23 @@ export default function Tasks() {
   // bo'sh ekranga urilardi.
   const [page, setPage] = useState(1);
 
+  const dateRangeError = useMemo(() => {
+    if (f.due_from && f.due_to && f.due_from > f.due_to) {
+      return tx("common.sana_oraligi_xato", undefined, "Boshlanish sanasi tugash sanasidan katta bo'lishi mumkin emas");
+    }
+    return null;
+  }, [f.due_from, f.due_to]);
+
+  const fetchParams = useMemo(() => {
+    if (dateRangeError) {
+      return { search: f.search, project: f.project, period: "", due_from: "", due_to: "", status: f.status, page };
+    }
+    return { ...f, page };
+  }, [f, dateRangeError, page]);
+
   // Qidiruv har harfda emas, yozish to'xtagach ketadi.
   const { data, error, loading } = useFetch<TeamWorkloadData>(
-    "/team/workload/", { ...f, page }, { debounceMs: 300 });
+    "/team/workload/", fetchParams, { debounceMs: 300 });
 
   const set = (k: keyof typeof f, v: string) => {
     // Filtr almashganda ochiq qator yopiladi: ro'yxat butunlay boshqa
@@ -61,16 +75,16 @@ export default function Tasks() {
     setF((prev) => ({
       ...prev,
       [k]: v,
-      ...(k === "period" ? { due: "" } : {}),
-      ...(k === "due" ? { period: "" } : {}),
+      ...(k === "period" && v ? { due_from: "", due_to: "" } : {}),
+      ...(k === "due_from" || k === "due_to" ? { period: "" } : {}),
     }));
   };
   const clear = () => {
     setOpen(null);
     setPage(1);
-    setF({ search: "", project: "", period: "", due: "", status: "" });
+    setF({ search: "", project: "", period: "week", due_from: "", due_to: "", status: "" });
   };
-  const dirty = Boolean(f.search || f.project || f.period || f.due || f.status);
+  const dirty = Boolean(f.search || f.project || f.period !== "week" || f.due_from || f.due_to || f.status);
   const rows = data?.developers || null;
 
   return (
@@ -87,7 +101,7 @@ export default function Tasks() {
         }
       />
       <div className="content wl">
-        <ErrorMsg error={error} />
+        <ErrorMsg error={dateRangeError || error} />
 
         {/* Qidiruv chapda va keng, tanlovlar o'ngda - ular tor va soni
             o'zgarmaydi. */}
@@ -128,6 +142,24 @@ export default function Tasks() {
                 ))}
               </select>
             </div>
+            <div className="f wl-date">
+              <label htmlFor={`${fid}-df`}>{tx("common.sana_dan", undefined, "Sana (dan)")}</label>
+              <DateField
+                id={`${fid}-df`}
+                value={f.due_from}
+                onChange={(v) => set("due_from", v)}
+                style={dateRangeError ? { borderColor: "var(--danger)" } : undefined}
+              />
+            </div>
+            <div className="f wl-date">
+              <label htmlFor={`${fid}-dt`}>{tx("common.sana_gacha", undefined, "Sana (gacha)")}</label>
+              <DateField
+                id={`${fid}-dt`}
+                value={f.due_to}
+                onChange={(v) => set("due_to", v)}
+                style={dateRangeError ? { borderColor: "var(--danger)" } : undefined}
+              />
+            </div>
             <div className="f">
               <label htmlFor={`${fid}-t`}>{tx("tasks.vazifa_holati")}</label>
               {/* Standart ko'rinish - TUGALLANMAGAN ish: bajarilgani ro'yxatni
@@ -145,6 +177,12 @@ export default function Tasks() {
             )}
           </div>
         </div>
+
+        {dateRangeError && (
+          <div style={{ color: "var(--danger)", fontSize: 13, fontWeight: 500, padding: "0 14px 10px" }}>
+            ⚠️ {dateRangeError}
+          </div>
+        )}
 
         {loading ? <Loading /> : !rows ? null : !rows.length ? (
           <div className="card">

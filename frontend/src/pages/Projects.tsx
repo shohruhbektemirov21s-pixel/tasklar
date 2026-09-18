@@ -363,8 +363,15 @@ function statusCounts(tasks: Task[], order: Choice[] | undefined) {
 function MyProjectTasks() {
   const fid = useId();
   const { meta } = useAuth();
-  const [f, setF] = useState({ search: "", period: "", due: "", status: "" });
+  const [f, setF] = useState({ search: "", period: "week", due_from: "", due_to: "", status: "" });
   const [page, setPage] = useState(1);
+
+  const dateRangeError = useMemo(() => {
+    if (f.due_from && f.due_to && f.due_from > f.due_to) {
+      return tx("common.sana_oraligi_xato", undefined, "Boshlanish sanasi tugash sanasidan katta bo'lishi mumkin emas");
+    }
+    return null;
+  }, [f.due_from, f.due_to]);
 
   const set = (k: keyof typeof f, v: string) => {
     // Filtr o'zgardi - ro'yxat ham boshqacha bo'ladi va uchinchi sahifada
@@ -376,22 +383,34 @@ function MyProjectTasks() {
     setF((prev) => ({
       ...prev,
       [k]: v,
-      ...(k === "period" ? { due: "" } : {}),
-      ...(k === "due" ? { period: "" } : {}),
+      ...(k === "period" && v ? { due_from: "", due_to: "" } : {}),
+      ...(k === "due_from" || k === "due_to" ? { period: "" } : {}),
     }));
   };
 
   /** Filtrni tozalash - sahifa raqami bilan birga. */
   const clear = () => {
     setPage(1);
-    setF({ search: "", period: "", due: "", status: "" });
+    setF({ search: "", period: "week", due_from: "", due_to: "", status: "" });
   };
+
+  const fetchParams = useMemo(() => {
+    if (dateRangeError) {
+      return { search: f.search, period: "", due_from: "", due_to: "" };
+    }
+    return {
+      search: f.search,
+      period: f.period,
+      due_from: f.due_from,
+      due_to: f.due_to,
+    };
+  }, [f.search, f.period, f.due_from, f.due_to, dateRangeError]);
 
   // Qidiruv va muddat kesimi serverda (`/my-work/`), holat esa shu yerda:
   // javob allaqachon holatlarga bo'lingan holda keladi. Loyiha bo'yicha
   // filtr yo'q - ro'yxatning O'ZI loyihalarga bo'lingan.
   const { data, error, loading } = useFetch<MyWorkData>(
-    "/my-work/", { search: f.search, period: f.period, due: f.due }, { debounceMs: 300 });
+    "/my-work/", fetchParams, { debounceMs: 300 });
 
   const groups = useMemo(() => {
     if (!data) return null;
@@ -439,7 +458,7 @@ function MyProjectTasks() {
     return out;
   }, [groups, safePage]);
 
-  const dirty = Boolean(f.search || f.period || f.due || f.status);
+  const dirty = Boolean(f.search || f.period !== "week" || f.due_from || f.due_to || f.status);
 
   return (
     <>
@@ -461,7 +480,7 @@ function MyProjectTasks() {
           chapda, tanlovlar o'ngda. Shu sabab `wl` sinfi ham shu yerda -
           o'lchamlar bitta joyda yozilgan. */}
       <div className="content wl">
-        <ErrorMsg error={error} />
+        <ErrorMsg error={dateRangeError || error} />
 
         <div className="filters">
           <div className="f wl-search">
@@ -483,8 +502,22 @@ function MyProjectTasks() {
               </select>
             </div>
             <div className="f wl-date">
-              <label htmlFor={`${fid}-d`}>{tx("common.sana")}</label>
-              <DateField id={`${fid}-d`} value={f.due} onChange={(v) => set("due", v)} />
+              <label htmlFor={`${fid}-df`}>{tx("common.sana_dan", undefined, "Sana (dan)")}</label>
+              <DateField
+                id={`${fid}-df`}
+                value={f.due_from}
+                onChange={(v) => set("due_from", v)}
+                style={dateRangeError ? { borderColor: "var(--danger)" } : undefined}
+              />
+            </div>
+            <div className="f wl-date">
+              <label htmlFor={`${fid}-dt`}>{tx("common.sana_gacha", undefined, "Sana (gacha)")}</label>
+              <DateField
+                id={`${fid}-dt`}
+                value={f.due_to}
+                onChange={(v) => set("due_to", v)}
+                style={dateRangeError ? { borderColor: "var(--danger)" } : undefined}
+              />
             </div>
             <div className="f">
               <label htmlFor={`${fid}-s`}>{tx("common.holat")}</label>
@@ -506,6 +539,12 @@ function MyProjectTasks() {
             )}
           </div>
         </div>
+
+        {dateRangeError && (
+          <div style={{ color: "var(--danger)", fontSize: 13, fontWeight: 500, padding: "0 14px 10px" }}>
+            ⚠️ {dateRangeError}
+          </div>
+        )}
 
         {loading ? <Loading /> : !groups ? null : !groups.length ? (
           <div className="card">

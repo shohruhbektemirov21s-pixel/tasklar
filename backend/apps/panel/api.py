@@ -842,9 +842,19 @@ def my_work(request):
     if search:
         qs = qs.filter(task_search_q(search))
 
-    span = due_span(request.query_params.get("due"), request.query_params.get("period"))
+    due_from = request.query_params.get("due_from")
+    due_to = request.query_params.get("due_to")
+    span = due_span(
+        request.query_params.get("due"),
+        request.query_params.get("period"),
+        due_from=due_from,
+        due_to=due_to,
+    )
     if span:
-        qs = qs.filter(due_date__gte=span[0], due_date__lt=span[1])
+        if span[0] is not None:
+            qs = qs.filter(due_date__gte=span[0])
+        if span[1] is not None:
+            qs = qs.filter(due_date__lt=span[1])
 
     half = (request.query_params.get("half") or "").strip()
     if half == "1":

@@ -274,7 +274,14 @@ def workload(request):
     # ikkala sahifada bir xil hafta bo'ladi.
     from apps.core.periods import due_span
 
-    span = due_span(request.query_params.get("due"), request.query_params.get("period"))
+    due_from = request.query_params.get("due_from")
+    due_to = request.query_params.get("due_to")
+    span = due_span(
+        request.query_params.get("due"),
+        request.query_params.get("period"),
+        due_from=due_from,
+        due_to=due_to,
+    )
 
     if not scope_ids:
         # Javob shakli har doim bir xil bo'lsin - interfeys `pages` ni
@@ -325,7 +332,10 @@ def workload(request):
             base = base.filter(task_search_q(search, path="task__")
                                | Q(user_id__in=named))
         if span:
-            base = base.filter(task__due_date__gte=span[0], task__due_date__lt=span[1])
+            if span[0] is not None:
+                base = base.filter(task__due_date__gte=span[0])
+            if span[1] is not None:
+                base = base.filter(task__due_date__lt=span[1])
 
         # ---- SANOQLAR: holat filtridan TASHQARI hamma kesim bilan.
         #

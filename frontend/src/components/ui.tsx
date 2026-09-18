@@ -823,10 +823,10 @@ export function TaskScopeNote({ access }: { access?: Access | null }) {
  * oy» oy boshidan oxirigacha - ya'ni KALENDAR davri, «oxirgi 7 kun» emas.
  */
 export const DUE_PERIODS = [
-  { value: "today", label: tx("common.bugun") },
-  { value: "week", label: tx("ui.shu_hafta") },
-  { value: "month", label: tx("ui.shu_oy") },
-  { value: "year", label: tx("ui.shu_yil") },
+  { value: "today", label: tx("common.bugun", undefined, "Bugun") },
+  { value: "week", label: tx("ui.shu_hafta", undefined, "1 haftalik") },
+  { value: "month", label: tx("ui.shu_oy", undefined, "Shu oy") },
+  { value: "year", label: tx("ui.shu_yil", undefined, "Shu yil") },
 ] as const;
 
 export const STATUS_DOT: Record<string, string> = {

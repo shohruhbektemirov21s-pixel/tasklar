@@ -304,6 +304,24 @@ class MyWorkFiltersTest(ApiTestCase):
         r = self.client_for(self.dev).get("/api/my-work/", {"period": "yillik"})
         self.assertEqual(r.status_code, 400)
 
+    def test_sana_oraligi_boyicha(self):
+        Task.objects.filter(pk=self.today_task.pk).update(
+            due_date=timezone.make_aware(datetime(2026, 3, 15, 10, 0)))
+        Task.objects.filter(pk=self.later_task.pk).update(
+            due_date=timezone.make_aware(datetime(2026, 4, 10, 10, 0)))
+        self.assertEqual(
+            self.titles(self.my_work(due_from="2026-03-12", due_to="2026-04-19")),
+            ["Bugungi ish", "Keyingi yilgi ish"],
+        )
+
+    def test_sana_oraligi_teskari_400(self):
+        r = self.client_for(self.dev).get("/api/my-work/", {
+            "due_from": "2026-03-12",
+            "due_to": "2025-02-11",
+        })
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("due", r.data)
+
 
 class MeManagesProjectsTest(ApiTestCase):
     """`/auth/me/` dagi `manages_projects` - interfeys shunga qarab bo'linadi."""

@@ -111,18 +111,44 @@ def _due_range(key):
     return midnight(span[0]), midnight(span[1])
 
 
-def due_span(due_raw="", period=""):
-    """«Muddat» kesimi: aniq SANA yoki tayyor DAVR -> `[boshi, oxiri)`.
+def due_span(due_raw="", period="", due_from="", due_to=""):
+    """«Muddat» kesimi: aniq SANA, sana oralig'i yoki tayyor DAVR -> `[boshi, oxiri)`.
 
     Ikkovi ham bir xil natijaga keladi, shuning uchun bitta joyda. Birga
-    berilsa aniq sana ustun turadi - u aniqroq so'rov. Hech biri berilmasa
-    `None` qaytadi, ya'ni kesim yo'q.
+    berilsa aniq sana yoki sana oralig'i ustun turadi - u aniqroq so'rov.
+    Hech biri berilmasa `None` qaytadi, ya'ni kesim yo'q.
 
     Muddati QO'YILMAGAN ish bu kesimga hech qachon tushmaydi: `due_date`
     bo'sh bo'lsa ikkala solishtiruv ham NULL beradi.
     """
     due_raw = (due_raw or "").strip()
     period = (period or "").strip()
+    due_from = (due_from or "").strip()
+    due_to = (due_to or "").strip()
+
+    if ".." in due_raw:
+        parts = due_raw.split("..", 1)
+        due_from = due_from or parts[0].strip()
+        due_to = due_to or parts[1].strip()
+
+    if due_from or due_to:
+        start_day = None
+        end_day = None
+        if due_from:
+            start_day = parse_date(due_from)
+            if start_day is None:
+                raise DrfValidationError({"due_from": "Sana YYYY-MM-DD korinishida bolsin."})
+        if due_to:
+            end_day = parse_date(due_to)
+            if end_day is None:
+                raise DrfValidationError({"due_to": "Sana YYYY-MM-DD korinishida bolsin."})
+
+        if start_day and end_day and start_day > end_day:
+            raise DrfValidationError({"due": "Boshlanish sanasi tugash sanasidan katta bo'lishi mumkin emas."})
+
+        start = timezone.make_aware(datetime.combine(start_day, dtime.min)) if start_day else None
+        end = (timezone.make_aware(datetime.combine(end_day, dtime.min)) + timezone.timedelta(days=1)) if end_day else None
+        return start, end
 
     if due_raw:
         day = parse_date(due_raw)
@@ -144,7 +170,7 @@ def due_span(due_raw="", period=""):
     return None
 
 
-def due_date_span(due_raw="", period=""):
+def due_date_span(due_raw="", period="", due_from="", due_to=""):
     """`due_span` ning SANA ko'rinishi - `Project.due_date` (`DateField`) uchun.
 
     Qoida `due_span` bilan bir xil: aniq sana ustun turadi, hech biri
@@ -153,6 +179,32 @@ def due_date_span(due_raw="", period=""):
     """
     due_raw = (due_raw or "").strip()
     period = (period or "").strip()
+    due_from = (due_from or "").strip()
+    due_to = (due_to or "").strip()
+
+    if ".." in due_raw:
+        parts = due_raw.split("..", 1)
+        due_from = due_from or parts[0].strip()
+        due_to = due_to or parts[1].strip()
+
+    if due_from or due_to:
+        start_day = None
+        end_day = None
+        if due_from:
+            start_day = parse_date(due_from)
+            if start_day is None:
+                raise DrfValidationError({"due_from": "Sana YYYY-MM-DD korinishida bolsin."})
+        if due_to:
+            end_day = parse_date(due_to)
+            if end_day is None:
+                raise DrfValidationError({"due_to": "Sana YYYY-MM-DD korinishida bolsin."})
+
+        if start_day and end_day and start_day > end_day:
+            raise DrfValidationError({"due": "Boshlanish sanasi tugash sanasidan katta bo'lishi mumkin emas."})
+
+        start = start_day
+        end = (end_day + timezone.timedelta(days=1)) if end_day else None
+        return start, end
 
     if due_raw:
         day = parse_date(due_raw)
