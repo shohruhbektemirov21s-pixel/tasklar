@@ -55,3 +55,64 @@ def ui_texts(request):
     # lekin ETag borligi uchun qayta so'rov baribir arzon (304).
     response["Cache-Control"] = "no-cache"
     return response
+
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def system_settings(request):
+    """Tizim brendingi: tizim nomi va logotipi."""
+    from apps.core.media import media_url
+    from .models import SystemSetting
+
+    setting = SystemSetting.get_settings()
+
+    if request.method == "GET":
+        return Response({
+            "app_name": setting.app_name or "TeamFlow",
+            "logo_url": media_url(setting.logo) if setting.logo else None,
+            "updated_at": setting.updated_at.isoformat() if setting.updated_at else None,
+        })
+
+    # POST - faqat platforma admini yoki boss
+    user = request.user
+    if not (user and user.is_authenticated and (user.is_platform_admin or getattr(user, "is_boss", False))):
+        return Response({"detail": "Ushbu amal faqat administratorlar uchun ruxsat etilgan."}, status=403)
+
+    app_name = request.data.get("app_name")
+    if app_name is not None:
+        setting.app_name = str(app_name).strip() or "TeamFlow"
+
+    remove_logo = request.data.get("remove_logo")
+    if str(remove_logo).lower() in ["true", "1"]:
+        if setting.logo:
+            try:
+                setting.logo.delete(save=False)
+            except Exception:
+                pass
+            setting.logo = None
+    elif "logo" in request.FILES:
+        from apps.core.uploads import check_upload
+        logo_file = request.FILES["logo"]
+        check_upload(logo_file)
+        setting.logo = logo_file
+
+    setting.save()
+
+    try:
+        from apps.notifications.services import send_to_users
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        all_users = list(User.objects.filter(is_active=True))
+        send_to_users(all_users, {
+            "event": "system.branding_update",
+            "app_name": setting.app_name,
+            "logo_url": media_url(setting.logo) if setting.logo else None,
+        })
+    except Exception:
+        pass
+
+    return Response({
+        "app_name": setting.app_name or "TeamFlow",
+        "logo_url": media_url(setting.logo) if setting.logo else None,
+        "updated_at": setting.updated_at.isoformat() if setting.updated_at else None,
+    })

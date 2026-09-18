@@ -203,6 +203,38 @@
     "value": "Yoqish",
     "note": "pages/Admin.tsx"
   },
+  "admin.logo_va_loyiha_sozlamalari": {
+    "value": "Logo va tizim sozlamalari",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.tizim_sozlamalari_sarlavha": {
+    "value": "Tizim brendingi va logotipi",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.tizim_loyiha_nomi": {
+    "value": "Tizim / Loyiha nomi",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.tizim_nomi_tavsif": {
+    "value": "Ushbu nom butun tizim bo'ylab bosh sahifa, yon panel va sarlavhalarda ko'rinadi.",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.tizim_logotipi": {
+    "value": "Tizim logotipi",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.yangi_logo_tanlash": {
+    "value": "Logotip yuklash",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.standart_logoga_qaytish": {
+    "value": "Standart logoga qaytish",
+    "note": "pages/Admin.tsx"
+  },
+  "admin.sozlamalar_saqlandi": {
+    "value": "Tizim sozlamalari muvaffaqiyatli saqlandi.",
+    "note": "pages/Admin.tsx"
+  },
   "admin_gate.bu_bolim_tizim_adminiga_hisoblar": {
     "value": "Bu bo'lim tizim adminiga — hisoblar, rollar va parollar",
     "note": "pages/AdminGate.tsx"
@@ -4177,6 +4209,10 @@
   },
   "orders.tz_birinchisi_tasdiqlanmaguncha_ikkinchisi_mumkin_emas": {
     "value": "Buyurtmaning 1-chi TZsi tasdiqlanmaguncha 2-chi TZ tasdiqlanmaydi. Avval 1-versiyani tasdiqlang.",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.pm_yakunlagan_yangi_tz_mumkin_emas": {
+    "value": "Loyiha menejeri ishni yakunlab topshirgan (boshqarma tasdig'ida). Yangi TZ yuborishdan oldin ishni qabul qiling yoki kamchilik bilan qaytaring.",
     "note": "pages/OrderDetail.tsx"
   },
   "orders.tz_birinchisi_tasdiqlanmaguncha_yuklash_mumkin_emas": {
@@ -8250,5 +8286,33 @@
   "workspaces.yangi_maydon_yarating_yoki_ochiq": {
     "value": "Yangi maydon yarating yoki ochiq maydonga qoshiling.",
     "note": "pages/Workspaces.tsx"
+  },
+  "project_form.boshlanish_buyurtmadan_oldin_bolmasin": {
+    "value": "Loyiha boshlanish sanasi buyurtma sanasidan oldin bo'lishi mumkin emas.",
+    "note": "pages/ProjectForm.tsx"
+  },
+  "project_form.loyiha_nomini_kiriting": {
+    "value": "Loyiha nomini kiriting.",
+    "note": "pages/ProjectForm.tsx"
+  },
+  "project_form.tugash_boshlanishdan_oldin_bolmasin": {
+    "value": "Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas.",
+    "note": "pages/ProjectForm.tsx"
+  },
+  "common.sana_dan": {
+    "value": "Sana (dan)",
+    "note": "pages/Projects.tsx"
+  },
+  "common.sana_gacha": {
+    "value": "Sana (gacha)",
+    "note": "pages/Projects.tsx"
+  },
+  "common.sana_oraligi_xato": {
+    "value": "Boshlanish sanasi tugash sanasidan katta bo'lishi mumkin emas",
+    "note": "pages/Projects.tsx"
+  },
+  "ui.shu_hafta": {
+    "value": "1 haftalik",
+    "note": "components/ui.tsx"
   }
 }

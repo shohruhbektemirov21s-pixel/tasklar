@@ -45,3 +45,32 @@ class UiText(models.Model):
         from django.core.cache import cache
         cache.delete("uitexts:data")
         cache.delete("uitexts:version")
+
+
+class SystemSetting(models.Model):
+    """Tizim sozlamalari: brending, logotip va tizim nomi."""
+
+    key = models.CharField("Sozlama kaliti", max_length=60, unique=True, default="branding")
+    app_name = models.CharField("Tizim / Loyiha nomi", max_length=150, default="TeamFlow")
+    logo = models.FileField("Logotip", upload_to="branding/", blank=True, null=True)
+    updated_at = models.DateTimeField("O'zgartirilgan", auto_now=True)
+
+    class Meta:
+        verbose_name = "Tizim sozlamasi"
+        verbose_name_plural = "Tizim sozlamalari"
+
+    def __str__(self):
+        return f"{self.key}: {self.app_name}"
+
+    @classmethod
+    def get_settings(cls):
+        obj, _ = cls.objects.get_or_create(key="branding", defaults={"app_name": "TeamFlow"})
+        return obj
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete("uitexts:data")
+        cache.delete("uitexts:version")
+        cache.delete("uitexts:branding")
+

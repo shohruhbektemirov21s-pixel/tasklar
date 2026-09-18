@@ -13,7 +13,7 @@
  * KO'RINISH ilovaning qolgan qismidan farq qilmaydi: o'sha shisha
  * kartalar, o'sha ranglar. Admin panel «boshqa dastur» bo'lib qolmasin.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api, listOf, pagesOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
@@ -21,10 +21,12 @@ import type { Project, User } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { Avatar, Card, confirmDelete, Empty, ErrorMsg, fmtDate, Loading, Pager } from "@/components/ui";
-import { toProject, toUser } from "@/nav";
+import { toProject, toProjectEdit, toUser } from "@/nav";
 import { tx } from "@/i18n";
+import { useSystemBranding, updateSystemBranding } from "@/api/branding";
+import { Logo } from "@/components/Logo";
 
-type Tab = "users" | "specialties" | "projects";
+type Tab = "users" | "specialties" | "projects" | "branding";
 
 const ROLE_TONE: Record<string, string> = {
   ADMIN: "badge-danger", BOSS: "badge-warning", MANAGER: "badge-info", DEVELOPER: "", QA: "",
@@ -97,6 +99,47 @@ export default function Admin() {
     tab === "specialties" ? "/auth/specialties/" : null);
   const specialties = useMemo(
     () => (specData?.specialties || []) as SpecialtyItem[], [specData]);
+
+  const currentBranding = useSystemBranding();
+  const [brandAppName, setBrandAppName] = useState(currentBranding.app_name || "TeamFlow");
+  const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(currentBranding.logo_url);
+  const [removeLogo, setRemoveLogo] = useState(false);
+
+  useEffect(() => {
+    if (currentBranding.app_name) {
+      setBrandAppName(currentBranding.app_name);
+    }
+    if (currentBranding.logo_url) {
+      setLogoPreview(currentBranding.logo_url);
+    }
+  }, [currentBranding.app_name, currentBranding.logo_url]);
+
+  async function handleSaveBranding(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setOkMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("app_name", brandAppName.trim());
+      if (brandLogoFile) {
+        fd.append("logo", brandLogoFile);
+      } else if (removeLogo) {
+        fd.append("remove_logo", "true");
+      }
+      const updated = await updateSystemBranding(fd);
+      setBrandAppName(updated.app_name);
+      setLogoPreview(updated.logo_url);
+      setBrandLogoFile(null);
+      setRemoveLogo(false);
+      done(tx("admin.sozlamalar_saqlandi"));
+    } catch (err: unknown) {
+      failed(err, "Tizim sozlamalarini saqlashda xatolik yuz berdi.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function done(message: string) {
     setError(null);
@@ -219,6 +262,7 @@ export default function Admin() {
           ["projects", counts.projects
             ? `${tx("common.loyihalar")} (${counts.projects})`
             : tx("common.loyihalar")],
+          ["branding", tx("admin.logo_va_loyiha_sozlamalari")],
         ].map(([value, label]) => (
           <button key={value} type="button"
                   className={`tab ${tab === value ? "active" : ""}`}
@@ -602,7 +646,7 @@ export default function Admin() {
               </Card>
             )}
           </>
-        ) : (
+        ) : tab === "projects" ? (
           <Card padded={false} title={tx("common.barcha_loyihalar")}>
             {!projects?.length ? (
               <Empty title={tx("admin.loyiha_yoq")} text={tx("admin.hali_birorta_loyiha_ochilmagan")} />
@@ -616,6 +660,7 @@ export default function Admin() {
                     <th className="right">{tx("admin.azo")}</th>
                     <th className="right">{tx("admin.ochiq_ish")}</th>
                     <th className="right">{tx("admin.jarayon")}</th>
+                    <th className="right">{tx("orders.amallar", undefined, "Amallar")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -630,6 +675,11 @@ export default function Admin() {
                       <td className="right">{p.member_count}</td>
                       <td className="right">{p.open_tasks}</td>
                       <td className="right">{p.progress}%</td>
+                      <td className="right nowrap">
+                        <Link {...toProjectEdit(p.id)} className="btn btn-sm btn-outline">
+                          ✏️ {tx("common.tahrirlash")}
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -641,6 +691,100 @@ export default function Admin() {
               </div>
             )}
           </Card>
+        ) : (
+          <div style={{ maxWidth: 640, margin: "0 auto" }}>
+            <Card title={tx("admin.tizim_sozlamalari_sarlavha")}>
+              <form onSubmit={handleSaveBranding}>
+                <div className="field">
+                  <label htmlFor="adm-app-name" style={{ fontWeight: 600 }}>
+                    {tx("admin.tizim_loyiha_nomi")}
+                  </label>
+                  <input
+                    id="adm-app-name"
+                    required
+                    value={brandAppName}
+                    onChange={(e) => setBrandAppName(e.target.value)}
+                    placeholder="TeamFlow"
+                  />
+                  <span className="muted" style={{ fontSize: 12, marginTop: 4, display: "block" }}>
+                    {tx("admin.tizim_nomi_tavsif")}
+                  </span>
+                </div>
+
+                <div className="field" style={{ marginTop: 20 }}>
+                  <label style={{ fontWeight: 600 }}>
+                    {tx("admin.tizim_logotipi")}
+                  </label>
+                  <div className="row middle" style={{ gap: 20, marginTop: 10, alignItems: "center" }}>
+                    <div
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 14,
+                        border: "2px dashed var(--border-color, #cbd5e1)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "var(--surface-2, #f8fafc)",
+                        overflow: "hidden",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {logoPreview ? (
+                        <img src={logoPreview} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      ) : (
+                        <Logo size={48} />
+                      )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        type="file"
+                        id="adm-logo-file"
+                        accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            setBrandLogoFile(f);
+                            setLogoPreview(URL.createObjectURL(f));
+                            setRemoveLogo(false);
+                          }
+                        }}
+                      />
+                      <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
+                        <label htmlFor="adm-logo-file" className="btn btn-sm btn-primary" style={{ cursor: "pointer" }}>
+                          📁 {tx("admin.yangi_logo_tanlash")}
+                        </label>
+                        {(logoPreview || brandLogoFile) && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-ghost"
+                            style={{ color: "var(--danger, #dc2626)" }}
+                            onClick={() => {
+                              setBrandLogoFile(null);
+                              setLogoPreview(null);
+                              setRemoveLogo(true);
+                            }}
+                          >
+                            ✕ {tx("admin.standart_logoga_qaytish")}
+                          </button>
+                        )}
+                      </div>
+                      <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                        PNG, JPG, SVG yoki WEBP. Tavsiya etilgan o'lcham: 64x64 yoki 128x128 px.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="row" style={{ marginTop: 24, gap: 10 }}>
+                  <button type="submit" className="btn btn-primary" disabled={busy}>
+                    💾 {busy ? tx("common.saqlanmoqda") : tx("common.saqlash")}
+                  </button>
+                </div>
+              </form>
+            </Card>
+          </div>
         )}
       </div>
     </>

@@ -5,4 +5,5 @@ from . import api
 urlpatterns = [
     # Ochiq: kirish sahifasining so'zlari ham shu yerdan keladi.
     path("ui-texts/", api.ui_texts, name="ui_texts"),
+    path("system/settings/", api.system_settings, name="system_settings"),
 ]
