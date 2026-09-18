@@ -244,6 +244,13 @@ export async function claimOrder(id: number | string, data?: ClaimOrderPayload):
 }
 
 /**
+ * PM buyurtmani o'zidan yechishi (unclaim) va yangi holatiga qaytarishi.
+ */
+export async function unclaimOrder(id: number | string, reason?: string): Promise<ChangeRequestItem> {
+  return api.post<ChangeRequestItem>(`/orders/${id}/unclaim-order/`, { reason });
+}
+
+/**
  * PM qarorini va muddatlarini belgilash.
  */
 export async function setPmDecision(id: number | string, data: PMDecisionPayload): Promise<ChangeRequestItem> {

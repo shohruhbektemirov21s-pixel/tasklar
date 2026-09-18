@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { api, listOf } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
 import { lockScroll, unlockScroll } from "@/components/scrollLock";
-import TeamPicker, { addPickedMembers, createPickedTasks, taskCount, type Pick as TeamPick } from "@/components/TeamPicker";
+import TeamPicker, { addPickedMembers, createPickedTasks, taskCount, tasksOf, type Pick as TeamPick } from "@/components/TeamPicker";
 import { Avatar, ErrorMsg, Loading, Priority, StatusBadge, fmtDate } from "@/components/ui";
 import { tx } from "@/i18n";
 import type { ChangeRequestItem, Project, Task } from "@/api/types";
@@ -76,14 +76,32 @@ export default function DistributeTasksModal({
     setSuccessMsg(null);
     const count = taskCount(team);
     if (count === 0) {
-      setError("Hech bo'lmaganda bitta vazifa kiritilishi shart.");
+      setError(tx("project_form.kamida_bitta_vazifa", undefined, "Hech bo'lmaganda bitta vazifa kiritilishi shart."));
       return;
+    }
+    const orderDate = order?.request_date ? order.request_date.split("T")[0] : "";
+    const projectStartDate = project?.start_date || "";
+    const minTaskStartDate = (orderDate && projectStartDate)
+      ? (orderDate > projectStartDate ? orderDate : projectStartDate)
+      : (orderDate || projectStartDate);
+
+    if (minTaskStartDate) {
+      for (const p of team) {
+        for (const t of tasksOf(p)) {
+          if (t.start_date && t.start_date < minTaskStartDate) {
+            const formatted = minTaskStartDate.split("-").reverse().join(".");
+            const reason = orderDate ? "buyurtma sanasidan" : "loyiha boshlanish sanasidan";
+            setError(`«${t.title}» vazifasining boshlanish sanasi ${reason} (${formatted}) oldin bo'lishi mumkin emas.`);
+            return;
+          }
+        }
+      }
     }
 
     setSaving(true);
     try {
       const failedMembers = await addPickedMembers(projectId, team);
-      const { failedTasks, failedFiles } = await createPickedTasks(projectId, team);
+      const { failedTasks, failedFiles } = await createPickedTasks(projectId, team, false, order?.id || null);
 
       if (failedMembers.length || failedTasks.length || failedFiles.length) {
         const parts: string[] = [];
@@ -105,6 +123,13 @@ export default function DistributeTasksModal({
       setSaving(false);
     }
   }
+
+  const orderDate = order?.request_date ? order.request_date.split("T")[0] : "";
+  const projectStartDate = project?.start_date || "";
+  const minTaskStartDate = (orderDate && projectStartDate)
+    ? (orderDate > projectStartDate ? orderDate : projectStartDate)
+    : (orderDate || projectStartDate);
+  const maxTaskDueDate = order?.pm_deadline || order?.due_date || project?.due_date || undefined;
 
   const projectName = project?.name || order?.project_detail?.name || order?.system_name || `Loyiha #${projectId}`;
   const totalTasks = tasks.length;
@@ -290,6 +315,8 @@ export default function DistributeTasksModal({
                 priorities={meta?.task_priority || []}
                 defaultRole="DEVELOPER"
                 excludeId={user?.id}
+                projectStartDate={minTaskStartDate || undefined}
+                projectDueDate={maxTaskDueDate || undefined}
               />
 
               <div

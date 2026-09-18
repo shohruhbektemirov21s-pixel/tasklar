@@ -1155,6 +1155,144 @@ input::placeholder, textarea::placeholder { color: var(--subtle); }
 }
 .dt-field .dt-pick:hover { background: var(--veil); color: var(--text); }
 .dt-field .dt-pick:disabled { opacity: .5; cursor: default; }
+
+/* Custom o'zbekcha taqvim popover */
+.dt-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18), 0 4px 10px rgba(0, 0, 0, 0.08);
+  padding: 12px 14px;
+  width: 270px;
+  user-select: none;
+  font-size: 13px;
+}
+.dt-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.dt-popup-title {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.dt-popup-nav {
+  display: flex;
+  gap: 4px;
+}
+.dt-popup-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1;
+  transition: all .15s ease;
+}
+.dt-popup-btn:hover {
+  background: var(--veil);
+}
+.dt-popup-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.dt-popup-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.dt-popup-day {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  transition: background .12s, color .12s;
+  padding: 0;
+}
+.dt-popup-day:hover:not(:disabled) {
+  background: var(--veil);
+}
+.dt-popup-day.is-muted {
+  color: var(--muted);
+  opacity: 0.4;
+}
+.dt-popup-day.is-selected {
+  background: var(--accent) !important;
+  color: #fff !important;
+  font-weight: 700;
+}
+.dt-popup-day.is-today {
+  border: 1.5px solid var(--accent);
+  font-weight: 700;
+}
+.dt-popup-day:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+.dt-popup-time {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+.dt-popup-time input {
+  width: 75px;
+  padding: 2px 6px;
+  font-size: 12px;
+  text-align: center;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.dt-popup-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.dt-popup-footer button {
+  font-size: 11.5px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.dt-popup-footer button:hover {
+  background: var(--veil);
+}
 select { cursor: pointer; }
 select option { background: var(--surface); color: var(--text); }
 input[type=checkbox], input[type=radio] { accent-color: var(--accent); cursor: pointer; }

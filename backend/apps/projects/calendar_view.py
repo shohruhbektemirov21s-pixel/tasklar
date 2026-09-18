@@ -65,18 +65,19 @@ def month_calendar(request):
     # `progress()` uchun sanoqlar oldindan olinadi - aks holda taqvimdagi
     # har loyiha ikkita qo'shimcha so'rov yuborardi. Faqat MUDDATI shu
     # oyga tushadiganlar olinadi: taqvim - tugash sanalari taqvimi.
-    qs = (Project.objects.filter(pk__in=visible_ids,
-                                 due_date__gte=first, due_date__lte=last)
-          .select_related("manager")
-          .annotate(**project_counters(user)))
+    # Loyiha shu oy bilan kesishishi: boshlanishi oy oxiridan oldin va tugashi oy boshidan keyin
+    projects = (Project.objects
+                .filter(id__in=visible_ids,
+                        due_date__isnull=False,
+                        due_date__gte=first,
+                        due_date__lte=last)
+                .select_related("manager"))
 
     rows, counts = [], {}
-    for project in qs:
-        begin = project.start_date or timezone.localtime(project.created_at).date()
+    for project in projects:
         finish = project.due_date
-
-        # Sanoq - o'sha kuni nechta loyiha muddati tugashi.
-        counts[finish] = counts.get(finish, 0) + 1
+        if finish:
+            counts[finish] = counts.get(finish, 0) + 1
 
         rows.append({
             "id": project.pk,
@@ -88,11 +89,8 @@ def month_calendar(request):
             "is_public": project.is_public,
             "manager_name": project.manager.full_name if project.manager else "",
             "progress": project.progress(),
-            # Loyiha taqvimda BITTA kunda turadi - o'z muddati kunida.
-            # `start_date` faqat ma'lumot uchun qoladi (kun kartasida
-            # "qachondan beri" ko'rinib tursin).
-            "start_date": begin,
-            "due_date": finish,
+            "start_date": project.start_date,
+            "due_date": project.due_date,
             "from": finish,
             "to": finish,
             "starts_here": True,
@@ -100,47 +98,32 @@ def month_calendar(request):
             "open_ended": False,
             "overdue": bool(finish < today
                             and project.status not in ("DONE", "ARCHIVED")),
-            # Boshlanish sanasi kiritilmagan bo'lsa buni yashirmaymiz.
             "start_assumed": project.start_date is None,
         })
 
     rows.sort(key=lambda r: (r["from"], r["name"]))
 
     # ---- Vazifalar: kimga qanday ish berilgani ham shu taqvimda ko'rinsin.
-    # Bu yerda ham faqat MUDDAT: vazifa o'z tugash sanasi kunida turadi.
-    # Muddati yo'q vazifa ham, bekor qilingani ham chiqmaydi.
     def as_date(value):
         if value is None:
             return None
         return timezone.localtime(value).date() if timezone.is_aware(value) else value.date()
 
-    # Muddat - sana+soat. Oy chegarasi mahalliy vaqtdagi aniq lahzalarga
-    # aylantiriladi: `__date` bilan solishtirilsa Db2 mintaqani hisobga
-    # olmaydi va tungi ishlar qo'shni kunga tushib qolardi.
     span_start = timezone.make_aware(datetime.combine(first, dtime.min))
     span_end = timezone.make_aware(datetime.combine(last, dtime.min)) + timedelta(days=1)
 
-    # Kimga qaysi vazifa ko'rinishi - doska va vazifalar ro'yxati bilan
-    # BIR XIL qoidadan (`task_scope_q`): menejerga boshqaruvidagi
-    # loyihaning hammasi, qolganga o'ziniki. Taqvim boshqacha hisoblasa
-    # odam «doskada bor edi, taqvimda yo'q» degan savolda qolardi.
     tasks_limited = tasks_limited_for(user)
-
-    # Kun katagining o'ng burchagidagi uchta raqam: NAZORATDA /
-    # JARAYONDA / BAJARILDI. Uchtaga bo'linish ataylab qo'pol: oraliq
-    # holatlar («Tekshiruvda», «Tuzatish kerak», «To'xtab qolgan») ham
-    # jarayonga qo'shiladi, aks holda raqamlar yig'indisi o'sha kungi
-    # vazifalar soniga teng bo'lmasdi va odam "qolgani qayerda?" deb
-    # qolardi.
     by_day = {}
 
     task_rows = []
     tasks = (Task.objects
              .filter(task_scope_q(user), project_id__in=visible_ids,
+                     due_date__isnull=False,
                      due_date__gte=span_start, due_date__lt=span_end)
              .exclude(status=TaskStatus.CANCELLED)
              .select_related("project")
              .prefetch_related("assignments__user"))
+
     for task in tasks:
         finish = as_date(task.due_date)
         people = [a.user for a in task.assignments.all() if getattr(a, "is_active", True) and a.user]

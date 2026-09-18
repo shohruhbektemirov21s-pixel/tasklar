@@ -107,13 +107,11 @@ export default function Admin() {
   const [removeLogo, setRemoveLogo] = useState(false);
 
   useEffect(() => {
-    if (currentBranding.app_name) {
-      setBrandAppName(currentBranding.app_name);
+    setBrandAppName(currentBranding.app_name || "TeamFlow");
+    if (!brandLogoFile) {
+      setLogoPreview(currentBranding.logo_url || null);
     }
-    if (currentBranding.logo_url) {
-      setLogoPreview(currentBranding.logo_url);
-    }
-  }, [currentBranding.app_name, currentBranding.logo_url]);
+  }, [currentBranding.app_name, currentBranding.logo_url, brandLogoFile]);
 
   async function handleSaveBranding(e: React.FormEvent) {
     e.preventDefault();

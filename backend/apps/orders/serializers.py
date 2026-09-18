@@ -231,6 +231,13 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("PM muddati bugungi kundan oldingi sana bo'lishi mumkin emas.")
         return value
 
+    def validate_pm_start_date(self, value):
+        if value:
+            today = timezone.localdate()
+            if value < today and (not self.instance or value != self.instance.pm_start_date):
+                raise serializers.ValidationError("Boshlanish sanasi bugungi kundan oldingi sana bo'lishi mumkin emas.")
+        return value
+
     class Meta:
         model = ChangeRequest
         fields = [
@@ -351,6 +358,10 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
                 "due_date": "Tugash muddati buyurtma sanasidan oldin bo'lishi mumkin emas."
             })
         start_date = attrs.get("pm_start_date", getattr(self.instance, "pm_start_date", None))
+        if start_date and req_date and start_date < req_date:
+            raise serializers.ValidationError({
+                "pm_start_date": "Boshlanish sanasi buyurtma sanasidan oldin bo'lishi mumkin emas."
+            })
         pm_deadline = attrs.get("pm_deadline", getattr(self.instance, "pm_deadline", None))
         if start_date and pm_deadline and pm_deadline < start_date:
             raise serializers.ValidationError({
@@ -613,6 +624,13 @@ class PMDecisionSerializer(serializers.Serializer):
             today = timezone.localdate()
             if value < today:
                 raise serializers.ValidationError("PM muddati bugungi kundan oldingi sana bo'lishi mumkin emas.")
+        return value
+
+    def validate_pm_start_date(self, value):
+        if value:
+            today = timezone.localdate()
+            if value < today:
+                raise serializers.ValidationError("Boshlanish sanasi bugungi kundan oldingi sana bo'lishi mumkin emas.")
         return value
 
     def validate(self, attrs):

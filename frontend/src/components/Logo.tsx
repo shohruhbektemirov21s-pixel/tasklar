@@ -1,17 +1,22 @@
 /**
  * Tizim brend belgisi (Logo va nomi).
  */
+import { useState } from "react";
 import { useSystemBranding } from "@/api/branding";
 import { tx } from "@/i18n";
 
 export function Logo({ size = 30 }: { size?: number }) {
   const branding = useSystemBranding();
 
-  if (branding.logo_url) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  if (branding.logo_url && branding.logo_url !== failedUrl) {
     return (
       <img
+        key={branding.logo_url}
         src={branding.logo_url}
         alt={branding.app_name || tx("common.teamflow")}
+        onError={() => setFailedUrl(branding.logo_url)}
         style={{
           width: size,
           height: size,

@@ -189,8 +189,8 @@ export default function ProjectForm({
   const orderPmStart = selectedOrder?.pm_start_date || undefined;
   // Agar PM buyurtmada boshlanish sanasini belgilagan bo'lsa, loyiha ham shu sanadan boshlanishi mumkin.
   const minAllowedDate = (orderReqDate && orderPmStart)
-    ? (orderPmStart < orderReqDate ? orderPmStart : orderReqDate)
-    : (orderPmStart || orderReqDate);
+    ? (orderPmStart > orderReqDate ? orderPmStart : orderReqDate)
+    : (orderReqDate || orderPmStart);
 
   function showError(msg: string, fErrors?: Record<string, string>) {
     setError(msg);
@@ -206,8 +206,8 @@ export default function ProjectForm({
         const ordDate = ord.request_date ? ord.request_date.split("T")[0] : "";
         const ordPmStart = ord.pm_start_date || "";
         const ordMinDate = (ordDate && ordPmStart)
-          ? (ordPmStart < ordDate ? ordPmStart : ordDate)
-          : (ordPmStart || ordDate);
+          ? (ordPmStart > ordDate ? ordPmStart : ordDate)
+          : (ordDate || ordPmStart);
         setF((prev) => {
           const newStart = prev.start_date && ordMinDate && prev.start_date < ordMinDate
             ? ordMinDate
@@ -389,7 +389,7 @@ export default function ProjectForm({
       if (team.length) {
         const failedMembers = await addPickedMembers(saved.id, team);
         const { failedTasks, failedFiles } = tasks
-          ? await createPickedTasks(saved.id, team)
+          ? await createPickedTasks(saved.id, team, false, f.order_id || null)
           : { failedTasks: [], failedFiles: [] };
         if (failedMembers.length || failedTasks.length || failedFiles.length) {
           const parts = [];
@@ -648,7 +648,7 @@ export default function ProjectForm({
               priorities={meta?.task_priority || []}
               defaultRole="DEVELOPER"
               excludeId={user?.id}
-              projectStartDate={f.start_date}
+              projectStartDate={f.start_date || minAllowedDate}
               projectDueDate={f.due_date}
             />
           </Card>

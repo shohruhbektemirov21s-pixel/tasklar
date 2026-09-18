@@ -49,7 +49,7 @@ def _extension(name):
     return name.rsplit(".", 1)[-1].lower() if "." in name else ""
 
 
-def check_upload(upload):
+def check_upload(upload, allow_svg=False):
     """Bitta faylni tekshiradi. Yaroqsiz bo'lsa `ValidationError` beradi."""
     name = getattr(upload, "name", "") or ""
     size = getattr(upload, "size", 0) or 0
@@ -65,7 +65,11 @@ def check_upload(upload):
             MAX_UPLOAD_BYTES // (1024 * 1024), name)})
 
     ext = _extension(name)
-    if ext in BLOCKED_EXTENSIONS or content_type in BLOCKED_MIME_TYPES:
+    blocked = BLOCKED_EXTENSIONS.copy()
+    if allow_svg:
+        blocked.discard("svg")
+        blocked.discard("svgz")
+    if ext in blocked or content_type in BLOCKED_MIME_TYPES:
         raise ValidationError({"file": "Bu turdagi fayl qabul qilinmaydi: {}. "
                                        "Xavfsizlik talablariga ko'ra ushbu format taqiqlangan.".format(name)})
     return upload

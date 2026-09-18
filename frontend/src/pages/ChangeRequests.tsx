@@ -13,7 +13,8 @@ import { api, listOf, pagesOf, totalOf } from "@/api/client";
 
 const ProjectFormModal = lazy(() => import("@/pages/ProjectForm"));
 const DistributeTasksModal = lazy(() => import("@/components/DistributeTasksModal"));
-import { claimOrder, uploadVersion, approveVersion, rejectVersion, deleteOrder, sendOrder } from "@/api/orders";
+import { claimOrder, uploadVersion, approveVersion, rejectVersion, deleteOrder, sendOrder, setPmDecision, unclaimOrder } from "@/api/orders";
+import { DateField } from "@/components/dates";
 import type { ChangeRequestItem, OrderStats, UserBrief } from "@/api/types";
 import { useFetch } from "@/api/useFetch";
 import { useAuth } from "@/auth/AuthContext";
@@ -331,8 +332,17 @@ export default function ChangeRequests() {
   const handleClaimSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!claimModalItem) return;
+    const today = new Date().toLocaleDateString("en-CA");
+    if (claimStartDate && claimStartDate < today) {
+      alert("Boshlanish sanasi bugungi kundan oldin bo'lishi mumkin emas.");
+      return;
+    }
+    if (claimDeadline && claimDeadline < today) {
+      alert("Topshirish sanasi bugungi kundan oldin bo'lishi mumkin emas.");
+      return;
+    }
     if (claimStartDate && claimDeadline && claimDeadline < claimStartDate) {
-      alert("Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas.");
+      alert("Topshirish muddati boshlanish sanasidan oldin bo'lishi mumkin emas.");
       return;
     }
     setClaimSubmitting(true);
@@ -350,6 +360,31 @@ export default function ChangeRequests() {
       reload();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : tx("orders.err_claim_order"));
+    } finally {
+      setClaimSubmitting(false);
+    }
+  };
+  const handleClaimReject = async () => {
+    if (!claimModalItem) return;
+    const reason = claimNotes.trim();
+    if (!reason) {
+      alert("Buyurtmani orqaga qaytarish uchun sabab yoki izohni (PM izohi maydonida) yozing!");
+      return;
+    }
+    setClaimSubmitting(true);
+    try {
+      const updated = await setPmDecision(claimModalItem.id, {
+        status: "REJECTED",
+        pm_notes: reason,
+      });
+      if (viewingItem && viewingItem.id === claimModalItem.id) {
+        setViewingItem(updated);
+      }
+      setClaimModalItem(null);
+      reload();
+      alert("Buyurtma orqaga qaytarildi (rad etildi).");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Buyurtmani orqaga qaytarishda xatolik yuz berdi.");
     } finally {
       setClaimSubmitting(false);
     }
@@ -1859,12 +1894,15 @@ export default function ChangeRequests() {
                   <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", display: "block", marginBottom: 6 }}>
                     {tx("orders.boshlanish_sanasi", undefined, "Boshlanish sanasi")}
                   </label>
-                  <input
-                    type="date"
-                    className="input"
+                  <DateField
                     value={claimStartDate}
-                    max={claimDeadline || undefined}
-                    onChange={(e) => setClaimStartDate(e.target.value)}
+                    min={new Date().toLocaleDateString("en-CA")}
+                    onChange={(v) => {
+                      setClaimStartDate(v);
+                      if (v && claimDeadline && claimDeadline < v) {
+                        setClaimDeadline(v);
+                      }
+                    }}
                     style={{ width: "100%" }}
                   />
                 </div>
@@ -1874,15 +1912,19 @@ export default function ChangeRequests() {
                       {tx("orders.claim_deadline_label")} <span style={{ color: "var(--danger)" }}>*</span>
                     </label>
                   </div>
-                  <input
-                    type="date"
+                  <DateField
                     required
-                    min={claimStartDate && claimStartDate > new Date().toISOString().split("T")[0]
+                    min={claimStartDate && claimStartDate > new Date().toLocaleDateString("en-CA")
                       ? claimStartDate
-                      : new Date().toISOString().split("T")[0]}
-                    className="input"
+                      : new Date().toLocaleDateString("en-CA")}
                     value={claimDeadline}
-                    onChange={(e) => setClaimDeadline(e.target.value)}
+                    onChange={(v) => {
+                      if (v && claimStartDate && v < claimStartDate) {
+                        setClaimDeadline(claimStartDate);
+                      } else {
+                        setClaimDeadline(v);
+                      }
+                    }}
                     style={{ width: "100%" }}
                   />
                 </div>
@@ -1905,14 +1947,26 @@ export default function ChangeRequests() {
                 </div>
               </div>
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => setClaimModalItem(null)}
-                  disabled={claimSubmitting}
-                >
-                  {tx("common.bekor_qilish")}
-                </button>
+                <div className="row middle" style={{ gap: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setClaimModalItem(null)}
+                    disabled={claimSubmitting}
+                  >
+                    {tx("common.bekor_qilish")}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-outline"
+                    disabled={claimSubmitting}
+                    onClick={handleClaimReject}
+                    style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}
+                    title="Buyurtmani kamchilik yoki sabab bilan orqaga qaytarish"
+                  >
+                    ↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")}
+                  </button>
+                </div>
                 <button
                   type="submit"
                   className="btn btn-ok"

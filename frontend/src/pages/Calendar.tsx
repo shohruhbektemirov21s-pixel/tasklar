@@ -20,7 +20,7 @@ import { api } from "@/api/client";
 import type { CalendarMonth, CalendarProject, CalendarTask } from "@/api/types";
 import { PageHead } from "@/components/Layout";
 import { Avatar, Card, Empty, ErrorMsg, Loading, fmtDate } from "@/components/ui";
-import { toProject, toTask, useNavParams } from "@/nav";
+import { toProject, toTask, useNavParams, type NavTarget } from "@/nav";
 import { tx } from "@/i18n";
 
 const WEEKDAYS = ["dushanba", "seshanba", "chorshanba", "payshanba",
@@ -30,7 +30,8 @@ const MONTHS = [tx("calendar.yanvar"), tx("calendar.fevral"), tx("calendar.mart"
 
 /** "2026-08-14" -> UTC kun raqami (mintaqa aralashmasin). */
 const dayNo = (iso: string) => {
-  const [y, m, d] = iso.split("-").map(Number);
+  if (!iso) return 0;
+  const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
   return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
 };
 const isoOf = (n: number) => new Date(n * 86400000).toISOString().slice(0, 10);
@@ -59,7 +60,8 @@ interface Bar {
   openEnded?: boolean;
   startsHere: boolean;
   endsHere: boolean;
-  to_: string;
+  target: NavTarget;
+  to_?: string;
   people?: string;
 }
 
@@ -135,19 +137,23 @@ export default function CalendarPage() {
 
   const bars = useMemo<Bar[]>(() => {
     if (!data) return [];
-    const fromProjects: Bar[] = data.projects.map((p: CalendarProject) => ({
-      key: `p${p.id}`, kind: "project", from: dayNo(p.from), to: dayNo(p.to),
-      label: p.name, color: p.color, overdue: p.overdue, openEnded: p.open_ended,
-      startsHere: p.starts_here, endsHere: p.ends_here, to_: `/loyiha/${p.id}`,
-    }));
+    const fromProjects: Bar[] = data.projects
+      .filter((p: CalendarProject) => p.from && p.to)
+      .map((p: CalendarProject) => ({
+        key: `p${p.id}`, kind: "project", from: dayNo(p.from), to: dayNo(p.to),
+        label: p.name, color: p.color, overdue: p.overdue, openEnded: p.open_ended,
+        startsHere: p.starts_here, endsHere: p.ends_here, target: toProject(p.id),
+      }));
     if (!showTasks) return fromProjects;
-    const fromTasks: Bar[] = data.tasks.map((t: CalendarTask) => ({
-      key: `t${t.id}`, kind: "task", from: dayNo(t.from), to: dayNo(t.to),
-      label: t.title, color: t.project.color, overdue: t.overdue,
-      done: t.done, status: t.status, startsHere: t.starts_here, endsHere: t.ends_here,
-      to_: `/vazifa/${t.id}`,
-      people: t.assignees.map((u) => u.full_name).join(", ") || "biriktirilmagan",
-    }));
+    const fromTasks: Bar[] = data.tasks
+      .filter((t: CalendarTask) => t.from && t.to)
+      .map((t: CalendarTask) => ({
+        key: `t${t.id}`, kind: "task", from: dayNo(t.from), to: dayNo(t.to),
+        label: t.title, color: t.project.color, overdue: t.overdue,
+        done: t.done, status: t.status, startsHere: t.starts_here, endsHere: t.ends_here,
+        target: toTask(t.id),
+        people: t.assignees.map((u) => u.full_name).join(", ") || "biriktirilmagan",
+      }));
     return [...fromProjects, ...fromTasks];
   }, [data, showTasks]);
 
@@ -165,9 +171,9 @@ export default function CalendarPage() {
   // Tanlangan kunda nima ishda turgani
   const pickedDay = picked ? dayNo(picked) : null;
   const dayProjects = (data?.projects || []).filter(
-    (p) => pickedDay !== null && dayNo(p.from) <= pickedDay && pickedDay <= dayNo(p.to));
+    (p) => pickedDay !== null && p.from && p.to && dayNo(p.from) <= pickedDay && pickedDay <= dayNo(p.to));
   const dayTasks = (data?.tasks || []).filter(
-    (t) => pickedDay !== null && dayNo(t.from) <= pickedDay && pickedDay <= dayNo(t.to));
+    (t) => pickedDay !== null && t.from && t.to && dayNo(t.from) <= pickedDay && pickedDay <= dayNo(t.to));
 
   return (
     <>
@@ -318,7 +324,7 @@ export default function CalendarPage() {
                       {visible.map(({ bar, lane }) => (
                         <Link
                           key={bar.key + bar.from}
-                          to={bar.to_}
+                          {...bar.target}
                           title={bar.kind === "task"
                             ? `${bar.label} — ${bar.people}`
                             : `${bar.label}${bar.openEnded ? tx("calendar.muddat_qoyilmagan_2") : ""}`}

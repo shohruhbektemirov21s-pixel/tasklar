@@ -93,7 +93,7 @@ def system_settings(request):
     elif "logo" in request.FILES:
         from apps.core.uploads import check_upload
         logo_file = request.FILES["logo"]
-        check_upload(logo_file)
+        check_upload(logo_file, allow_svg=True)
         setting.logo = logo_file
 
     setting.save()

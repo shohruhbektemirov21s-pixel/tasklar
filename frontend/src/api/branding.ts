@@ -12,6 +12,23 @@ const DEFAULT_BRANDING: SystemBranding = {
   logo_url: null,
 };
 
+const BRANDING_STORAGE_KEY = "teamflow.branding";
+
+function loadStoredBranding(): SystemBranding {
+  try {
+    const raw = localStorage.getItem(BRANDING_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.app_name === "string") {
+        return parsed;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return DEFAULT_BRANDING;
+}
+
 let cachedBranding: SystemBranding | null = null;
 const listeners = new Set<(branding: SystemBranding) => void>();
 
@@ -19,22 +36,35 @@ export async function fetchSystemBranding(): Promise<SystemBranding> {
   try {
     const res = await api.get<SystemBranding>("/system/settings/");
     cachedBranding = res;
+    try {
+      localStorage.setItem(BRANDING_STORAGE_KEY, JSON.stringify(res));
+    } catch {
+      // ignore
+    }
     notifyListeners(res);
     return res;
   } catch {
     if (!cachedBranding) {
-      cachedBranding = DEFAULT_BRANDING;
+      cachedBranding = loadStoredBranding();
     }
     return cachedBranding;
   }
 }
 
 export function getCachedBranding(): SystemBranding {
-  return cachedBranding || DEFAULT_BRANDING;
+  if (!cachedBranding) {
+    cachedBranding = loadStoredBranding();
+  }
+  return cachedBranding;
 }
 
 export function setCachedBranding(b: SystemBranding) {
   cachedBranding = b;
+  try {
+    localStorage.setItem(BRANDING_STORAGE_KEY, JSON.stringify(b));
+  } catch {
+    // ignore
+  }
   notifyListeners(b);
 }
 
@@ -66,6 +96,11 @@ function notifyListeners(b: SystemBranding) {
 export async function updateSystemBranding(formData: FormData): Promise<SystemBranding> {
   const res = await api.post<SystemBranding>("/system/settings/", formData);
   cachedBranding = res;
+  try {
+    localStorage.setItem(BRANDING_STORAGE_KEY, JSON.stringify(res));
+  } catch {
+    // ignore
+  }
   notifyListeners(res);
   return res;
 }
@@ -74,9 +109,11 @@ export function useSystemBranding(): SystemBranding {
   const [branding, setBranding] = useState<SystemBranding>(getCachedBranding());
 
   useEffect(() => {
-    if (!cachedBranding) {
-      void fetchSystemBranding().then(setBranding);
-    }
+    const current = getCachedBranding();
+    setBranding(current);
+    void fetchSystemBranding().then((b) => {
+      setBranding(b);
+    });
     const unsub = subscribeBranding(setBranding);
     return unsub;
   }, []);

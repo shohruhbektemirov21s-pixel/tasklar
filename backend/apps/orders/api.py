@@ -637,6 +637,54 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
         return Response(ChangeRequestSerializer(order, context={"request": request}).data)
 
+    @action(detail=True, methods=["post"], url_path="unclaim-order")
+    def unclaim_order(self, request, pk=None):
+        """Loyiha menejeri (PM) yoki admin buyurtmani qaytarishi (o'zidan yechib, yangi holatiga qaytarish)."""
+        user = request.user
+        is_pm_or_admin = bool(
+            user.is_platform_admin
+            or getattr(user, "is_boss", False)
+            or getattr(user, "is_manager", False)
+            or getattr(user, "specialty", "") == "PM"
+            or getattr(user, "global_role", "") == "MANAGER"
+        )
+        if not is_pm_or_admin:
+            return Response(
+                {"detail": "Faqat loyiha menejeri (PM) yoki admin buyurtmani qaytara oladi."},
+                status=403,
+            )
+
+        target_pk = self.get_object().pk
+        with transaction.atomic():
+            order = ChangeRequest.objects.select_for_update().select_related("assigned_pm").get(pk=target_pk)
+            if order.status in (ChangeRequestStatus.COMPLETED, ChangeRequestStatus.READY_FOR_REVIEW):
+                raise ValidationError({"detail": "Ushbu holatdagi buyurtmani orqaga qaytarib bo'lmaydi."})
+
+            if order.assigned_pm_id and order.assigned_pm_id != user.id:
+                if not (user.is_platform_admin or getattr(user, "is_boss", False)):
+                    raise ValidationError({"detail": "Faqat buyurtmani o'ziga olgan PM yoki admin uni qaytara oladi."})
+
+            order.assigned_pm = None
+            order.assigned_developer = None
+            order.executor_signer = ""
+            order.status = ChangeRequestStatus.NEW
+            reason = (request.data.get("reason") or request.data.get("pm_notes") or "").strip()
+            if reason:
+                order.pm_notes = f"[Orqaga qaytarildi]: {reason}"
+            order.save()
+
+            cur_ver = order.versions.filter(version=order.version).first()
+            if cur_ver:
+                cur_ver.status = ChangeRequestStatus.NEW
+                cur_ver.save()
+
+        try:
+            notify_order_status(order, user)
+        except Exception:
+            logger.exception("Buyurtma qaytarilganda bildirishnomada xatolik: %s", order.pk)
+
+        return Response(ChangeRequestSerializer(order, context={"request": request}).data)
+
     @action(detail=True, methods=["post"], url_path="set-pm-decision")
     def set_pm_decision(self, request, pk=None):
         """PM (Loyiha menejeri) qarori, baholangan muddati va holatini belgilash."""

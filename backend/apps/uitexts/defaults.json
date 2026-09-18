@@ -8318,5 +8318,37 @@
   "ui.shu_hafta": {
     "value": "1 haftalik",
     "note": "components/ui.tsx"
+  },
+  "orders.orqaga_qaytarish": {
+    "value": "Orqaga qaytarish",
+    "note": "pages/OrderDetail.tsx, pages/ChangeRequests.tsx"
+  },
+  "ui.taqvimdan_tanlash": {
+    "value": "Taqvimdan tanlash",
+    "note": "components/dates.tsx"
+  },
+  "ui.kk_oo_yyyy_soat_daq": {
+    "value": "kk.oo.yyyy ss:dd",
+    "note": "components/dates.tsx"
+  },
+  "ui.oldingi_oy": {
+    "value": "Oldingi oy",
+    "note": "components/dates.tsx"
+  },
+  "ui.keyingi_oy": {
+    "value": "Keyingi oy",
+    "note": "components/dates.tsx"
+  },
+  "ui.bugun": {
+    "value": "Bugun",
+    "note": "components/dates.tsx"
+  },
+  "ui.tozalash": {
+    "value": "Tozalash",
+    "note": "components/dates.tsx"
+  },
+  "ui.yopish": {
+    "value": "Yopish",
+    "note": "components/dates.tsx"
   }
 }

@@ -204,6 +204,12 @@ function isoDateTimeToUz(v: string) {
   return m ? `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}` : "";
 }
 
+const UZ_MONTHS = [
+  "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+  "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr",
+];
+const UZ_WEEKDAYS = ["Du", "Se", "Cho", "Pa", "Ju", "Sh", "Ya"];
+
 interface DateFieldProps {
   id?: string;
   value: string;
@@ -221,23 +227,52 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
   const toUz = withTime ? isoDateTimeToUz : isoDateToUz;
   const toIso = withTime ? uzToIsoDateTime : uzToIsoDate;
   const mask = withTime ? maskDateTime : maskDate;
-  const native = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLSpanElement>(null);
   const [text, setText] = useState(() => toUz(value));
+  const [open, setOpen] = useState(false);
 
-  // Qiymat tashqaridan o'zgarsa (forma tozalandi, taqvimdan tanlandi)
-  // matnni yangilaymiz. Foydalanuvchi yozayotgan chala qiymatni buzmaslik
-  // uchun faqat haqiqatan boshqa sanaga aylangandagina.
+  // Tanlangan sana yoki bugungi kunga asoslangan ko'rinish
+  const initialDate = value ? new Date(value) : new Date();
+  const validInitial = !Number.isNaN(initialDate.getTime());
+  const [viewYear, setViewYear] = useState(() => validInitial ? initialDate.getFullYear() : new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => validInitial ? initialDate.getMonth() : new Date().getMonth());
+
+  // Qiymat tashqaridan o'zgarsa matnni yangilaymiz
   useEffect(() => {
     if (toIso(text) !== value) setText(toUz(value));
+    if (value) {
+      const d = new Date(value);
+      if (!Number.isNaN(d.getTime())) {
+        setViewYear(d.getFullYear());
+        setViewMonth(d.getMonth());
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
+
+  // Popover tashqarisiga bosilganda yopish
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
 
   function type(raw: string) {
     const shown = mask(raw);
     setText(shown);
     const iso = toIso(shown);
-    // To'liq yozilgan bo'lsa - yuboramiz; maydon bo'shatilgan bo'lsa - tozalaymiz.
-    // Chala qiymat esa hali "yozilyapti", holatga tegmaymiz.
     if (iso) onChange(iso);
     else if (!digits(shown)) onChange("");
   }
@@ -256,8 +291,75 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
     setText(toUz(iso));
   }
 
+  function prevMonth() {
+    if (viewMonth === 0) {
+      setViewYear((y) => y - 1);
+      setViewMonth(11);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  }
+
+  function nextMonth() {
+    if (viewMonth === 11) {
+      setViewYear((y) => y + 1);
+      setViewMonth(0);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  }
+
+  function selectDate(year: number, month: number, day: number) {
+    const yStr = String(year);
+    const mStr = String(month + 1).padStart(2, "0");
+    const dStr = String(day).padStart(2, "0");
+    const datePart = `${yStr}-${mStr}-${dStr}`;
+
+    if (withTime) {
+      const existingTime = value && value.includes("T") ? value.split("T")[1].slice(0, 5) : "09:00";
+      const fullIso = `${datePart}T${existingTime}`;
+      onChange(fullIso);
+      setText(toUz(fullIso));
+    } else {
+      onChange(datePart);
+      setText(toUz(datePart));
+    }
+    setOpen(false);
+  }
+
+  // Kalendar kataklarini yasash
+  const firstDay = new Date(Date.UTC(viewYear, viewMonth, 1));
+  const startDayOfWeek = (firstDay.getUTCDay() + 6) % 7; // 0 = Du, 6 = Ya
+  const daysInMonth = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate();
+  const daysInPrevMonth = new Date(Date.UTC(viewYear, viewMonth, 0)).getUTCDate();
+
+  const todayStr = new Date().toLocaleDateString("en-CA");
+  const selectedDateStr = value ? (withTime ? value.slice(0, 10) : value) : "";
+
+  const cells: { year: number; month: number; day: number; isCurrent: boolean }[] = [];
+  // Oldingi oy kunlari
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    const prevMonthIdx = viewMonth === 0 ? 11 : viewMonth - 1;
+    const prevYear = viewMonth === 0 ? viewYear - 1 : viewYear;
+    cells.push({ year: prevYear, month: prevMonthIdx, day: daysInPrevMonth - i, isCurrent: false });
+  }
+  // Joriy oy kunlari
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ year: viewYear, month: viewMonth, day: d, isCurrent: true });
+  }
+  // Keyingi oy kunlari (jadval to'liq 35 yoki 42 bo'lishi uchun)
+  const remaining = (7 - (cells.length % 7)) % 7;
+  for (let d = 1; d <= remaining; d++) {
+    const nextMonthIdx = viewMonth === 11 ? 0 : viewMonth + 1;
+    const nextYear = viewMonth === 11 ? viewYear + 1 : viewYear;
+    cells.push({ year: nextYear, month: nextMonthIdx, day: d, isCurrent: false });
+  }
+
+  const minDateOnly = min ? min.slice(0, 10) : "";
+  const maxDateOnly = max ? max.slice(0, 10) : "";
+
   return (
-    <span className="dt-field" style={style}>
+    <span ref={containerRef} className="dt-field" style={style}>
       <input
         id={id}
         type="text"
@@ -270,43 +372,113 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
         onChange={(e) => type(e.target.value)}
         onBlur={handleBlur}
       />
-      {/* Taqvim: yashirin native maydon orqali. `showPicker()` ko'rinmaydigan
-          (display:none) elementda ishlamaydi, shuning uchun u chizilgan-u,
-          shaffof va o'lchamsiz. */}
-      <input
-        ref={native}
-        className="dt-native"
-        type={withTime ? "datetime-local" : "date"}
-        tabIndex={-1}
-        aria-hidden="true"
-        value={value}
-        min={min}
-        max={max}
-        onChange={(e) => {
-          let v = e.target.value;
-          if (max && v > max) v = max;
-          if (min && v < min) v = min;
-          onChange(v);
-        }}
-      />
       <button
         type="button"
         className="dt-pick"
         disabled={disabled}
         aria-label={tx("ui.taqvimdan_tanlash")}
         title={tx("ui.taqvimdan_tanlash")}
-        onClick={() => {
-          const el = native.current;
-          if (!el) return;
-          try {
-            el.showPicker();
-          } catch {
-            el.focus();      // eski brauzerlarda
-          }
-        }}
+        onClick={() => !disabled && setOpen((v) => !v)}
       >
         <IconCalendar />
       </button>
+
+      {open && !disabled && (
+        <div className="dt-popup" role="dialog" aria-modal="true">
+          <div className="dt-popup-header">
+            <span className="dt-popup-title">
+              {UZ_MONTHS[viewMonth]} {viewYear}
+            </span>
+            <div className="dt-popup-nav">
+              <button type="button" className="dt-popup-btn" onClick={prevMonth} title={tx("ui.oldingi_oy")}>
+                ‹
+              </button>
+              <button type="button" className="dt-popup-btn" onClick={nextMonth} title={tx("ui.keyingi_oy")}>
+                ›
+              </button>
+            </div>
+          </div>
+
+          <div className="dt-popup-weekdays">
+            {UZ_WEEKDAYS.map((w) => (
+              <span key={w}>{w}</span>
+            ))}
+          </div>
+
+          <div className="dt-popup-grid">
+            {cells.map(({ year, month, day, isCurrent }, idx) => {
+              const yStr = String(year);
+              const mStr = String(month + 1).padStart(2, "0");
+              const dStr = String(day).padStart(2, "0");
+              const iso = `${yStr}-${mStr}-${dStr}`;
+
+              const isSelected = iso === selectedDateStr;
+              const isToday = iso === todayStr;
+              const isDisabled = Boolean(
+                (minDateOnly && iso < minDateOnly) || (maxDateOnly && iso > maxDateOnly)
+              );
+
+              return (
+                <button
+                  key={`${iso}-${idx}`}
+                  type="button"
+                  disabled={isDisabled}
+                  className={`dt-popup-day ${!isCurrent ? "is-muted" : ""} ${
+                    isSelected ? "is-selected" : ""
+                  } ${isToday ? "is-today" : ""}`}
+                  onClick={() => selectDate(year, month, day)}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+
+          {withTime && (
+            <div className="dt-popup-time">
+              <span>{tx("ui.vaqt", undefined, "Vaqt:")}</span>
+              <input
+                type="time"
+                value={value && value.includes("T") ? value.split("T")[1].slice(0, 5) : "09:00"}
+                onChange={(e) => {
+                  const t = e.target.value;
+                  const curDate = value ? value.slice(0, 10) : todayStr;
+                  const nextIso = `${curDate}T${t}`;
+                  onChange(nextIso);
+                  setText(toUz(nextIso));
+                }}
+              />
+            </div>
+          )}
+
+          <div className="dt-popup-footer">
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                selectDate(now.getFullYear(), now.getMonth(), now.getDate());
+              }}
+            >
+              {tx("ui.bugun")}
+            </button>
+            {!required && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("");
+                  setText("");
+                  setOpen(false);
+                }}
+              >
+                {tx("ui.tozalash")}
+              </button>
+            )}
+            <button type="button" onClick={() => setOpen(false)}>
+              {tx("ui.yopish")}
+            </button>
+          </div>
+        </div>
+      )}
     </span>
   );
 }

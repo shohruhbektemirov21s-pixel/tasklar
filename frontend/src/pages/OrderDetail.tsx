@@ -43,6 +43,7 @@ import {
   approveVersion,
   rejectVersion,
   createOrderTask,
+  unclaimOrder,
 } from "@/api/orders";
 import type { ChangeRequestItem, Task, UserBrief } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
@@ -52,6 +53,7 @@ import { PageHead } from "@/components/Layout";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { Avatar, Card, Empty, ErrorMsg, Loading, OkMsg, Priority, StatusBadge, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
+import { DateField } from "@/components/dates";
 import { toEditOrder, toOrders, toProject, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge } from "./ChangeRequests";
 const UserOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
@@ -371,6 +373,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   }
   function handleOpenClaim() {
     if (!item) return;
+    setClaimStartDateInput(item.pm_start_date || "");
     setClaimAssignedPmInput(item.assigned_pm || "");
     setClaimDeadlineInput(item.pm_deadline || item.due_date || "");
     setClaimNotesInput("");
@@ -379,8 +382,17 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   async function handleClaimSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
+    const today = new Date().toLocaleDateString("en-CA");
+    if (claimStartDateInput && claimStartDateInput < today) {
+      setActionError("Boshlanish sanasi bugungi kundan oldin bo'lishi mumkin emas.");
+      return;
+    }
+    if (claimDeadlineInput && claimDeadlineInput < today) {
+      setActionError("Topshirish sanasi bugungi kundan oldin bo'lishi mumkin emas.");
+      return;
+    }
     if (claimStartDateInput && claimDeadlineInput && claimDeadlineInput < claimStartDateInput) {
-      setActionError("Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas.");
+      setActionError("Topshirish muddati boshlanish sanasidan oldin bo'lishi mumkin emas.");
       return;
     }
     setClaimSubmitting(true);
@@ -404,11 +416,60 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
       setClaimSubmitting(false);
     }
   }
+  async function handleClaimReject() {
+    if (!item) return;
+    const reason = claimNotesInput.trim();
+    if (!reason) {
+      setActionError("Buyurtmani orqaga qaytarish uchun sabab yoki izohni (PM izohi maydonida) yozing!");
+      return;
+    }
+    setClaimSubmitting(true);
+    setActionError(null);
+    try {
+      const updated = await setPmDecision(item.id, {
+        status: "REJECTED",
+        pm_notes: reason,
+      });
+      setItem(updated);
+      setClaimModalOpen(false);
+      setActionOk("Buyurtma orqaga qaytarildi (rad etildi).");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Buyurtmani orqaga qaytarishda xatolik yuz berdi.");
+    } finally {
+      setClaimSubmitting(false);
+    }
+  }
+  async function handleUnclaim() {
+    if (!item) return;
+    const ok = await confirmDialog({
+      title: "Buyurtmani orqaga qaytarish",
+      body: "Ushbu buyurtmani o'z zimmangizdan yechib, yangi buyurtmalar qatoriga qaytarmoqchimisiz?",
+      confirmText: "Ha, qaytarish",
+    });
+    if (!ok) return;
+    setActionError(null);
+    try {
+      const updated = await unclaimOrder(item.id);
+      setItem(updated);
+      setActionOk("Buyurtma orqaga qaytarildi (yangi holatiga o'tkazildi).");
+    } catch (err: unknown) {
+      setActionError((err as { message?: string })?.message || "Buyurtmani qaytarishda xatolik yuz berdi.");
+    }
+  }
   async function handleSavePM(e: React.FormEvent) {
     e.preventDefault();
     if (!item) return;
+    const today = new Date().toLocaleDateString("en-CA");
+    if (pmStartDate && pmStartDate < today) {
+      setActionError("Boshlanish sanasi bugungi kundan oldin bo'lishi mumkin emas.");
+      return;
+    }
+    if (pmDeadline && pmDeadline < today) {
+      setActionError("Topshirish sanasi bugungi kundan oldin bo'lishi mumkin emas.");
+      return;
+    }
     if (pmStartDate && pmDeadline && pmDeadline < pmStartDate) {
-      setActionError("Tugash muddati boshlanish sanasidan oldin bo'lishi mumkin emas.");
+      setActionError("Topshirish muddati boshlanish sanasidan oldin bo'lishi mumkin emas.");
       return;
     }
     setPmSaving(true);
@@ -1110,12 +1171,50 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             <div style={{ fontSize: 13, color: "var(--text)" }}>
               {tx("orders.masul_pm_yoq_qabul_qilasizmi")}
             </div>
+            <div className="row middle" style={{ gap: 8 }}>
+              <button
+                type="button"
+                className="btn btn-xs btn-outline"
+                style={{ color: "var(--danger)", borderColor: "var(--danger)", fontWeight: 600 }}
+                onClick={handleOpenClaim}
+                title="Buyurtmani sabab bilan orqaga qaytarish"
+              >
+                ↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-xs btn-primary"
+                onClick={handleOpenClaim}
+              >
+                {tx("orders.ishni_qabul_qilish")}
+              </button>
+            </div>
+          </div>
+        )}
+        {item.assigned_pm && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (item.status === "ACCEPTED" || item.status === "ASSIGNED_TO_DEV" || item.status === "IN_PROGRESS") && (
+          <div
+            style={{
+              background: "var(--surface-2, #f8fafc)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              borderRadius: 8,
+              padding: "10px 14px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ fontSize: 13, color: "var(--text)" }}>
+              Buyurtma sizga biriktirilgan. Agar uni davom ettira olmasangiz, orqaga qaytarishingiz mumkin:
+            </div>
             <button
               type="button"
-              className="btn btn-xs btn-primary"
-              onClick={handleOpenClaim}
+              className="btn btn-xs btn-outline"
+              style={{ color: "var(--danger)", borderColor: "var(--danger)", fontWeight: 600 }}
+              onClick={handleUnclaim}
             >
-              {tx("orders.ishni_qabul_qilish")}
+              ↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")} (Yechish)
             </button>
           </div>
         )}
@@ -1550,19 +1649,29 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 )}
                 <div className="field">
                   <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.boshlanish_sanasi", undefined, "Boshlanish sanasi")}</label>
-                  <input
-                    type="date"
+                  <DateField
+                    min={new Date().toLocaleDateString("en-CA")}
                     value={pmStartDate}
-                    onChange={(e) => setPmStartDate(e.target.value)}
+                    onChange={(v) => {
+                      setPmStartDate(v);
+                      if (v && pmDeadline && pmDeadline < v) {
+                        setPmDeadline(v);
+                      }
+                    }}
                   />
                 </div>
                 <div className="field">
                   <label style={{ fontSize: 11, fontWeight: 600 }}>{tx("orders.pm_yakuniy_muddati")}</label>
-                  <input
-                    type="date"
-                    min={new Date().toISOString().split("T")[0]}
+                  <DateField
+                    min={pmStartDate && pmStartDate > new Date().toLocaleDateString("en-CA") ? pmStartDate : new Date().toLocaleDateString("en-CA")}
                     value={pmDeadline}
-                    onChange={(e) => setPmDeadline(e.target.value)}
+                    onChange={(v) => {
+                      if (v && pmStartDate && v < pmStartDate) {
+                        setPmDeadline(pmStartDate);
+                      } else {
+                        setPmDeadline(v);
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -2079,6 +2188,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             </div>
             <form onSubmit={handleClaimSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+                {actionError && <ErrorMsg error={actionError} />}
                 {item.due_date && (
                   <div
                     style={{
@@ -2133,12 +2243,15 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0, display: "block", marginBottom: 6 }}>
                       {tx("orders.boshlanish_sanasi", undefined, "Boshlanish sanasi")}
                     </label>
-                    <input
-                      type="date"
-                      className="input"
+                    <DateField
                       value={claimStartDateInput}
-                      max={claimDeadlineInput || undefined}
-                      onChange={(e) => setClaimStartDateInput(e.target.value)}
+                      min={new Date().toLocaleDateString("en-CA")}
+                      onChange={(v) => {
+                        setClaimStartDateInput(v);
+                        if (v && claimDeadlineInput && claimDeadlineInput < v) {
+                          setClaimDeadlineInput(v);
+                        }
+                      }}
                       style={{ width: "100%" }}
                     />
                   </div>
@@ -2147,18 +2260,22 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                       <label style={{ fontWeight: 600, fontSize: 12.5, color: "var(--text)", margin: 0 }}>
                         {tx("orders.claim_deadline_label")} <span style={{ color: "var(--danger)" }}>*</span>
                       </label>
-                  </div>
-                  <input
-                    type="date"
-                    required
-                    min={claimStartDateInput && claimStartDateInput > new Date().toISOString().split("T")[0]
-                      ? claimStartDateInput
-                      : new Date().toISOString().split("T")[0]}
-                    className="input"
-                    value={claimDeadlineInput}
-                    onChange={(e) => setClaimDeadlineInput(e.target.value)}
-                    style={{ width: "100%" }}
-                  />
+                    </div>
+                    <DateField
+                      required
+                      min={claimStartDateInput && claimStartDateInput > new Date().toLocaleDateString("en-CA")
+                        ? claimStartDateInput
+                        : new Date().toLocaleDateString("en-CA")}
+                      value={claimDeadlineInput}
+                      onChange={(v) => {
+                        if (v && claimStartDateInput && v < claimStartDateInput) {
+                          setClaimDeadlineInput(claimStartDateInput);
+                        } else {
+                          setClaimDeadlineInput(v);
+                        }
+                      }}
+                      style={{ width: "100%" }}
+                    />
                   </div>
                 </div>
 
@@ -2180,14 +2297,26 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </div>
               </div>
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => setClaimModalOpen(false)}
-                  disabled={claimSubmitting}
-                >
-                  {tx("common.bekor_qilish")}
-                </button>
+                <div className="row middle" style={{ gap: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setClaimModalOpen(false)}
+                    disabled={claimSubmitting}
+                  >
+                    {tx("common.bekor_qilish")}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-outline"
+                    disabled={claimSubmitting}
+                    onClick={handleClaimReject}
+                    style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}
+                    title="Buyurtmani kamchilik yoki sabab bilan orqaga qaytarish"
+                  >
+                    ↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")}
+                  </button>
+                </div>
                 <button
                   type="submit"
                   className="btn btn-ok"

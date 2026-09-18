@@ -38,7 +38,7 @@ MEDIA_TTL = 60 * 60 * 6
 # `.html` yoki `.svg` ilovaning o'z originida ochilsa, ichidagi JS ishga
 # tushadi va localStorage dagi tokenga yeta oladi.
 INLINE_SAFE = {
-    "image/png", "image/jpeg", "image/gif", "image/webp", "image/avif",
+    "image/png", "image/jpeg", "image/gif", "image/webp", "image/avif", "image/svg+xml",
     "application/pdf", "text/plain",
 }
 

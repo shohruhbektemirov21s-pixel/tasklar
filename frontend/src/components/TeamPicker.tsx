@@ -109,7 +109,7 @@ export async function addPickedMembers(projectId: number, picks: Pick[]) {
  * yuklanmasa vazifa o'chirilmaydi: qaysi vazifaning fayli qolib ketgani
  * alohida qaytariladi, odam uni vazifa sahifasidan qayta yuklaydi.
  */
-export async function createPickedTasks(projectId: number, picks: Pick[], isBoss = false) {
+export async function createPickedTasks(projectId: number, picks: Pick[], isBoss = false, orderId?: number | null) {
   const failedTasks: string[] = [];
   const failedFiles: string[] = [];
   for (const p of inAddedOrder(picks)) {
@@ -127,6 +127,7 @@ export async function createPickedTasks(projectId: number, picks: Pick[], isBoss
       try {
         task = await api.post<Task>("/tasks/", {
           project: projectId,
+          order: orderId || null,
           title: t.title,
           priority: t.priority,
           status: "TODO",
