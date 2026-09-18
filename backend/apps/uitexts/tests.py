@@ -45,3 +45,30 @@ class SystemSettingsAPITests(APITestCase):
         res_logo = self.client.post("/api/system/settings/", {"logo": img}, format="multipart")
         self.assertEqual(res_logo.status_code, 200)
         self.assertIsNotNone(res_logo.json()["logo_url"])
+
+
+class SystemSettingAdminTests(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            email="admin_super@teamflow.uz",
+            full_name="Super Admin",
+            password="adminpassword123",
+        )
+
+    def test_admin_changelist_redirects_to_change_form(self):
+        self.client.force_login(self.admin)
+        res = self.client.get("/admin/uitexts/systemsetting/")
+        self.assertEqual(res.status_code, 302)
+        setting = SystemSetting.get_settings()
+        self.assertIn(f"/admin/uitexts/systemsetting/{setting.id}/change/", res.url)
+
+    def test_saving_system_setting_updates_admin_and_jazzmin(self):
+        setting = SystemSetting.get_settings()
+        setting.app_name = "SuperCorp"
+        setting.save()
+
+        from django.contrib import admin
+        from django.conf import settings
+        self.assertIn("SuperCorp", admin.site.site_header)
+        self.assertEqual(settings.JAZZMIN_SETTINGS.get("site_brand"), "SuperCorp")
+

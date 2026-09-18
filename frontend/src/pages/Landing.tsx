@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api/client";
-import { Logo } from "@/components/Logo";
+import { Logo, LogoWord } from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import {
   IconBoard, IconFile, IconHistory, IconReview, IconSearch, IconTasks, IconUsers,
@@ -84,7 +84,7 @@ export default function Landing() {
       <header className="lp-header">
         <div className="lp-wrap">
           <Link to="/" className="logo-link" style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text)", fontWeight: 600 }}>
-            <Logo size={30} /> <span>{tx("common.teamflow")}</span>
+            <LogoWord size={30} />
           </Link>
           <nav className="lp-nav">
             <a href="#imkoniyatlar">{tx("landing.imkoniyatlar")}</a>

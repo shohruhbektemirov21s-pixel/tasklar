@@ -6,7 +6,7 @@ import type { SidebarCounts, UserBrief } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import ErrorBoundary from "./ErrorBoundary";
-import { Logo } from "./Logo";
+import { Logo, LogoWord } from "./Logo";
 import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconCheck, IconChevron, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar, Loading, SpecialtyTag } from "./ui";
@@ -385,8 +385,7 @@ export default function Layout() {
                          onClick={() => setMenu(false)} />}
         <aside className={`sidebar ${menu ? "open" : ""}`}>
           <Link to="/panel" className="logo-link">
-            <Logo size={28} />
-            <span>{tx("common.teamflow")}</span>
+            <LogoWord size={28} />
           </Link>
 
           {/* 1. ASOSIY ISH JARAYONI */}

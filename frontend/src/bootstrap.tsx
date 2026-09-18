@@ -13,6 +13,9 @@ import { AuthProvider } from "./auth/AuthContext";
 import ConfirmHost from "./components/Confirm";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { RealtimeProvider } from "./realtime/RealtimeContext";
+import { fetchSystemBranding } from "./api/branding";
+
+void fetchSystemBranding();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

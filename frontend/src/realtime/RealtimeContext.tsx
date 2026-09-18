@@ -12,6 +12,7 @@ import type { AppNotification } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { openSocket } from "./socket";
 import type { SocketMessage } from "./socket";
+import { setCachedBranding } from "@/api/branding";
 
 interface RealtimeState {
   notifications: AppNotification[];
@@ -63,6 +64,15 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       onStatus: setConnected,
       onMessage: (data) => {
         if (data.event === "ready") setUnread(Number(data.unread) || 0);
+
+        if (data.event === "system.branding_update") {
+          const appName = (data.app_name as string) || "TeamFlow";
+          const logoUrl = (data.logo_url as string) || null;
+          setCachedBranding({
+            app_name: appName,
+            logo_url: logoUrl,
+          });
+        }
 
         if (data.event === "notification" && data.notification) {
           // `SocketMessage.notification` da faqat `kind` nomlangan -

@@ -148,13 +148,14 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.uitexts.context_processors.branding_context",
             ],
         },
     },
@@ -391,6 +392,7 @@ JAZZMIN_SETTINGS = {
     "search_model": "accounts.User",
     "topmenu_links": [
         {"name": "Boshqaruv", "url": "admin:index"},
+        {"name": "⚙️ Brending & Logotip", "url": "admin:uitexts_systemsetting_changelist"},
         {"name": "➕ Yangi mutaxassislik", "url": "admin:accounts_specialtyitem_add"},
         {"name": "Ilovaga qaytish", "url": "http://localhost:5183/panel", "new_window": False},
     ],
@@ -403,9 +405,17 @@ JAZZMIN_SETTINGS = {
                 "url": "admin:accounts_specialtyitem_add",
                 "icon": "fas fa-plus-circle text-success",
             }
-        ]
+        ],
+        "uitexts": [
+            {
+                "name": "⚙️ Brending & Logotipni o'zgartirish",
+                "url": "admin:uitexts_systemsetting_changelist",
+                "icon": "fas fa-paint-brush text-warning",
+            }
+        ],
     },
     "order_with_respect_to": [
+        "uitexts",
         "accounts",
         "projects",
         "tasks",
@@ -434,6 +444,8 @@ JAZZMIN_SETTINGS = {
         "uitexts.UiText",
     ],
     "icons": {
+        "uitexts": "fas fa-cogs",
+        "uitexts.SystemSetting": "fas fa-sliders-h",
         "accounts": "fas fa-user-shield",
         "accounts.User": "fas fa-user",
         "accounts.SpecialtyItem": "fas fa-id-badge",

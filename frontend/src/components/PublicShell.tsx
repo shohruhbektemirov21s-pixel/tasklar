@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { IconSearch } from "./icons";
 import ThemeToggle from "./ThemeToggle";
-import { Logo } from "./Logo";
+import { Logo, LogoWord } from "./Logo";
 import { toSearch, useGo } from "@/nav";
 import { tx } from "@/i18n";
 
@@ -50,7 +50,7 @@ export default function PublicShell({
         <div className="lp-wrap">
           <Link to="/" className="logo-link"
                 style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text)", fontWeight: 600 }}>
-            <Logo size={30} /> <span>{tx("common.teamflow")}</span>
+            <LogoWord size={30} />
           </Link>
 
           <span className="spacer" />
@@ -91,8 +91,7 @@ export default function PublicShell({
 
       <footer className="lp-footer">
         <div className="lp-wrap">
-          <Logo size={22} />
-          <span>{tx("common.teamflow")}</span>
+          <LogoWord size={22} />
           <span className="spacer" />
           <Link to="/">{tx("public_shell.bosh_sahifa")}</Link>
           <Link to="/qidiruv">{tx("common.loyihalar")}</Link>

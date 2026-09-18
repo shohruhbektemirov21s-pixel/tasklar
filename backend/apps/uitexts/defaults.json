@@ -1,4 +1,8 @@
 {
+  "common.teamflow": {
+    "value": "TeamFlow",
+    "note": "Tizim brendingi / nomi"
+  },
   "add_member_box.azo_qoshish": {
     "value": "A'zo qo'shish",
     "note": "components/AddMemberBox.tsx"

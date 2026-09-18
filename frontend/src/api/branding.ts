@@ -46,6 +46,14 @@ export function subscribeBranding(fn: (b: SystemBranding) => void) {
 }
 
 function notifyListeners(b: SystemBranding) {
+  if (typeof document !== "undefined" && b.app_name) {
+    const newName = b.app_name.trim();
+    if (newName) {
+      if (!document.title || document.title.includes("TeamFlow")) {
+        document.title = document.title ? document.title.replace(/TeamFlow/g, newName) : newName;
+      }
+    }
+  }
   listeners.forEach((fn) => {
     try {
       fn(b);
