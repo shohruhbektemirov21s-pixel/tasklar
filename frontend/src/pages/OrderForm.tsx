@@ -198,7 +198,8 @@ export default function OrderForm() {
 
   // Serverga avtomatik saqlash (fondan bazada DRAFT holatida saqlanadi)
   useEffect(() => {
-    if (editing || isPM) return;
+    if (isPM) return;
+    if (editing && (!loaded || existingItem?.status !== "DRAFT")) return;
     const hasData = Boolean(
       f.system_name?.trim() ||
         f.module?.trim() ||
@@ -226,7 +227,7 @@ export default function OrderForm() {
         });
         payload.status = "DRAFT";
 
-        let draftId = serverDraftId;
+        let draftId = editing && id ? id : serverDraftId;
         if (draftId) {
           await api.patch(`/orders/${draftId}/`, payload);
         } else {
@@ -239,10 +240,12 @@ export default function OrderForm() {
         if (isMountedRef.current) {
           const nowTime = new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
           try {
-            localStorage.setItem(
-              ORDER_DRAFT_KEY,
-              JSON.stringify({ f, serverDraftId: draftId, lastSavedTime: nowTime })
-            );
+            if (!editing) {
+              localStorage.setItem(
+                ORDER_DRAFT_KEY,
+                JSON.stringify({ f, serverDraftId: draftId, lastSavedTime: nowTime })
+              );
+            }
           } catch {
             // ignore
           }
@@ -261,7 +264,7 @@ export default function OrderForm() {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [editing, f, isPM, serverDraftId, files.length]);
+  }, [editing, loaded, existingItem?.status, id, f, isPM, serverDraftId, files.length]);
 
 
 
@@ -324,15 +327,15 @@ export default function OrderForm() {
     go(toOrders());
   }
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (f.due_date) {
+  async function submit(e?: React.FormEvent, targetStatus: "NEW" | "DRAFT" = "NEW") {
+    if (e) e.preventDefault();
+    if (targetStatus === "NEW" && f.due_date) {
       const today = new Date().toISOString().split("T")[0];
       if (f.due_date < today) {
         setErrors((p) => ({ ...p, due_date: tx("orders.muddat_otgan_xatolik") }));
         setError(tx("orders.muddat_otgan_xatolik"));
         return;
-    }
+      }
     }
     setBusy(true);
     setError(null);
@@ -344,7 +347,7 @@ export default function OrderForm() {
         if (val === null || val === undefined) return;
         payload[key] = val;
       });
-      payload.status = "NEW";
+      payload.status = targetStatus;
 
       const targetId = editing && id ? id : serverDraftId;
 
@@ -431,22 +434,6 @@ export default function OrderForm() {
     );
   }
 
-  if (editing) {
-    return (
-      <div className="content">
-        <div className="msg msg-error" style={{ margin: "40px auto", maxWidth: 500, textAlign: "center", padding: 24, borderRadius: 10 }}>
-          <h3 style={{ margin: "0 0 10px 0" }}>{tx("orders.tahrirlash_taqiqlangan")}</h3>
-          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-            {tx("orders.tahrirlash_taqiq_desc")}
-          </p>
-          <button type="button" className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => go(toOrders())}>
-            {tx("orders.buyurtmalarga_qaytish")}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <PageHead
@@ -466,9 +453,19 @@ export default function OrderForm() {
           </div>
         }
         actions={
-          <div className="row" style={{ gap: 8 }}>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            {(!existingItem || existingItem.status === "DRAFT") && (
+              <button
+                type="button"
+                className="btn btn-outline"
+                disabled={busy}
+                onClick={() => void submit(undefined, "DRAFT")}
+              >
+                💾 {tx("orders.save_draft")}
+              </button>
+            )}
             <button className="btn btn-primary" form={formId} disabled={busy}>
-              {busy ? tx("orders.submitting") : tx("orders.send_order")}
+              🚀 {busy ? tx("orders.submitting") : tx("orders.send_order")}
             </button>
             <button type="button" className="btn" onClick={handleCancelOrExit}>
               {tx("common.bekor_qilish")}
@@ -777,17 +774,38 @@ export default function OrderForm() {
                 )}
               </div>
 
-              {/* Pastki o'ng burchakdagi sana va vaqt (oq va qora uslubda) */}
+              {/* Pastki amallar va sana-vaqt bloki */}
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "flex-end",
+                  justifyContent: "space-between",
                   alignItems: "center",
-                  marginTop: 18,
-                  paddingTop: 12,
+                  marginTop: 24,
+                  paddingTop: 16,
                   borderTop: "1px solid #f1f5f9",
+                  flexWrap: "wrap",
+                  gap: 12,
                 }}
               >
+                <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
+                  {(!existingItem || existingItem.status === "DRAFT") && (
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      disabled={busy}
+                      onClick={() => void submit(undefined, "DRAFT")}
+                    >
+                      💾 {tx("orders.save_draft")}
+                    </button>
+                  )}
+                  <button className="btn btn-primary" form={formId} disabled={busy}>
+                    🚀 {busy ? tx("orders.submitting") : tx("orders.send_order")}
+                  </button>
+                  <button type="button" className="btn" onClick={handleCancelOrExit}>
+                    {tx("common.bekor_qilish")}
+                  </button>
+                </div>
+
                 <div
                   style={{
                     display: "inline-flex",

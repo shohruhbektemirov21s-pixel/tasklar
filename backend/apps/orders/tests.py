@@ -834,3 +834,26 @@ class OrdersSeniorDevTests(ApiTestCase):
         }, format="multipart")
         self.assertEqual(up_res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("1-chi TZsi tasdiqlanmaguncha", str(up_res.data))
+
+        # PM ishni qabul qiladi
+        pm_client = APIClient()
+        pm_client.force_authenticate(user=self.pm_user)
+        claim_res = pm_client.post(f"/api/orders/{order_id}/claim-order/", {})
+        self.assertEqual(claim_res.status_code, status.HTTP_200_OK)
+
+        # PM ishni yakunlab, hisobot topshiradi (READY_FOR_REVIEW holatiga o'tadi)
+        comp_res = pm_client.post(f"/api/orders/{order_id}/submit-completion/", {
+            "completion_note": "Ish to'liq bajarildi, tekshirib ko'ring.",
+        })
+        self.assertEqual(comp_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(comp_res.json()["status"], ChangeRequestStatus.READY_FOR_REVIEW)
+
+        # PM yakunlaganidan keyin (boshqarma tasdig'ida) yangi TZ yuborishga urinish -> 400
+        v2_file2 = SimpleUploadedFile("tz_v2_new.pdf", b"TZ v2 new", content_type="application/pdf")
+        up_res2 = sohaviy_client.post(f"/api/orders/{order_id}/upload-version/", {
+            "tz_file": v2_file2,
+            "change_note": "Boshqarma tomonidan yana TZ",
+        }, format="multipart")
+        self.assertEqual(up_res2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Loyiha menejeri ishni yakunlab topshirgan", str(up_res2.data))
+

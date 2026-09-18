@@ -374,7 +374,11 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
         user = request.user
         if user.is_platform_admin or getattr(user, "is_boss", False):
             return True
-        return obj.status == ChangeRequestStatus.DRAFT and obj.created_by_id == user.id
+        return obj.status == ChangeRequestStatus.DRAFT and (
+            obj.created_by_id is None
+            or obj.created_by_id == user.id
+            or getattr(user, "is_sohaviy_boshqarma", False)
+        )
 
     def get_can_delete(self, obj):
         request = self.context.get("request")
@@ -383,7 +387,11 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
         user = request.user
         if user.is_platform_admin or getattr(user, "is_boss", False):
             return True
-        return obj.status == ChangeRequestStatus.DRAFT and obj.created_by_id == user.id
+        return obj.status == ChangeRequestStatus.DRAFT and (
+            obj.created_by_id is None
+            or obj.created_by_id == user.id
+            or getattr(user, "is_sohaviy_boshqarma", False)
+        )
 
     def get_assigned_developer_detail(self, obj):
         if not obj.assigned_developer:

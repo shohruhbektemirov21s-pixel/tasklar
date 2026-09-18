@@ -305,8 +305,32 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
       item.status !== "CANCELLED" &&
       item.status !== "DRAFT"
   );
-  const canEdit = false;
-  const canDelete = false;
+  const canEdit = Boolean(
+    item && (
+      typeof item.can_edit === "boolean"
+        ? item.can_edit
+        : item.status === "DRAFT" && (
+            user?.is_platform_admin ||
+            user?.is_boss ||
+            user?.is_sohaviy_boshqarma ||
+            !item.created_by ||
+            item.created_by === user?.id
+          )
+    )
+  );
+  const canDelete = Boolean(
+    item && (
+      typeof item.can_delete === "boolean"
+        ? item.can_delete
+        : item.status === "DRAFT" && (
+            user?.is_platform_admin ||
+            user?.is_boss ||
+            user?.is_sohaviy_boshqarma ||
+            !item.created_by ||
+            item.created_by === user?.id
+          )
+    )
+  );
   const [sendingOrder, setSendingOrder] = useState(false);
   async function handleSendDraftOrder() {
     if (!item) return;
@@ -494,6 +518,17 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   async function handleUploadVersionSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item || !versionFile || !versionNote.trim()) return;
+    if (item.status === "READY_FOR_REVIEW") {
+      setActionError(
+        tx(
+          "orders.pm_yakunlagan_yangi_tz_mumkin_emas",
+          undefined,
+          "Loyiha menejeri ishni yakunlab topshirgan (boshqarma tasdig'ida). Yangi TZ yuborishdan oldin ishni qabul qiling yoki kamchilik bilan qaytaring."
+        )
+      );
+      setVersionModal(false);
+      return;
+    }
     setVersionSubmitting(true);
     setActionError(null);
     try {
@@ -513,6 +548,16 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
     }
   }
   function handleOpenUploadVersion() {
+    if (item?.status === "READY_FOR_REVIEW") {
+      setActionError(
+        tx(
+          "orders.pm_yakunlagan_yangi_tz_mumkin_emas",
+          undefined,
+          "Loyiha menejeri ishni yakunlab topshirgan (boshqarma tasdig'ida). Yangi TZ yuborishdan oldin ishni qabul qiling yoki kamchilik bilan qaytaring."
+        )
+      );
+      return;
+    }
     if (item?.status === "NEW") {
       setActionError(
         tx("orders.tz_birinchisi_tasdiqlanmaguncha_yuklash_mumkin_emas") ||
@@ -522,6 +567,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
     }
     if (item?.pending_version) {
       setActionError(
+        tx("orders.yangi_tz_tasdiqlanmaguncha") ||
         "Avvalgi yuborilgan TZ versiyasi hali tasdiqlanmagan. 1-tasi tasdiqlanmaguncha ikkinchisi yuborilmaydi."
       );
       return;
@@ -781,7 +827,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
           <span>{sendingOrder ? tx("common.yuborilmoqda") : tx("orders.send_order")}</span>
         </button>
       )}
-      {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && (
+      {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && item.status !== "READY_FOR_REVIEW" && item.status !== "CANCELLED" && (
         <button
           type="button"
           className="btn btn-sm btn-outline"
@@ -1022,16 +1068,29 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </span>
               </div>
             </div>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => void handleSendDraftOrder()}
-              disabled={sendingOrder}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
-            >
-              <span>🚀</span>
-              <span>{sendingOrder ? tx("common.yuborilmoqda") : tx("orders.send_order")}</span>
-            </button>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              {canEdit && (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => go(toEditOrder(item.id))}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+                >
+                  <span>✏️</span>
+                  <span>{tx("common.tahrirlash")}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => void handleSendDraftOrder()}
+                disabled={sendingOrder}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+              >
+                <span>🚀</span>
+                <span>{sendingOrder ? tx("common.yuborilmoqda") : tx("orders.send_order")}</span>
+              </button>
+            </div>
           </div>
         )}
         {!item.assigned_pm && isPMOrAdmin && item.status !== "DRAFT" && (
@@ -1245,7 +1304,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   lineHeight: 1.3,
                 }}
               >
-                {item.system_name} {item.module ? `— ${item.module}` : ""}
+                {item.system_name}
               </h1>
               {item.project_detail && (
                 <div
@@ -1405,12 +1464,32 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               marginTop: 14,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: item.additional_materials ? 10 : 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: (item.module || item.additional_materials) ? 10 : 0 }}>
               <div style={{ width: 4, height: 16, borderRadius: 2, background: "#06b6d4" }} />
               <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)" }}>
                 {tx("orders.fayl_va_izohlar", undefined, "Izoh va fayllar")}
               </span>
             </div>
+            {item.module && (
+              <div
+                style={{
+                  fontSize: 13.5,
+                  color: "var(--text, #334155)",
+                  lineHeight: 1.55,
+                  whiteSpace: "pre-wrap",
+                  background: "var(--surface, #ffffff)",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid var(--border-color, #e2e8f0)",
+                  marginTop: 6,
+                }}
+              >
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 4 }}>
+                  {tx("orders.loyiha_izoh_label", undefined, "Loyiha haqida izoh")}
+                </div>
+                {item.module}
+              </div>
+            )}
             {item.additional_materials && (
               <div
                 style={{
@@ -1844,183 +1923,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
           </div>
         </div>
 
-        {/* Loyiha vazifalari bo'limi */}
-        {hasProject && (
-          <div
-            className="card"
-            style={{
-              padding: "20px 24px",
-              borderRadius: 14,
-              border: "1px solid var(--border-color, #e2e8f0)",
-              background: "#ffffff",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-              marginTop: 16,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 16,
-                flexWrap: "wrap",
-                gap: 12,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    background: "rgba(37, 99, 235, 0.1)",
-                    color: "#2563eb",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 18,
-                  }}
-                >
-                  📋
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text, #0f172a)" }}>
-                    {tx("orders.loyiha_vazifalari", undefined, "Loyiha vazifalari")} ({projectTasks.length})
-                  </h3>
-                  <div style={{ fontSize: 12.5, color: "#64748b", marginTop: 2 }}>
-                    Ushbu buyurtma asosida ochilgan loyiha vazifalari
-                  </div>
-                </div>
-              </div>
 
-              {canDistribute && (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline"
-                  onClick={() => setDistributeTasksModalOpen(true)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
-                >
-                  <span>⚡</span>
-                  <span>{tx("orders.vazifalarni_taqsimlash", undefined, "Vazifalarni taqsimlash")}</span>
-                </button>
-              )}
-            </div>
-
-            {projectTasksLoading ? (
-              <Loading text={tx("common.yuklanmoqda")} />
-            ) : projectTasks.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "32px 16px",
-                  background: "#f8fafc",
-                  borderRadius: 10,
-                  border: "1px dashed #cbd5e1",
-                }}
-              >
-                <div style={{ fontSize: 14, color: "#64748b", marginBottom: 12 }}>
-                  {tx("orders.hozircha_vazifalar_yoq", undefined, "Hozircha vazifalar mavjud emas.")}
-                </div>
-                {canDistribute && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-primary"
-                    onClick={() => setDistributeTasksModalOpen(true)}
-                  >
-                    + {tx("orders.vazifalarni_taqsimlash", undefined, "Vazifalarni taqsimlash")}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr style={{ background: "#f8fafc", borderBottom: "1px solid var(--border)", fontSize: 12, color: "#64748b", textAlign: "left" }}>
-                      <th style={{ padding: "10px 14px", width: 44, textAlign: "center" }}>#</th>
-                      <th style={{ padding: "10px 14px" }}>Vazifa nomi</th>
-                      <th style={{ padding: "10px 14px" }}>Ijrochilar</th>
-                      <th style={{ padding: "10px 14px" }}>Holat</th>
-                      <th style={{ padding: "10px 14px" }}>Muhimlik</th>
-                      <th style={{ padding: "10px 14px" }}>Boshlanish</th>
-                      <th style={{ padding: "10px 14px" }}>Muddat</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right" }}>Amal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projectTasks.map((t, idx) => (
-                      <tr
-                        key={t.id}
-                        style={{
-                          borderBottom: "1px solid #f1f5f9",
-                          cursor: "pointer",
-                          transition: "background 0.15s ease",
-                        }}
-                        onClick={() => setSelectedTaskId(t.id)}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                      >
-                        <td style={{ padding: "12px 14px", textAlign: "center", fontSize: 12.5, color: "#94a3b8", fontWeight: 600 }}>
-                          {idx + 1}
-                        </td>
-                        <td style={{ padding: "12px 14px" }}>
-                          <div style={{ fontWeight: 600, fontSize: 13.5, color: "#0f172a" }}>
-                            {t.title}
-                          </div>
-                          {t.acceptance_criteria && (
-                            <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2, maxWidth: 360, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {t.acceptance_criteria}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ padding: "12px 14px" }}>
-                          {t.assignees && t.assignees.length > 0 ? (
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                              {t.assignees.map((a) => (
-                                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                  <Avatar user={a} size="sm" />
-                                  <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 500 }}>
-                                    {a.full_name}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span style={{ fontSize: 12, color: "#94a3b8" }}>—</span>
-                          )}
-                        </td>
-                        <td style={{ padding: "12px 14px" }}>
-                          <StatusBadge task={t} />
-                        </td>
-                        <td style={{ padding: "12px 14px" }}>
-                          <Priority task={t} />
-                        </td>
-                        <td style={{ padding: "12px 14px", fontSize: 12.5, color: "#64748b", whiteSpace: "nowrap" }}>
-                          {t.start_date ? fmtDate(t.start_date) : "—"}
-                        </td>
-                        <td style={{ padding: "12px 14px", fontSize: 12.5, color: "#64748b", whiteSpace: "nowrap" }}>
-                          {t.due_date ? fmtDate(t.due_date) : "—"}
-                        </td>
-                        <td style={{ padding: "12px 14px", textAlign: "right" }}>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-ghost"
-                            style={{ color: "#2563eb", fontWeight: 600, fontSize: 12 }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTaskId(t.id);
-                            }}
-                          >
-                            Ko'rish →
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
       </div>
       {versionModal && (
         <div className="modal-overlay" onClick={() => setVersionModal(false)}>
@@ -2911,6 +2814,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             onSuccess={() => {
               setProjectModalOpen(false);
               void load();
+              go("/loyihalar");
             }}
           />
         </Suspense>

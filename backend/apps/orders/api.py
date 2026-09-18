@@ -383,10 +383,11 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 {"detail": "Yuborilgan yoki qabul qilingan buyurtmani tahrirlab bo'lmaydi. Buyurtmani tahrirlash tizimda taqiqlangan."}
             )
 
-        # Agar DRAFT bo'lsa, faqat uni yaratgan shaxs yuborishi/to'ldirishi mumkin
-        if instance.status == ChangeRequestStatus.DRAFT and instance.created_by_id != user.id and not is_admin_or_boss:
+        # Agar DRAFT bo'lsa, uni yaratgan shaxs, sohaviy boshqarma yoki admin tahrirlashi mumkin
+        is_sohaviy = bool(getattr(user, "is_sohaviy_boshqarma", False))
+        if instance.status == ChangeRequestStatus.DRAFT and not (is_admin_or_boss or is_sohaviy or instance.created_by_id == user.id):
             raise ValidationError(
-                {"detail": "Faqat buyurtmani yaratgan foydalanuvchi qoralamani to'ldirishi yoki yuborishi mumkin."}
+                {"detail": "Faqat buyurtmani yaratgan yoki sohaviy boshqarma foydalanuvchisi qoralamani to'ldirishi yoki yuborishi mumkin."}
             )
 
         old_status = instance.status
@@ -437,14 +438,21 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             pass
 
     def perform_destroy(self, instance):
+        user = self.request.user
+        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        is_sohaviy = bool(getattr(user, "is_sohaviy_boshqarma", False))
+        if instance.status == ChangeRequestStatus.DRAFT and (is_admin_or_boss or is_sohaviy or instance.created_by_id == user.id):
+            order_pk = instance.pk
+            instance.delete()
+            try:
+                from apps.notifications.services import send_to_users
+                from .services import get_order_notification_recipients
+                all_users = get_order_notification_recipients()
+                send_to_users(all_users, {"event": "order.delete", "order_id": order_pk})
+            except Exception:
+                pass
+            return
         raise ValidationError({"detail": "Buyurtmani o'chirish tizimda taqiqlangan."})
-        try:
-            from apps.notifications.services import send_to_users
-            from .services import get_order_notification_recipients
-            all_users = get_order_notification_recipients()
-            send_to_users(all_users, {"event": "order.delete", "order_id": order_pk})
-        except Exception:
-            pass
 
     @action(detail=True, methods=["post"], url_path="send")
     def send_order(self, request, pk=None):
@@ -452,9 +460,10 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         order = self.get_object()
         user = request.user
         is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        is_sohaviy = bool(getattr(user, "is_sohaviy_boshqarma", False))
 
-        if not is_admin_or_boss and order.created_by_id != user.id:
-            return Response({"detail": "Faqat buyurtmani yaratgan foydalanuvchi uni yuborishi mumkin."}, status=403)
+        if not (is_admin_or_boss or is_sohaviy or order.created_by_id == user.id):
+            return Response({"detail": "Faqat buyurtmani yaratgan yoki sohaviy boshqarma foydalanuvchisi uni yuborishi mumkin."}, status=403)
 
         if order.status != ChangeRequestStatus.DRAFT:
             return Response({"detail": "Ushbu buyurtma allaqachon yuborilgan."}, status=400)
@@ -901,9 +910,15 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         user = request.user
         order = self.get_object()
 
-        # Buyurtma yakunlangan yoki rad etilgan bo'lsa yangi versiya yuklanmaydi
-        if order.status in [ChangeRequestStatus.COMPLETED, ChangeRequestStatus.REJECTED]:
-            raise ValidationError({"detail": "Yakunlangan yoki rad etilgan buyurtmaga yangi versiya yuborib bo'lmaydi."})
+        # Buyurtma yakunlangan, rad etilgan yoki bekor qilingan bo'lsa yangi versiya yuklanmaydi
+        if order.status in [ChangeRequestStatus.COMPLETED, ChangeRequestStatus.REJECTED, ChangeRequestStatus.CANCELLED]:
+            raise ValidationError({"detail": "Yakunlangan, rad etilgan yoki bekor qilingan buyurtmaga yangi versiya yuborib bo'lmaydi."})
+
+        # PM ishni yakunlab topshirgan bo'lsa (boshqarma tasdig'ida) yangi TZ yuborilmaydi
+        if order.status == ChangeRequestStatus.READY_FOR_REVIEW:
+            raise ValidationError({
+                "detail": "Loyiha menejeri ishni yakunlab topshirgan (boshqarma tasdig'ida). Yangi TZ yuborishdan oldin ishni qabul qiling yoki kamchilik bilan qaytaring."
+            })
 
         # Huquq tekshiruvi: faqat buyurtmachi (boshqarma), sohaviy yoki admin/boss
         is_owner = order.created_by_id == user.id

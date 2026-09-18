@@ -165,6 +165,36 @@ export default function ChangeRequests() {
   const [versionSubmitting, setVersionSubmitting] = useState(false);
   const [versionError, setVersionError] = useState<string | null>(null);
   const handleOpenUploadVersion = (item: ChangeRequestItem) => {
+    if (item.status === "READY_FOR_REVIEW") {
+      alert(
+        tx(
+          "orders.pm_yakunlagan_yangi_tz_mumkin_emas",
+          undefined,
+          "Loyiha menejeri ishni yakunlab topshirgan (boshqarma tasdig'ida). Yangi TZ yuborishdan oldin ishni qabul qiling yoki kamchilik bilan qaytaring."
+        )
+      );
+      return;
+    }
+    if (item.status === "NEW") {
+      alert(
+        tx(
+          "orders.tz_birinchisi_tasdiqlanmaguncha_yuklash_mumkin_emas",
+          undefined,
+          "Buyurtmaning 1-chi TZsi tasdiqlanmaguncha 2-chi TZ yuborib bo'lmaydi. Avval 1-TZ ko'rib chiqilishi kerak."
+        )
+      );
+      return;
+    }
+    if (item.has_pending_version) {
+      alert(
+        tx(
+          "orders.yangi_tz_tasdiqlanmaguncha",
+          undefined,
+          "Yangi TZ versiyasi tasdiqlanmaguncha yoki rad etilmaguncha, boshqa versiya yuklay olmaysiz."
+        )
+      );
+      return;
+    }
     setUploadVersionModalItem(item);
     setVersionFile(null);
     setVersionChangeNote("");
@@ -330,8 +360,28 @@ export default function ChangeRequests() {
   const handleOpenView = (item: ChangeRequestItem) => {
     go(toOrder(item.id));
   };
-  const canEditOrder = (_item: ChangeRequestItem) => false;
-  const canDeleteOrder = (_item: ChangeRequestItem) => false;
+  const canEditOrder = (item: ChangeRequestItem) => {
+    if (typeof item.can_edit === "boolean") return item.can_edit;
+    if (item.status !== "DRAFT") return false;
+    return Boolean(
+      user?.is_platform_admin ||
+      user?.is_boss ||
+      user?.is_sohaviy_boshqarma ||
+      !item.created_by ||
+      item.created_by === user?.id
+    );
+  };
+  const canDeleteOrder = (item: ChangeRequestItem) => {
+    if (typeof item.can_delete === "boolean") return item.can_delete;
+    if (item.status !== "DRAFT") return false;
+    return Boolean(
+      user?.is_platform_admin ||
+      user?.is_boss ||
+      user?.is_sohaviy_boshqarma ||
+      !item.created_by ||
+      item.created_by === user?.id
+    );
+  };
   const handleSendOrder = async (item: ChangeRequestItem) => {
     if (!window.confirm(`${tx("orders.send_order_confirm_desc")} ${item.id}`)) {
       return;
@@ -1208,8 +1258,18 @@ export default function ChangeRequests() {
                         </td>
                         <td
                           style={{ padding: "12px 14px", cursor: "pointer" }}
-                          onClick={() => handleOpenView(item)}
-                          title={tx("orders.batafsil_korish")}
+                          onClick={() => {
+                            if (item.status === "DRAFT" && canEditOrder(item)) {
+                              go(toEditOrder(item.id));
+                            } else {
+                              handleOpenView(item);
+                            }
+                          }}
+                          title={
+                            item.status === "DRAFT" && canEditOrder(item)
+                              ? tx("orders.buyurtmani_tahrirlash")
+                              : tx("orders.batafsil_korish")
+                          }
                         >
                           <div>
                             <div style={{ fontWeight: 600, fontSize: 13.5, color: "#2563eb", lineHeight: 1.3 }}>
@@ -1262,7 +1322,23 @@ export default function ChangeRequests() {
                               : "—"}
                           </div>
                         </td>
-                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
+                        <td
+                          style={{
+                            padding: "12px 14px",
+                            whiteSpace: "nowrap",
+                            cursor: item.status === "DRAFT" && canEditOrder(item) ? "pointer" : "default",
+                          }}
+                          onClick={() => {
+                            if (item.status === "DRAFT" && canEditOrder(item)) {
+                              go(toEditOrder(item.id));
+                            }
+                          }}
+                          title={
+                            item.status === "DRAFT" && canEditOrder(item)
+                              ? tx("orders.buyurtmani_tahrirlash")
+                              : undefined
+                          }
+                        >
                           <OrderStatusBadge
                             status={item.status}
                             label={item.status_display}
@@ -1879,7 +1955,7 @@ export default function ChangeRequests() {
                   v{viewingItem.version || 1}
                 </span>
                 <OrderStatusBadge status={viewingItem.status} label={viewingItem.status_display} />
-                <strong>{viewingItem.system_name} — {viewingItem.module || tx("orders.tizim")}</strong>
+                <strong>{viewingItem.system_name}</strong>
                 {viewingItem.project_detail && (
                   <span
                     className="badge"
@@ -1894,7 +1970,7 @@ export default function ChangeRequests() {
                 )}
               </div>
               <div className="row middle" style={{ gap: 8 }}>
-                {isSohaviyOrAdmin && viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && (
+                {isSohaviyOrAdmin && viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && viewingItem.status !== "READY_FOR_REVIEW" && viewingItem.status !== "CANCELLED" && (
                   <button
                     type="button"
                     className="btn btn-sm btn-primary"
@@ -2008,7 +2084,64 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               )}
-              {!viewingItem.assigned_pm ? (
+              {viewingItem.status === "DRAFT" ? (
+                <div
+                  style={{
+                    background: "#fffbeb",
+                    border: "1.5px solid #fde68a",
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    marginBottom: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 22 }}>📝</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 13.5, color: "#92400e" }}>
+                        {tx("orders.status_draft")}:
+                      </div>
+                      <div style={{ fontSize: 12, color: "#b45309", marginTop: 2 }}>
+                        {tx("orders.draft_badge_desc")}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="row" style={{ gap: 8 }}>
+                    {canEditOrder(viewingItem) && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline"
+                        onClick={() => {
+                          const oid = viewingItem.id;
+                          setViewingItem(null);
+                          go(toEditOrder(oid));
+                        }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+                      >
+                        <span>✏️</span>
+                        <span>{tx("common.tahrirlash")}</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={async () => {
+                        const itm = viewingItem;
+                        setViewingItem(null);
+                        await handleSendOrder(itm);
+                      }}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+                    >
+                      <span>🚀</span>
+                      <span>{tx("orders.send_order")}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : !viewingItem.assigned_pm ? (
                 <div
                   style={{
                     background: "#fffbeb",
@@ -2361,8 +2494,13 @@ export default function ChangeRequests() {
                 <div style={{ fontSize: 13, color: "var(--text)", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
                   {viewingItem.requested_change || viewingItem.current_state || tx("orders.tavsif_kiritilmagan")}
                 </div>
-                {viewingItem.reason && (
+                {viewingItem.module && (
                   <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed var(--border-color, #e2e8f0)", fontSize: 12, color: "var(--muted)" }}>
+                    <strong>{tx("orders.loyiha_izoh_label", undefined, "Loyiha haqida izoh")}:</strong> {viewingItem.module}
+                  </div>
+                )}
+                {viewingItem.reason && (
+                  <div style={{ marginTop: 8, paddingTop: 6, borderTop: viewingItem.module ? "none" : "1px dashed var(--border-color, #e2e8f0)", fontSize: 12, color: "var(--muted)" }}>
                     <strong>{tx("orders.asos_sabab")}</strong> {viewingItem.reason}
                   </div>
                 )}
@@ -2408,7 +2546,7 @@ export default function ChangeRequests() {
                       <span>📄</span> {tx("orders.tz_faylini_korish")}
                     </button>
                   )}
-                  {isSohaviyOrAdmin && viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && (
+                  {isSohaviyOrAdmin && viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && viewingItem.status !== "READY_FOR_REVIEW" && viewingItem.status !== "CANCELLED" && (
                     <button
                       type="button"
                       className="btn btn-sm btn-outline"
@@ -3163,6 +3301,7 @@ export default function ChangeRequests() {
               onSuccess={() => {
                 setProjectModalItem(null);
                 reload();
+                go("/loyihalar");
               }}
             />
           </Suspense>
