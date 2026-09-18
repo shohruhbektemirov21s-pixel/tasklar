@@ -396,26 +396,26 @@ export default function ChangeRequests() {
     go(toOrder(item.id));
   };
   const canEditOrder = (item: ChangeRequestItem) => {
-    if (typeof item.can_edit === "boolean") return item.can_edit;
     if (item.status !== "DRAFT") return false;
-    return Boolean(
-      user?.is_platform_admin ||
-      user?.is_boss ||
+    const isSohaviyUser = Boolean(
       user?.is_sohaviy_boshqarma ||
-      !item.created_by ||
-      item.created_by === user?.id
+      user?.specialty === "SOHAVIY" ||
+      user?.global_role === "SOHAVIY"
     );
+    if (user?.is_platform_admin || user?.is_boss || isSohaviyUser) return true;
+    if (typeof item.can_edit === "boolean") return item.can_edit;
+    return Boolean(!item.created_by || item.created_by === user?.id);
   };
   const canDeleteOrder = (item: ChangeRequestItem) => {
-    if (typeof item.can_delete === "boolean") return item.can_delete;
     if (item.status !== "DRAFT") return false;
-    return Boolean(
-      user?.is_platform_admin ||
-      user?.is_boss ||
+    const isSohaviyUser = Boolean(
       user?.is_sohaviy_boshqarma ||
-      !item.created_by ||
-      item.created_by === user?.id
+      user?.specialty === "SOHAVIY" ||
+      user?.global_role === "SOHAVIY"
     );
+    if (user?.is_platform_admin || user?.is_boss || isSohaviyUser) return true;
+    if (typeof item.can_delete === "boolean") return item.can_delete;
+    return Boolean(!item.created_by || item.created_by === user?.id);
   };
   const handleSendOrder = async (item: ChangeRequestItem) => {
     if (!window.confirm(`${tx("orders.send_order_confirm_desc")} ${item.id}`)) {

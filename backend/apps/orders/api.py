@@ -142,6 +142,24 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     ]
     ordering = ["-created_at"]
 
+    def perform_destroy(self, instance):
+        user = self.request.user
+        can_delete = bool(
+            user.is_platform_admin
+            or getattr(user, "is_boss", False)
+            or (
+                instance.status == ChangeRequestStatus.DRAFT
+                and (
+                    instance.created_by_id is None
+                    or instance.created_by_id == user.id
+                    or getattr(user, "is_sohaviy_boshqarma", False)
+                )
+            )
+        )
+        if not can_delete:
+            raise ValidationError({"detail": "Faqat qoralama (DRAFT) holatidagi buyurtmani o'chirish mumkin."})
+        instance.delete()
+
     def get_queryset(self):
         qs = super().get_queryset()
         user = self.request.user

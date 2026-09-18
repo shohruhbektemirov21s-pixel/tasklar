@@ -90,6 +90,7 @@ export interface Access {
    * uchun emas - har bir amalning o'z bayrog'i bor.
    */
   is_boss: boolean;
+  is_sohaviy?: boolean;
   is_project_admin: boolean;
   /** Ijrochimi (dasturchi yoki QA) - ro'yxatlar shunga qarab qirqiladi. */
   is_developer: boolean;

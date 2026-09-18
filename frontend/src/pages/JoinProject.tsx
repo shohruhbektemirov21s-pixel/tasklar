@@ -65,6 +65,26 @@ export default function JoinProject() {
 
   if (!project) return <div className="content"><Loading /></div>;
 
+  const isSohaviy = Boolean(
+    user?.is_sohaviy_boshqarma ||
+    project.access?.is_sohaviy ||
+    user?.specialty === "SOHAVIY" ||
+    user?.global_role === "SOHAVIY"
+  );
+
+  if (isSohaviy) {
+    return (
+      <div className="content">
+        <Empty
+          title={tx("join_project.boshqarma_uchun_mavjud_emas")}
+          text={tx("join_project.boshqarma_uchun_izoh")}
+        >
+          <Link className="btn btn-primary" {...toProject(id, "brif")}>{tx("public_project.loyihani_ochish")}</Link>
+        </Empty>
+      </div>
+    );
+  }
+
   const roles = (meta?.project_role || []).filter((r) => r.value !== "MANAGER");
 
   return (

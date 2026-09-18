@@ -104,9 +104,11 @@ export default function PublicProject() {
                   <p className="muted" style={{ marginTop: 0 }}>
                     {tx("public_project.siz_tizimdasiz_loyihaga_sorov_yuborishingiz")}
                   </p>
-                  <Link className="btn btn-primary btn-block" {...toProjectJoin(project.id)}>
-                    {tx("public_project.sorov_yuborish")}
-                  </Link>
+                  {!user?.is_sohaviy_boshqarma && (
+                    <Link className="btn btn-primary btn-block" {...toProjectJoin(project.id)}>
+                      {tx("public_project.sorov_yuborish")}
+                    </Link>
+                  )}
                   <Link className="btn btn-block mt" {...toProject(project.id)}>
                     {tx("public_project.loyihani_ochish")}
                   </Link>

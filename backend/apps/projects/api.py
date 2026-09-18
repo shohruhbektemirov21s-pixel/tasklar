@@ -967,6 +967,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def join(self, request, pk=None):
         project = object_or_404(Project.objects.select_related("workspace"), pk=pk)
         access = ProjectAccess(request.user, project)
+        if access.is_sohaviy or getattr(request.user, "is_sohaviy_boshqarma", False):
+            raise ValidationError({"detail": "Sohaviy boshqarma hisobidan loyiha jamoasiga qo'shilish so'rovi yuborilmaydi."})
         if access.is_member:
             raise ValidationError({"detail": "Siz allaqachon bu loyiha azosisiz."})
 

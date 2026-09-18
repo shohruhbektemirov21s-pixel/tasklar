@@ -307,31 +307,30 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
       item.status !== "CANCELLED" &&
       item.status !== "DRAFT"
   );
+  const isSohaviyUser = Boolean(
+    user?.is_sohaviy_boshqarma ||
+    user?.specialty === "SOHAVIY" ||
+    user?.global_role === "SOHAVIY"
+  );
   const canEdit = Boolean(
-    item && (
-      typeof item.can_edit === "boolean"
-        ? item.can_edit
-        : item.status === "DRAFT" && (
-            user?.is_platform_admin ||
-            user?.is_boss ||
-            user?.is_sohaviy_boshqarma ||
-            !item.created_by ||
-            item.created_by === user?.id
-          )
-    )
+    item &&
+      item.status === "DRAFT" &&
+      (user?.is_platform_admin ||
+        user?.is_boss ||
+        isSohaviyUser ||
+        item.can_edit ||
+        !item.created_by ||
+        item.created_by === user?.id)
   );
   const canDelete = Boolean(
-    item && (
-      typeof item.can_delete === "boolean"
-        ? item.can_delete
-        : item.status === "DRAFT" && (
-            user?.is_platform_admin ||
-            user?.is_boss ||
-            user?.is_sohaviy_boshqarma ||
-            !item.created_by ||
-            item.created_by === user?.id
-          )
-    )
+    item &&
+      item.status === "DRAFT" &&
+      (user?.is_platform_admin ||
+        user?.is_boss ||
+        isSohaviyUser ||
+        item.can_delete ||
+        !item.created_by ||
+        item.created_by === user?.id)
   );
   const [sendingOrder, setSendingOrder] = useState(false);
   async function handleSendDraftOrder() {
@@ -1139,6 +1138,17 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 >
                   <span>✏️</span>
                   <span>{tx("common.tahrirlash")}</span>
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => void handleDelete()}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600, color: "#dc2626", borderColor: "rgba(220, 38, 38, 0.4)" }}
+                >
+                  <span>🗑️</span>
+                  <span>{tx("common.ochirish")}</span>
                 </button>
               )}
               <button

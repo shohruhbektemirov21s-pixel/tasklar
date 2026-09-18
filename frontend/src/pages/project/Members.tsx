@@ -53,6 +53,12 @@ export default function Members({ project, onChange }: { project: Project; onCha
   /** O'ziga o'zi tegmaydi: adminlikni ham, chiqishni ham boshqa odam bajaradi.
       Ataylab chiqmoqchi bo'lsa o'ngdagi «Loyihadan chiqish» kartasi bor. */
   const isSelf = (m: ProjectMember) => m.user.id === user?.id;
+  const isSohaviy = Boolean(
+    user?.is_sohaviy_boshqarma ||
+    acc.is_sohaviy ||
+    user?.specialty === "SOHAVIY" ||
+    user?.global_role === "SOHAVIY"
+  );
 
   const pending = requests.filter((r) => r.status === "PENDING");
   const decided = requests.filter((r) => r.status !== "PENDING");
@@ -299,7 +305,7 @@ export default function Members({ project, onChange }: { project: Project; onCha
             </Card>
           )}
 
-          {!acc.is_member && (
+          {!acc.is_member && !isSohaviy && (
             <Card title={tx("common.qoshilish")}>
               <Link className="btn btn-primary btn-block" {...toProjectJoin(project.id)}>
                 {tx("project_members.sorov_yuborish")}

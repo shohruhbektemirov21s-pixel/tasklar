@@ -1659,6 +1659,14 @@
     "value": "Qoshilish kodi",
     "note": "pages/JoinProject.tsx"
   },
+  "join_project.boshqarma_uchun_izoh": {
+    "value": "Sohaviy boshqarma hisobidan loyiha jamoasiga qo'shilish so'rovi yuborilmaydi.",
+    "note": "pages/JoinProject.tsx"
+  },
+  "join_project.boshqarma_uchun_mavjud_emas": {
+    "value": "Sohaviy boshqarma uchun so'rov mavjud emas",
+    "note": "pages/JoinProject.tsx"
+  },
   "join_project.qoshilish_sorovi": {
     "value": "Qoshilish sorovi",
     "note": "pages/JoinProject.tsx"

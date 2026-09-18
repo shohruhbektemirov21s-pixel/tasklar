@@ -85,10 +85,12 @@ export default function Discover() {
                         {/* Ochiq loyihani qo'shilmasdan ham ko'rish mumkin:
                             vazifalar va tarix ko'rinadi, fayllar esa faqat
                             jamoaga (serverda shunday cheklangan). */}
-                        <Link className="btn btn-sm btn-primary" {...toProjectJoin(p.id)}
-                              onClick={(e) => e.stopPropagation()}>
-                          {tx("common.qoshilish")}
-                        </Link>
+                        {!user?.is_sohaviy_boshqarma && (
+                          <Link className="btn btn-sm btn-primary" {...toProjectJoin(p.id)}
+                                onClick={(e) => e.stopPropagation()}>
+                            {tx("common.qoshilish")}
+                          </Link>
+                        )}
                       </div>
                       {p.description && <p className="muted" style={{ margin: "8px 0 0" }}>{p.description}</p>}
                       <div className="repo-meta">
