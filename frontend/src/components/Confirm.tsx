@@ -16,6 +16,7 @@
  * funksiyadan ham, hook bo'lmagan joydan ham chaqirish mumkin.
  */
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { tx } from "@/i18n";
 import { lockScroll, unlockScroll } from "./scrollLock";
 
@@ -90,8 +91,8 @@ export default function ConfirmHost() {
     setPending(null);
   };
 
-  return (
-    <div className="modal-scrim" onClick={() => done(false)}>
+  return createPortal(
+    <div className="modal-scrim" style={{ zIndex: 200000 }} onClick={() => done(false)}>
       <div className="modal-box" role="alertdialog" aria-modal="true"
            aria-labelledby="confirm-title"
            onClick={(e) => e.stopPropagation()}>
@@ -111,6 +112,7 @@ export default function ConfirmHost() {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

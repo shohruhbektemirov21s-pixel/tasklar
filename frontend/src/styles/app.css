@@ -818,7 +818,7 @@ html, body { transition: background-color .18s ease, color .18s ease; }
    `window.confirm` o'rniga: ilova rangida, matni formatlangan va brauzer
    uni "sayt yana so'ramasin" katakchasi bilan o'chirib qo'ya olmaydi. */
 .modal-scrim {
-  position: fixed; inset: 0; z-index: 130; display: grid; place-items: center;
+  position: fixed; inset: 0; z-index: 200000; display: grid; place-items: center;
   padding: 24px; background: rgba(4, 7, 14, .62);
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   animation: photo-in .12s ease-out;
