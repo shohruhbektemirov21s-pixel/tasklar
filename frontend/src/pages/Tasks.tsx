@@ -47,19 +47,10 @@ export default function Tasks() {
   // bo'sh ekranga urilardi.
   const [page, setPage] = useState(1);
 
-  const dateRangeError = useMemo(() => {
-    if (f.due_from && f.due_to && f.due_from > f.due_to) {
-      return tx("common.sana_oraligi_xato", undefined, "Boshlanish sanasi tugash sanasidan katta bo'lishi mumkin emas");
-    }
-    return null;
-  }, [f.due_from, f.due_to]);
-
-  const fetchParams = useMemo(() => {
-    if (dateRangeError) {
-      return { search: f.search, project: f.project, period: "", due_from: "", due_to: "", status: f.status, page };
-    }
-    return { ...f, page };
-  }, [f, dateRangeError, page]);
+  const fetchParams = useMemo(() => ({
+    ...f,
+    page,
+  }), [f, page]);
 
   // Qidiruv har harfda emas, yozish to'xtagach ketadi.
   const { data, error, loading } = useFetch<TeamWorkloadData>(
@@ -72,12 +63,26 @@ export default function Tasks() {
     setPage(1);
     // Davr va aniq sana bir-birini almashtiradi: ikkovi birga tanlangan
     // ekranda "qaysi biri ishlayapti?" degan savol tug'ilardi.
-    setF((prev) => ({
-      ...prev,
-      [k]: v,
-      ...(k === "period" && v ? { due_from: "", due_to: "" } : {}),
-      ...(k === "due_from" || k === "due_to" ? { period: "" } : {}),
-    }));
+    setF((prev) => {
+      const next = { ...prev, [k]: v };
+      if (k === "period" && v) {
+        next.due_from = "";
+        next.due_to = "";
+      } else if (k === "due_from") {
+        next.period = "";
+        // Boshlanish sanasi tugash sanasidan katta bo'lishiga yo'l qo'yilmaydi:
+        if (v && next.due_to && v > next.due_to) {
+          next.due_to = v;
+        }
+      } else if (k === "due_to") {
+        next.period = "";
+        // Tugash sanasi boshlanish sanasidan kichik bo'lishiga yo'l qo'yilmaydi:
+        if (v && next.due_from && v < next.due_from) {
+          next.due_from = v;
+        }
+      }
+      return next;
+    });
   };
   const clear = () => {
     setOpen(null);
@@ -101,7 +106,7 @@ export default function Tasks() {
         }
       />
       <div className="content wl">
-        <ErrorMsg error={dateRangeError || error} />
+        <ErrorMsg error={error} />
 
         {/* Qidiruv chapda va keng, tanlovlar o'ngda - ular tor va soni
             o'zgarmaydi. */}
@@ -147,8 +152,8 @@ export default function Tasks() {
               <DateField
                 id={`${fid}-df`}
                 value={f.due_from}
+                max={f.due_to || undefined}
                 onChange={(v) => set("due_from", v)}
-                style={dateRangeError ? { borderColor: "var(--danger)" } : undefined}
               />
             </div>
             <div className="f wl-date">
@@ -156,8 +161,8 @@ export default function Tasks() {
               <DateField
                 id={`${fid}-dt`}
                 value={f.due_to}
+                min={f.due_from || undefined}
                 onChange={(v) => set("due_to", v)}
-                style={dateRangeError ? { borderColor: "var(--danger)" } : undefined}
               />
             </div>
             <div className="f">
@@ -177,12 +182,6 @@ export default function Tasks() {
             )}
           </div>
         </div>
-
-        {dateRangeError && (
-          <div style={{ color: "var(--danger)", fontSize: 13, fontWeight: 500, padding: "0 14px 10px" }}>
-            ⚠️ {dateRangeError}
-          </div>
-        )}
 
         {loading ? <Loading /> : !rows ? null : !rows.length ? (
           <div className="card">

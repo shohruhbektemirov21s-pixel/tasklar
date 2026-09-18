@@ -242,6 +242,20 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
     else if (!digits(shown)) onChange("");
   }
 
+  function handleBlur() {
+    let iso = toIso(text);
+    if (iso) {
+      if (max && iso > max) {
+        iso = max;
+        onChange(max);
+      } else if (min && iso < min) {
+        iso = min;
+        onChange(min);
+      }
+    }
+    setText(toUz(iso));
+  }
+
   return (
     <span className="dt-field" style={style}>
       <input
@@ -254,7 +268,7 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
         placeholder={withTime ? tx("ui.kk_oo_yyyy_soat_daq") : "kk.oo.yyyy"}
         value={text}
         onChange={(e) => type(e.target.value)}
-        onBlur={() => setText(toUz(toIso(text)))}
+        onBlur={handleBlur}
       />
       {/* Taqvim: yashirin native maydon orqali. `showPicker()` ko'rinmaydigan
           (display:none) elementda ishlamaydi, shuning uchun u chizilgan-u,
@@ -268,7 +282,12 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
         value={value}
         min={min}
         max={max}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          let v = e.target.value;
+          if (max && v > max) v = max;
+          if (min && v < min) v = min;
+          onChange(v);
+        }}
       />
       <button
         type="button"
