@@ -6,8 +6,8 @@ import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { IconCalendar } from "@/components/icons";
 import {
-  Avatar, DUE_PERIODS, DateField, Empty, ErrorMsg, Loading, Pager, Progress,
-  SpecialtyTag, fmtDate,
+  Avatar, DUE_PERIODS, DateField, Empty, EmptyState, ErrorMsg, FilterBar, Loading, PageHeader, Pager, Progress,
+  SpecialtyTag, TableSkeleton, fmtDate,
 } from "@/components/ui";
 import { toTask, toUser } from "@/nav";
 import { tx } from "@/i18n";
@@ -93,95 +93,98 @@ export default function Tasks() {
   const rows = data?.developers || null;
 
   return (
-    <>
-      <PageHead
-        title={<strong>{tx("common.vazifalar")}</strong>}
+    <div className="content wl" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={tx("common.vazifalar") || "Vazifalar"}
+        subtitle="Jamoa yuklamasi va vazifalar ijrosi"
+        breadcrumbs={[
+          { label: tx("nav.bosh_sahifa") || "Bosh sahifa", href: "/" },
+          { label: tx("common.vazifalar") || "Vazifalar" },
+        ]}
         actions={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {!!data && <span className="badge">{data.count} {tx("common.kishi")}</span>}
+            {!!data && <span className="badge" style={{ fontSize: 13, padding: "5px 12px" }}>{data.count} {tx("common.kishi")}</span>}
             <Link className="btn btn-sm btn-primary" to="/loyiha/vazifa-yaratish">
               + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
             </Link>
           </div>
         }
       />
-      <div className="content wl">
-        <ErrorMsg error={error} />
 
-        {/* Qidiruv chapda va keng, tanlovlar o'ngda - ular tor va soni
-            o'zgarmaydi. */}
-        <div className="filters">
-          <div className="f wl-search">
-            <label htmlFor={`${fid}-q`}>{tx("common.qidiruv")}</label>
-            {/* Bitta maydon - uchta savol: VAZIFA (nomi, tavsifi, kodi
-                «HIR-75» yoki shunchaki «75»), LOYIHA nomi va ODAM ismi.
-                Nima yozilganini oldindan tanlab o'tirish shart emas -
-                server uchalasini ham sinab ko'radi (`core/team.py`).
-                Ism bo'yicha topilgan odamning hamma ishi chiqadi. */}
-            <input id={`${fid}-q`} value={f.search} onChange={(e) => set("search", e.target.value)}
-                   placeholder={tx("tasks.ism_vazifa_kod_hir_75")} />
-          </div>
-          {/* Uchala tanlov bitta guruhda va o'ng chekkada (`margin-left:auto`).
-              Oradagi `.spacer` bo'lmaydi: u tor ekranda birinchi qatorni
-              to'ldirib, tanlovlarni pastga tashlab yuborardi. */}
-          <div className="wl-filters">
-            <div className="f">
-              <label htmlFor={`${fid}-p`}>{tx("common.loyiha")}</label>
-              <select id={`${fid}-p`} value={f.project} onChange={(e) => set("project", e.target.value)}>
-                <option value="">{tx("common.barcha_loyihalar")}</option>
-                {(data?.projects || []).map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="f">
-              {/* Tayyor davrlar KALENDAR bo'yicha: «shu hafta» dushanbadan
-                  yakshanbagacha, «shu oy» oy boshidan oxirigacha. Oraliqni
-                  server hisoblaydi (`_due_range`) - bosh panel ham aynan shu
-                  mantiqda sanaydi. */}
-              <label htmlFor={`${fid}-r`}>{tx("common.davr")}</label>
-              <select id={`${fid}-r`} value={f.period} onChange={(e) => set("period", e.target.value)}>
-                <option value="">{tx("tasks.barcha_muddatlar")}</option>
-                {DUE_PERIODS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="f wl-date">
-              <label htmlFor={`${fid}-df`}>{tx("common.sana_dan", undefined, "Sana (dan)")}</label>
-              <DateField
-                id={`${fid}-df`}
-                value={f.due_from}
-                max={f.due_to || undefined}
-                onChange={(v) => set("due_from", v)}
-              />
-            </div>
-            <div className="f wl-date">
-              <label htmlFor={`${fid}-dt`}>{tx("common.sana_gacha", undefined, "Sana (gacha)")}</label>
-              <DateField
-                id={`${fid}-dt`}
-                value={f.due_to}
-                min={f.due_from || undefined}
-                onChange={(v) => set("due_to", v)}
-              />
-            </div>
-            <div className="f">
-              <label htmlFor={`${fid}-t`}>{tx("tasks.vazifa_holati")}</label>
-              {/* Standart ko'rinish - TUGALLANMAGAN ish: bajarilgani ro'yxatni
-                  uzaytirib, "hozir nima bo'layapti" degan savolni ko'mib
-                  tashlardi. Bajarilganini ko'rish uchun holat tanlanadi. */}
-              <select id={`${fid}-t`} value={f.status} onChange={(e) => set("status", e.target.value)}>
-                <option value="">{tx("tasks.tugallanmaganlar")}</option>
-                {(meta?.task_status || []).map((s) => (
-                  <option key={s.value} value={String(s.value)}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-            {dirty && (
-              <button type="button" className="btn btn-ghost" onClick={clear}>{tx("common.tozalash")}</button>
-            )}
-          </div>
+      <ErrorMsg error={error} />
+
+      <FilterBar>
+        <div className="filter-search-box" style={{ minWidth: 260 }}>
+          <span style={{ color: "var(--text-muted)", fontSize: 13 }}>🔍</span>
+          <input
+            id={`${fid}-q`}
+            value={f.search}
+            onChange={(e) => set("search", e.target.value)}
+            placeholder={tx("tasks.ism_vazifa_kod_hir_75") || "Qidiruv (ism, vazifa, kod)..."}
+          />
         </div>
+
+        <div className="filter-select-box">
+          <label>{tx("common.loyiha")}:</label>
+          <select id={`${fid}-p`} value={f.project} onChange={(e) => set("project", e.target.value)}>
+            <option value="">{tx("common.barcha_loyihalar") || "Barchasi"}</option>
+            {(data?.projects || []).map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-select-box">
+          <label>{tx("common.davr")}:</label>
+          <select id={`${fid}-r`} value={f.period} onChange={(e) => set("period", e.target.value)}>
+            <option value="">{tx("tasks.barcha_muddatlar") || "Barchasi"}</option>
+            {DUE_PERIODS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-select-box">
+          <label>{tx("common.sana_dan", undefined, "Dan")}:</label>
+          <DateField
+            id={`${fid}-df`}
+            value={f.due_from}
+            max={f.due_to || undefined}
+            onChange={(v) => set("due_from", v)}
+          />
+        </div>
+
+        <div className="filter-select-box">
+          <label>{tx("common.sana_gacha", undefined, "Gacha")}:</label>
+          <DateField
+            id={`${fid}-dt`}
+            value={f.due_to}
+            min={f.due_from || undefined}
+            onChange={(v) => set("due_to", v)}
+          />
+        </div>
+
+        <div className="filter-select-box">
+          <label>{tx("tasks.vazifa_holati") || "Holat"}:</label>
+          <select id={`${fid}-t`} value={f.status} onChange={(e) => set("status", e.target.value)}>
+            <option value="">{tx("tasks.tugallanmaganlar") || "Tugallanmaganlar"}</option>
+            {(meta?.task_status || []).map((s) => (
+              <option key={s.value} value={String(s.value)}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {dirty && (
+          <button
+            type="button"
+            className="btn btn-sm btn-subtle"
+            onClick={clear}
+            style={{ height: 36, alignSelf: "flex-end" }}
+          >
+            {tx("common.tozalash")}
+          </button>
+        )}
+      </FilterBar>
 
         {loading ? <Loading /> : !rows ? null : !rows.length ? (
           <div className="card">
@@ -226,7 +229,6 @@ export default function Tasks() {
           </div>
         )}
       </div>
-    </>
   );
 }
 

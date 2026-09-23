@@ -348,7 +348,7 @@ export default function WorkDone() {
             }}
           >
             <IconCheck size={14} />
-            <span>{tx("work_done.tab_bajariladiganlar", undefined, "Bajarilganlar")}</span>
+            <span>{tx("work_done.tab_bajarilgan", undefined, "Bajarilganlar")}</span>
             {typeof stats?.tasks_done === "number" && stats.tasks_done > 0 && (
               <span
                 style={{

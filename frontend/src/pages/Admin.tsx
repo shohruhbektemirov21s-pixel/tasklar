@@ -22,8 +22,7 @@ import { claimOrder } from "@/api/orders";
 import { restoreProject } from "@/api/projects";
 import { restoreTask } from "@/api/tasks";
 import { useAuth } from "@/auth/AuthContext";
-import { PageHead } from "@/components/Layout";
-import { Avatar, Card, confirmDelete, Empty, ErrorMsg, fmtDate, Loading, Pager } from "@/components/ui";
+import { Avatar, Card, confirmDelete, Empty, ErrorMsg, fmtDate, Loading, PageHeader, Pager } from "@/components/ui";
 import { DateField } from "@/components/dates";
 import { promptDialog } from "@/components/Prompt";
 import { toOrder, toProject, toProjectEdit, toUser } from "@/nav";
@@ -375,37 +374,52 @@ export default function Admin() {
     orders: orderCount,
   };
 
+  const navItems: { key: Tab; icon: string; label: string; count?: number }[] = [
+    { key: "branding", icon: "⚙️", label: tx("admin.logo_va_loyiha_sozlamalari") || "Umumiy va Brend" },
+    { key: "users", icon: "👥", label: tx("people.foydalanuvchilar") || "Foydalanuvchilar", count: counts.users },
+    { key: "specialties", icon: "💼", label: "Mutaxassisliklar", count: specialties.length },
+    { key: "projects", icon: "📁", label: tx("common.loyihalar") || "Loyihalar", count: counts.projects },
+    { key: "orders", icon: "📑", label: "Buyurtmalar", count: counts.orders },
+    { key: "trash", icon: "🗑️", label: tx("admin.ochirilganlar") || "Chiqindixona" },
+  ];
+
   return (
     <>
-      <PageHead
-        title={<strong>{tx("common.admin_panel")}</strong>}
-        tabs={[
-          ["users", counts.users
-            ? `${tx("people.foydalanuvchilar")} (${counts.users})`
-            : tx("people.foydalanuvchilar")],
-          ["specialties", specialties.length
-            ? `Mutaxassisliklar (${specialties.length})`
-            : "Mutaxassisliklar"],
-          ["projects", counts.projects
-            ? `${tx("common.loyihalar")} (${counts.projects})`
-            : tx("common.loyihalar")],
-          ["orders", counts.orders
-            ? `Buyurtmalar (${counts.orders})`
-            : "Buyurtmalar"],
-          ["trash", `🗑️ ${tx("admin.ochirilganlar")}`],
-          ["branding", tx("admin.logo_va_loyiha_sozlamalari")],
-        ].map(([value, label]) => (
-          <button key={value} type="button"
-                  className={`tab ${tab === value ? "active" : ""}`}
-                  onClick={() => setTab(value as Tab)}>{label}</button>
-        ))}
+      <div className="content" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={tx("common.admin_panel") || "Sozlamalar va boshqaruv"}
+        subtitle="Tizim parametrlari, hisoblar, mutaxassisliklar va xavfsizlik"
+        breadcrumbs={[
+          { label: tx("nav.bosh_sahifa") || "Bosh sahifa", href: "/" },
+          { label: tx("common.admin_panel") || "Sozlamalar" },
+        ]}
       />
 
-      <div className="content">
-        <ErrorMsg error={error} />
-        {okMsg && <div className="callout mb">{okMsg}</div>}
+      <ErrorMsg error={error} />
+      {okMsg && <div className="callout mb">{okMsg}</div>}
 
-        {tab === "users" ? (
+      <div className="settings-layout">
+        <div className="settings-nav-card">
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`settings-nav-btn ${tab === item.key ? "active" : ""}`}
+              onClick={() => setTab(item.key)}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </span>
+              {typeof item.count === "number" && item.count > 0 && (
+                <span className="badge" style={{ fontSize: 11 }}>{item.count}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="settings-panel">
+          {tab === "users" ? (
           <>
             <div className="filters">
               <div className="f grow">
@@ -1186,7 +1200,9 @@ export default function Admin() {
             </Card>
           </div>
         )}
+        </div>
       </div>
+    </div>
 
       {assignModalItem && (
         <div className="modal-scrim" onClick={() => !assignBusy && setAssignModalItem(null)}>

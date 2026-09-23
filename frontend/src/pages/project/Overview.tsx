@@ -13,6 +13,7 @@ import { tx } from "@/i18n";
 export default function Overview({ project }: { project: Project; onChange: () => void }) {
   const [feed, setFeed] = useState<Activity[]>([]);
   const [myTasks, setMyTasks] = useState<Task[]>([]);
+  const [relatedOrders, setRelatedOrders] = useState<any[]>([]);
   // Ochilgan mutaxassislik: «Frontend dasturchi» bosilsa - kimligi ko'rinsin.
   const [openSpec, setOpenSpec] = useState<string | null>(null);
 
@@ -45,6 +46,9 @@ export default function Overview({ project }: { project: Project; onChange: () =
     void api.get<{ results?: Task[] }>("/tasks/", { project: project.id, assignee: "me", open: "1", page_size: 6 })
       .then((d) => { if (alive) setMyTasks(d.results || []); })
       .catch(() => { if (alive) setMyTasks([]); });
+    void api.get<{ results?: any[] }>("/orders/", { project: project.id, page_size: 5 })
+      .then((d) => { if (alive) setRelatedOrders(d.results || []); })
+      .catch(() => { if (alive) setRelatedOrders([]); });
     return () => { alive = false; };
   }, [project.id]);
 
@@ -94,6 +98,41 @@ export default function Overview({ project }: { project: Project; onChange: () =
                 ))}
               </tbody>
             </table></div>
+          </Card>
+        )}
+
+        {relatedOrders.length > 0 && (
+          <Card
+            title={tx("projects.bogliq_buyurtmalar", undefined, "Bog'liq buyurtmalar")}
+            padded={false}
+            action={
+              <Link className="btn btn-sm btn-ghost" to="/buyurtmalar">
+                {tx("common.barchasi", undefined, "Barchasi")}
+              </Link>
+            }
+          >
+            <div className="table-wrap">
+              <table className="table">
+                <tbody>
+                  {relatedOrders.map((o) => (
+                    <tr key={o.id}>
+                      <td style={{ fontWeight: 600 }}>{o.system_name}</td>
+                      <td style={{ maxWidth: 260, fontSize: 13, color: "var(--muted)" }}>
+                        <span className="nowrap" style={{ overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
+                          {o.requested_change}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="badge">{o.status_display || o.status}</span>
+                      </td>
+                      <td className="right nowrap" style={{ fontSize: 12, color: "var(--muted)" }}>
+                        {o.due_date ? fmtDate(o.due_date) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Card>
         )}
 

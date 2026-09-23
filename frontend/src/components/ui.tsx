@@ -444,6 +444,131 @@ export function Empty({ icon, title, text, children }: { icon?: string; title: s
   );
 }
 
+/* ---------------------------------------------------------------- Standart SaaS Komponentlar */
+
+export function PageHeader({
+  title,
+  subtitle,
+  breadcrumb,
+  breadcrumbs,
+  action,
+  actions,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  breadcrumb?: ReactNode;
+  breadcrumbs?: Array<{ label: string; href?: string }>;
+  action?: ReactNode;
+  actions?: ReactNode;
+}) {
+  const finalBreadcrumb = breadcrumb || (breadcrumbs && (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-muted)" }}>
+      {breadcrumbs.map((b, i) => (
+        <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          {i > 0 && <span style={{ opacity: 0.5 }}>/</span>}
+          {b.href ? (
+            <Link to={b.href} style={{ color: "var(--text-muted)", textDecoration: "none" }}>{b.label}</Link>
+          ) : (
+            <span style={{ color: "var(--text)" }}>{b.label}</span>
+          )}
+        </span>
+      ))}
+    </div>
+  ));
+  const finalAction = action || actions;
+
+  return (
+    <div className="page-header-clean">
+      <div className="page-header-left">
+        {finalBreadcrumb && <div className="page-header-crumb">{finalBreadcrumb}</div>}
+        <h1 className="page-header-title">{title}</h1>
+        {subtitle && <p className="page-header-subtitle">{subtitle}</p>}
+      </div>
+      {finalAction && <div className="page-header-action">{finalAction}</div>}
+    </div>
+  );
+}
+
+export function FilterBar({ children }: { children: ReactNode }) {
+  return <div className="filter-bar-clean">{children}</div>;
+}
+
+export function Skeleton({
+  width = "100%",
+  height = 20,
+  borderRadius = 6,
+  className = "",
+  style = {},
+}: {
+  width?: string | number;
+  height?: string | number;
+  borderRadius?: string | number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      className={`skeleton-pulse ${className}`}
+      style={{
+        width,
+        height,
+        borderRadius,
+        ...style,
+      }}
+    />
+  );
+}
+
+export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
+  return (
+    <div className="table-skeleton-wrap">
+      {Array.from({ length: rows }).map((_, r) => (
+        <div key={r} className="table-skeleton-row">
+          {Array.from({ length: cols }).map((_, c) => (
+            <Skeleton
+              key={c}
+              height={18}
+              width={c === 0 ? "36px" : c === 1 ? "30%" : c === cols - 1 ? "120px" : "15%"}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function EmptyState({
+  icon,
+  title,
+  message,
+  action,
+  actionLabel,
+  onAction,
+}: {
+  icon?: ReactNode;
+  title?: ReactNode;
+  message?: ReactNode;
+  action?: ReactNode;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  const finalAction = action || (actionLabel && onAction && (
+    <button type="button" className="btn btn-sm btn-primary" onClick={onAction}>
+      {actionLabel}
+    </button>
+  ));
+
+  return (
+    <div className="empty-state-clean">
+      {icon && <div className="empty-state-icon">{icon}</div>}
+      <h4 className="empty-state-title">{title || tx("common.malumot_topilmadi", undefined, "Ma'lumot topilmadi")}</h4>
+      {message && <p className="empty-state-desc">{message}</p>}
+      {finalAction && <div className="empty-state-action">{finalAction}</div>}
+    </div>
+  );
+}
+
+
 /**
  * Xato va muvaffaqiyat xabarlari - BUTUN ILOVADA shu ikkovi.
  *

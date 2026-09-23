@@ -4,8 +4,7 @@ import { ApiError, api, listOf, pagesOf, totalOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import type { User, Project, Task } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
-import { PageHead } from "@/components/Layout";
-import { Avatar, Card, ErrorMsg, Loading, Pager, Priority, StatusBadge } from "@/components/ui";
+import { Avatar, Card, ErrorMsg, FilterBar, Loading, PageHeader, Pager, Priority, StatusBadge } from "@/components/ui";
 import { fmtDate } from "@/components/dates";
 import { toUser, useNavParams } from "@/nav";
 
@@ -281,154 +280,167 @@ export default function People() {
 
   return (
     <>
-      <PageHead
-        title={<strong>{tx("people.foydalanuvchilar")}</strong>}
-        actions={!!data && <span className="badge">{total} {tx("common.ta")}</span>}
+      <div className="content" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={tx("people.foydalanuvchilar") || "Xodimlar va jamoa"}
+        subtitle="Jamoa a'zolari, mutaxassisliklar va ish yuklamasi monitoringi"
+        breadcrumbs={[
+          { label: tx("nav.bosh_sahifa") || "Bosh sahifa", href: "/" },
+          { label: tx("people.foydalanuvchilar") || "Jamoa" },
+        ]}
+        actions={!!data && <span className="badge" style={{ fontSize: 13, padding: "5px 12px" }}>{total} {tx("common.ta")}</span>}
       />
-      <div className="content">
-        <ErrorMsg error={error} />
 
-        {/* JAMOA YUKLAMASI KPI BLOKI */}
-        {summaryData && (
+      <ErrorMsg error={error} />
+
+      {/* JAMOA YUKLAMASI KPI BLOKI */}
+      {summaryData && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+            gap: 12,
+          }}
+        >
           <div
+            className="card"
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-              gap: 12,
-              marginBottom: 16,
+              padding: "12px 16px",
+              cursor: "pointer",
+              border: f.workload === "" ? "2px solid var(--primary)" : "1px solid var(--border)",
+              background: f.workload === "" ? "var(--primary-soft, rgba(99, 102, 241, 0.08))" : "var(--surface)",
+              borderRadius: 12,
+              transition: "all 0.15s ease",
+            }}
+            onClick={() => setFilter({ workload: "" })}
+          >
+            <div className="row between middle">
+              <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>
+                👥 {tx("people.jami_xodimlar", undefined, "Jami xodimlar")}
+              </span>
+              <span className="badge" style={{ fontSize: 14, fontWeight: 700 }}>
+                {summaryData.total_users}
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="card"
+            style={{
+              padding: "12px 16px",
+              cursor: "pointer",
+              border: f.workload === "free" ? "2px solid #16a34a" : "1px solid var(--border)",
+              background: f.workload === "free" ? "rgba(22, 163, 74, 0.12)" : "var(--surface)",
+              borderRadius: 12,
+              transition: "all 0.15s ease",
+            }}
+            onClick={() => setFilter({ workload: f.workload === "free" ? "" : "free" })}
+          >
+            <div className="row between middle">
+              <span style={{ fontSize: 13, color: "#16a34a", fontWeight: 600 }}>
+                🟢 {tx("people.bosh_xodimlar", undefined, "Bo'sh xodimlar (0 ta)")}
+              </span>
+              <span className="badge badge-success" style={{ fontSize: 14, fontWeight: 700, background: "rgba(22, 163, 74, 0.18)", color: "#15803d" }}>
+                {summaryData.free_users}
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="card"
+            style={{
+              padding: "12px 16px",
+              cursor: "pointer",
+              border: f.workload === "busy" ? "2px solid #d97706" : "1px solid var(--border)",
+              background: f.workload === "busy" ? "rgba(217, 119, 6, 0.12)" : "var(--surface)",
+              borderRadius: 12,
+              transition: "all 0.15s ease",
+            }}
+            onClick={() => setFilter({ workload: f.workload === "busy" ? "" : "busy" })}
+          >
+            <div className="row between middle">
+              <span style={{ fontSize: 13, color: "#d97706", fontWeight: 600 }}>
+                🟡 {tx("people.band_xodimlar", undefined, "Band xodimlar")}
+              </span>
+              <span className="badge badge-warning" style={{ fontSize: 14, fontWeight: 700, background: "rgba(245, 158, 11, 0.18)", color: "#b45309" }}>
+                {summaryData.busy_users}
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="card"
+            style={{
+              padding: "12px 16px",
+              border: "1px solid var(--border)",
+              background: "var(--surface)",
+              borderRadius: 12,
             }}
           >
-            <div
-              className="card"
-              style={{
-                padding: "12px 16px",
-                cursor: "pointer",
-                border: f.workload === "" ? "2px solid var(--primary)" : "1px solid var(--border)",
-                background: f.workload === "" ? "var(--primary-soft, rgba(99, 102, 241, 0.08))" : "var(--surface)",
-                borderRadius: 10,
-                transition: "all 0.15s ease",
-              }}
-              onClick={() => setFilter({ workload: "" })}
-            >
-              <div className="row between middle">
-                <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>
-                  👥 {tx("people.jami_xodimlar", undefined, "Jami xodimlar")}
-                </span>
-                <span className="badge" style={{ fontSize: 14, fontWeight: 700 }}>
-                  {summaryData.total_users}
-                </span>
-              </div>
+            <div className="row between middle">
+              <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>
+                📋 {tx("people.ochiq_vazifalar_jami", undefined, "Bajarilmagan vazifalar")}
+              </span>
+              <span className="badge badge-primary" style={{ fontSize: 14, fontWeight: 700 }}>
+                {summaryData.total_open_tasks}
+              </span>
             </div>
-
-            <div
-              className="card"
-              style={{
-                padding: "12px 16px",
-                cursor: "pointer",
-                border: f.workload === "free" ? "2px solid #16a34a" : "1px solid var(--border)",
-                background: f.workload === "free" ? "rgba(22, 163, 74, 0.12)" : "var(--surface)",
-                borderRadius: 10,
-                transition: "all 0.15s ease",
-              }}
-              onClick={() => setFilter({ workload: f.workload === "free" ? "" : "free" })}
-            >
-              <div className="row between middle">
-                <span style={{ fontSize: 13, color: "#16a34a", fontWeight: 600 }}>
-                  🟢 {tx("people.bosh_xodimlar", undefined, "Bo'sh xodimlar (0 ta)")}
-                </span>
-                <span className="badge badge-success" style={{ fontSize: 14, fontWeight: 700, background: "rgba(22, 163, 74, 0.18)", color: "#15803d" }}>
-                  {summaryData.free_users}
-                </span>
-              </div>
-            </div>
-
-            <div
-              className="card"
-              style={{
-                padding: "12px 16px",
-                cursor: "pointer",
-                border: f.workload === "busy" ? "2px solid #d97706" : "1px solid var(--border)",
-                background: f.workload === "busy" ? "rgba(217, 119, 6, 0.12)" : "var(--surface)",
-                borderRadius: 10,
-                transition: "all 0.15s ease",
-              }}
-              onClick={() => setFilter({ workload: f.workload === "busy" ? "" : "busy" })}
-            >
-              <div className="row between middle">
-                <span style={{ fontSize: 13, color: "#d97706", fontWeight: 600 }}>
-                  🟡 {tx("people.band_xodimlar", undefined, "Band xodimlar")}
-                </span>
-                <span className="badge badge-warning" style={{ fontSize: 14, fontWeight: 700, background: "rgba(245, 158, 11, 0.18)", color: "#b45309" }}>
-                  {summaryData.busy_users}
-                </span>
-              </div>
-            </div>
-
-            <div
-              className="card"
-              style={{
-                padding: "12px 16px",
-                border: "1px solid var(--border)",
-                background: "var(--surface)",
-                borderRadius: 10,
-              }}
-            >
-              <div className="row between middle">
-                <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>
-                  📋 {tx("people.ochiq_vazifalar_jami", undefined, "Bajarilmagan vazifalar")}
-                </span>
-                <span className="badge badge-primary" style={{ fontSize: 14, fontWeight: 700 }}>
-                  {summaryData.total_open_tasks}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* FILTRLAR VA SARALASH */}
-        <div className="filters">
-          <div className="f grow">
-            <label htmlFor={`${fid}-0`}>{tx("common.qidiruv")}</label>
-            <input id={`${fid}-0`} value={searchVal} onChange={(e) => setSearchVal(e.target.value)}
-                   onKeyDown={(e) => { if (e.key === "Enter") setFilter({ search: searchVal }); }}
-                   placeholder={tx("people.ism_email_yoki_konikma")} />
-          </div>
-          <div className="f">
-            <label htmlFor={`${fid}-1`}>{tx("common.mutaxassislik")}</label>
-            <select id={`${fid}-1`} value={f.specialty} onChange={(e) => setFilter({ specialty: e.target.value })}>
-              <option value="">{tx("common.hammasi")}</option>
-              {(meta?.specialties || []).map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="f">
-            <label htmlFor={`${fid}-2`}>{tx("people.yuklama_holati", undefined, "Yuklama")}</label>
-            <select id={`${fid}-2`} value={f.workload} onChange={(e) => setFilter({ workload: e.target.value })}>
-              <option value="">{tx("common.hammasi")}</option>
-              <option value="free">{tx("people.bosh_xodimlar", undefined, "Bo'sh (0 ta vazifa)")}</option>
-              <option value="busy">{tx("people.band_xodimlar", undefined, "Band (vazifasi bor)")}</option>
-            </select>
-          </div>
-          <div className="f">
-            <label htmlFor={`${fid}-3`}>{tx("people.saralash", undefined, "Saralash")}</label>
-            <select id={`${fid}-3`} value={f.ordering} onChange={(e) => setFilter({ ordering: e.target.value })}>
-              <option value="open_tasks,full_name">{tx("people.vazifasizlar_oldinda", undefined, "Vazifasi yo'qlar avval")}</option>
-              <option value="-open_tasks,full_name">{tx("people.vazifasi_koplar_oldinda", undefined, "Vazifasi ko'plar avval")}</option>
-              <option value="full_name">{tx("people.ism_a_z", undefined, "Ism bo'yicha (A-Z)")}</option>
-              <option value="-date_joined">{tx("people.yangi_qoshilganlar", undefined, "Yangi qo'shilganlar")}</option>
-            </select>
-          </div>
-          <div className="f">
-            <label htmlFor={`${fid}-4`}>{tx("people.tizim_roli")}</label>
-            <select id={`${fid}-4`} value={f.role} onChange={(e) => setFilter({ role: e.target.value })}>
-              <option value="">{tx("common.hammasi")}</option>
-              {(meta?.global_role || []).map((s) => (
-                <option key={s.value} value={String(s.value)}>{s.label}</option>
-              ))}
-            </select>
           </div>
         </div>
+      )}
+
+      {/* FILTRLAR VA SARALASH */}
+      <FilterBar>
+        <div className="filter-search-box" style={{ minWidth: 260 }}>
+          <span style={{ color: "var(--text-muted)", fontSize: 13 }}>🔍</span>
+          <input
+            id={`${fid}-0`}
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") setFilter({ search: searchVal }); }}
+            placeholder={tx("people.ism_email_yoki_konikma") || "Qidiruv (ism, email, ko'nikma)..."}
+          />
+        </div>
+
+        <div className="filter-select-box">
+          <label>{tx("common.mutaxassislik")}:</label>
+          <select id={`${fid}-1`} value={f.specialty} onChange={(e) => setFilter({ specialty: e.target.value })}>
+            <option value="">{tx("common.hammasi") || "Barchasi"}</option>
+            {(meta?.specialties || []).map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-select-box">
+          <label>{tx("people.yuklama_holati", undefined, "Yuklama")}:</label>
+          <select id={`${fid}-2`} value={f.workload} onChange={(e) => setFilter({ workload: e.target.value })}>
+            <option value="">{tx("common.hammasi") || "Barchasi"}</option>
+            <option value="free">{tx("people.bosh_xodimlar", undefined, "Bo'sh (0 ta vazifa)")}</option>
+            <option value="busy">{tx("people.band_xodimlar", undefined, "Band (vazifasi bor)")}</option>
+          </select>
+        </div>
+
+        <div className="filter-select-box">
+          <label>{tx("people.saralash", undefined, "Saralash")}:</label>
+          <select id={`${fid}-3`} value={f.ordering} onChange={(e) => setFilter({ ordering: e.target.value })}>
+            <option value="open_tasks,full_name">{tx("people.vazifasizlar_oldinda", undefined, "Vazifasi yo'qlar avval")}</option>
+            <option value="-open_tasks,full_name">{tx("people.vazifasi_koplar_oldinda", undefined, "Vazifasi ko'plar avval")}</option>
+            <option value="full_name">{tx("people.ism_a_z", undefined, "Ism bo'yicha (A-Z)")}</option>
+            <option value="-date_joined">{tx("people.yangi_qoshilganlar", undefined, "Yangi qo'shilganlar")}</option>
+          </select>
+        </div>
+
+        <div className="filter-select-box">
+          <label>{tx("people.tizim_roli")}:</label>
+          <select id={`${fid}-4`} value={f.role} onChange={(e) => setFilter({ role: e.target.value })}>
+            <option value="">{tx("common.hammasi") || "Barchasi"}</option>
+            {(meta?.global_role || []).map((s) => (
+              <option key={s.value} value={String(s.value)}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+      </FilterBar>
 
         <div className="split">
           <div className="card">

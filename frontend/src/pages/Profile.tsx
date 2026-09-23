@@ -9,7 +9,7 @@ import { IconChat } from "@/components/icons";
 import Timeline from "@/components/Timeline";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 import {
-  AvatarStack, AvatarViewable, Card, ErrorMsg, Loading, OkMsg, Pager, Priority, Stat,
+  AvatarStack, AvatarViewable, Card, ErrorMsg, Loading, OkMsg, PageHeader, Pager, Priority, Stat,
   StatusBadge, fmtDate,
 } from "@/components/ui";
 import { confirmDialog } from "@/components/Confirm";
@@ -321,16 +321,18 @@ export default function Profile() {
 
   return (
     <>
-      <PageHead
-        /* Tahrirlash paytida sarlavha yopishib turadi - forma uzun, saqlash
-           tugmasi esa sarlavhada. Aks holda pastki maydonni to'ldirgan odam
-           tugmani ko'rmay qolardi. */
-        sticky={isSelf && edit}
-        title={<><span className="muted">{tx("profile.profil")} </span><strong>{target.full_name}</strong></>}
+      <div className="content" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <PageHeader
+        title={target.full_name}
+        subtitle={`${target.job_title || "Xodim"} ${target.department_name ? `• ${target.department_name}` : ""}`}
+        breadcrumbs={[
+          { label: tx("nav.bosh_sahifa") || "Bosh sahifa", href: "/" },
+          { label: tx("profile.profil") || "Profil" },
+        ]}
         actions={
-          <>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {!isSelf && (
-              <Link className="btn btn-sm" {...toMessages(target.id)}>
+              <Link className="btn btn-sm btn-subtle" {...toMessages(target.id)}>
                 <IconChat size={14} /> {tx("profile.xabar_yozish")}
               </Link>
             )}
@@ -339,35 +341,28 @@ export default function Profile() {
                 {tx("common.tahrirlash")}
               </button>
             )}
-            {/* Tahrirlash paytida saqlash tugmasi SHU YERDA - sarlavhaning
-                o'ng chetida. Ilgari u formaning ostida turardi: forma uzun
-                (F.I.Sh., lavozim, GitHub, Telegram, ko'nikmalar, daraja,
-                tajriba, ma'lumot) va yuqoridagi maydonni tuzatgan odam
-                saqlash uchun har safar pastga aylantirishi kerak edi.
-                `form` atributi tugmani formaga bog'laydi - u forma
-                ichida bo'lmasa ham `submit` qiladi. */}
             {isSelf && edit && (
               <>
                 <button className="btn btn-sm btn-primary" type="submit"
                         form={`${fid}-form`} disabled={busy}>
                   {busy ? tx("common.saqlanmoqda") : tx("common.saqlash")}
                 </button>
-                <button className="btn btn-sm" type="button" onClick={() => setEdit(false)}>
+                <button className="btn btn-sm btn-subtle" type="button" onClick={() => setEdit(false)}>
                   {tx("common.bekor_qilish")}
                 </button>
               </>
             )}
-          </>
+          </div>
         }
       />
-      <div className="content">
-        <ErrorMsg error={error} />
-        <OkMsg text={saved} />
 
-        <div className="split">
-          <div>
-            <div className="card mb">
-              <div className="card-body row wrap">
+      <ErrorMsg error={error} />
+      <OkMsg text={saved} />
+
+      <div className="detail-layout-clean">
+        <div className="detail-main-col">
+          <div className="detail-card">
+            <div className="detail-card-body row wrap" style={{ gap: 20 }}>
                 <div>
                   {/* Bitta bosish yetadi: rasm to'liq holda ochiladi */}
                   <AvatarViewable user={target} size="xl" />
@@ -769,7 +764,7 @@ export default function Profile() {
 
           </div>
 
-          <div>
+          <div className="detail-side-col">
             <div className="grid grid-2 mb">
               {/* Uchtasi ro'yxatni filtrlaydi, soat esa yo'q - u yig'indi,
                   ro'yxatga aylanmaydi. */}

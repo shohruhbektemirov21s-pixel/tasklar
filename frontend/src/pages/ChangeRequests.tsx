@@ -1279,14 +1279,14 @@ export default function ChangeRequests() {
               <table className="table" style={{ margin: 0, width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
-                    <th style={{ width: 44, textAlign: "center", padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>#</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.loyiha_tizim")}</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.buyurtmachi_boshqarma")}</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.yaratilgan_vaqti")}</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.tavsif")}</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.muddat")}</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.holat")}</th>
-                    <th style={{ width: 70, textAlign: "right", padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.amallar")}</th>
+                    <th style={{ width: 44, textAlign: "center", padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--muted)" }}>№</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--muted)" }}>{tx("dashboard.axborot_tizimi", undefined, "Axborot tizimi")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--muted)" }}>{tx("dashboard.talab_mazmuni", undefined, "Talab mazmuni")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--muted)" }}>{tx("dashboard.muddati", undefined, "Muddati")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--muted)" }}>{tx("dashboard.holati", undefined, "Holati")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--muted)" }}>{tx("dashboard.masul_pm", undefined, "Mas'ul PM")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--muted)" }}>{tx("dashboard.sanasi", undefined, "Sanasi")}</th>
+                    <th style={{ width: 70, textAlign: "right", padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--muted)" }}>{tx("common.korish", undefined, "Ko'rish")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1304,7 +1304,7 @@ export default function ChangeRequests() {
                         style={{
                           borderBottom: "1px solid var(--border-muted)",
                           cursor: "pointer",
-                          transition: "background 0.15s ease",
+                          transition: "background 0.12s ease",
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = "var(--surface-2)";
@@ -1312,367 +1312,91 @@ export default function ChangeRequests() {
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = "transparent";
                         }}
-                        onClick={() => {
-                          if (item.status === "DRAFT" && canEditOrder(item)) {
-                            go(toEditOrder(item.id));
-                          } else {
-                            handleOpenView(item);
-                          }
-                        }}
-                        title={
-                          item.status === "DRAFT" && canEditOrder(item)
-                            ? tx("orders.buyurtmani_tahrirlash")
-                            : tx("orders.batafsil_korish")
-                        }
+                        onClick={() => handleOpenView(item)}
                       >
-                        <td style={{ textAlign: "center", fontWeight: 600, fontSize: 13, color: "var(--text-muted)", padding: "12px 14px" }}>
+                        <td style={{ textAlign: "center", fontWeight: 600, fontSize: 13, color: "var(--muted)", padding: "14px" }}>
                           {rowNum}
                         </td>
-                        <td style={{ padding: "12px 14px" }}>
-                          <div>
-                            <Link
-                              {...toOrder(item.id)}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (item.status === "DRAFT" && canEditOrder(item)) {
-                                  e.preventDefault();
-                                  go(toEditOrder(item.id));
-                                } else {
-                                  e.preventDefault();
-                                  handleOpenView(item);
-                                }
-                              }}
-                              style={{
-                                fontWeight: 600,
-                                fontSize: 13.5,
-                                color: "var(--text)",
-                                lineHeight: 1.3,
-                                textDecoration: "none",
-                                cursor: "pointer",
-                                display: "inline-block",
-                                transition: "color 0.12s ease",
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.color = "var(--primary)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.color = "var(--text)";
-                              }}
-                              title={
-                                item.status === "DRAFT" && canEditOrder(item)
-                                  ? tx("orders.buyurtmani_tahrirlash")
-                                  : tx("orders.batafsil_korish")
-                              }
-                            >
-                              {item.project_detail?.name || item.system_name || "—"}
-                            </Link>
-                            {item.module && (
-                              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-                                {item.module}
-                              </div>
-                            )}
+                        <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
+                          <div style={{ fontWeight: 650, fontSize: 13.5, color: "var(--text)" }}>
+                            {item.project_detail?.name || item.system_name || "—"}
                           </div>
-                        </td>
-                        <td style={{ padding: "12px 14px" }}>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
-                              {item.department || item.created_by_department || item.responsible_person || "—"}
+                          {item.module && (
+                            <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2 }}>
+                              {item.module}
                             </div>
-                            {item.responsible_person && item.responsible_person !== (item.department || item.created_by_department) && (
-                              <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
-                                {item.responsible_person}
-                              </div>
-                            )}
-                          </div>
+                          )}
                         </td>
-                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
-                          <div style={{ fontSize: 13, color: "#334155" }}>
-                            {fmtDate(item.created_at || item.request_date)}
-                          </div>
-                        </td>
-                        <td style={{ maxWidth: 360, padding: "12px 14px" }}>
+                        <td style={{ maxWidth: 300, padding: "14px" }}>
                           <div
                             style={{
+                              fontSize: 13,
+                              color: "var(--text)",
+                              lineHeight: 1.4,
                               overflow: "hidden",
                               textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              fontSize: 13,
-                              color: "#334155",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
                             }}
                             title={item.requested_change || item.current_state || ""}
                           >
                             {item.requested_change || item.current_state || "—"}
                           </div>
                         </td>
-                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
-                          <div style={{ fontSize: 13, color: "#334155" }}>
-                            {item.pm_deadline
-                              ? fmtDate(item.pm_deadline)
-                              : item.due_date
-                              ? fmtDate(item.due_date)
-                              : "—"}
-                          </div>
+                        <td style={{ padding: "14px", whiteSpace: "nowrap", fontSize: 12.5, color: "var(--muted)" }}>
+                          {item.pm_deadline || item.due_date ? (
+                            fmtDate(item.pm_deadline || item.due_date)
+                          ) : (
+                            <span className="muted">—</span>
+                          )}
                         </td>
-                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
                           <OrderStatusBadge
                             status={item.status}
                             label={item.status_display}
                             hasPendingVersion={Boolean(item.has_pending_version)}
                           />
                         </td>
-                        <td
-                          style={{ textAlign: "right", position: "relative", padding: "16px 18px", cursor: "default" }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
+                          {item.assigned_pm_name ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span
+                                style={{
+                                  width: 26,
+                                  height: 26,
+                                  borderRadius: "50%",
+                                  background: "var(--surface-3)",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  color: "var(--text)",
+                                }}
+                              >
+                                {item.assigned_pm_name.slice(0, 2).toUpperCase()}
+                              </span>
+                              <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>
+                                {item.assigned_pm_name}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="muted" style={{ fontSize: 12.5 }}>—</span>
+                          )}
+                        </td>
+                        <td style={{ padding: "14px", whiteSpace: "nowrap", fontSize: 12.5, color: "var(--muted)" }}>
+                          {fmtDate(item.created_at || item.request_date)}
+                        </td>
+                        <td style={{ textAlign: "right", padding: "14px" }} onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
-                            className="btn btn-ghost btn-sm"
-                            style={{
-                              padding: "4px 8px",
-                              borderRadius: 6,
-                              color: "#94a3b8",
-                              fontWeight: 700,
-                              letterSpacing: "1px",
-                              fontSize: 16,
-                              lineHeight: 1,
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveActionMenuId(activeActionMenuId === item.id ? null : item.id);
-                            }}
-                            title={tx("orders.amallar_menyusi")}
+                            className="btn btn-sm btn-ghost"
+                            onClick={() => handleOpenView(item)}
+                            title={tx("orders.batafsil_korish", undefined, "Batafsil ko'rish")}
                           >
-                            •••
+                            {tx("common.korish", undefined, "Ko'rish")}
                           </button>
-                          {activeActionMenuId === item.id && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                right: 16,
-                                ...(idx >= Math.max(1, displayItems.length - 2)
-                                  ? { bottom: "100%", marginBottom: 6 }
-                                  : { top: "80%" }),
-                                background: "#fff",
-                                borderRadius: 8,
-                                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-                                border: "1px solid #e2e8f0",
-                                zIndex: 100,
-                                minWidth: 200,
-                                padding: 6,
-                                textAlign: "left",
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                className="btn btn-ghost btn-sm"
-                                style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5 }}
-                                onClick={() => {
-                                  setActiveActionMenuId(null);
-                                  handleOpenView(item);
-                                }}
-                              >
-                                {tx("orders.korish_va_malumot")}
-                              </button>
-                              {!item.assigned_pm && isPMOrAdmin && (
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{
-                                    width: "100%",
-                                    justifyContent: "flex-start",
-                                    fontSize: 12.5,
-                                    color: "#059669",
-                                    fontWeight: 600,
-                                  }}
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    handleClaimOrder(item);
-                                  }}
-                                  disabled={claimingId === item.id}
-                                >
-                                  📌 {claimingId === item.id ? tx("orders.claim_submitting") : tx("orders.ishni_qabul_qilish")}
-                                </button>
-                              )}
-                              {item.assigned_pm && (user?.is_platform_admin || user?.is_boss) && item.status !== "DRAFT" && item.status !== "COMPLETED" && (
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{
-                                    width: "100%",
-                                    justifyContent: "flex-start",
-                                    fontSize: 12.5,
-                                    color: "#2563eb",
-                                    fontWeight: 600,
-                                  }}
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    handleClaimOrder(item);
-                                  }}
-                                  disabled={claimingId === item.id}
-                                >
-                                  👥 {tx("orders.boshqa_pmga_topshirish", undefined, "Boshqa PM ga topshirish")}
-                                </button>
-                              )}
-                              {item.status === "READY_FOR_REVIEW" && (isSohaviyOrAdmin || (user && item.created_by === user.id)) && (
-                                <>
-                                  <button
-                                    className="btn btn-ghost btn-sm"
-                                    style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#16a34a" }}
-                                    onClick={() => {
-                                      setActiveActionMenuId(null);
-                                      handleClientApprove(item);
-                                    }}
-                                  >
-                                    {tx("orders.ishni_tasdiqlash")}
-                                  </button>
-                                  <button
-                                    className="btn btn-ghost btn-sm"
-                                    style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#d97706" }}
-                                    onClick={() => {
-                                      setActiveActionMenuId(null);
-                                      setRejectModalItem(item);
-                                      setRejectFeedbackNote("");
-                                      setRejectError(null);
-                                    }}
-                                  >
-                                    {tx("orders.kamchilik_bilan_qaytarish")}
-                                  </button>
-                                </>
-                              )}
-                              {isPMOrAdmin &&
-                                (user?.is_platform_admin || user?.is_boss || item.assigned_pm === user?.id) &&
-                                item.status !== "COMPLETED" &&
-                                item.status !== "READY_FOR_REVIEW" &&
-                                item.status !== "REJECTED" &&
-                                item.status !== "CANCELLED" &&
-                                item.status !== "DRAFT" && (
-                                  <>
-                                    {!(item.project || item.project_detail?.id) ? (
-                                      <button
-                                        className="btn btn-ghost btn-sm"
-                                        style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#059669", fontWeight: 600 }}
-                                        onClick={() => {
-                                          setActiveActionMenuId(null);
-                                          setProjectModalItem(item);
-                                        }}
-                                      >
-                                        🚀 {tx("orders.loyihani_taqsimlash", undefined, "Loyihani taqsimlash")}
-                                      </button>
-                                    ) : (
-                                      <button
-                                        className="btn btn-ghost btn-sm"
-                                        style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#2563eb", fontWeight: 600 }}
-                                        onClick={() => {
-                                          setActiveActionMenuId(null);
-                                          setDistributeModalItem(item);
-                                        }}
-                                      >
-                                        📋 {tx("orders.vazifalarni_taqsimlash", undefined, "Vazifalarni taqsimlash")}
-                                      </button>
-                                    )}
-                                  </>
-                                )}
-                              {isPMOrAdmin &&
-                                (user?.is_platform_admin || user?.is_boss || item.assigned_pm === user?.id) &&
-                                item.status !== "COMPLETED" &&
-                                item.status !== "READY_FOR_REVIEW" &&
-                                item.status !== "REJECTED" && (
-                                  <button
-                                    className="btn btn-ghost btn-sm"
-                                    style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#2563eb" }}
-                                    onClick={() => {
-                                      setActiveActionMenuId(null);
-                                      setCompletionModalItem(item);
-                                      setCompletionFile(null);
-                                      setCompletionNote("");
-                                      setCompletionError(null);
-                                    }}
-                                  >
-                                    {tx("orders.hisobot_topshirish")}
-                                  </button>
-                                )}
-                              {isPMOrAdmin && item.has_pending_version && (user?.is_platform_admin || user?.is_boss || !item.assigned_pm || item.assigned_pm === user?.id) && (
-                                <>
-                                  <button
-                                    className="btn btn-ghost btn-sm"
-                                    style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#16a34a", fontWeight: 600 }}
-                                    onClick={() => {
-                                      setActiveActionMenuId(null);
-                                      handleOpenApproveVersion(item);
-                                    }}
-                                  >
-                                    {tx("orders.yangi_tz_tasdiqlash")}
-                                  </button>
-                                  <button
-                                    className="btn btn-ghost btn-sm"
-                                    style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#dc2626" }}
-                                    onClick={() => {
-                                      setActiveActionMenuId(null);
-                                      handleOpenRejectVersion(item);
-                                    }}
-                                  >
-                                    {tx("orders.versiyani_rad_etish")}
-                                  </button>
-                                </>
-                              )}
-                              <button
-                                className="btn btn-ghost btn-sm"
-                                style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5 }}
-                                onClick={() => {
-                                  setActiveActionMenuId(null);
-                                  setViewingItem(item);
-                                }}
-                              >
-                                🕒 {tx("orders.tarix", undefined, "Tarix (Word fayllar)")}
-                              </button>
-                              {item.status === "DRAFT" && (
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#2563eb", fontWeight: 600 }}
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    handleOpenView(item);
-                                  }}
-                                >
-                                  {tx("orders.korib_chiqish_yuborish")}
-                                </button>
-                              )}
-                              {canEditOrder(item) && (
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5 }}
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    go(toEditOrder(item.id));
-                                  }}
-                                >
-                                  {`✏️ ${tx("common.tahrirlash")}`}
-                                </button>
-                              )}
-                              {item.status === "DRAFT" && (
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#059669" }}
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    void handleSendOrder(item);
-                                  }}
-                                >
-                                  🚀 {tx("common.yuborish")}
-                                </button>
-                              )}
-                              {canDeleteOrder(item) && (
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ width: "100%", justifyContent: "flex-start", fontSize: 12.5, color: "#dc2626" }}
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    void handleDeleteOrder(item);
-                                  }}
-                                >
-                                  🗑️ {tx("common.ochirish")}
-                                </button>
-                              )}
-                            </div>
-                          )}
                         </td>
                       </tr>
                     );

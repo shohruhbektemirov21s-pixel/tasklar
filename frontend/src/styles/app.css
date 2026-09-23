@@ -5163,6 +5163,574 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   word-break: break-all;
 }
 
+/* ============================================================
+   TeamFlow - Unified SaaS Page Standards & Components
+   ============================================================ */
 
+/* 1. Standard Page Header */
+.page-header-clean {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.page-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.page-header-crumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.page-header-crumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.page-header-crumb a:hover {
+  color: var(--accent);
+}
+.page-header-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.page-header-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.page-header-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
 
+/* 2. Standard Filter Bar */
+.filter-bar-clean {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.filter-search-box {
+  position: relative;
+  width: 320px;
+  max-width: 100%;
+}
+.filter-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+.filter-search-input {
+  width: 100%;
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 8px 14px 8px 38px;
+  font-size: 13.5px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.filter-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.filter-select-box {
+  position: relative;
+  min-width: 170px;
+}
+.filter-select-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+.filter-select {
+  height: 42px;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 0 14px 0 34px;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.filter-select:focus {
+  border-color: var(--accent);
+}
 
+/* 3. Standard Table Container & Table */
+.table-card-clean {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+.table-clean {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.table-clean thead tr {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.table-clean th {
+  padding: 12px 18px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.table-clean td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-muted);
+  vertical-align: middle;
+  color: var(--text);
+}
+.table-clean tbody tr {
+  transition: background 0.12s ease;
+}
+.table-clean tbody tr:hover {
+  background: var(--surface-2);
+}
+.table-clean tbody tr:last-child td {
+  border-bottom: none;
+}
+.table-clean tbody tr.clickable {
+  cursor: pointer;
+}
+
+/* 4. Skeleton Loaders */
+@keyframes skeleton-shimmer {
+  0% { opacity: 0.45; }
+  50% { opacity: 0.95; }
+  100% { opacity: 0.45; }
+}
+.skeleton-pulse {
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  background: var(--surface-3);
+}
+.table-skeleton-wrap {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.table-skeleton-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-muted);
+}
+.table-skeleton-row:last-child {
+  border-bottom: none;
+}
+
+/* 5. Standard Empty State */
+.empty-state-clean {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.empty-state-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.empty-state-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.empty-state-desc {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 380px;
+  line-height: 1.45;
+}
+.empty-state-action {
+  margin-top: 4px;
+}
+
+/* 6. Standard Detail Page Layout */
+.detail-layout-clean {
+  display: grid;
+  grid-template-columns: minmax(0, 2.5fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .detail-layout-clean {
+    grid-template-columns: 1fr;
+  }
+}
+.detail-main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.detail-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.detail-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.detail-card-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.detail-card-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text);
+}
+.detail-card-body {
+  padding: 18px;
+}
+
+/* 7. Modern Messages Interface */
+.tf-messages-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: calc(100vh - 200px);
+  min-height: 580px;
+  overflow: hidden;
+}
+.tf-chat-sidebar {
+  border-right: 1px solid var(--border-muted);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  overflow: hidden;
+}
+.tf-chat-sidebar-search {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-muted);
+}
+.tf-chat-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+.tf-conv-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.tf-conv-item:hover {
+  background: var(--surface-2);
+}
+.tf-conv-item.active {
+  background: var(--accent-soft);
+}
+.tf-conv-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tf-conv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.tf-conv-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tf-conv-time {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.tf-conv-snippet {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tf-conv-item.active .tf-conv-name {
+  color: var(--accent);
+}
+.tf-chat-main {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  height: 100%;
+  min-width: 0;
+}
+.tf-chat-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface);
+}
+.tf-chat-header-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.tf-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+}
+.tf-chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tf-chat-msg {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  max-width: 78%;
+}
+.tf-chat-msg.mine {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.tf-chat-msg.other {
+  align-self: flex-start;
+}
+.tf-msg-bubble {
+  padding: 10px 15px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.tf-chat-msg.other .tf-msg-bubble {
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.tf-chat-msg.mine .tf-msg-bubble {
+  background: var(--accent);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+.tf-msg-time {
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+  opacity: 0.75;
+  text-align: right;
+}
+.tf-chat-input-bar {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+}
+.tf-chat-input-field {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 10px 18px;
+  font-size: 13.5px;
+  background: var(--surface-2);
+  color: var(--text);
+  outline: none;
+  transition: all 0.2s;
+}
+.tf-chat-input-field:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.tf-chat-send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+.tf-chat-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.tf-chat-attach-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.tf-chat-attach-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .tf-messages-card {
+    grid-template-columns: 1fr;
+    height: calc(100vh - 160px);
+  }
+  .tf-chat-sidebar.hide-mobile {
+    display: none;
+  }
+  .tf-chat-main.hide-mobile {
+    display: none;
+  }
+}
+
+/* 8. Modern Settings Layout */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+}
+.settings-nav-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow);
+}
+.settings-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+.settings-nav-btn:hover {
+  background: var(--surface-2);
+}
+.settings-nav-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 650;
+}
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}

@@ -127,7 +127,9 @@ export default function NotificationModal({
   const meta = parseMeta(notification.meta);
 
   // Rad etish yoki kamchilik holatini aniqlash
+  const kindStr = String(notification.kind);
   const isRejected =
+    kindStr.includes("reject") ||
     meta.status === "REJECTED" ||
     Boolean(meta.reason) ||
     notification.title.toLowerCase().includes("rad etildi");

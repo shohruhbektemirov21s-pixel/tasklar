@@ -1,613 +1,328 @@
 import { useId, useMemo, useState } from "react";
-import { useAuth } from "@/auth/AuthContext";
 import { Link } from "react-router-dom";
-import { ApiError, listOf, pagesOf, totalOf } from "@/api/client";
+import { useAuth } from "@/auth/AuthContext";
+import { listOf, pagesOf, totalOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
-import type { Choice, MyWorkData, Project, Task } from "@/api/types";
-import { PageHead } from "@/components/Layout";
-import { IconCalendar, IconPlus } from "@/components/icons";
-import { DUE_PERIODS, DateField, Empty, ErrorMsg, Loading, Pager, Progress, RowMenu, fmtDate, fmtDateTime } from "@/components/ui";
-import { completeProject, deleteProject } from "@/api/projects";
-import { toNewProject, toNewTask, toProject, toProjectEdit, toTask, useGo } from "@/nav";
+import type { Project } from "@/api/types";
+import { IconCalendar, IconPlus, IconSearch } from "@/components/icons";
+import {
+  Avatar,
+  DUE_PERIODS,
+  EmptyState,
+  ErrorMsg,
+  FilterBar,
+  PageHeader,
+  Pager,
+  Progress,
+  TableSkeleton,
+  fmtDate,
+} from "@/components/ui";
+import { toNewProject, toProject, useGo } from "@/nav";
 import { tx } from "@/i18n";
 
-/**
- * «Loyihalar» bo'limi ikki xil odamga ikki xil ochiladi.
- *
- * MENEJER va ADMIN loyihalarni ko'radi - ular ish taqsimlaydi, ya'ni
- * "qaysi loyihalar bor va ular qay ahvolda" degan savol aynan ularniki.
- * "Kim nima qilayapti" esa alohida sahifada - `pages/Tasks.tsx`.
- *
- * IJROCHI (dasturchi, QA) loyiha kartalarini ko'rmaydi: unga loyihaning
- * jarayon foizi ham, a'zolar soni ham kerak emas - unga O'Z ISHI kerak.
- * Shuning uchun bu yerda uning vazifalari LOYIHA bo'yicha guruhlanadi va
- * vazifani bosib o'sha loyihaning ichiga kiradi.
- *
- * Chegara ROLdan emas, AMALDAGI holatdan olinadi: `can_create_project`
- * global rolni aytadi, `manages_projects` esa odam biror loyihaga menejer
- * qilib qo'yilgan-qo'yilmaganini. Ikkinchisisiz global roli «Dasturchi»
- * bo'lgan menejer o'z loyihalarini ko'rmay qolardi.
- */
+const PER_PAGE = 20;
+
 export default function Projects() {
-  const { user } = useAuth();
-  const manages = Boolean(user?.can_create_project || user?.manages_projects || user?.is_sohaviy_boshqarma);
-  return manages ? <ManagerProjects /> : <MyProjectTasks />;
-}
-
-/* ------------------------------------------------------ menejer va admin */
-
-/**
- * Loyihalar - BITTA ro'yxat.
- *
- * Ilgari yuqorida kesim tugmalari turardi: «Meniki», «Boshqaruvim»,
- * «Ochiq» (adminda yana «Hammasi»). Ular bir xil ro'yxatni bo'laklarga
- * bo'lardi va odam qidirayotgan loyihasi qaysi bo'lakda ekanini oldindan
- * bilishi kerak edi. Yomoni: menejer o'z loyihasini «Meniki» da
- * topolmasdi - u a'zo emas, boshqaruvchi.
- *
- * Endi ro'yxat bitta va u odam OCHA OLADIGAN hamma loyihani ko'rsatadi
- * (serverdagi `scope=visible`). Kerakli loyiha qidiruv orqali topiladi.
- */
-/** Bir sahifada nechta loyiha kartasi. */
-const PER_PAGE = 30;
-
-/** Ijrochining ro'yxatida bir sahifada nechta VAZIFA (karta emas). */
-const TASKS_PER_PAGE = 15;
-
-function ManagerProjects() {
   const fid = useId();
   const go = useGo();
   const { user } = useAuth();
-  // O'chirish xatosi - yuklash xatosidan alohida.
-  const [actionError, setActionError] = useState<string | null>(null);
-  // `q` - maydonda yozilayotgan matn, `applied` - serverga yuborilgani.
-  // Ikkovi ajratilgani uchun har harfda so'rov ketmaydi.
-  const [q, setQ] = useState("");
-  const [applied, setApplied] = useState("");
-  // MUDDAT kesimi - tanlangan zahoti ishlaydi. Qidiruv esa «Qidirish»
-  // bosilganda: matn har harfda so'rov yubormasin, tanlov esa bitta
-  // harakat va uni yana tasdiqlatish ortiqcha bosish bo'lardi.
-  const [period, setPeriod] = useState("");
+
+  const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [period, setPeriod] = useState("");
+  const [sortBy, setSortBy] = useState("updated_at");
   const [page, setPage] = useState(1);
 
-  // Ilgari bu yerda `catch` yo'q edi: server xato bersa va'da rad etilib,
-  // ro'yxat `null` bo'lib qolardi va sahifa abadiy «Yuklanmoqda» da turardi.
-  // SAHIFALASH. Ilgari `page_size: 100` so'ralardi va ro'yxat yuzinchi
-  // loyihada JIMGINA kesilardi - 101-loyiha hech qanday belgisiz
-  // yo'qolardi. Endi sahifa raqamlari bor va jami son serverdan keladi.
-  const { data, error: loadError, loading, reload } =
-    useFetch<{ count: number; results: Project[] } | Project[]>("/projects/", { scope: "visible", search: applied, period, status,
-                                  page, page_size: PER_PAGE });
-  const projects = useMemo(() => (data ? listOf<Project>(data) : null), [data]);
-  const total = totalOf(data);
+  const { data, error, loading } = useFetch<{ count: number; results: Project[] } | Project[]>(
+    "/projects/",
+    {
+      scope: "visible",
+      search,
+      period,
+      status,
+      page,
+      page_size: PER_PAGE,
+    },
+    { debounceMs: 250 }
+  );
+
+  const projectsRaw = useMemo(() => (data ? listOf<Project>(data) : null), [data]);
   const pages = pagesOf(data, PER_PAGE);
-  const error = actionError || loadError;
 
-  /** Loyihani boshqara oladimi - javobni SERVER beradi.
-   *
-   * Ilgari bu yerda qoida qayta yozilgan edi («menejeri yoki tizim
-   * admini») va serverdagi `ProjectAccess.can_manage` dan uzilib qoldi:
-   * boshliqqa hamma loyihada boshqaruv berilganda API amalni bajarardi,
-   * ro'yxatdagi «...» menyusi esa chizilmasdi - ya'ni imkoniyat bor edi,
-   * lekin unga yetib bo'lmasdi.
-   *
-   * Endi bayroq javob bilan keladi (`access.can_manage`). Rol qoidasi
-   * o'zgarsa bu sahifani tuzatish kerak emas. */
-  const canManage = (p: Project) => Boolean(p.access?.can_manage);
-
-  /** Loyihani o'chirish - jarayondagi ish bo'lsa qo'shimcha tasdiq so'raladi. */
-  async function removeProject(id: number, name: string) {
-    setActionError(null);
-    try {
-      if (await deleteProject(id, name)) reload();
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : tx("projects.loyihani_ochirib_bolmadi"));
+  // Client-side sorting agar kerak bo'lsa
+  const sortedProjects = useMemo(() => {
+    if (!projectsRaw) return null;
+    const list = [...projectsRaw];
+    if (sortBy === "name") {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "due_date") {
+      list.sort((a, b) => {
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      });
+    } else if (sortBy === "progress") {
+      list.sort((a, b) => b.progress - a.progress);
+    } else {
+      // updated_at
+      list.sort((a, b) => {
+        const ta = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+        const tb = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+        return tb - ta;
+      });
     }
-  }
+    return list;
+  }, [projectsRaw, sortBy]);
 
-  /** Loyihani yakunlash */
-  async function handleCompleteProject(p: Project) {
-    setActionError(null);
-    try {
-      if (await completeProject(p.id, p.name, p.open_tasks)) reload();
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : tx("common.saqlashda_xatolik"));
+  const getStatusBadge = (p: Project) => {
+    switch (p.status) {
+      case "ACTIVE":
+        return <span className="badge badge-info">{tx("projects.holat_faol", undefined, "Faol")}</span>;
+      case "PLANNING":
+        return <span className="badge">{tx("projects.holat_rejalashtirilgan", undefined, "Rejalashtirilgan")}</span>;
+      case "DONE":
+        return <span className="badge badge-ok">{tx("projects.holat_yakunlangan", undefined, "Yakunlangan")}</span>;
+      case "PAUSED":
+        return <span className="badge badge-warn">{tx("projects.holat_toxtatilgan", undefined, "To'xtatilgan")}</span>;
+      default:
+        return <span className="badge">{p.status_display || p.status}</span>;
     }
-  }
+  };
 
   return (
-    <>
-      <PageHead
-        title={<strong>{tx("common.loyihalar")}</strong>}
-        actions={<>
-          {!!data && <span className="badge">{total} {tx("common.ta")}</span>}
-          {
+    <div className="content">
+      <PageHeader
+        title={tx("common.loyihalar", undefined, "Loyihalar")}
+        subtitle={tx("projects.sahifa_izohi", undefined, "Barcha faol va rejalashtirilgan loyihalar boshqaruvi")}
+        action={
           user?.can_create_project ? (
             <Link className="btn btn-primary" {...toNewProject()}>
-              <IconPlus size={15} /> {tx("common.yangi_loyiha")}
+              <IconPlus size={16} />
+              <span>{tx("common.yangi_loyiha", undefined, "+ Yangi loyiha")}</span>
             </Link>
-          ) : (user?.is_sohaviy_boshqarma || user?.can_access_orders) ? (
-            <Link className="btn btn-primary" to="/buyurtmalar">
-              <IconPlus size={15} /> {tx("projects.talabnoma_berish")}
-            </Link>
-          ) : null}
-        </>}
-      />
-      <div className="content">
-        <ErrorMsg error={error} />
-
-        {/* Nom, kalit va tavsif bo'yicha - qidiruv serverda
-            (`ProjectViewSet.search_fields`), ya'ni yuklanmagan
-            loyihalar ham topiladi. */}
-        <form className="filters"
-              onSubmit={(e) => { e.preventDefault(); setApplied(q.trim()); setPage(1); }}>
-          <div className="f grow">
-            <label htmlFor={`${fid}-0`}>{tx("common.qidiruv")}</label>
-            <input id={`${fid}-0`} value={q} onChange={(e) => setQ(e.target.value)}
-                   placeholder={tx("projects.nom_tavsif_yoki_hujjat_nomi")} />
-          </div>
-          {/* Loyihaning MUDDATI bo'yicha */}
-          <div className="f">
-            <label htmlFor={`${fid}-r`}>{tx("common.muddat")}</label>
-            <select id={`${fid}-r`} value={period}
-                    onChange={(e) => { setPeriod(e.target.value); setPage(1); }}>
-              <option value="">{tx("projects.barcha_muddatlar")}</option>
-              {DUE_PERIODS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-          {/* Loyihaning HOLATI bo'yicha */}
-          <div className="f">
-            <label htmlFor={`${fid}-st`}>{tx("projects.holat")}</label>
-            <select id={`${fid}-st`} value={status}
-                    onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
-              <option value="">{tx("projects.barcha_holatlar")}</option>
-              <option value="ACTIVE">{tx("projects.holat_active")}</option>
-              <option value="DONE">{tx("projects.holat_done")}</option>
-              <option value="PAUSED">{tx("projects.holat_paused")}</option>
-              <option value="PLANNING">{tx("projects.holat_planning")}</option>
-            </select>
-          </div>
-          <button className="btn">{tx("projects.qidirish")}</button>
-          {(!!applied || !!period || !!status) && (
-            <button type="button" className="btn btn-ghost"
-                    onClick={() => { setQ(""); setApplied(""); setPeriod(""); setStatus(""); setPage(1); }}>
-              {tx("common.tozalash")}
-            </button>
-          )}
-        </form>
-
-        {loading ? <Loading /> : !projects ? null : !projects.length ? (
-          <div className="card">
-            {/* Bo'sh holat SABABINI aytadi. Muddat kesimi alohida yoziladi:
-                muddati QO'YILMAGAN loyiha bunday kesimga umuman tushmaydi
-                (server tomonda `due_date` bo'sh bo'lsa solishtiruv NULL
-                beradi) - buni aytmasak, ro'yxatdan yo'qolgan loyiha
-                xatodek tuyulardi. */}
-            <Empty icon="☰" title={tx("common.loyiha_topilmadi")}
-                   text={applied
-                     ? tx("projects.qidiruv_natijasi_yoq", { soz: applied })
-                     : period
-                       ? tx("projects.bu_davrga_muddati_tushadigan_loyiha")
-                         + tx("projects.muddati_qoyilmagan_loyihalar_bu_kesimda")
-                       : tx("projects.ochiq_loyihaga_qoshiling_yoki_yangi")}>
-              <div className="row" style={{ justifyContent: "center" }}>
-                {applied || period ? (
-                  <button className="btn"
-                          onClick={() => { setQ(""); setApplied(""); setPeriod(""); setPage(1); }}>
-                    {tx("common.filtrni_tozalash")}
-                  </button>
-                ) : (
-                  <>
-                    <Link className="btn btn-primary" to="/qoshilish">{tx("projects.loyiha_topish")}</Link>
-                    {user?.can_create_project && (
-                      <Link className="btn" {...toNewProject()}>{tx("common.yangi_loyiha")}</Link>
-                    )}
-                  </>
-                )}
-              </div>
-            </Empty>
-          </div>
-        ) : (
-          /* Har loyiha - butun kenglikka cho'zilgan BITTA qator: chapda
-             nomi, o'rtada jarayoni, o'ngda uchta asosiy raqami. Ikkilamchi
-             amallar (tahrirlash, o'chirish) qatorning eng chetidagi «⋯»
-             menyusida. */
-          <div className="grid grid-projects">
-            {projects.map((p) => (
-              /* Kartaning istalgan yeriga bosilsa loyiha ochiladi - nomni
-                 aniq nishonga olish shart emas. Shu sabab alohida «Kirish»
-                 tugmasi yo'q: u kartaning o'zi qiladigan ishni takrorlardi.
-                 Ichidagi havola va menyu o'z ishini qiladi
-                 (`stopPropagation`). */
-              <div className="pcard" key={p.id} onClick={() => go(toProject(p.id))}>
-                <div className="pcard-top">
-                  <span className="lang-dot" style={{ background: p.color }} />
-                  <Link className="pcard-name" {...toProject(p.id)}
-                        onClick={(e) => e.stopPropagation()}>{p.name}</Link>
-                  {p.status !== "ACTIVE" && (
-                    <span className="badge">{p.status_display}</span>
-                  )}
-                </div>
-
-                {/* Nom ostida ish maydoni emas, MENEJER turadi: «kim
-                    javobgar» degan savol «qaysi papkada» dan ko'ra tez-tez
-                    beriladi. Ism serverdan keladi (`ProjectSerializer.manager`),
-                    yorliq esa - bazadagi interfeys matnlaridan. */}
-                <div className="pcard-sub">
-                  {p.manager
-                    ? <>{p.manager.full_name} · {tx("projects.loyiha_menejeri")}</>
-                    : tx("projects.menejer_tayinlanmagan")}
-                </div>
-
-                <div className="pcard-prog">
-                  <span className="muted">{tx("projects.jarayon")}</span>
-                  <span className="spacer" />
-                  <strong>{p.progress}%</strong>
-                </div>
-                <Progress value={p.progress} />
-
-                <div className="pcard-foot">
-                  <span className="pcard-metric">
-                    <small>{tx("common.ochiq_vazifa_2")}</small>
-                    <strong>{p.open_tasks} {tx("common.ta")}</strong>
-                  </span>
-                  <span className="pcard-metric">
-                    <small>{tx("projects.azolar")}</small>
-                    <strong>{p.member_count} {tx("common.kishi")}</strong>
-                  </span>
-                  <span className="pcard-metric">
-                    <small>{tx("projects.menda")}</small>
-                    <strong>{p.my_tasks} {tx("common.ta")}</strong>
-                  </span>
-                </div>
-
-                {p.updated_at && (
-                  <div className="muted" style={{ fontSize: 11, marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
-                    <span>🕒</span>
-                    <span>
-                      {tx("projects.tahrirlandi", undefined, "Tahrirlandi")}: {fmtDateTime(p.updated_at)}
-                      {p.updated_by && <strong style={{ marginLeft: 3 }}>({p.updated_by.full_name})</strong>}
-                    </span>
-                  </div>
-                )}
-
-                {/* «⋯» menyusi FAQAT loyihani boshqaradigan odamga -
-                    ichida boshqaruv amallari turadi.
-
-                    Qatorning eng o'ng chetida turadi, nom bilan jarayon
-                    chizig'ining ORASIDA emas: o'rtada turganida u
-                    ikkalasini ajratib, ko'z qatorni ikki marta kesib
-                    o'tishiga to'g'ri kelardi. Chetda esa u boshqa
-                    ro'yxatlardagi «⋯» bilan bir tekisda qoladi.
-
-                    Bu faqat KO'RINISH: tahrirlash va o'chirish ruxsati
-                    serverda ham tekshiriladi (`ProjectAccess`). */}
-                {canManage(p) && (
-                  <span className="pcard-menu" onClick={(e) => e.stopPropagation()}>
-                    <RowMenu>
-                      {/* «Doska» va «Tarix» bu yerdan olib tashlandi:
-                          ikkovi ham loyiha ochilgandan keyin yuqorida
-                          bo'lim bo'lib turadi, menyuda esa faqat
-                          takrorlanardi. Bu yerda o'sha yerda yo'q
-                          amallar qoladi. */}
-                      <Link {...toProjectEdit(p.id)}>{tx("common.tahrirlash")}</Link>
-                      {p.status !== "DONE" && (
-                        <button type="button"
-                                onClick={() => void handleCompleteProject(p)}>
-                          {tx("projects.loyihani_yakunlash")}
-                        </button>
-                      )}
-                      {/* O'chirish TAHRIRLASHDAN tor: loyiha admini
-                          sozlamalarni o'zgartiradi, lekin butun loyihani
-                          yo'q qila olmaydi. Ilgari ikkovi bitta shartda
-                          edi va menyu unga 403 beradigan tugmani
-                          ko'rsatib turardi. */}
-                      {p.access?.can_delete_project && (
-                        <button type="button" className="danger"
-                                onClick={() => void removeProject(p.id, p.name)}>
-                          {tx("common.ochirish_2")}
-                        </button>
-                      )}
-                    </RowMenu>
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {pages > 1 && <Pager page={page} pages={pages} onPick={setPage} />}
-      </div>
-    </>
-  );
-}
-
-/* ------------------------------------------------------------- ijrochiga */
-
-/**
- * Guruhdagi ishlarni HOLAT bo'yicha sanaydi.
- *
- * Loyiha sarlavhasida faqat umumiy son turardi («3 ta») va u eng kerakli
- * savolga javob bermasdi: uchtasining qanchasi bitgan, qanchasi hali
- * qo'lda. Endi son yonida holatlar ham turadi.
- *
- * Yorliqni O'ZIMIZ yasamaymiz - vazifadan kelgan `status_display` ni
- * olamiz (u bazadagi matndan chiqadi). Tartib esa `meta.task_status`
- * bo'yicha: ish oqimi qanday bo'lsa, sanoq ham shunday tursin - aks holda
- * u loyihadan loyihaga o'zgarib ketardi.
- */
-function statusCounts(tasks: Task[], order: Choice[] | undefined) {
-  const seen = new Map<string, { label: string; n: number }>();
-  tasks.forEach((t) => {
-    const row = seen.get(t.status) || { label: t.status_display, n: 0 };
-    row.n += 1;
-    seen.set(t.status, row);
-  });
-  const rank = new Map((order || []).map((s, i) => [String(s.value), i]));
-  return [...seen.entries()].sort(
-    (a, b) => (rank.get(a[0]) ?? 99) - (rank.get(b[0]) ?? 99));
-}
-
-
-/**
- * Ijrochining «Loyihalar» bo'limi - loyiha kartalari EMAS, o'z vazifalari.
- *
- * «Mening ishim» bilan takrorlanmaydi: u yerda ish HOLAT bo'yicha ustunlarga
- * bo'linadi ("nima qilinishi kerak"), bu yerda esa LOYIHA bo'yicha
- * ("qaysi loyihada nima bor"). Loyihaga kirish yo'li ham shu: vazifa
- * ochiladi, uning sarlavhasida loyiha nomi havola bo'lib turadi.
- */
-function MyProjectTasks() {
-  const fid = useId();
-  const { meta } = useAuth();
-  const [f, setF] = useState({ search: "", period: "week", due_from: "", due_to: "", status: "" });
-  const [page, setPage] = useState(1);
-
-  const set = (k: keyof typeof f, v: string) => {
-    // Filtr o'zgardi - ro'yxat ham boshqacha bo'ladi va uchinchi sahifada
-    // turishning ma'nosi qolmaydi (u yerda endi hech nima bo'lmasligi ham
-    // mumkin). Shuning uchun har kesimda ro'yxat boshidan boshlanadi.
-    setPage(1);
-    // Davr va aniq sana bir-birini almashtiradi - ikkovi birga turgan
-    // ekranda "qaysi biri ishlayapti?" degan savol tug'ilardi.
-    setF((prev) => {
-      const next = { ...prev, [k]: v };
-      if (k === "period" && v) {
-        next.due_from = "";
-        next.due_to = "";
-      } else if (k === "due_from") {
-        next.period = "";
-        // Boshlanish sanasi tugash sanasidan katta bo'lishiga yo'l qo'yilmaydi:
-        // agar kattaroq sana tanlansa, tugash sanasi ham unga moslashtiriladi
-        if (v && next.due_to && v > next.due_to) {
-          next.due_to = v;
-        }
-      } else if (k === "due_to") {
-        next.period = "";
-        // Tugash sanasi boshlanish sanasidan kichik bo'lishiga yo'l qo'yilmaydi:
-        // agar kichikroq sana tanlansa, boshlanish sanasi ham unga moslashtiriladi
-        if (v && next.due_from && v < next.due_from) {
-          next.due_from = v;
-        }
-      }
-      return next;
-    });
-  };
-
-  /** Filtrni tozalash - sahifa raqami bilan birga. */
-  const clear = () => {
-    setPage(1);
-    setF({ search: "", period: "week", due_from: "", due_to: "", status: "" });
-  };
-
-  const fetchParams = useMemo(() => ({
-    search: f.search,
-    period: f.period,
-    due_from: f.due_from,
-    due_to: f.due_to,
-  }), [f.search, f.period, f.due_from, f.due_to]);
-
-  // Qidiruv va muddat kesimi serverda (`/my-work/`), holat esa shu yerda:
-  // javob allaqachon holatlarga bo'lingan holda keladi. Loyiha bo'yicha
-  // filtr yo'q - ro'yxatning O'ZI loyihalarga bo'lingan.
-  const { data, error, loading } = useFetch<MyWorkData>(
-    "/my-work/", fetchParams, { debounceMs: 300 });
-
-  const groups = useMemo(() => {
-    if (!data) return null;
-    const color = new Map(data.projects.map((p) => [p.id, p.color]));
-    const rows = new Map<number, { name: string; color: string; tasks: Task[] }>();
-    data.groups
-      .filter((g) => !f.status || g.status === f.status)
-      .forEach((g) => g.tasks.forEach((t) => {
-        const row = rows.get(t.project)
-          || { name: t.project_name, color: color.get(t.project) || "var(--accent)", tasks: [] };
-        row.tasks.push(t);
-        rows.set(t.project, row);
-      }));
-    // Ko'p ish turgan loyiha tepada - odam kunini o'sha yerdan boshlaydi.
-    return [...rows.entries()].sort((a, b) => b[1].tasks.length - a[1].tasks.length);
-  }, [data, f.status]);
-
-  const total = (groups || []).reduce((n, [, g]) => n + g.tasks.length, 0);
-  const pages = Math.max(1, Math.ceil(total / TASKS_PER_PAGE));
-  // Raqam chegaraga QISILADI: filtrga tegilmasa ham ro'yxat qisqarishi
-  // mumkin (vazifa bajarildi, biriktiruv olindi). Aks holda odam mavjud
-  // bo'lmagan sahifada, bo'sh ekranda qolib ketardi.
-  const safePage = Math.min(page, pages);
-
-  // SAHIFALASH shu yerda, serverda emas: `/my-work/` javobni bo'lak-bo'lak
-  // bermaydi, hammasini bir marta beradi (`pages/Profile.tsx` dagi vazifalar
-  // ro'yxati ham shunday kesiladi).
-  //
-  // Vazifalar GURUHLAR ichidan KETMA-KET sanaladi, ya'ni bitta loyiha ikki
-  // sahifaga bo'linishi mumkin: sahifada 15 ta VAZIFA turadi, 15 ta loyiha
-  // emas. Kartadagi nishonlar esa TO'LIQ guruhdan hisoblanadi - «3 ta ·
-  // 1 Jarayonda» loyihaning holati, ochilib turgan sahifaning emas.
-  const paged = useMemo(() => {
-    if (!groups) return null;
-    const from = (safePage - 1) * TASKS_PER_PAGE;
-    const to = from + TASKS_PER_PAGE;
-    const out: [number, { name: string; color: string; tasks: Task[]; shown: Task[] }][] = [];
-    let seen = 0;
-    groups.forEach(([id, g]) => {
-      const start = Math.max(from - seen, 0);
-      const end = Math.min(to - seen, g.tasks.length);
-      if (end > start) out.push([id, { ...g, shown: g.tasks.slice(start, end) }]);
-      seen += g.tasks.length;
-    });
-    return out;
-  }, [groups, safePage]);
-
-  const dirty = Boolean(f.search || f.period !== "week" || f.due_from || f.due_to || f.status);
-
-  return (
-    <>
-      <PageHead
-        title={<strong>{tx("projects.vazifalarim", undefined, "Vazifalarim")}</strong>}
-        actions={
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {!!total && <span className="badge">{total} {tx("projects.ta_vazifa", undefined, "ta vazifa")}</span>}
-            <Link
-              className="btn btn-sm btn-primary"
-              {...(groups && groups.length > 0 ? toNewTask(groups[0][0]) : { to: "/loyiha/vazifa-yaratish" })}
-            >
-              + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-            </Link>
-          </div>
+          ) : undefined
         }
       />
-      {/* Filtr qatori «Vazifalar» sahifasidagi bilan bir xil: qidiruv
-          chapda, tanlovlar o'ngda. Shu sabab `wl` sinfi ham shu yerda -
-          o'lchamlar bitta joyda yozilgan. */}
-      <div className="content wl">
-        <ErrorMsg error={error} />
 
-        <div className="filters">
-          <div className="f wl-search">
-            <label htmlFor={`${fid}-q`}>{tx("common.qidiruv")}</label>
-            {/* Vazifa nomi, tavsifi, kodi yoki LOYIHA nomi bo'yicha -
-                «Vazifalar» sahifasidagi bilan bir xil qoidadan
-                (`task_search_q`). */}
-            <input id={`${fid}-q`} value={f.search} onChange={(e) => set("search", e.target.value)}
-                   placeholder={tx("projects.vazifa_kod_hir_75_yoki")} />
-          </div>
-          <div className="wl-filters">
-            <div className="f">
-              <label htmlFor={`${fid}-r`}>{tx("common.davr")}</label>
-              <select id={`${fid}-r`} value={f.period} onChange={(e) => set("period", e.target.value)}>
-                <option value="">{tx("projects.barcha_muddatlar")}</option>
-                {DUE_PERIODS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="f wl-date">
-              <label htmlFor={`${fid}-df`}>{tx("common.sana_dan", undefined, "Sana (dan)")}</label>
-              <DateField
-                id={`${fid}-df`}
-                value={f.due_from}
-                max={f.due_to || undefined}
-                onChange={(v) => set("due_from", v)}
-              />
-            </div>
-            <div className="f wl-date">
-              <label htmlFor={`${fid}-dt`}>{tx("common.sana_gacha", undefined, "Sana (gacha)")}</label>
-              <DateField
-                id={`${fid}-dt`}
-                value={f.due_to}
-                min={f.due_from || undefined}
-                onChange={(v) => set("due_to", v)}
-              />
-            </div>
-            <div className="f">
-              <label htmlFor={`${fid}-s`}>{tx("common.holat")}</label>
-              {/* Bu yerda standart - HAMMASI: odam o'z bajarganini ham
-                  ko'rib turadi («Vazifalar» sahifasi boshqacha: u menejerga
-                  "hozir nima bo'layapti" ni ko'rsatadi). */}
-              <select id={`${fid}-s`} value={f.status} onChange={(e) => set("status", e.target.value)}>
-                <option value="">{tx("projects.barcha_holatlar")}</option>
-                {(meta?.task_status || []).map((s) => (
-                  <option key={s.value} value={String(s.value)}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-            {dirty && (
-              <button type="button" className="btn btn-ghost"
-                      onClick={clear}>
-                {tx("common.tozalash")}
-              </button>
-            )}
-          </div>
+      <FilterBar>
+        <div className="filter-search-box">
+          <span className="filter-search-icon">
+            <IconSearch size={16} />
+          </span>
+          <input
+            id={`${fid}-q`}
+            type="search"
+            className="filter-search-input"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder={tx("projects.qidiruv_placeholder", undefined, "Loyihani qidirish...")}
+          />
         </div>
 
-        {loading ? <Loading /> : !groups ? null : !groups.length ? (
-          <div className="card">
-            <Empty icon="☐"
-                   title={dirty ? tx("projects.bu_kesimda_vazifa_yoq") : tx("projects.sizga_hali_vazifa_biriktirilmagan")}
-                   text={dirty
-                     ? tx("projects.tanlangan_kesim_boyicha_sizda_ish")
-                     : tx("projects.menejer_vazifa_berganda_u_shu")}>
-              {dirty ? (
-                <button className="btn"
-                        onClick={clear}>
-                  {tx("common.filtrni_tozalash")}
-                </button>
-              ) : (
-                <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
-                  <Link className="btn btn-primary" to="/loyiha/vazifa-yaratish">
-                    + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-                  </Link>
-                  <Link className="btn" to="/qoshilish">{tx("projects.loyiha_topish")}</Link>
-                </div>
-              )}
-            </Empty>
-          </div>
-        ) : (
-          (paged || []).map(([id, g]) => (
-            <div className="card mb" key={id}>
-              <div className="card-head">
-                <span className="lang-dot" style={{ background: g.color }} />
-                {/* Loyiha nomi ham havola: vazifasiz ham loyihaning
-                    o'ziga kirish yo'li ochiq qolsin. */}
-                <h3><Link {...toProject(id)} className="wl-name">{g.name}</Link></h3>
-                <span className="badge">{g.tasks.length} {tx("common.ta")}</span>
-                {/* Holat kesimi: «nechtasi bitdi, nechtasi jarayonda».
-                    Nol bo'lgan holat umuman chizilmaydi - bo'sh nishon
-                    faqat qatorni uzaytirardi. */}
-                {statusCounts(g.tasks, meta?.task_status).map(([status, c]) => (
-                  <span key={status} className={`badge st-${status}`}>{c.n} {c.label}</span>
-                ))}
-                <span className="spacer" />
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Link className="btn btn-sm btn-primary" {...toNewTask(id)}>
-                    + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-                  </Link>
-                  <Link className="btn btn-sm" {...toProject(id)}>{tx("projects.loyihaga_kirish", undefined, "Loyihaga kirish")}</Link>
-                </div>
-              </div>
-              <div className="card-body wl-tasks">
-                {g.shown.map((t) => (
-                  <Link className={`tline ${t.is_overdue ? "overdue" : ""}`} {...toTask(t.id)} key={t.id}>
-                    <span className="tline-title">{t.title}</span>
-                    {t.due_date && (
-                      <span className={t.is_overdue ? "badge badge-danger" : "wl-due"}>
-                        <IconCalendar size={11} /> {fmtDate(t.due_date)}
-                      </span>
-                    )}
-                    <span className="badge">{t.status_display}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))
-        )}
+        <div className="filter-select-box">
+          <select
+            id={`${fid}-status`}
+            className="filter-select"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">{tx("projects.barcha_holatlar", undefined, "Barcha holatlar")}</option>
+            <option value="ACTIVE">{tx("projects.holat_faol", undefined, "Faol")}</option>
+            <option value="PLANNING">{tx("projects.holat_rejalashtirilgan", undefined, "Rejalashtirilgan")}</option>
+            <option value="DONE">{tx("projects.holat_yakunlangan", undefined, "Yakunlangan")}</option>
+            <option value="PAUSED">{tx("projects.holat_toxtatilgan", undefined, "To'xtatilgan")}</option>
+          </select>
+        </div>
 
-        {pages > 1 && <Pager page={safePage} pages={pages} onPick={setPage} />}
+        <div className="filter-select-box">
+          <select
+            id={`${fid}-period`}
+            className="filter-select"
+            value={period}
+            onChange={(e) => {
+              setPeriod(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">{tx("projects.barcha_muddatlar", undefined, "Barcha muddatlar")}</option>
+            {DUE_PERIODS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-select-box">
+          <select
+            id={`${fid}-sort`}
+            className="filter-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="updated_at">{tx("projects.saralash_yangilangan", undefined, "So'nggi yangilanish")}</option>
+            <option value="name">{tx("projects.saralash_nomi", undefined, "Nomi bo'yicha")}</option>
+            <option value="due_date">{tx("projects.saralash_muddat", undefined, "Muddati bo'yicha")}</option>
+            <option value="progress">{tx("projects.saralash_progress", undefined, "Jarayon bo'yicha")}</option>
+          </select>
+        </div>
+
+        {(!!search || !!status || !!period) && (
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => {
+              setSearch("");
+              setStatus("");
+              setPeriod("");
+              setPage(1);
+            }}
+          >
+            {tx("common.tozalash", undefined, "Tozalash")}
+          </button>
+        )}
+      </FilterBar>
+
+      <ErrorMsg error={error} />
+
+      <div className="table-card-clean">
+        {loading && !sortedProjects?.length ? (
+          <TableSkeleton rows={6} cols={6} />
+        ) : !sortedProjects || sortedProjects.length === 0 ? (
+          <EmptyState
+            icon="📁"
+            title={tx("common.loyiha_topilmadi", undefined, "Loyihalar topilmadi")}
+            message={
+              search || status || period
+                ? tx("projects.filtr_natijasi_yoq", undefined, "Tanlangan filtrlar bo'yicha hech qanday loyiha topilmadi.")
+                : tx("projects.hali_loyiha_mavjud_emas", undefined, "Hozircha tizimda loyihalar mavjud emas.")
+            }
+            action={
+              user?.can_create_project ? (
+                <Link className="btn btn-primary" {...toNewProject()}>
+                  <IconPlus size={14} />
+                  <span>{tx("common.yangi_loyiha", undefined, "+ Yangi loyiha")}</span>
+                </Link>
+              ) : undefined
+            }
+          />
+        ) : (
+          <div className="table-wrap">
+            <table className="table-clean">
+              <thead>
+                <tr>
+                  <th style={{ width: 44, textAlign: "center" }}>№</th>
+                  <th>{tx("projects.ustun_loyiha", undefined, "Loyiha nomi")}</th>
+                  <th>{tx("projects.ustun_holat", undefined, "Holati")}</th>
+                  <th>{tx("projects.ustun_masul", undefined, "Mas'ul shaxs")}</th>
+                  <th style={{ width: 180 }}>{tx("projects.ustun_jarayon", undefined, "Jarayon")}</th>
+                  <th>{tx("projects.ustun_muddat", undefined, "Muddati")}</th>
+                  <th>{tx("projects.ustun_tahrirlangan", undefined, "So'nggi yangilanish")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedProjects.map((p, idx) => (
+                  <tr
+                    key={p.id}
+                    className="clickable"
+                    onClick={() => go(toProject(p.id))}
+                  >
+                    <td style={{ textAlign: "center", color: "var(--muted)", fontWeight: 600 }}>
+                      {(page - 1) * PER_PAGE + idx + 1}
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            background: p.color || "var(--accent)",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <div style={{ minWidth: 0 }}>
+                          <Link
+                            className="nowrap"
+                            {...toProject(p.id)}
+                            style={{
+                              fontWeight: 650,
+                              fontSize: 14,
+                              color: "var(--text)",
+                              display: "inline-block",
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {p.name}
+                          </Link>
+                          {p.description && (
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "var(--muted)",
+                                marginTop: 2,
+                                maxWidth: 360,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {p.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td>{getStatusBadge(p)}</td>
+                    <td>
+                      {p.manager ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Avatar user={p.manager} size="sm" showHoverCard={false} />
+                          <span style={{ fontSize: 13, fontWeight: 500 }}>{p.manager.full_name}</span>
+                        </div>
+                      ) : (
+                        <span className="muted" style={{ fontSize: 12.5 }}>
+                          {tx("projects.menejer_tayinlanmagan", undefined, "Tayinlanmagan")}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)" }}>
+                          <span>{p.open_tasks} {tx("common.ochiq_vazifa", undefined, "ochiq")}</span>
+                          <strong style={{ color: "var(--text)" }}>{p.progress}%</strong>
+                        </div>
+                        <Progress value={p.progress} />
+                      </div>
+                    </td>
+                    <td className="nowrap" style={{ fontSize: 13, color: "var(--muted)" }}>
+                      {p.due_date ? (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                          <IconCalendar size={13} />
+                          {fmtDate(p.due_date)}
+                        </span>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                    <td className="nowrap" style={{ fontSize: 12.5, color: "var(--muted)" }}>
+                      {p.updated_at ? fmtDate(p.updated_at) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-    </>
+
+      {pages > 1 && <Pager page={page} pages={pages} onPick={setPage} />}
+    </div>
   );
 }

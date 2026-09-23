@@ -140,10 +140,12 @@ export default function App() {
       <Route path="/kirish" element={<GuestOnly><Login /></GuestOnly>} />
       <Route path="/royxatdan-otish" element={<GuestOnly><Register /></GuestOnly>} />
 
-      {/* Admin panel ALOHIDA shoxda: Qorovul login oynasini ko'rsatadi yoki panelni ochadi */}
+      {/* Admin panel / Sozlamalar: Qorovul login oynasini ko'rsatadi yoki panelni ochadi */}
       <Route element={<AdminGate />}>
         <Route element={<Layout />}>
           <Route path="/admin" element={<Admin />} />
+          <Route path="/sozlamalar" element={<Admin />} />
+          <Route path="/settings" element={<Admin />} />
         </Route>
       </Route>
 

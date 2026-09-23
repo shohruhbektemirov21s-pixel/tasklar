@@ -1405,7 +1405,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     style={{ background: "#ffffff", borderColor: "#fcd34d", color: "#92400e", gap: 6, fontWeight: 600 }}
                   >
                     <span>📎</span>
-                    <span>{tx("orders.tuzatish_hujjati_fayli")}: {item.client_feedback_file_name || tx("common.fayl")}</span>
+                    <span>{tx("orders.tuzatish_hujjati_fayli")}: {item.client_feedback_file_name || tx("common.fayl", undefined, "Fayl")}</span>
                     {item.client_feedback_file_size_display && <span style={{ opacity: 0.7 }}>({item.client_feedback_file_size_display})</span>}
                   </button>
                 </div>
@@ -3122,7 +3122,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   disabled={approveSubmitting}
                   style={{ fontWeight: 600 }}
                 >
-                  {approveSubmitting ? tx("common.tasdiqlanmoqda") : tx("orders.tasdiqlash_va_amalda_qollash")}
+                  {approveSubmitting ? tx("common.tasdiqlanmoqda", undefined, "Tasdiqlanmoqda...") : tx("orders.tasdiqlash_va_amalda_qollash")}
                 </button>
               </div>
             </form>

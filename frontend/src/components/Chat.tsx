@@ -152,23 +152,33 @@ export default function Chat({
     }
   }
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setText((prev) => (prev ? `${prev}\n📎 ${file.name}` : `📎 ${file.name}`));
+    e.target.value = "";
+  }
+
   return (
-    <div className="card chat">
-      <div className="card-head">
-        <h3>{title}</h3>
-        <span className={`live-tag ${live ? "on" : ""}`}>
-          {live ? "jonli" : "ulanmoqda…"}
+    <div className="card chat" style={{ borderRadius: 16, border: "1px solid var(--border)", overflow: "hidden" }}>
+      <div className="card-head" style={{ padding: "14px 18px", borderBottom: "1px solid var(--border-muted)" }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 650 }}>{title}</h3>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: live ? "var(--success)" : "var(--text-muted)" }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: live ? "var(--success)" : "var(--border-strong)" }} />
+          {live ? (tx("chat.jonli") || "jonli") : (tx("chat.ulanmoqda") || "ulanmoqda…")}
         </span>
         <span className="spacer" />
       </div>
 
-      <div className="chat-body" ref={bodyRef} style={{ height }}>
+      <div className="chat-body" ref={bodyRef} style={{ height, padding: "16px 20px" }}>
         {messages === null && <Loading />}
         {messages?.length === 0 && (
-          <div className="empty">
-            <div className="ico">💬</div>
-            <h3>{tx("chat.suhbat_bosh")}</h3>
-            {tx("chat.birinchi_xabarni_siz_yozing")}
+          <div className="empty" style={{ padding: "40px 20px" }}>
+            <div className="ico" style={{ fontSize: 32 }}>💬</div>
+            <h3 style={{ fontSize: 15 }}>{tx("chat.suhbat_bosh")}</h3>
+            <p className="muted" style={{ fontSize: 13 }}>{tx("chat.birinchi_xabarni_siz_yozing")}</p>
           </div>
         )}
 
@@ -186,8 +196,8 @@ export default function Chat({
               <div className="chat-bubble">
                 {!grouped && (
                   <div className="chat-meta">
-                    <Link {...toUser(m.author.id)}>{m.author.full_name}</Link>
-                    <span className="tl-time" title={fmtDateTime(m.created_at)}>
+                    <Link {...toUser(m.author.id)} style={{ color: mine ? "inherit" : "var(--accent)" }}>{m.author.full_name}</Link>
+                    <span className="tl-time" title={fmtDateTime(m.created_at)} style={{ opacity: 0.75 }}>
                       {timeAgo(m.created_at)}
                     </span>
                   </div>
@@ -199,22 +209,39 @@ export default function Chat({
         })}
       </div>
 
-      <form className="chat-form" onSubmit={send}>
+      <form className="chat-form" onSubmit={send} style={{ padding: "12px 16px", background: "var(--surface)" }}>
         <ErrorMsg error={error} />
-        <div className="row" style={{ alignItems: "flex-end" }}>
-          <textarea
-            rows={1}
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: "none" }}
+          onChange={handleFileSelect}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            type="button"
+            className="tf-chat-attach-btn"
+            title={tx("chat.fayl_biriktirish") || "Fayl biriktirish"}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            📎
+          </button>
+          <input
+            type="text"
             name="xabar"
+            className="tf-chat-input-field"
             value={text}
-            /* Yorliq placeholder da emas - u birinchi harfdayoq yo'qoladi. */
             aria-label={tx("chat.xabar_yozing")}
             placeholder={tx("chat.xabar_yozing")}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={onKeyDown}
-            style={{ minHeight: 44, resize: "none" }}
           />
-          <button className="btn btn-accent" disabled={busy || !text.trim()} title={tx("chat.yuborish")}>
-            <IconSend size={15} /> {tx("chat.yuborish")}
+          <button
+            type="submit"
+            className="tf-chat-send-btn"
+            disabled={busy || !text.trim()}
+            title={tx("chat.yuborish")}
+          >
+            <IconSend size={16} />
           </button>
         </div>
       </form>
