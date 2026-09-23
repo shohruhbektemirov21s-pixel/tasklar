@@ -401,19 +401,29 @@ def is_pm_or_boss(user, project=None):
     if getattr(user, "specialty", None) == Specialty.PM:
         return True
     if project:
+        if not hasattr(project, "_pm_boss_cache"):
+            project._pm_boss_cache = {}
+        if user.id in project._pm_boss_cache:
+            return project._pm_boss_cache[user.id]
+
+        result = False
         if getattr(project, "manager_id", None) == user.id:
-            return True
-        from apps.projects.models import ProjectRole
-        if hasattr(project, "_prefetched_objects_cache") and "memberships" in project._prefetched_objects_cache:
-            for m in project.memberships.all():
-                if m.is_active and m.user_id == user.id and m.role in (ProjectRole.MANAGER, ProjectRole.ADMIN):
-                    return True
+            result = True
         else:
-            from apps.projects.models import ProjectMember
-            if ProjectMember.objects.filter(
-                project=project, user=user, is_active=True, role__in=[ProjectRole.MANAGER, ProjectRole.ADMIN]
-            ).exists():
-                return True
+            from apps.projects.models import ProjectRole
+            if hasattr(project, "_prefetched_objects_cache") and "memberships" in project._prefetched_objects_cache:
+                for m in project.memberships.all():
+                    if m.is_active and m.user_id == user.id and m.role in (ProjectRole.MANAGER, ProjectRole.ADMIN):
+                        result = True
+                        break
+            else:
+                from apps.projects.models import ProjectMember
+                if ProjectMember.objects.filter(
+                    project=project, user=user, is_active=True, role__in=[ProjectRole.MANAGER, ProjectRole.ADMIN]
+                ).exists():
+                    result = True
+        project._pm_boss_cache[user.id] = result
+        return result
     return False
 
 
@@ -421,7 +431,11 @@ def is_task_created_by_pm_or_boss(task):
     """Vazifa PM yoki Boshliq tomonidan berilganmi (yaratilganmi)."""
     if not task or not task.created_by_id:
         return False
-    return is_pm_or_boss(task.created_by, task.project)
+    if hasattr(task, "_is_pm_or_boss_created"):
+        return task._is_pm_or_boss_created
+    res = is_pm_or_boss(task.created_by, task.project)
+    task._is_pm_or_boss_created = res
+    return res
 
 
 def can_edit_task(user, task, access=None):
@@ -435,23 +449,48 @@ def can_edit_task(user, task, access=None):
     if task.deleted_at is not None or getattr(task.project, "deleted_at", None) is not None:
         return False
 
+    if hasattr(task, "_can_edit_user_id") and task._can_edit_user_id == user.id:
+        return task._can_edit_value
+
     # Agar vazifani PM yoki Boshliq bergan bo'lsa:
     if is_task_created_by_pm_or_boss(task):
-        return is_pm_or_boss(user, task.project)
+        res = is_pm_or_boss(user, task.project)
+        task._can_edit_user_id = user.id
+        task._can_edit_value = res
+        return res
 
     # Agar vazifani PM yoki Boshliq bermagan bo'lsa:
     if access is None:
-        from apps.projects.permissions import ProjectAccess
-        access = ProjectAccess(user, task.project)
+        if task.project:
+            if not hasattr(task.project, "_access_cache"):
+                task.project._access_cache = {}
+            if user.id in task.project._access_cache:
+                access = task.project._access_cache[user.id]
+            else:
+                from apps.projects.permissions import ProjectAccess
+                access = ProjectAccess(user, task.project)
+                task.project._access_cache[user.id] = access
+        else:
+            from apps.projects.permissions import ProjectAccess
+            access = ProjectAccess(user, None)
 
-    is_assignee = task.assignments.filter(user_id=user.id, is_active=True).exists() if hasattr(task, "assignments") else False
-    return bool(
+    if hasattr(task, "_prefetched_objects_cache") and "assignments" in task._prefetched_objects_cache:
+        is_assignee = any(a.user_id == user.id and a.is_active for a in task.assignments.all())
+    elif hasattr(task, "assignments"):
+        is_assignee = task.assignments.filter(user_id=user.id, is_active=True).exists()
+    else:
+        is_assignee = False
+
+    res = bool(
         access.can_manage
         or access.is_member
         or is_assignee
         or task.created_by_id == user.id
         or is_pm_or_boss(user, task.project)
     )
+    task._can_edit_user_id = user.id
+    task._can_edit_value = res
+    return res
 
 
 def can_manage_task_team(user, task, access=None):

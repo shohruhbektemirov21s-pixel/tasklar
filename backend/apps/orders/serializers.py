@@ -437,7 +437,10 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
         }
 
     def get_tasks(self, obj):
-        task_ids = list(obj.tasks.filter(deleted_at__isnull=True).values_list("id", flat=True))
+        if hasattr(obj, "_prefetched_objects_cache") and "tasks" in obj._prefetched_objects_cache:
+            task_ids = [t.id for t in obj.tasks.all() if t.deleted_at is None]
+        else:
+            task_ids = list(obj.tasks.filter(deleted_at__isnull=True).values_list("id", flat=True))
         if obj.linked_task_id and obj.linked_task_id not in task_ids:
             task_ids.append(obj.linked_task_id)
         if not task_ids:
@@ -525,6 +528,16 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             return None
         p = obj.project
         manager = p.manager
+        progress_cache = self.context.setdefault("_project_progress_cache", {}) if self.context is not None else None
+        if progress_cache is not None and p.id in progress_cache:
+            progress_val = progress_cache[p.id]
+        elif hasattr(p, "_cached_progress"):
+            progress_val = p._cached_progress
+        else:
+            progress_val = p.progress()
+            p._cached_progress = progress_val
+            if progress_cache is not None:
+                progress_cache[p.id] = progress_val
         return {
             "id": p.id,
             "name": p.name,
@@ -537,7 +550,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "manager_email": manager.email if manager else "",
             "start_date": str(p.start_date) if p.start_date else None,
             "due_date": str(p.due_date) if p.due_date else None,
-            "progress": p.progress(),
+            "progress": progress_val,
             "description": p.description,
             "repo_url": p.repo_url,
             "docs_url": p.docs_url,

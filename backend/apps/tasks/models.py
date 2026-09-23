@@ -106,7 +106,7 @@ class TaskQuerySet(SoftDeleteQuerySet):
     def for_display(self):
         from apps.core.queries import related_count, related_sum
 
-        return (self.select_related("project", "created_by", "reviewer")
+        return (self.select_related("project", "created_by", "reviewer", "parent", "parent__project")
                 .prefetch_related("assignments__user", "labels")
                 .annotate(
                     logged_hours_sum=related_sum(WorkLog, "hours", group_by="task"),

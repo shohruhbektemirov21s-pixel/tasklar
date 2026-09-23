@@ -103,7 +103,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
     queryset = (
         ChangeRequest.objects.all()
-        .select_related("created_by", "project", "project__manager", "assigned_pm", "assigned_developer", "linked_task")
+        .select_related("created_by", "created_by__department", "project", "project__manager", "assigned_pm", "assigned_developer", "linked_task")
         .prefetch_related("versions__uploaded_by", "versions__decided_by", "attachments__uploaded_by")
     )
     serializer_class = ChangeRequestSerializer
