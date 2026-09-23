@@ -934,11 +934,7 @@ def meta(request):
             data["order_type"] = pack(order_fields["order_type"].choices)
         if "status" in order_fields:
             data["order_status"] = pack(order_fields["status"].choices)
-            data["order_filter_status"] = [
-                {"value": "NEW", "label": "Yangi"},
-                {"value": "ACCEPTED", "label": "Qabul qilindi"},
-                {"value": "REJECTED", "label": "Rad etildi"},
-            ]
+            data["order_filter_status"] = pack(order_fields["status"].choices)
         if "priority" in order_fields:
             data["order_priority"] = pack(order_fields["priority"].choices)
         if "change_nature" in order_fields:

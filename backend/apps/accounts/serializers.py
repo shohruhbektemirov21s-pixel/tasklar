@@ -129,6 +129,33 @@ class MeSerializer(UserSerializer):
 
     manages_projects = serializers.SerializerMethodField()
 
+    def validate(self, attrs):
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        is_admin = bool(user and (user.is_platform_admin or getattr(user, "is_superuser", False)))
+
+        # 1. Bo'linmani o'z-o'zidan o'zgartirish taqiqlanadi (faqat admin qila oladi)
+        if "department_name" in attrs:
+            new_dept = (attrs.get("department_name") or "").strip()
+            curr_dept = (self.instance.department.name if (self.instance and self.instance.department) else "")
+            if new_dept != curr_dept and not is_admin:
+                raise serializers.ValidationError({
+                    "department_name": "Bo'linmani o'zgartirish faqat administrator tomonidan amalga oshiriladi."
+                })
+
+        # 2. Imtiyozli mutaxassisliklarni (SOHAVIY, PM) oddiy foydalanuvchi o'ziga bera olmaydi
+        if "specialty" in attrs:
+            new_spec = attrs.get("specialty")
+            curr_spec = getattr(self.instance, "specialty", None)
+            from apps.accounts.specialties import Specialty
+            privileged_specs = {Specialty.SOHAVIY, Specialty.PM}
+            if new_spec != curr_spec and new_spec in privileged_specs and not is_admin:
+                raise serializers.ValidationError({
+                    "specialty": f"'{new_spec}' mutaxassisligini faqat administrator tayinlashi mumkin."
+                })
+
+        return super().validate(attrs)
+
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ["manages_projects"]
 

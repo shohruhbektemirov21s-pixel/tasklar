@@ -15,7 +15,6 @@ from apps.projects.permissions import (CanCreateProject, ProjectAccess, check_ac
                                     visible_projects_q)
 from apps.notifications.models import NotificationKind
 from apps.notifications.services import notify, notify_many, send_to_users
-from apps.orders.services import link_order_to_project, unlink_project_orders
 from apps.core.queries import object_or_404
 from apps.core.throttles import AddMemberThrottle
 from apps.core.uploads import check_uploads
@@ -366,6 +365,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             # Xato YUTILMAYDI: bog'lab bo'lmasa (begona PM ning buyurtmasi,
             # qoralama) loyiha ham yaratilmaydi - tranzaksiya butunicha
             # qaytadi va odam sababni ko'radi.
+            from apps.orders.services import link_order_to_project
             link_order_to_project(order_id, project, user, created=True)
 
         brief_data = self.request.data.get("brief")
@@ -430,9 +430,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 defaults={"role": ProjectRole.MANAGER, "is_active": True})
 
         if order_id:
+            from apps.orders.services import link_order_to_project
             link_order_to_project(order_id, project, self.request.user, created=False)
         elif order_id is not None:
             # Formada buyurtma maydoni bo'shatildi.
+            from apps.orders.services import unlink_project_orders
             unlink_project_orders(project)
 
         brief_data = self.request.data.get("brief")

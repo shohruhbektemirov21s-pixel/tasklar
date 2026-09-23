@@ -60,13 +60,31 @@ def media_url(fieldfile):
     return "{}?t={}".format(url, token)
 
 
+def _secure_media_response(response):
+    ctype = (response.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    # SVG yoki shunga o'xshash formatlar uchun CSP sandbox:
+    # skriptlar va localStorage ga kirish mutlaqo bloklanadi,
+    # lekin <img> tegi orqali rasm sifatida brauzerda bemalol render qilinadi.
+    if ctype == "image/svg+xml":
+        response.headers["Content-Security-Policy"] = "sandbox"
+
+    if ctype not in INLINE_SAFE:
+        # Fayl nomi saqlanadi, faqat "inline" -> "attachment" ga almashadi.
+        disposition = response.headers.get("Content-Disposition", "inline")
+        response.headers["Content-Disposition"] = disposition.replace("inline", "attachment", 1)
+    return response
+
+
 def serve_media(request, path):
     """`/media/...` - faqat API bergan imzo bilan ochiladi (branding/ bundan mustasno)."""
     path_unquoted = unquote(path)
 
     # Brending va logotiplar barcha uchun ommaviy (sayt logotipi, favicon, admin panel)
     if path.startswith("branding/") or path_unquoted.startswith("branding/"):
-        return serve(request, path_unquoted, document_root=settings.MEDIA_ROOT)
+        response = serve(request, path_unquoted, document_root=settings.MEDIA_ROOT)
+        return _secure_media_response(response)
 
     try:
         signed_path = signing.loads(request.GET.get("t", ""),
@@ -83,9 +101,4 @@ def serve_media(request, path):
         raise PermissionDenied("Fayl manzili yaroqsiz.")
 
     response = serve(request, path_unquoted, document_root=settings.MEDIA_ROOT)
-    ctype = (response.headers.get("Content-Type") or "").split(";")[0].strip()
-    if ctype not in INLINE_SAFE:
-        # Fayl nomi saqlanadi, faqat "inline" -> "attachment" ga almashadi.
-        disposition = response.headers.get("Content-Disposition", "inline")
-        response.headers["Content-Disposition"] = disposition.replace("inline", "attachment", 1)
-    return response
+    return _secure_media_response(response)

@@ -50,6 +50,24 @@ class ReadGatewayTest(ApiTestCase):
                             format="json")
         self.assertEqual(via.status_code, 200)
 
+    def test_path_query_string_preserved_and_merged(self):
+        """Yo'ldagi query-string yo'qolmasin va params ustun kelsin."""
+        # 1. Faqat yo'ldagi query string orqali filtrlanadi
+        via = self.api.post(self.URL, {"path": "/tasks/?project=%d" % self.project.pk},
+                            format="json")
+        self.assertEqual(via.status_code, 200)
+        ids = [t["id"] for t in via.data["results"]]
+        self.assertIn(self.task.pk, ids)
+
+        # 2. params yo'ldagi parametrni bekor qila oladi (ustunlik qiladi)
+        via_override = self.api.post(self.URL, {
+            "path": "/tasks/?project=999999",
+            "params": {"project": self.project.pk}
+        }, format="json")
+        self.assertEqual(via_override.status_code, 200)
+        ids_override = [t["id"] for t in via_override.data["results"]]
+        self.assertIn(self.task.pk, ids_override)
+
     # ------------------------------------------------------------ ruxsat
     def test_kirmagan_odam_otmaydi(self):
         via = self.anon.post(self.URL, {"path": "/projects/"}, format="json")

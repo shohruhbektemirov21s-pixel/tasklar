@@ -2,7 +2,6 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.accounts.serializers import UserBriefSerializer
-from apps.orders.services import order_earliest_start
 
 from .models import (JoinRequest, Project, ProjectBrief, ProjectFile,
                      ProjectFileVersion, ProjectMember,
@@ -144,6 +143,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         if order_id is None and hasattr(self, "initial_data") and "order_id" in self.initial_data:
             order_id = self.initial_data.get("order_id")
         if order_id and start:
+            from apps.orders.services import order_earliest_start
             min_allowed = order_earliest_start(order_id)
             if min_allowed and start < min_allowed:
                 raise serializers.ValidationError({

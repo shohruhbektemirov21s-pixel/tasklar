@@ -30,7 +30,7 @@ XAVFSIZLIK. Darvoza ichki manzillarni ochib qo'ymasin:
   * ichkariga faqat GET yuboriladi - yozish amallari bu yerdan o'tmaydi;
   * javob DRF `Response` bo'lishi shart, aks holda rad etiladi.
 """
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode
 
 from django.http import Http404, HttpRequest, QueryDict
 from django.urls import Resolver404, resolve
@@ -93,27 +93,37 @@ FORWARDED_HEADERS = (
 )
 
 
-def _clean_path(raw):
-    """Tanadagi yo'lni tekshirib, `/api/...` ko'rinishiga keltiradi.
-
-    Frontend qisqa yozadi (`/projects/6/`), chunki `BASE` allaqachon
-    `/api`. Ikkala shakl ham qabul qilinadi.
-    """
+def _extract_path_and_query(raw):
+    """Tanadagi yo'lni tekshirib, toza yo'l va query parametrlarini ajratadi."""
     if not isinstance(raw, str) or not raw.strip():
-        return None
+        return None, {}
     path = raw.strip()
-    # So'rov parametrlari `params` da keladi - yo'lda bo'lmasin.
+    path_params = {}
     if "?" in path:
-        path = path.split("?", 1)[0]
+        path, qs = path.split("?", 1)
+        for k, v in parse_qsl(qs, keep_blank_values=True):
+            if k in path_params:
+                if isinstance(path_params[k], list):
+                    path_params[k].append(v)
+                else:
+                    path_params[k] = [path_params[k], v]
+            else:
+                path_params[k] = v
     if not path.startswith("/"):
         path = "/" + path
     if not path.startswith(API_PREFIX):
         path = API_PREFIX.rstrip("/") + path
     # `..` bilan yuqoriga chiqishga urinish.
     if "//" in path or "/../" in path or path.endswith("/.."):
-        return None
+        return None, {}
     if not path.startswith(API_PREFIX) or path.startswith(SELF_PATH):
-        return None
+        return None, {}
+    return path, path_params
+
+
+def _clean_path(raw):
+    """Tanadagi yo'lni tekshirib, `/api/...` ko'rinishiga keltiradi."""
+    path, _ = _extract_path_and_query(raw)
     return path
 
 
@@ -167,14 +177,20 @@ def _sub_request(outer, path, query):
 @permission_classes([AllowAny])   # ruxsatni ICHKARIDAGI view tekshiradi
 def read(request):
     """Tanadagi yo'lni ichki GET ga aylantirib, javobini qaytaradi."""
-    path = _clean_path(request.data.get("path"))
+    path, path_params = _extract_path_and_query(request.data.get("path"))
     if not path:
         return Response(
             {"path": "Faqat /api/ ichidagi manzil o'qiladi."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    query = _query_string(request.data.get("params"))
+    # explicit params in request body take precedence over query in path
+    explicit_params = request.data.get("params") or {}
+    merged_params = dict(path_params)
+    if isinstance(explicit_params, dict):
+        merged_params.update(explicit_params)
+
+    query = _query_string(merged_params)
 
     try:
         match = resolve(path)

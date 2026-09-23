@@ -280,13 +280,15 @@ class LogoutView(APIView):
     `all=1` bilan - hamma qurilmadan chiqish.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         from rest_framework_simplejwt.exceptions import TokenError
         from rest_framework_simplejwt.tokens import RefreshToken
 
         if str(request.data.get("all", "")).lower() in ("1", "true"):
+            if not request.user or not request.user.is_authenticated:
+                return Response({"detail": "Autentifikatsiyadan o'tilmagan."}, status=status.HTTP_401_UNAUTHORIZED)
             resp = Response({"revoked": revoke_refresh_tokens(request.user)})
             resp.delete_cookie("tf_refresh", path="/api/auth/")
             return resp
@@ -446,8 +448,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         from django.db.models import Count
 
         from apps.accounts.specialties import Specialty
+        from apps.accounts.models import SpecialtyItem
 
         names = dict(Specialty.choices)
+        for item in SpecialtyItem.objects.all():
+            names[item.code] = item.name
         # `values(...).annotate(Count)` - GROUP BY faqat bitta qisqa
         # ustun bo'yicha, ya'ni Db2 ning CLOB cheklovi qo'zg'almaydi.
         rows = (self.filter_queryset(self.get_queryset())
@@ -493,8 +498,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         if "is_active" in request.data:
             target.is_active = bool(request.data["is_active"])
         specialty = request.data.get("specialty")
-        if specialty and specialty in Specialty.values:
-            target.specialty = specialty
+        if specialty:
+            from apps.accounts.models import SpecialtyItem
+            valid_specialties = set(Specialty.values) | set(SpecialtyItem.objects.values_list("code", flat=True))
+            if specialty in valid_specialties:
+                target.specialty = specialty
         seniority = request.data.get("seniority")
         if seniority and seniority in Seniority.values:
             target.seniority = seniority
