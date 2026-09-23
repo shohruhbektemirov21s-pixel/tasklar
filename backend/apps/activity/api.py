@@ -177,6 +177,7 @@ class ActivityViewSet(viewsets.ReadOnlyModelViewSet):
         ustunini `GROUP BY` da qo'llamaydi, `description` esa aynan CLOB
         (`apps/core/queries.py` ga qarang).
         """
+        from apps.projects.models import ProjectFile
         from apps.core.queries import related_count
 
         qs = Project.objects.filter(deleted_at__isnull=True)
@@ -195,6 +196,7 @@ class ActivityViewSet(viewsets.ReadOnlyModelViewSet):
 
         qs = qs.select_related("manager").annotate(
             activity_count=related_count(Activity, group_by="project"),
+            files_count=related_count(ProjectFile, group_by="project"),
             last_activity=Subquery(
                 Activity.objects.filter(project=OuterRef("pk"))
                 .order_by("-created_at").values("created_at")[:1]),
@@ -210,6 +212,7 @@ class ActivityViewSet(viewsets.ReadOnlyModelViewSet):
             "is_public": p.is_public,
             "manager_name": p.manager.full_name if p.manager else "",
             "activity_count": p.activity_count,
+            "files_count": p.files_count,
             "last_activity": p.last_activity,
         } for p in qs[:200]])
 

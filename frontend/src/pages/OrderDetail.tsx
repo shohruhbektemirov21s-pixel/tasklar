@@ -233,12 +233,16 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   const [historyOpen, setHistoryOpen] = useState(false);
   const [filesOpen, setFilesOpen] = useState(true);
   const totalFilesCount = useMemo(() => {
-    if (!item) return 1;
-    const atts = item.attachments && item.attachments.length > 0
-      ? item.attachments.length
-      : item.tz_file_url ? 1 : 0;
-    const comp = item.completion_file_url ? 1 : 0;
-    return atts + comp + 1; 
+    if (!item) return 0;
+    if (typeof item.files_count === "number") return item.files_count;
+    const atts = item.attachments || [];
+    const attNames = new Set(atts.map((a) => a.original_name));
+    let count = atts.length;
+    if (item.tz_file_url && (!item.tz_file_name || !attNames.has(item.tz_file_name))) {
+      count += 1;
+    }
+    if (item.completion_file_url) count += 1;
+    return count;
   }, [item]);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
@@ -1799,12 +1803,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   </span>
                   <span
                     style={{
-                      background: "#e2e8f0",
-                      color: "#475569",
+                      background: "var(--surface-3, #e2e8f0)",
+                      color: "var(--text-secondary, #475569)",
                       fontSize: 11,
                       fontWeight: 600,
                       padding: "1px 8px",
                       borderRadius: 10,
+                      border: "1px solid var(--border, transparent)",
+                      fontFamily: "var(--mono, inherit)",
                     }}
                   >
                     {totalFilesCount} {tx("common.ta")}
@@ -1833,37 +1839,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {item.attachments && item.attachments.length > 0 ? (
-                    item.attachments.map((att) => (
-                      <button
-                        key={att.id}
-                        type="button"
-                        onClick={() => setPreviewFile({ url: att.url, name: att.original_name, size: att.size_display })}
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid var(--border-color, #e2e8f0)",
-                          borderRadius: 8,
-                          padding: "8px 12px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                          cursor: "pointer",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          color: "var(--text, #1e293b)",
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                          textAlign: "left",
-                          width: "100%",
-                        }}
-                        title={tx("orders.veb_saytda_ochish")}
-                      >
-                        <DocLilacIcon size={18} color="#8b5cf6" />
-                        <span style={{ textAlign: "left", flex: 1, wordBreak: "break-word" }}>
-                          {att.original_name} {att.size_display ? `(${att.size_display})` : ""}
-                        </span>
-                      </button>
-                    ))
-                  ) : item.tz_file_url ? (
+                  {/* Asosiy TZ hujjati (agar attachments ichida aynan shu nom bilan takrorlanmagan bo'lsa) */}
+                  {item.tz_file_url && (!item.attachments || !item.attachments.some((a) => a.original_name === item.tz_file_name)) && (
                     <button
                       type="button"
                       onClick={() => setPreviewFile({ url: item.tz_file_url!, name: item.tz_file_name || "TZ_fayli", size: item.tz_file_size_display })}
@@ -1890,7 +1867,38 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                         {item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}
                       </span>
                     </button>
-                  ) : (
+                  )}
+                  {/* Biriktirilgan ilova fayllar */}
+                  {item.attachments && item.attachments.map((att) => (
+                    <button
+                      key={att.id}
+                      type="button"
+                      onClick={() => setPreviewFile({ url: att.url, name: att.original_name, size: att.size_display })}
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid var(--border-color, #e2e8f0)",
+                        borderRadius: 8,
+                        padding: "8px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        cursor: "pointer",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "var(--text, #1e293b)",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                        textAlign: "left",
+                        width: "100%",
+                      }}
+                      title={tx("orders.veb_saytda_ochish")}
+                    >
+                      <DocLilacIcon size={18} color="#8b5cf6" />
+                      <span style={{ textAlign: "left", flex: 1, wordBreak: "break-word" }}>
+                        {att.original_name} {att.size_display ? `(${att.size_display})` : ""}
+                      </span>
+                    </button>
+                  ))}
+                  {(!item.tz_file_url && (!item.attachments || item.attachments.length === 0) && !item.completion_file_url) && (
                     <div style={{ padding: "8px", fontSize: 12.5, color: "#64748b", textAlign: "center" }}>
                       {tx("orders.fayllar_yoq", undefined, "Fayllar mavjud emas")}
                     </div>

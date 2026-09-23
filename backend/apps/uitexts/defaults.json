@@ -1379,12 +1379,56 @@
     "value": "Hujjat yuklanmagan.",
     "note": "pages/Feed.tsx"
   },
+  "feed.barcha_amallar": {
+    "value": "Barcha amallar lentasi",
+    "note": "pages/Feed.tsx"
+  },
+  "feed.eski_versiyalar": {
+    "value": "Eski versiyalar",
+    "note": "pages/Feed.tsx"
+  },
+  "feed.fayllar_va_tarix": {
+    "value": "Fayllar va tarix",
+    "note": "pages/Feed.tsx"
+  },
+  "feed.fayllar_yoq": {
+    "value": "Ushbu loyihaga hali hujjat yuklanmagan.",
+    "note": "pages/Feed.tsx"
+  },
   "feed.keyingi": {
     "value": "Keyingi →",
     "note": "pages/Feed.tsx"
   },
+  "feed.korish": {
+    "value": "Ko'rish",
+    "note": "pages/Feed.tsx"
+  },
+  "feed.loyiha_amallari": {
+    "value": "Loyiha amallari xronologiyasi",
+    "note": "pages/Feed.tsx"
+  },
   "feed.loyiha_fayllari": {
     "value": "Loyiha fayllari",
+    "note": "pages/Feed.tsx"
+  },
+  "feed.loyiha_sahifasiga_otish": {
+    "value": "Loyiha sahifasiga o'tish",
+    "note": "pages/Feed.tsx"
+  },
+  "feed.loyihaga_oid_fayllar": {
+    "value": "Loyihaga oid fayllar va ularning tarixi",
+    "note": "pages/Feed.tsx"
+  },
+  "feed.loyihalar_kesimida": {
+    "value": "Loyihalar va fayllar tarixi",
+    "note": "pages/Feed.tsx"
+  },
+  "feed.ta_eski_nusxa": {
+    "value": "ta eski nusxa",
+    "note": "pages/Feed.tsx"
+  },
+  "feed.tahrir_tarixi": {
+    "value": "Tahrir tarixi",
     "note": "pages/Feed.tsx"
   },
   "feed.loyiha_qidirish": {
@@ -5417,6 +5461,10 @@
   },
   "project_form.buyurtma_fayllari_biriktiriladi": {
     "value": "Buyurtmaga biriktirilgan fayllar loyihaga avtomatik biriktiriladi:",
+    "note": "pages/ProjectForm.tsx"
+  },
+  "project_form.buyurtma_fayli_biriktirildi": {
+    "value": "Buyurtma fayli biriktirildi",
     "note": "pages/ProjectForm.tsx"
   },
   "project_form.asosiy_tz": {

@@ -284,9 +284,6 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 if f not in uploaded_files:
                     uploaded_files.append(f)
 
-        single_tz = self.request.FILES.get("tz_file")
-        if single_tz and single_tz not in uploaded_files:
-            uploaded_files.append(single_tz)
 
         if uploaded_files:
             validate_order_files(uploaded_files)

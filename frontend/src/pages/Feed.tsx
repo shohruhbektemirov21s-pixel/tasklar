@@ -1,31 +1,28 @@
 /**
- * Umumiy tarix — Activity History.
+ * Umumiy tarix — Loyihalar va fayllar tarixi.
  *
- * Professional axborot markazi:
- * - Foydalanuvchi
- * - Harakat (Amal)
- * - Obyekt
- * - Sana
- * - Vaqt
+ * Loyihalar kesimida:
+ * - Har bir loyihaning amallar va fayllar soni
+ * - Bosilganda loyihaga oid barcha fayllar, ularning tahrir tarixi (versiyalari)
+ * - Har bir faylni ko'rish (FilePreviewModal) va yuklab olish imkoniyati
+ * - Loyihaning so'nggi amallar lentasi
  */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api/client";
-import { useAuth } from "@/auth/AuthContext";
-import type { Activity, UserBrief } from "@/api/types";
+import type { Activity, ActivityProjectRow, ProjectFile } from "@/api/types";
 import {
-  Avatar,
-  DateField,
   EmptyState,
   FilterBar,
   PageHeader,
   TableSkeleton,
-  fmtDate,
   fmtDateTime,
   timeAgo,
 } from "@/components/ui";
-import { toProject, toTask, useNavParams } from "@/nav";
+import { toTask, useNavParams } from "@/nav";
 import { tx } from "@/i18n";
+import { IconChevron, IconDownload, IconEye, IconFile } from "@/components/icons";
+import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 
 function formatSummaryText(summary: string, cleanCode?: string) {
   let s = summary || "";
@@ -47,137 +44,417 @@ const CATEGORY_COLORS: Record<string, { bg: string; color: string; label: string
   system: { bg: "rgba(100, 116, 139, 0.1)", color: "#64748b", label: "Tizim" },
 };
 
-export default function Feed() {
-  const { meta } = useAuth();
-  const [params, setParams] = useNavParams();
-
-  const [items, setItems] = useState<Activity[] | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
-  const [users, setUsers] = useState<UserBrief[]>([]);
+/** Loyiha hujjatlari va ularning tahrir tarixi (versiyalari) */
+function ProjectDocumentsSection({
+  projectId,
+  onPreview,
+}: {
+  projectId: number;
+  onPreview: (file: PreviewFile) => void;
+}) {
+  const [files, setFiles] = useState<ProjectFile[] | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const search = params.get("q") || "";
-  const actor = params.get("actor") || "";
-  const category = params.get("category") || "";
-  const date = params.get("date") || "";
-  const page = Number(params.get("page") || 1);
-  const pageSize = 20;
-
-  // Foydalanuvchilarni yuklash
   useEffect(() => {
     let alive = true;
-    api.get<UserBrief[]>("/chat/messages/people/")
-      .then((data) => {
-        if (alive && Array.isArray(data)) setUsers(data);
-      })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, []);
-
-  // Tarixni yuklash
-  const loadHistory = useCallback(async () => {
     setLoading(true);
-    try {
-      const resp = await api.get<{ results?: Activity[]; count?: number }>("/activity/", {
-        search: search || undefined,
-        actor: actor || undefined,
-        category: category || undefined,
-        date: date || undefined,
-        page,
-        page_size: pageSize,
+    api.get<ProjectFile[]>(`/projects/${projectId}/files/`)
+      .then((data) => {
+        if (alive) setFiles(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (alive) setFiles([]);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
       });
-      setItems(resp.results || []);
-      setTotalCount(resp.count || 0);
-    } catch {
-      setItems([]);
-      setTotalCount(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, actor, category, date, page]);
+    return () => {
+      alive = false;
+    };
+  }, [projectId]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: "16px", display: "flex", gap: "10px", alignItems: "center", color: "var(--muted)" }}>
+        <span className="spinner-xs" />
+        <span style={{ fontSize: 13 }}>Yuklanmoqda...</span>
+      </div>
+    );
+  }
+
+  if (!files || files.length === 0) {
+    return (
+      <div
+        style={{
+          padding: "16px",
+          background: "var(--surface-2, #f8fafc)",
+          border: "1px dashed var(--border-color, #e2e8f0)",
+          borderRadius: 8,
+          textAlign: "center",
+          color: "var(--muted)",
+          fontSize: 13,
+        }}
+      >
+        📁 {tx("feed.fayllar_yoq", undefined, "Ushbu loyihaga hali hujjat yuklanmagan.")}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {files.map((f) => (
+        <div
+          key={f.id}
+          style={{
+            background: "var(--surface-1, #ffffff)",
+            border: "1px solid var(--border-color, #e2e8f0)",
+            borderRadius: 8,
+            padding: "12px 14px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+              <div style={{ color: "#8b5cf6", flexShrink: 0 }}>
+                <IconFile size={20} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => f.url && onPreview({ url: f.url, name: f.original_name, size: f.size_display })}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      font: "inherit",
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      color: "var(--accent, #2563eb)",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      textDecoration: "underline",
+                    }}
+                    title="Veb-saytda ochish / ko'rish"
+                  >
+                    {f.original_name}
+                  </button>
+                  <span
+                    style={{
+                      background: "var(--surface-3, #e2e8f0)",
+                      color: "var(--text-secondary, #475569)",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "1px 6px",
+                      borderRadius: 6,
+                    }}
+                  >
+                    v{f.version}
+                  </span>
+                </div>
+                <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2 }}>
+                  {f.size_display}
+                  {f.uploaded_by && ` · ${f.uploaded_by.full_name}`}
+                  {f.doc_date && ` · Hujjat sanasi: ${fmtDateTime(f.doc_date)}`}
+                  {f.created_at && ` · Yuklangan: ${timeAgo(f.created_at)}`}
+                  {f.description && ` · «${f.description}»`}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {f.url && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline"
+                  onClick={() => onPreview({ url: f.url!, name: f.original_name, size: f.size_display })}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12 }}
+                  title="Veb-saytda ko'rish"
+                >
+                  <IconEye size={14} />
+                  <span>{tx("feed.korish", undefined, "Ko'rish")}</span>
+                </button>
+              )}
+              {f.url && (
+                <a
+                  href={f.url}
+                  download={f.original_name}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-sm btn-ghost"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, textDecoration: "none" }}
+                  title="Yuklab olish"
+                >
+                  <IconDownload size={14} />
+                  <span>{tx("feed.yuklab_olish", undefined, "Yuklab olish")}</span>
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Versiyalar / Tahrir tarixi */}
+          {f.versions && f.versions.length > 0 && (
+            <details style={{ marginTop: 4, background: "var(--surface-2, #f8fafc)", borderRadius: 6, padding: "6px 10px" }}>
+              <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--text-secondary, #475569)" }}>
+                🕒 {tx("feed.tahrir_tarixi", undefined, "Tahrir tarixi")} ({f.versions.length} {tx("feed.ta_eski_nusxa", undefined, "ta eski nusxa")})
+              </summary>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8, paddingLeft: 8 }}>
+                {f.versions.map((ver) => (
+                  <div
+                    key={ver.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 8,
+                      fontSize: 12,
+                      padding: "4px 0",
+                      borderBottom: "1px dashed var(--border-color, #e2e8f0)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+                      <span style={{ fontWeight: 700, color: "var(--muted)", minWidth: 26 }}>
+                        v{ver.version}
+                      </span>
+                      <span style={{ fontWeight: 500, color: "var(--text)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {ver.original_name}
+                      </span>
+                      <span style={{ color: "var(--muted)", fontSize: 11 }}>
+                        ({ver.size_display})
+                      </span>
+                      {ver.uploaded_by && (
+                        <span style={{ color: "var(--muted)", fontSize: 11 }}>
+                          · {ver.uploaded_by.full_name}
+                        </span>
+                      )}
+                      {ver.created_at && (
+                        <span style={{ color: "var(--muted)", fontSize: 11 }}>
+                          · {fmtDateTime(ver.created_at)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {ver.url && (
+                        <button
+                          type="button"
+                          className="btn btn-xs btn-outline"
+                          onClick={() => onPreview({ url: ver.url!, name: ver.original_name, size: ver.size_display })}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11 }}
+                        >
+                          <IconEye size={12} />
+                          <span>{tx("feed.korish", undefined, "Ko'rish")}</span>
+                        </button>
+                      )}
+                      {ver.url && (
+                        <a
+                          href={ver.url}
+                          download={ver.original_name}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn btn-xs btn-ghost"
+                          style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, textDecoration: "none" }}
+                        >
+                          <IconDownload size={12} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Loyiha amallari lentasi */
+function ProjectTimelineSection({ projectId }: { projectId: number }) {
+  const [items, setItems] = useState<Activity[] | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void loadHistory();
-  }, [loadHistory]);
+    let alive = true;
+    setLoading(true);
+    api.get<{ results?: Activity[] }>(`/activity/`, { project: projectId, page_size: 15 })
+      .then((data) => {
+        if (alive) setItems(data.results || []);
+      })
+      .catch(() => {
+        if (alive) setItems([]);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [projectId]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: "16px", display: "flex", gap: "10px", alignItems: "center", color: "var(--muted)" }}>
+        <span className="spinner-xs" />
+        <span style={{ fontSize: 13 }}>Yuklanmoqda...</span>
+      </div>
+    );
+  }
+
+  if (!items || items.length === 0) {
+    return (
+      <div style={{ padding: "14px", color: "var(--muted)", fontSize: 12.5 }}>
+        Ushbu loyihada hali faoliyat yozuvlari mavjud emas.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {items.map((a) => {
+        const dt = fmtDateTime(a.created_at);
+        const catStyle = CATEGORY_COLORS[a.category] || CATEGORY_COLORS.system;
+        return (
+          <div
+            key={a.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "8px 12px",
+              background: "var(--surface-1, #fff)",
+              borderRadius: 6,
+              border: "1px solid var(--border-color, #e2e8f0)",
+              fontSize: 12.5,
+              gap: 10,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+              <span
+                style={{
+                  display: "inline-block",
+                  padding: "1px 6px",
+                  borderRadius: 4,
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  background: catStyle.bg,
+                  color: catStyle.color,
+                  flexShrink: 0,
+                }}
+              >
+                {catStyle.label}
+              </span>
+              <span style={{ fontWeight: 600, color: "var(--text)" }}>
+                {a.actor?.full_name || "Tizim"}:
+              </span>
+              <span style={{ color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {formatSummaryText(a.summary, a.task_code || undefined)}
+              </span>
+              {a.task && a.task_code && (
+                <Link
+                  {...toTask(a.task)}
+                  style={{
+                    fontWeight: 600,
+                    color: "var(--accent)",
+                    fontFamily: "var(--mono, monospace)",
+                    fontSize: 12,
+                    flexShrink: 0,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  #{a.task_code}
+                </Link>
+              )}
+            </div>
+            <span style={{ fontSize: 11, color: "var(--muted)", flexShrink: 0 }}>
+              {dt} ({timeAgo(a.created_at)})
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function Feed() {
+  const [params, setParams] = useNavParams();
+
+  // Loyihalar holati
+  const [projects, setProjects] = useState<ActivityProjectRow[] | null>(null);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const projectSearch = params.get("q") || "";
+  const openProjectId = params.get("loyiha") ? Number(params.get("loyiha")) : null;
+
+  // Fayl preview modal
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
+
+  // Loyihalar bo'yicha ma'lumotlarni yuklash
+  const loadProjects = useCallback(async () => {
+    setProjectsLoading(true);
+    try {
+      const data = await api.get<ActivityProjectRow[]>("/activity/by-project/", {
+        q: projectSearch || undefined,
+      });
+      setProjects(Array.isArray(data) ? data : []);
+    } catch {
+      setProjects([]);
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, [projectSearch]);
+
+  useEffect(() => {
+    void loadProjects();
+  }, [loadProjects]);
 
   function setParam(key: string, val: string) {
     const next = new URLSearchParams(params);
     if (val) next.set(key, val);
     else next.delete(key);
-    if (key !== "page") next.delete("page");
     setParams(next);
   }
 
-  function clearFilters() {
-    setParams(new URLSearchParams());
+  function toggleProject(projId: number) {
+    const next = new URLSearchParams(params);
+    if (openProjectId === projId) {
+      next.delete("loyiha");
+    } else {
+      next.set("loyiha", String(projId));
+    }
+    setParams(next);
   }
-
-  const totalPages = Math.ceil(totalCount / pageSize) || 1;
-  const hasActiveFilters = Boolean(search || actor || category || date);
 
   return (
     <div className="content" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* 1. Page Header */}
       <PageHeader
         title={tx("feed.umumiy_tarix")}
-        subtitle="Tizimdagi barcha foydalanuvchilar va loyihalar bo'yicha amallar xronologiyasi"
+        subtitle="Tizimdagi barcha loyihalar bo'yicha hujjatlar va faoliyat xronologiyasi"
         breadcrumbs={[
           { label: tx("nav.bosh_sahifa") || "Bosh sahifa", href: "/" },
           { label: tx("feed.umumiy_tarix") },
         ]}
       />
 
-      {/* 2. Filter Bar */}
+      {/* 2. Loyiha qidirish filtri */}
       <FilterBar>
-        {/* Qidiruv */}
-        <div className="filter-search-box" style={{ minWidth: 260 }}>
+        <div className="filter-search-box" style={{ minWidth: 300, flex: 1 }}>
           <span style={{ color: "var(--text-muted)", fontSize: 13 }}>🔍</span>
           <input
             type="text"
-            placeholder={tx("feed.matn_boyicha") || "Qidiruv (amal, vazifa, loyiha)..."}
-            value={search}
+            placeholder={tx("feed.nom_kalit_yoki_tavsif_boyicha", undefined, "Nom, kalit yoki tavsif bo'yicha qidiruv...")}
+            value={projectSearch}
             onChange={(e) => setParam("q", e.target.value)}
           />
         </div>
-
-        {/* Foydalanuvchi filtri */}
-        <div className="filter-select-box">
-          <label>Foydalanuvchi:</label>
-          <select value={actor} onChange={(e) => setParam("actor", e.target.value)}>
-            <option value="">{tx("common.hammasi") || "Barchasi"}</option>
-            {users.map((u) => (
-              <option key={u.id} value={String(u.id)}>
-                {u.full_name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Amal turi / Turkum */}
-        <div className="filter-select-box">
-          <label>Amal turi:</label>
-          <select value={category} onChange={(e) => setParam("category", e.target.value)}>
-            <option value="">{tx("common.hammasi") || "Barchasi"}</option>
-            {(meta?.activity_category || []).map((c) => (
-              <option key={String(c.value)} value={String(c.value)}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Sana */}
-        <div className="filter-select-box">
-          <label>Sana:</label>
-          <DateField value={date} onChange={(v) => setParam("date", v)} />
-        </div>
-
-        {/* Tozalash */}
-        {hasActiveFilters && (
+        {projectSearch && (
           <button
             type="button"
             className="btn btn-sm btn-subtle"
-            onClick={clearFilters}
+            onClick={() => setParam("q", "")}
             style={{ height: 36, alignSelf: "flex-end" }}
           >
             {tx("common.tozalash") || "Tozalash"}
@@ -185,200 +462,206 @@ export default function Feed() {
         )}
       </FilterBar>
 
-      {/* 3. Main Timeline Table */}
-      <div className="table-card-clean">
-        {loading ? (
-          <TableSkeleton rows={8} />
-        ) : !items || items.length === 0 ? (
+      {/* 3. Loyihalar ro'yxati */}
+      {projectsLoading ? (
+        <TableSkeleton rows={6} />
+      ) : !projects || projects.length === 0 ? (
+        <div className="table-card-clean">
           <EmptyState
-            icon="📜"
-            title={tx("feed.yozuv_topilmadi") || "Faoliyat yozuvlari topilmadi"}
-            message={
-              hasActiveFilters
-                ? tx("feed.filtrni_boshatib_koring") || "Qidiruv yoki filtrlarni o'zgartirib ko'ring."
-                : "Hozircha tizimda hech qanday faoliyat yozuvi mavjud emas."
-            }
-            actionLabel={hasActiveFilters ? (tx("common.tozalash") || "Filtrni tozalash") : undefined}
-            onAction={hasActiveFilters ? clearFilters : undefined}
+            icon="📁"
+            title={projectSearch ? tx("feed.qidiruvni_ozgartirib_koring") || "Loyiha topilmadi" : tx("feed.hali_loyiha_yoq") || "Hali loyiha yo'q"}
+            message={projectSearch ? "Boshqa kalit so'z bilan qidirib ko'ring." : "Tizimda hozircha loyihalar mavjud emas."}
+            actionLabel={projectSearch ? (tx("common.tozalash") || "Filtrni tozalash") : undefined}
+            onAction={projectSearch ? () => setParam("q", "") : undefined}
           />
-        ) : (
-          <>
-            <table className="table-clean">
-              <thead>
-                <tr>
-                  <th style={{ width: "24%" }}>Foydalanuvchi</th>
-                  <th style={{ width: "32%" }}>Harakat (Amal)</th>
-                  <th style={{ width: "22%" }}>Obyekt</th>
-                  <th style={{ width: "11%" }}>Sana</th>
-                  <th style={{ width: "11%", textAlign: "right" }}>Vaqt</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((a) => {
-                  const dt = fmtDateTime(a.created_at);
-                  const [datePart, timePart] = dt.includes(" ") ? dt.split(" ") : [fmtDate(a.created_at), ""];
-                  const catStyle = CATEGORY_COLORS[a.category] || CATEGORY_COLORS.system;
-
-                  return (
-                    <tr key={a.id}>
-                      {/* 1. Foydalanuvchi */}
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          {a.actor ? (
-                            <>
-                              <Avatar user={a.actor} size="sm" />
-                              <div style={{ minWidth: 0 }}>
-                                <span style={{ fontWeight: 600, color: "var(--text)", display: "block" }}>
-                                  {a.actor.full_name}
-                                </span>
-                                {a.actor.specialty_display && (
-                                  <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
-                                    {a.actor.specialty_display}
-                                  </span>
-                                )}
-                              </div>
-                            </>
-                          ) : (
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 18 }}>🤖</span>
-                              <span style={{ fontWeight: 600, color: "var(--text-muted)" }}>Tizim</span>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* 2. Harakat (Amal) */}
-                      <td>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            <span
-                              style={{
-                                display: "inline-block",
-                                padding: "2px 8px",
-                                borderRadius: 6,
-                                fontSize: 11,
-                                fontWeight: 600,
-                                background: catStyle.bg,
-                                color: catStyle.color,
-                              }}
-                            >
-                              {catStyle.label}
-                            </span>
-                            <span style={{ fontSize: 13, color: "var(--text)", fontWeight: 500 }}>
-                              {formatSummaryText(a.summary, a.task_code || undefined)}
-                            </span>
-                          </div>
-                          {a.detail && (
-                            <span style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.4 }}>
-                              {a.detail}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* 3. Obyekt */}
-                      <td>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                          {a.task && a.task_code ? (
-                            <Link
-                              {...toTask(a.task)}
-                              style={{
-                                fontWeight: 600,
-                                color: "var(--accent)",
-                                fontFamily: "var(--mono, monospace)",
-                                fontSize: 13,
-                              }}
-                            >
-                              #{a.task_code}
-                            </Link>
-                          ) : null}
-
-                          {a.project && a.project_name ? (
-                            <Link
-                              {...toProject(a.project)}
-                              style={{
-                                fontSize: 12.5,
-                                color: a.task ? "var(--text-muted)" : "var(--text)",
-                                textDecoration: "none",
-                              }}
-                            >
-                              📁 {a.project_name}
-                            </Link>
-                          ) : null}
-
-                          {!a.task && !a.project && a.target_label ? (
-                            <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-                              {a.target_label}
-                            </span>
-                          ) : null}
-                        </div>
-                      </td>
-
-                      {/* 4. Sana */}
-                      <td>
-                        <span style={{ fontSize: 13, color: "var(--text)", fontWeight: 500 }}>
-                          {datePart}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {projects.map((p) => {
+            const isOpen = openProjectId === p.id;
+            return (
+              <div
+                key={p.id}
+                style={{
+                  background: "var(--surface-1, #ffffff)",
+                  border: isOpen ? "1.5px solid var(--accent, #3b82f6)" : "1px solid var(--border-color, #e2e8f0)",
+                  borderRadius: 12,
+                  boxShadow: isOpen ? "0 4px 12px rgba(0, 0, 0, 0.05)" : "0 1px 3px rgba(0, 0, 0, 0.02)",
+                  overflow: "hidden",
+                  transition: "all 0.18s ease",
+                }}
+              >
+                {/* Loyiha sarlavhasi (bosiladigan qator) */}
+                <div
+                  onClick={() => toggleProject(p.id)}
+                  style={{
+                    padding: "16px 20px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 12,
+                    background: isOpen ? "var(--surface-2, #f8fafc)" : "transparent",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background: p.color || "var(--accent, #3b82f6)",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
+                          {p.name}
                         </span>
-                      </td>
-
-                      {/* 5. Vaqt */}
-                      <td style={{ textAlign: "right" }}>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}>
-                            {timePart || dt}
+                        <span
+                          style={{
+                            background: "var(--surface-3, #e2e8f0)",
+                            color: "var(--text-secondary, #475569)",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: 6,
+                            fontFamily: "var(--mono, monospace)",
+                          }}
+                        >
+                          #{p.key}
+                        </span>
+                        <span className="badge" style={{ fontSize: 11 }}>
+                          {p.status_display}
+                        </span>
+                        {!p.is_public && (
+                          <span className="badge badge-warn" style={{ fontSize: 11 }}>
+                            {tx("feed.yopiq", undefined, "yopiq")}
                           </span>
-                          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                            {timeAgo(a.created_at)}
+                        )}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4, fontSize: 12, color: "var(--muted)" }}>
+                        {p.manager_name && <span>PM: {p.manager_name}</span>}
+                        {p.last_activity && <span>{tx("feed.songgi_harakat", undefined, "so'nggi harakat:")} {timeAgo(p.last_activity)}</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* O'ng tomon: statistika va ochish tugmasi */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span
+                      style={{
+                        background: "rgba(139, 92, 246, 0.1)",
+                        color: "#8b5cf6",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: "3px 10px",
+                        borderRadius: 12,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <IconFile size={13} />
+                      <span>{p.files_count ?? 0} ta fayl</span>
+                    </span>
+
+                    <span
+                      style={{
+                        background: "rgba(59, 130, 246, 0.1)",
+                        color: "#2563eb",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: "3px 10px",
+                        borderRadius: 12,
+                      }}
+                    >
+                      {p.activity_count} ta yozuv
+                    </span>
+
+                    <div
+                      style={{
+                        color: "var(--muted)",
+                        display: "inline-flex",
+                        transform: isOpen ? "rotate(180deg)" : "none",
+                        transition: "transform 0.2s ease",
+                      }}
+                    >
+                      <IconChevron size={18} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ochilgan bo'lim: Fayllar va ularning tarixi hamda amallar */}
+                {isOpen && (
+                  <div
+                    style={{
+                      padding: "20px",
+                      borderTop: "1px solid var(--border-color, #e2e8f0)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 22,
+                      background: "var(--surface-1, #ffffff)",
+                    }}
+                  >
+                    {/* 1-BO'LIM: LOYIHA FAYLLARI VA ULARNING TARIXI */}
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 16 }}>📁</span>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
+                            {tx("feed.loyihaga_oid_fayllar", undefined, "Loyihaga oid fayllar va ularning tarixi")}
                           </span>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <Link
+                          to={`/loyiha/${p.id}/fayllar`}
+                          className="btn btn-xs btn-outline"
+                          style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span>Barcha hujjatlar boshqaruvi →</span>
+                        </Link>
+                      </div>
 
-            {/* Pagination footer */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "14px 20px",
-                borderTop: "1px solid var(--border-muted)",
-              }}
-            >
-              <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                Jami: <strong>{totalCount}</strong> ta yozuv
-              </span>
+                      <ProjectDocumentsSection projectId={p.id} onPreview={setPreviewFile} />
+                    </div>
 
-              {totalPages > 1 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <button
-                    type="button"
-                    className="btn btn-sm"
-                    disabled={page <= 1}
-                    onClick={() => setParam("page", String(page - 1))}
-                  >
-                    Oldingi
-                  </button>
-                  <span style={{ fontSize: 12.5, color: "var(--text-muted)", padding: "0 6px" }}>
-                    {page} / {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    className="btn btn-sm"
-                    disabled={page >= totalPages}
-                    onClick={() => setParam("page", String(page + 1))}
-                  >
-                    Keyingi
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
+                    {/* 2-BO'LIM: LOYIHANING SO'NGGI AMALLAR XRONOLOGIYASI */}
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                        <span style={{ fontSize: 16 }}>⏱️</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
+                          {tx("feed.loyiha_amallari", undefined, "Loyiha amallari xronologiyasi")}
+                        </span>
+                      </div>
+
+                      <ProjectTimelineSection projectId={p.id} />
+                    </div>
+
+                    {/* Pastki harakat tugmasi */}
+                    <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 8, borderTop: "1px dashed var(--border-color, #e2e8f0)" }}>
+                      <Link
+                        to={`/loyiha/${p.id}`}
+                        className="btn btn-sm btn-ghost"
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span>{tx("feed.loyiha_sahifasiga_otish", undefined, "Loyiha sahifasiga o'tish")}</span>
+                        <span>→</span>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Fayl ko'rish (Preview) modali */}
+      <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
     </div>
   );
 }

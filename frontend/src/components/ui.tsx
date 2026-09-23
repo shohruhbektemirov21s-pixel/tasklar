@@ -356,11 +356,21 @@ export function AvatarStack({ users }: { users: UserBrief[] }) {
 
 /* ---------------------------------------------------------------- Nishonlar */
 export function StatusBadge({ task }: { task: Pick<Task, "status" | "status_display"> }) {
-  return <span className={`badge st-${task.status}`}>{task.status_display}</span>;
+  return (
+    <span className={`badge st-${task.status}`}>
+      <span className="badge-dot" aria-hidden="true" />
+      {task.status_display}
+    </span>
+  );
 }
 
 export function Priority({ task }: { task: Pick<Task, "priority" | "priority_label"> }) {
-  return <span className={`pri pri-${task.priority}`}>{task.priority_label}</span>;
+  return (
+    <span className={`pri pri-${task.priority}`}>
+      <span className="pri-dot" aria-hidden="true" />
+      {task.priority_label}
+    </span>
+  );
 }
 
 export function SpecialtyTag({ user, compact = false }: { user?: UserBrief | null; compact?: boolean }) {

@@ -9,20 +9,22 @@ import { IconMoon, IconSun } from "./icons";
 import { useTheme } from "@/theme";
 import { tx } from "@/i18n";
 
-export default function ThemeToggle({ className = "top-icon" }: { className?: string }) {
+export default function ThemeToggle({ className = "top-icon theme-toggle-btn" }: { className?: string }) {
   const { theme, toggle } = useTheme();
   const toLight = theme === "dark";
 
   return (
     <button
       type="button"
-      className={className}
+      className={`${className} theme-${theme}`}
       onClick={toggle}
       title={toLight ? tx("theme_toggle.kunduzgi_rejim") : tx("theme_toggle.kechki_rejim")}
       aria-label={toLight ? tx("theme_toggle.kunduzgi_rejimga_otish") : tx("theme_toggle.kechki_rejimga_otish")}
       aria-pressed={!toLight}
     >
-      {toLight ? <IconSun size={17} /> : <IconMoon size={17} />}
+      <span className="theme-toggle-icon">
+        {toLight ? <IconSun size={17} /> : <IconMoon size={17} />}
+      </span>
     </button>
   );
 }

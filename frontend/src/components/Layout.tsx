@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, Suspense } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, listOf } from "@/api/client";
@@ -203,6 +203,22 @@ export default function Layout() {
     return () => window.clearTimeout(timer);
   }, [q]);
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+
+  // Global hotkey: Ctrl+K yoki Cmd+K bosilganda qidiruv maydoniga tezkor o'tish
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setOpenHits(true);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Sahifa skrollini kuzatish (tepaga qaytish tugmasi uchun)
@@ -316,6 +332,7 @@ export default function Layout() {
               setOpenHits(false);
               go(toFeed(q));
             }}
+            onClick={() => searchInputRef.current?.focus()}
           >
             <IconSearch size={14} />
             {/* `name` va `aria-label` SHART. Placeholder yorliq emas: odam
@@ -324,6 +341,7 @@ export default function Layout() {
                 qololmaydi - Chrome buni «A form field element should have an
                 id or name attribute» deb ogohlantiradi. */}
             <input
+              ref={searchInputRef}
               type="search"
               name="qidiruv"
               aria-label={tx("layout.odam_tarix_va_loyihalardan_qidirish")}
@@ -334,6 +352,9 @@ export default function Layout() {
               /* Havolaga bosilguncha ro'yxat yopilib qolmasin */
               onBlur={() => window.setTimeout(() => setOpenHits(false), 160)}
             />
+            <kbd className="gh-search-kbd" title="Qidiruv (Ctrl+K)">
+              {isMac ? "⌘K" : "Ctrl K"}
+            </kbd>
           </form>
 
           {openHits && q.trim().length >= 2 && (

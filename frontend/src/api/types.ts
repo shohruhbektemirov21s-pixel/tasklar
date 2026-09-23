@@ -388,6 +388,20 @@ export interface Activity {
   created_at: string;
 }
 
+export interface ActivityProjectRow {
+  id: number;
+  name: string;
+  key: string;
+  color: string;
+  status: string;
+  status_display: string;
+  is_public: boolean;
+  manager_name: string;
+  activity_count: number;
+  files_count?: number;
+  last_activity: string | null;
+}
+
 export interface ActivityStats {
   total: number;
   today: number;
@@ -1078,6 +1092,7 @@ export interface ChangeRequestItem {
   tz_file_size?: number;
   tz_file_size_display?: string;
   attachments?: OrderAttachmentItem[];
+  files_count?: number;
   current_state: string;
   requested_change: string;
   reason: string;

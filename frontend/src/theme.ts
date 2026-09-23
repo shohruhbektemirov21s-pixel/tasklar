@@ -18,7 +18,7 @@ export type Theme = "dark" | "light";
 export const THEME_KEY = "teamflow.theme";
 
 export function systemTheme(): Theme {
-  return window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  return "light";
 }
 
 /** Odam tanlagan rejim; tanlamagan bo'lsa `null`. */
@@ -36,7 +36,7 @@ export function storedTheme(): Theme | null {
 export function currentTheme(): Theme {
   const attr = document.documentElement.dataset.theme;
   if (attr === "light" || attr === "dark") return attr;
-  return storedTheme() ?? systemTheme();
+  return storedTheme() ?? "light";
 }
 
 export function applyTheme(theme: Theme) {

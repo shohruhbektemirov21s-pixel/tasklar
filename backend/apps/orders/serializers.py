@@ -181,6 +181,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
     tz_file_url = serializers.SerializerMethodField(read_only=True)
     tz_file_size_display = serializers.SerializerMethodField(read_only=True)
     attachments = OrderAttachmentSerializer(many=True, read_only=True)
+    files_count = serializers.SerializerMethodField(read_only=True)
 
     completion_file = serializers.FileField(required=False, allow_null=True)
     completion_file_url = serializers.SerializerMethodField(read_only=True)
@@ -272,6 +273,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "tz_file_size",
             "tz_file_size_display",
             "attachments",
+            "files_count",
             "current_state",
             "requested_change",
             "reason",
@@ -333,6 +335,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             "has_pending_version",
             "tz_file_name",
             "tz_file_size",
+            "files_count",
             "completion_file_name",
             "completion_file_size",
             "completed_at",
@@ -508,6 +511,16 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
 
     def get_tz_file_size_display(self, obj):
         return obj.tz_file_size_display
+
+    def get_files_count(self, obj):
+        atts = list(obj.attachments.all()) if hasattr(obj, "attachments") else []
+        att_names = {a.original_name for a in atts}
+        count = len(atts)
+        if obj.tz_file and (not obj.tz_file_name or obj.tz_file_name not in att_names):
+            count += 1
+        if getattr(obj, "completion_file", None):
+            count += 1
+        return count
 
     def get_completion_file_url(self, obj):
         from apps.core.media import media_url

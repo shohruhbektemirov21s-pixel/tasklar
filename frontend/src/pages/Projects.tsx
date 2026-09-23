@@ -77,15 +77,15 @@ export default function Projects() {
   const getStatusBadge = (p: Project) => {
     switch (p.status) {
       case "ACTIVE":
-        return <span className="badge badge-info">{tx("projects.holat_faol", undefined, "Faol")}</span>;
+        return <span className="badge badge-info"><span className="badge-dot" aria-hidden="true" />{tx("projects.holat_faol", undefined, "Faol")}</span>;
       case "PLANNING":
-        return <span className="badge">{tx("projects.holat_rejalashtirilgan", undefined, "Rejalashtirilgan")}</span>;
+        return <span className="badge"><span className="badge-dot" aria-hidden="true" />{tx("projects.holat_rejalashtirilgan", undefined, "Rejalashtirilgan")}</span>;
       case "DONE":
-        return <span className="badge badge-ok">{tx("projects.holat_yakunlangan", undefined, "Yakunlangan")}</span>;
+        return <span className="badge badge-ok"><span className="badge-dot" aria-hidden="true" />{tx("projects.holat_yakunlangan", undefined, "Yakunlangan")}</span>;
       case "PAUSED":
-        return <span className="badge badge-warn">{tx("projects.holat_toxtatilgan", undefined, "To'xtatilgan")}</span>;
+        return <span className="badge badge-warn"><span className="badge-dot" aria-hidden="true" />{tx("projects.holat_toxtatilgan", undefined, "To'xtatilgan")}</span>;
       default:
-        return <span className="badge">{p.status_display || p.status}</span>;
+        return <span className="badge"><span className="badge-dot" aria-hidden="true" />{p.status_display || p.status}</span>;
     }
   };
 
