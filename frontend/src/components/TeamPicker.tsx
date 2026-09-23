@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, listOf } from "@/api/client";
 import type { Choice, Task, UserBrief } from "@/api/types";
 import { MAX_FILE_BYTES, fileSize, uploadFiles } from "./FilePicker";
+import DeveloperList from "./DeveloperList";
 import UserSearch from "./UserSearch";
 import { IconCheck, IconClose, IconFile, IconPlus } from "./icons";
 import { Avatar, DateField, fromDateTimeInput, SpecialtyTag } from "./ui";
@@ -173,11 +174,13 @@ interface Props {
   projectStartDate?: string;
   /** Loyiha tugash muddati */
   projectDueDate?: string;
+  /** Qidiruv ostida tizimdagi dasturchilar ro'yxati (`DeveloperList`). */
+  showDevelopers?: boolean;
 }
 
 export default function TeamPicker({
   picks, onChange, roles, priorities, defaultRole = "DEVELOPER", excludeId,
-  projectStartDate, projectDueDate,
+  projectStartDate, projectDueDate, showDevelopers = false,
 }: Props) {
   const { user } = useAuth();
   const isBoss = Boolean(user?.is_boss || user?.global_role === "BOSS");
@@ -246,16 +249,18 @@ export default function TeamPicker({
 
   const total = taskCount(picks);
 
+  const addPick = (u: UserBrief) => onChange([
+    { user: u, role: defaultRole, tasks: [], draft: emptyTask() },
+    ...picks,
+  ]);
+
   return (
     <>
       {/* Yangi qo'shilgan odam ro'yxat BOSHIGA tushadi: ishlanayotgan
           odam ko'z oldida tursin, pastga qarab surilib ketmasin. */}
       <UserSearch
         search={search}
-        onPick={(u) => onChange([
-          { user: u, role: defaultRole, tasks: [], draft: emptyTask() },
-          ...picks,
-        ])}
+        onPick={addPick}
         placeholder={tx("team_picker.email_yoki_ism_familiya")}
         emptyText={tx("common.hech_kim_topilmadi")}
         clearOnPick
@@ -374,6 +379,10 @@ export default function TeamPicker({
             {total > 0 && <> · {total} {tx("team_picker.ta_vazifa")}</>}
           </div>
         </div>
+      )}
+
+      {showDevelopers && (
+        <DeveloperList pickedIds={picks.map((p) => p.user.id)} excludeId={excludeId} onPick={addPick} />
       )}
     </>
   );

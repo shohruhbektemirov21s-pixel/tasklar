@@ -53,7 +53,7 @@ import { confirmDialog } from "@/components/Confirm";
 import { PageHead } from "@/components/Layout";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
-import { Avatar, Card, Empty, ErrorMsg, Loading, OkMsg, Priority, StatusBadge, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
+import { Avatar, Card, Empty, ErrorMsg, Loading, OkMsg, fmtDate, fmtDateTime, timeAgo } from "@/components/ui";
 import { DateField } from "@/components/dates";
 import { toEditOrder, toOrders, toProject, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge } from "./ChangeRequests";
@@ -191,6 +191,10 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   const [pmNotes, setPmNotes] = useState("");
   const [pmSaving, setPmSaving] = useState(false);
   const [claimModalOpen, setClaimModalOpen] = useState(false);
+  // Oyna QAYSI tugmadan ochilgan bo'lsa, o'sha amal uchun: «Qabul qilish» -
+  // muddat va izoh, «Orqaga qaytarish» - faqat sabab. Ilgari ikkala tugma
+  // bitta oynani ochardi va unda ikkala amal yonma-yon turardi.
+  const [claimMode, setClaimMode] = useState<"accept" | "reject">("accept");
   const [claimStartDateInput, setClaimStartDateInput] = useState("");
   const [claimAssignedPmInput, setClaimAssignedPmInput] = useState<number | "">("");
   const [claimDeadlineInput, setClaimDeadlineInput] = useState("");
@@ -419,8 +423,10 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
       setActionError((err as { message?: string })?.message || tx("orders.ochirishda_xatolik"));
     }
   }
-  function handleOpenClaim() {
+  function handleOpenClaim(mode: "accept" | "reject") {
     if (!item) return;
+    setClaimMode(mode);
+    setActionError(null);
     setClaimStartDateInput(item.pm_start_date || "");
     setClaimAssignedPmInput(item.assigned_pm || "");
     setClaimDeadlineInput(item.pm_deadline || item.due_date || "");
@@ -468,7 +474,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
     if (!item) return;
     const reason = claimNotesInput.trim();
     if (!reason) {
-      setActionError("Buyurtmani orqaga qaytarish uchun sabab yoki izohni (PM izohi maydonida) yozing!");
+      setActionError(tx("orders.return_reason_required"));
       return;
     }
     setClaimSubmitting(true);
@@ -1235,15 +1241,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 type="button"
                 className="btn btn-xs btn-outline"
                 style={{ color: "var(--danger)", borderColor: "var(--danger)", fontWeight: 600 }}
-                onClick={handleOpenClaim}
-                title="Buyurtmani sabab bilan orqaga qaytarish"
+                onClick={() => handleOpenClaim("reject")}
               >
                 ↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")}
               </button>
               <button
                 type="button"
                 className="btn btn-xs btn-primary"
-                onClick={handleOpenClaim}
+                onClick={() => handleOpenClaim("accept")}
               >
                 {tx("orders.ishni_qabul_qilish")}
               </button>
@@ -2207,8 +2212,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: "rgba(16, 185, 129, 0.14)",
-                    color: "var(--success)",
+                    background: claimMode === "reject" ? "rgba(239, 68, 68, 0.12)" : "rgba(16, 185, 129, 0.14)",
+                    color: claimMode === "reject" ? "var(--danger)" : "var(--success)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -2217,11 +2222,13 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     flexShrink: 0,
                   }}
                 >
-                  ✓
+                  {claimMode === "reject" ? "↩" : "✓"}
                 </div>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", lineHeight: 1.3 }}>
-                    {item.assigned_pm && (user?.is_platform_admin || user?.is_boss)
+                    {claimMode === "reject"
+                      ? tx("orders.return_modal_title")
+                      : item.assigned_pm && (user?.is_platform_admin || user?.is_boss)
                       ? tx("orders.reassign_pm_modal_title", undefined, "Buyurtmani boshqa PM ga biriktirish")
                       : tx("orders.claim_modal_title")}
                   </div>
@@ -2257,9 +2264,16 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 ✕
               </button>
             </div>
-            <form onSubmit={handleClaimSubmit}>
+            <form
+              onSubmit={(e) => {
+                if (claimMode === "accept") return handleClaimSubmit(e);
+                e.preventDefault();
+                void handleClaimReject();
+              }}
+            >
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
                 {actionError && <ErrorMsg error={actionError} />}
+                {claimMode === "accept" && (<>
                 {item.due_date && (
                   <div
                     style={{
@@ -2349,21 +2363,27 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     />
                   </div>
                 </div>
+                </>)}
 
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
-                    {tx("orders.claim_notes_label")}
+                    {claimMode === "reject" ? tx("orders.return_reason_label") : tx("orders.claim_notes_label")}
+                    {claimMode === "reject" && <span style={{ color: "var(--danger)" }}> *</span>}
                   </label>
                   <textarea
-                    rows={3}
+                    rows={claimMode === "reject" ? 4 : 3}
                     className="textarea"
-                    placeholder={tx("orders.claim_notes_placeholder")}
+                    required={claimMode === "reject"}
+                    autoFocus={claimMode === "reject"}
+                    placeholder={claimMode === "reject"
+                      ? tx("orders.return_reason_placeholder")
+                      : tx("orders.claim_notes_placeholder")}
                     value={claimNotesInput}
                     onChange={(e) => setClaimNotesInput(e.target.value)}
                     style={{ width: "100%", resize: "vertical" }}
                   />
                   <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
-                    {tx("orders.claim_notes_hint")}
+                    {claimMode === "reject" ? tx("orders.return_reason_hint") : tx("orders.claim_notes_hint")}
                   </div>
                 </div>
               </div>
@@ -2378,26 +2398,31 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   gap: 10,
                 }}
               >
-                <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setClaimModalOpen(false)}
+                  disabled={claimSubmitting}
+                >
+                  {tx("common.bekor_qilish")}
+                </button>
+                {claimMode === "reject" ? (
                   <button
-                    type="button"
-                    className="btn btn-ghost"
-                    onClick={() => setClaimModalOpen(false)}
-                    disabled={claimSubmitting}
+                    type="submit"
+                    className="btn btn-danger"
+                    disabled={claimSubmitting || !claimNotesInput.trim()}
+                    style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
                   >
-                    {tx("common.bekor_qilish")}
+                    {claimSubmitting ? (
+                      <>
+                        <span className="spinner-xs" />
+                        <span>{tx("orders.return_submitting")}</span>
+                      </>
+                    ) : (
+                      <span>↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")}</span>
+                    )}
                   </button>
-                  <button
-                    type="button"
-                    className="btn btn-danger btn-outline"
-                    disabled={claimSubmitting}
-                    onClick={handleClaimReject}
-                    style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}
-                    title="Buyurtmani kamchilik yoki sabab bilan orqaga qaytarish"
-                  >
-                    ↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")}
-                  </button>
-                </div>
+                ) : (
                 <button
                   type="submit"
                   className="btn btn-ok"
@@ -2422,6 +2447,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     </>
                   )}
                 </button>
+                )}
               </div>
             </form>
           </div>

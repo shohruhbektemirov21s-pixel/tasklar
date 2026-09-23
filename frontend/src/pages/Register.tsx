@@ -191,7 +191,7 @@ export default function Register() {
                 name="telegram"
                 autoComplete="username"
                 onChange={(e) => set("telegram", e.target.value)}
-                placeholder={tx("register.telegram_placeholder") || "@foydalanuvchi yoki +998901234567"}
+                placeholder={tx("register.telegram_placeholder") || "@foydalanuvchi"}
               />
               {errors.telegram && <div className="err">{errors.telegram}</div>}
             </div>

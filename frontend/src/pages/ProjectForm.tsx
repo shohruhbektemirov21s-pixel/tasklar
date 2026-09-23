@@ -610,6 +610,7 @@ export default function ProjectForm({
               excludeId={user?.id}
               projectStartDate={f.start_date || minAllowedDate}
               projectDueDate={f.due_date}
+              showDevelopers
             />
           </Card>
         )}

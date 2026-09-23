@@ -2947,6 +2947,30 @@
     "value": "Ushbu buyurtmani o'z zimmangizga olish uchun bajarish muddati va vaqtini kiriting.",
     "note": "pages/ChangeRequests.tsx"
   },
+  "orders.return_modal_title": {
+    "value": "Buyurtmani orqaga qaytarish",
+    "note": "pages/OrderDetail.tsx - «Orqaga qaytarish» tugmasi ochadigan oyna"
+  },
+  "orders.return_reason_label": {
+    "value": "Qaytarish sababi",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.return_reason_placeholder": {
+    "value": "Buyurtma nima sababdan qaytarilayotganini yozing...",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.return_reason_hint": {
+    "value": "Sabab buyurtmachiga bildirishnoma orqali yetkaziladi.",
+    "note": "pages/OrderDetail.tsx"
+  },
+  "orders.return_reason_required": {
+    "value": "Buyurtmani orqaga qaytarish uchun sababni yozing.",
+    "note": "pages/OrderDetail.tsx - sabab bo'sh qolganda"
+  },
+  "orders.return_submitting": {
+    "value": "Qaytarilmoqda...",
+    "note": "pages/OrderDetail.tsx"
+  },
   "orders.claim_modal_title": {
     "value": "Buyurtmani qabul qilish va muddat belgilash",
     "note": "pages/ChangeRequests.tsx"
@@ -6240,7 +6264,7 @@
     "note": "pages/Register.tsx"
   },
   "register.telegram_placeholder": {
-    "value": "@foydalanuvchi yoki +998901234567",
+    "value": "@foydalanuvchi",
     "note": "pages/Register.tsx"
   },
   "review_queue.aylana": {
@@ -7706,6 +7730,26 @@
   "team_picker.ta_azo": {
     "value": "ta a'zo",
     "note": "components/TeamPicker.tsx"
+  },
+  "team_picker.dasturchilar": {
+    "value": "Dasturchilar",
+    "note": "components/DeveloperList.tsx - loyiha formasidagi ro'yxat sarlavhasi"
+  },
+  "team_picker.ta_dasturchi": {
+    "value": "{n} ta",
+    "note": "components/DeveloperList.tsx - jami dasturchilar soni"
+  },
+  "team_picker.dasturchi_yoq": {
+    "value": "Tizimda hozircha faol dasturchi yo'q.",
+    "note": "components/DeveloperList.tsx - bo'sh holat"
+  },
+  "team_picker.sahifadagilar_qoshildi": {
+    "value": "Bu sahifadagi dasturchilarning hammasi jamoaga qo'shildi.",
+    "note": "components/DeveloperList.tsx"
+  },
+  "team_picker.jamoaga_qoshish": {
+    "value": "Jamoaga qo'shish",
+    "note": "components/DeveloperList.tsx - qatordagi + tugmasi"
   },
   "team_picker.ta_vazifa": {
     "value": "ta vazifa",
