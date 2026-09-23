@@ -13,6 +13,9 @@ from apps.accounts.models import User
 import seed_demo_data
 
 def clean_database():
+    from django.conf import settings
+    if not settings.DEBUG:
+        raise RuntimeError("clean_database faqat DEBUG=True rejimida ishlatilishi mumkin.")
     print("=" * 65)
     print("TEAMFLOW: MA'LUMOTLAR BAZASINI TOZALASH (CLEAN DATABASE)")
     print("=" * 65)

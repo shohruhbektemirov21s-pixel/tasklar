@@ -56,6 +56,8 @@ class Command(BaseCommand):
         except Exception as e:
             self.stdout.write(self.style.WARNING(f"Ruxsatlarni belgilashda ogohlantirish: {e}"))
 
+        from django.conf import settings
+
         # 2. Xodimlarni yangilash va yaratish
         # Admin
         admin_user = User.objects.filter(email="admin@teamflow.uz").first()
@@ -63,49 +65,68 @@ class Command(BaseCommand):
             admin_user.global_role = GlobalRole.ADMIN
             admin_user.is_staff = True
             admin_user.is_superuser = True
-            admin_user.set_password("admin123")
-            admin_user.save()
-            self.stdout.write(self.style.SUCCESS("Admin sozlandi: admin@teamflow.uz / admin123"))
+            admin_user.save(update_fields=["global_role", "is_staff", "is_superuser"])
+            self.stdout.write(self.style.SUCCESS("Admin sozlandi: admin@teamflow.uz"))
+        elif settings.DEBUG:
+            admin_user = User.objects.create_superuser(
+                email="admin@teamflow.uz",
+                password="admin123",
+                full_name="Tizim Administratori",
+                global_role=GlobalRole.ADMIN,
+            )
+            self.stdout.write(self.style.SUCCESS("Admin yaratildi: admin@teamflow.uz"))
+        else:
+            self.stdout.write(self.style.WARNING("Admin mavjud emas. Produksiyada adminni qo'lda yarating."))
 
         # Menejer (Platformada ishlaydi, admin panelga kirmaydi)
         manager_user = User.objects.filter(email="menejer@teamflow.uz").first()
         if not manager_user:
-            manager_user = User.objects.create_user(
-                email="menejer@teamflow.uz",
-                password="menejer123",
-                full_name="Bobur Rahimov (Menejer)",
-                job_title="Katta Loyiha Menejeri",
-                global_role=GlobalRole.MANAGER,
-                is_staff=False,
-            )
-            self.stdout.write(self.style.SUCCESS("Menejer yaratildi: menejer@teamflow.uz / menejer123"))
+            if settings.DEBUG:
+                manager_user = User.objects.create_user(
+                    email="menejer@teamflow.uz",
+                    password="menejer123",
+                    full_name="Bobur Rahimov (Menejer)",
+                    job_title="Katta Loyiha Menejeri",
+                    global_role=GlobalRole.MANAGER,
+                    is_staff=False,
+                )
+                self.stdout.write(self.style.SUCCESS("Menejer yaratildi: menejer@teamflow.uz"))
+            else:
+                self.stdout.write(self.style.WARNING("Menejer hisobi mavjud emas."))
         else:
             manager_user.is_staff = False
             manager_user.is_superuser = False
             manager_user.global_role = GlobalRole.MANAGER
-            manager_user.save()
+            manager_user.save(update_fields=["is_staff", "is_superuser", "global_role"])
+            self.stdout.write(self.style.SUCCESS("Menejer sozlandi: menejer@teamflow.uz"))
 
-        manager_user.groups.add(manager_group)
+        if manager_user:
+            manager_user.groups.add(manager_group)
 
         # Operator (Platformada ishlaydi, admin panelga kirmaydi)
         operator_user = User.objects.filter(email="operator@teamflow.uz").first()
         if not operator_user:
-            operator_user = User.objects.create_user(
-                email="operator@teamflow.uz",
-                password="operator123",
-                full_name="Dilshod Karimov (Operator)",
-                job_title="Tizim Operatori",
-                global_role=GlobalRole.OPERATOR,
-                is_staff=False,
-            )
-            self.stdout.write(self.style.SUCCESS("Operator yaratildi: operator@teamflow.uz / operator123"))
+            if settings.DEBUG:
+                operator_user = User.objects.create_user(
+                    email="operator@teamflow.uz",
+                    password="operator123",
+                    full_name="Dilshod Karimov (Operator)",
+                    job_title="Tizim Operatori",
+                    global_role=GlobalRole.OPERATOR,
+                    is_staff=False,
+                )
+                self.stdout.write(self.style.SUCCESS("Operator yaratildi: operator@teamflow.uz"))
+            else:
+                self.stdout.write(self.style.WARNING("Operator hisobi mavjud emas."))
         else:
             operator_user.is_staff = False
             operator_user.is_superuser = False
             operator_user.global_role = GlobalRole.OPERATOR
-            operator_user.save()
+            operator_user.save(update_fields=["is_staff", "is_superuser", "global_role"])
+            self.stdout.write(self.style.SUCCESS("Operator sozlandi: operator@teamflow.uz"))
 
-        operator_user.groups.add(operator_group)
+        if operator_user:
+            operator_user.groups.add(operator_group)
 
         # Faqat ADMIN ga is_staff=True qoldiramiz, boshqa barcha foydalanuvchilardan is_staff ni olib tashlaymiz
         User.objects.exclude(global_role=GlobalRole.ADMIN).update(is_staff=False, is_superuser=False)

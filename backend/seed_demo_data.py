@@ -16,6 +16,9 @@ DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "password123")
 
 
 def run_seed():
+    from django.conf import settings
+    if not settings.DEBUG:
+        raise RuntimeError("run_seed faqat DEBUG=True rejimida ishlatilishi mumkin.")
     print("Seed skripti boshlandi...")
 
     # 1. Akkauntlarni yaratish

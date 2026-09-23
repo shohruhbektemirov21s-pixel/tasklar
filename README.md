@@ -65,9 +65,10 @@ docker exec teamflow_backend python manage.py seed_ui_texts
 docker exec teamflow_backend python manage.py bootstrap_boss
 ```
 
-### 4. Standart kirish hisoblari:
-* **Tizim administratori:** `admin@teamflow.uz` / `admin12345`
-* **Boshliq hisobi:** `boshliq@teamflow.uz` / `boshliq12345`
+### 4. Kirish hisoblari:
+* Hisob parollari `.env` fayli orqali sozlanadi (`ADMIN_PASSWORD`, `BOSS_PASSWORD`).
+* **Tizim administratori:** `admin@teamflow.uz`
+* **Boshliq hisobi:** `boshliq@teamflow.uz`
 
 ---
 
