@@ -556,7 +556,7 @@ export default function OrderForm() {
               </span>
             )}
             {autoSaveStatus === "saved" && (
-              <span style={{ fontSize: 12, color: "#059669", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}>
+              <span style={{ fontSize: 12, color: "var(--success)", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}>
                 <span>✓</span> {tx("orders.autosave_saved")} {lastSavedTime ? `(${lastSavedTime})` : ""}
               </span>
             )}
@@ -736,11 +736,11 @@ export default function OrderForm() {
                 </label>
                 <div
                   style={{
-                    border: "2px dashed var(--border-color, #cbd5e1)",
+                    border: "2px dashed var(--border)",
                     borderRadius: 8,
                     padding: "16px 20px",
                     textAlign: "center",
-                    background: "var(--surface-2, #f8fafc)",
+                    background: "var(--surface-2)",
                     cursor: "pointer",
                   }}
                   onClick={() => document.getElementById(`${fid}-files`)?.click()}
@@ -760,7 +760,7 @@ export default function OrderForm() {
                     }}
                   />
                   <div style={{ fontSize: 24, marginBottom: 4 }}>📎</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text, #0f172a)" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
                     {tx("orders.dropzone_prompt")}
                   </div>
                   <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>
@@ -782,8 +782,8 @@ export default function OrderForm() {
                           alignItems: "center",
                           justifyContent: "space-between",
                           padding: "6px 12px",
-                          background: "rgba(16, 185, 129, 0.08)",
-                          border: "1px solid rgba(16, 185, 129, 0.25)",
+                          background: "var(--success-soft)",
+                          border: "1px solid var(--success-border)",
                           borderRadius: 6,
                           fontSize: 12,
                         }}
@@ -825,8 +825,8 @@ export default function OrderForm() {
                           alignItems: "center",
                           justifyContent: "space-between",
                           padding: "6px 12px",
-                          background: "var(--surface-2, #f1f5f9)",
-                          border: "1px solid var(--border-color, #e2e8f0)",
+                          background: "var(--surface-2)",
+                          border: "1px solid var(--border)",
                           borderRadius: 6,
                           fontSize: 12,
                         }}
@@ -880,7 +880,7 @@ export default function OrderForm() {
                   alignItems: "center",
                   marginTop: 18,
                   paddingTop: 12,
-                  borderTop: "1px solid #f1f5f9",
+                  borderTop: "1px solid var(--border-muted)",
                 }}
               >
                 <div
@@ -888,19 +888,19 @@ export default function OrderForm() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 8,
-                    background: "#ffffff",
-                    border: "1px solid #0f172a",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border-strong)",
                     borderRadius: 6,
                     padding: "5px 12px",
                     fontSize: 12,
-                    color: "#0f172a",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                    color: "var(--text)",
+                    boxShadow: "var(--shadow-xs)",
                   }}
                 >
-                  <span style={{ color: "#475569", fontWeight: 500 }}>
+                  <span style={{ color: "var(--text-secondary)", fontWeight: 500 }}>
                     {editing ? tx("orders.yaratilgan_vaqti_label") : tx("orders.sana_vaqt_label")}
                   </span>
-                  <strong style={{ fontWeight: 700, color: "#000000" }}>
+                  <strong style={{ fontWeight: 700, color: "var(--text)" }}>
                     {editing && existingItem?.created_at
                       ? fmtDateTime(existingItem.created_at)
                       : fmtDateTime(now.toISOString())}

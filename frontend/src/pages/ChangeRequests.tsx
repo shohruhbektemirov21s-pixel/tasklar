@@ -660,7 +660,7 @@ export default function ChangeRequests() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.jami_sorovlar")}
                   </div>
                   <div style={{ fontSize: 24, fontWeight: 750, color: "var(--text)", lineHeight: 1 }}>
@@ -709,7 +709,7 @@ export default function ChangeRequests() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.yangi")}
                   </div>
                   <div style={{ fontSize: 24, fontWeight: 750, color: "var(--text)", lineHeight: 1 }}>
@@ -726,7 +726,7 @@ export default function ChangeRequests() {
                 }}
                 style={{
                   background: "var(--surface)",
-                  border: statusFilter === "IN_PROGRESS" ? "2px solid #EA580C" : "1px solid var(--border)",
+                  border: statusFilter === "IN_PROGRESS" ? "2px solid var(--attention)" : "1px solid var(--border)",
                   borderRadius: 14,
                   padding: "16px 18px",
                   cursor: "pointer",
@@ -743,20 +743,20 @@ export default function ChangeRequests() {
                     width: 44,
                     height: 44,
                     borderRadius: 12,
-                    background: "#FFF7ED",
+                    background: "var(--attention-soft)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--attention)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.jarayonda")}
                   </div>
                   <div style={{ fontSize: 24, fontWeight: 750, color: "var(--text)", lineHeight: 1 }}>
@@ -773,7 +773,7 @@ export default function ChangeRequests() {
                 }}
                 style={{
                   background: "var(--surface)",
-                  border: statusFilter === "COMPLETED" ? "2px solid #059669" : "1px solid var(--border)",
+                  border: statusFilter === "COMPLETED" ? "2px solid var(--success)" : "1px solid var(--border)",
                   borderRadius: 14,
                   padding: "16px 18px",
                   cursor: "pointer",
@@ -790,20 +790,20 @@ export default function ChangeRequests() {
                     width: 44,
                     height: 44,
                     borderRadius: 12,
-                    background: "#ECFDF5",
+                    background: "var(--success-soft)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                     <polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.tugallangan")}
                   </div>
                   <div style={{ fontSize: 24, fontWeight: 750, color: "var(--text)", lineHeight: 1 }}>
@@ -820,7 +820,7 @@ export default function ChangeRequests() {
                 }}
                 style={{
                   background: "var(--surface)",
-                  border: statusFilter === "REJECTED" ? "2px solid #DC2626" : "1px solid var(--border)",
+                  border: statusFilter === "REJECTED" ? "2px solid var(--danger)" : "1px solid var(--border)",
                   borderRadius: 14,
                   padding: "16px 18px",
                   cursor: "pointer",
@@ -837,21 +837,21 @@ export default function ChangeRequests() {
                     width: 44,
                     height: 44,
                     borderRadius: 12,
-                    background: "#FEF2F2",
+                    background: "var(--danger-soft)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <line x1="15" y1="9" x2="9" y2="15" />
                     <line x1="9" y1="9" x2="15" y2="15" />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.bekor_qilingan")}
                   </div>
                   <div style={{ fontSize: 24, fontWeight: 750, color: "var(--text)", lineHeight: 1 }}>
@@ -905,7 +905,7 @@ export default function ChangeRequests() {
                 height: 42,
                 borderRadius: 8,
                 border: "1px solid var(--border)",
-                background: "var(--canvas-inset, var(--surface-2))",
+                background: "var(--canvas-inset)",
                 fontSize: 13,
                 boxSizing: "border-box",
                 color: "var(--text)",
@@ -957,7 +957,7 @@ export default function ChangeRequests() {
                 top: "50%",
                 transform: "translateY(-50%)",
                 pointerEvents: "none",
-                color: "#64748b",
+                color: "var(--muted)",
                 display: "flex",
                 alignItems: "center",
               }}
@@ -1000,7 +1000,7 @@ export default function ChangeRequests() {
                 top: "50%",
                 transform: "translateY(-50%)",
                 pointerEvents: "none",
-                color: "#64748b",
+                color: "var(--muted)",
                 display: "flex",
                 alignItems: "center",
               }}
@@ -1048,7 +1048,7 @@ export default function ChangeRequests() {
                   top: "50%",
                   transform: "translateY(-50%)",
                   pointerEvents: "none",
-                  color: "#64748b",
+                  color: "var(--muted)",
                   display: "flex",
                   alignItems: "center",
                 }}
@@ -1095,7 +1095,7 @@ export default function ChangeRequests() {
                   top: "50%",
                   transform: "translateY(-50%)",
                   pointerEvents: "none",
-                  color: "#64748b",
+                  color: "var(--muted)",
                   display: "flex",
                   alignItems: "center",
                 }}
@@ -1142,7 +1142,7 @@ export default function ChangeRequests() {
                   top: "50%",
                   transform: "translateY(-50%)",
                   pointerEvents: "none",
-                  color: "#64748b",
+                  color: "var(--muted)",
                   display: "flex",
                   alignItems: "center",
                 }}
@@ -1184,8 +1184,8 @@ export default function ChangeRequests() {
         {error && (
           <div
             style={{
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
+              background: "var(--danger-soft)",
+              border: "1px solid var(--danger-border)",
               borderRadius: 12,
               padding: "16px 20px",
               marginBottom: 20,
@@ -1199,10 +1199,10 @@ export default function ChangeRequests() {
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ fontSize: 22 }}>⚠️</span>
               <div>
-                <div style={{ fontWeight: 700, color: "#991b1b", fontSize: 13.5 }}>
+                <div style={{ fontWeight: 700, color: "var(--danger)", fontSize: 13.5 }}>
                   {tx("orders.err_loading_data")}
                 </div>
-                <div style={{ color: "#b91c1c", fontSize: 12.5, marginTop: 2 }}>
+                <div style={{ color: "var(--danger)", fontSize: 12.5, marginTop: 2 }}>
                   {error ? String(error) : ""}
                 </div>
               </div>
@@ -1367,13 +1367,13 @@ export default function ChangeRequests() {
                   alignItems: "center",
                   justifyContent: "space-between",
                   padding: "16px 20px",
-                  background: "#fff",
-                  borderTop: "1px solid #f1f5f9",
+                  background: "var(--surface)",
+                  borderTop: "1px solid var(--border-muted)",
                   flexWrap: "wrap",
                   gap: 12,
                 }}
               >
-                <div style={{ fontSize: 13, color: "#64748b" }}>
+                <div style={{ fontSize: 13, color: "var(--muted)" }}>
                   {tx("orders.jami_ta_buyurtma", { n: total })}
                 </div>
                 {pages > 1 && <Pager page={page} pages={pages} onPick={setPage} />}
@@ -1383,21 +1383,21 @@ export default function ChangeRequests() {
         ) : (
           <div
             style={{
-              background: "#fff",
-              border: "1px solid #e2e8f0",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
               borderRadius: 12,
               padding: "48px 24px",
               textAlign: "center",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+              boxShadow: "var(--shadow-xs)",
             }}
           >
             {search || statusFilter || periodFilter || deadlineFilter || typeFilter || priorityFilter || departmentFilter ? (
               <>
                 <div style={{ fontSize: 44, marginBottom: 12 }}>🔍</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>
                   {tx("orders.mos_topilmadi")}
                 </div>
-                <p style={{ color: "#64748b", fontSize: 13.5, maxWidth: 460, margin: "0 auto 20px" }}>
+                <p style={{ color: "var(--muted)", fontSize: 13.5, maxWidth: 460, margin: "0 auto 20px" }}>
                   {tx("orders.mos_topilmadi_matn")}
                 </p>
                 <Button
@@ -1419,7 +1419,7 @@ export default function ChangeRequests() {
             ) : (
               <>
                 <div style={{ fontSize: 44, marginBottom: 12 }}>📋</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 16 }}>
                   {tx("orders.bosh_holat")}
                 </div>
                 {canCreateOrder && (
@@ -1449,7 +1449,7 @@ export default function ChangeRequests() {
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: "rgba(16, 185, 129, 0.14)",
+                    background: "var(--success-soft)",
                     color: "var(--success)",
                     display: "flex",
                     alignItems: "center",
@@ -1503,7 +1503,7 @@ export default function ChangeRequests() {
                   <div
                     style={{
                       background: "var(--attention-soft)",
-                      border: "1px solid rgba(251, 191, 36, 0.3)",
+                      border: "1px solid var(--attention-border)",
                       borderRadius: 10,
                       padding: "8px 12px",
                       display: "flex",
@@ -1662,7 +1662,7 @@ export default function ChangeRequests() {
             <div className="modal-header row between middle">
               <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
                 <span className="badge badge-brand">{viewingItem.id}</span>
-                <span className="badge" style={{ background: "#4f46e5", color: "#fff", fontWeight: 700, fontSize: 11 }}>
+                <span className="badge" style={{ background: "var(--accent)", color: "#fff", fontWeight: 700, fontSize: 11 }}>
                   v{viewingItem.version || 1}
                 </span>
                 <OrderStatusBadge status={viewingItem.status} label={viewingItem.status_display} />
@@ -1671,7 +1671,7 @@ export default function ChangeRequests() {
                   <span
                     className="badge"
                     style={{
-                      backgroundColor: viewingItem.project_detail.color || "var(--brand)",
+                      backgroundColor: viewingItem.project_detail.color || "var(--accent)",
                       color: "#fff",
                       fontSize: 11,
                     }}
@@ -1723,8 +1723,8 @@ export default function ChangeRequests() {
               {viewingItem.has_pending_version && viewingItem.pending_version && (
                 <div
                   style={{
-                    background: "#fffbeb",
-                    border: "2px solid #f59e0b",
+                    background: "var(--attention-soft)",
+                    border: "2px solid var(--attention)",
                     borderRadius: 8,
                     padding: "14px 18px",
                     marginBottom: 16,
@@ -1735,20 +1735,20 @@ export default function ChangeRequests() {
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 24 }}>⚡</span>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: "#92400e" }}>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--attention)" }}>
                             {tx("orders.pending_version_alert", { version: viewingItem.pending_version.version })}
                           </div>
-                          <div style={{ fontSize: 12, color: "#b45309", marginTop: 2 }}>
+                          <div style={{ fontSize: 12, color: "var(--attention)", marginTop: 2 }}>
                             {tx("orders.pending_version_desc")}
                           </div>
                         </div>
                       </div>
-                      <div style={{ marginTop: 10, background: "#fef3c7", padding: "8px 12px", borderRadius: 6, fontSize: 12.5, color: "#78350f" }}>
+                      <div style={{ marginTop: 10, background: "var(--attention-soft)", padding: "8px 12px", borderRadius: 6, fontSize: 12.5, color: "var(--attention)" }}>
                         <div><strong>{tx("orders.ozgarishlar_tavsifi")}</strong> {viewingItem.pending_version.change_note}</div>
                         {viewingItem.pending_version.requested_change && (
                           <div style={{ marginTop: 4 }}><strong>{tx("orders.yangi_talablar")}</strong> {viewingItem.pending_version.requested_change}</div>
                         )}
-                        <div style={{ marginTop: 4, fontSize: 11, color: "#92400e" }}>
+                        <div style={{ marginTop: 4, fontSize: 11, color: "var(--attention)" }}>
                           {tx("orders.yuklagan")}: {viewingItem.pending_version.uploaded_by_name || tx("orders.boshqarma_vakili")} • {fmtDate(viewingItem.pending_version.created_at)}
                         </div>
                       </div>
@@ -1790,8 +1790,8 @@ export default function ChangeRequests() {
               {viewingItem.status === "DRAFT" ? (
                 <div
                   style={{
-                    background: "#fffbeb",
-                    border: "1.5px solid #fde68a",
+                    background: "var(--attention-soft)",
+                    border: "1.5px solid var(--attention-border)",
                     borderRadius: 8,
                     padding: "12px 16px",
                     marginBottom: 16,
@@ -1805,10 +1805,10 @@ export default function ChangeRequests() {
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 22 }}>📝</span>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 13.5, color: "#92400e" }}>
+                      <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--attention)" }}>
                         {tx("orders.status_draft")}:
                       </div>
-                      <div style={{ fontSize: 12, color: "#b45309", marginTop: 2 }}>
+                      <div style={{ fontSize: 12, color: "var(--attention)", marginTop: 2 }}>
                         {tx("orders.draft_badge_desc")}
                       </div>
                     </div>
@@ -1843,8 +1843,8 @@ export default function ChangeRequests() {
               ) : !viewingItem.assigned_pm ? (
                 <div
                   style={{
-                    background: "#fffbeb",
-                    border: "1.5px solid #fde68a",
+                    background: "var(--attention-soft)",
+                    border: "1.5px solid var(--attention-border)",
                     borderRadius: 8,
                     padding: "12px 16px",
                     marginBottom: 16,
@@ -1858,10 +1858,10 @@ export default function ChangeRequests() {
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 22 }}>⏳</span>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 13.5, color: "#92400e" }}>
+                      <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--attention)" }}>
                         {tx("orders.ishni_qabul_qilish_taklif")}
                       </div>
-                      <div style={{ fontSize: 12, color: "#b45309", marginTop: 2 }}>
+                      <div style={{ fontSize: 12, color: "var(--attention)", marginTop: 2 }}>
                         {tx("orders.pm_claim_hint")}
                       </div>
                     </div>
@@ -1879,8 +1879,8 @@ export default function ChangeRequests() {
               ) : (
                 <div
                   style={{
-                    background: "#ecfdf5",
-                    border: "1.5px solid #a7f3d0",
+                    background: "var(--success-soft)",
+                    border: "1.5px solid var(--success-border)",
                     borderRadius: 8,
                     padding: "10px 14px",
                     marginBottom: 16,
@@ -1891,7 +1891,7 @@ export default function ChangeRequests() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#065f46", fontSize: 13, fontWeight: 600 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--success)", fontSize: 13, fontWeight: 600 }}>
                     <span>🎯</span>
                     <span>{tx("orders.masul_pm_label")} {viewingItem.assigned_pm_name || user?.full_name || tx("orders.siz")}</span>
                   </div>
@@ -1909,14 +1909,14 @@ export default function ChangeRequests() {
               {viewingItem.status === "REJECTED" && (
                 <div
                   style={{
-                    background: "#fef2f2",
-                    border: "2px solid #ef4444",
+                    background: "var(--danger-soft)",
+                    border: "2px solid var(--danger)",
                     borderRadius: 8,
                     padding: 16,
                     marginBottom: 16,
                   }}
                 >
-                  <div className="row middle" style={{ gap: 8, color: "#991b1b", fontWeight: 700, fontSize: 14 }}>
+                  <div className="row middle" style={{ gap: 8, color: "var(--danger)", fontWeight: 700, fontSize: 14 }}>
                     <span style={{ fontSize: 22 }}>❌</span>
                     <span>{tx("orders.pm_rad_etilgan_text")}</span>
                   </div>
@@ -1924,12 +1924,12 @@ export default function ChangeRequests() {
                     style={{
                       marginTop: 10,
                       fontSize: 13,
-                      color: "#7f1d1d",
+                      color: "var(--danger)",
                       whiteSpace: "pre-wrap",
-                      background: "#fff",
+                      background: "var(--surface)",
                       padding: "10px 14px",
                       borderRadius: 6,
-                      border: "1px solid #fecaca",
+                      border: "1px solid var(--danger-border)",
                       lineHeight: 1.5,
                     }}
                   >
@@ -1942,8 +1942,8 @@ export default function ChangeRequests() {
               {viewingItem.status === "READY_FOR_REVIEW" && (
                 <div
                   style={{
-                    background: "rgba(168, 85, 247, 0.08)",
-                    border: "2px solid #a855f7",
+                    background: "var(--done-soft)",
+                    border: "2px solid var(--done)",
                     borderRadius: 8,
                     padding: 16,
                     marginBottom: 16,
@@ -1951,10 +1951,10 @@ export default function ChangeRequests() {
                 >
                   <div className="row middle between" style={{ flexWrap: "wrap", gap: 12 }}>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#6b21a8" }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "var(--done)" }}>
                         {tx("orders.bajarilgan_ish_topshirilgan_sarlavha")}
                       </div>
-                      <div style={{ fontSize: 12.5, color: "#581c87", marginTop: 3 }}>
+                      <div style={{ fontSize: 12.5, color: "var(--done)", marginTop: 3 }}>
                         {tx("orders.ish_tasdiqqa_topshirilgan_izoh")}
                       </div>
                     </div>
@@ -1987,18 +1987,18 @@ export default function ChangeRequests() {
               {viewingItem.client_feedback_note && viewingItem.status !== "COMPLETED" && (
                 <div
                   style={{
-                    background: "#fffbeb",
-                    border: "2px solid #f59e0b",
+                    background: "var(--attention-soft)",
+                    border: "2px solid var(--attention)",
                     borderRadius: 8,
                     padding: 14,
                     marginBottom: 16,
                   }}
                 >
-                  <div className="row middle" style={{ gap: 8, color: "#92400e", fontWeight: 700, fontSize: 13.5 }}>
+                  <div className="row middle" style={{ gap: 8, color: "var(--attention)", fontWeight: 700, fontSize: 13.5 }}>
                     <span style={{ fontSize: 18 }}>⚠️</span>
                     <span>{tx("orders.boshqarma_etirozi_sarlavha")}</span>
                   </div>
-                  <div style={{ marginTop: 6, fontSize: 13, color: "#78350f", whiteSpace: "pre-wrap" }}>
+                  <div style={{ marginTop: 6, fontSize: 13, color: "var(--attention)", whiteSpace: "pre-wrap" }}>
                     {viewingItem.client_feedback_note}
                   </div>
                   {viewingItem.client_feedback_file_url && (
@@ -2022,8 +2022,8 @@ export default function ChangeRequests() {
               {(viewingItem.completion_file_url || viewingItem.completion_note) && (
                 <div
                   style={{
-                    background: "#eff6ff",
-                    border: "1px solid #bfdbfe",
+                    background: "var(--accent-soft)",
+                    border: "1px solid var(--accent-border)",
                     borderRadius: 8,
                     padding: 14,
                     marginBottom: 16,
@@ -2048,10 +2048,10 @@ export default function ChangeRequests() {
                           : "📁"}
                       </span>
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: "#1e40af" }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: "var(--accent)" }}>
                           {tx("orders.bajarilgan_ish_hujjati_sarlavha")}
                         </div>
-                        <div style={{ fontSize: 12, color: "#1d4ed8" }}>
+                        <div style={{ fontSize: 12, color: "var(--accent)" }}>
                           {viewingItem.completion_file_name || tx("orders.hisobot_hujjati")}{" "}
                           {viewingItem.completion_file_size_display ? `(${viewingItem.completion_file_size_display})` : ""}
                           {viewingItem.completed_at && ` • ${tx("orders.topshirilgan_vaqti")}: ${fmtDate(viewingItem.completed_at)}`}
@@ -2077,8 +2077,8 @@ export default function ChangeRequests() {
                       style={{
                         marginTop: 8,
                         fontSize: 12.5,
-                        color: "#1e3a8a",
-                        background: "#dbeafe",
+                        color: "var(--accent)",
+                        background: "var(--accent-soft)",
                         padding: "8px 12px",
                         borderRadius: 6,
                       }}
@@ -2091,9 +2091,9 @@ export default function ChangeRequests() {
                       style={{
                         marginTop: 8,
                         fontSize: 12,
-                        color: "#15803d",
+                        color: "var(--success)",
                         fontWeight: 600,
-                        background: "#dcfce7",
+                        background: "var(--success-soft)",
                         padding: "6px 10px",
                         borderRadius: 4,
                       }}
@@ -2110,8 +2110,8 @@ export default function ChangeRequests() {
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
                   gap: 12,
-                  background: "var(--surface, #f8fafc)",
-                  border: "1px solid var(--border-color, #e2e8f0)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                   borderRadius: 8,
                   padding: 14,
                   marginBottom: 16,
@@ -2176,7 +2176,7 @@ export default function ChangeRequests() {
                 </div>
                 <div>
                   <span className="muted" style={{ fontSize: 11 }}>{tx("orders.pm_yakuniy_muddati_label")}:</span>
-                  <div style={{ fontWeight: 600, color: viewingItem.pm_deadline ? "var(--brand)" : "var(--text)" }}>
+                  <div style={{ fontWeight: 600, color: viewingItem.pm_deadline ? "var(--accent)" : "var(--text)" }}>
                     {viewingItem.pm_deadline
                       ? fmtDate(viewingItem.pm_deadline)
                       : viewingItem.pm_estimated_duration || tx("orders.belgilanmagan")}
@@ -2185,8 +2185,8 @@ export default function ChangeRequests() {
               </div>
               <div
                 style={{
-                  background: "var(--surface, #f8fafc)",
-                  border: "1px solid var(--border-color, #e2e8f0)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                   borderRadius: 8,
                   padding: 14,
                   marginBottom: 16,
@@ -2199,20 +2199,20 @@ export default function ChangeRequests() {
                   {viewingItem.requested_change || viewingItem.current_state || tx("orders.tavsif_kiritilmagan")}
                 </div>
                 {viewingItem.module && (
-                  <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed var(--border-color, #e2e8f0)", fontSize: 12, color: "var(--muted)" }}>
+                  <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed var(--border)", fontSize: 12, color: "var(--muted)" }}>
                     <strong>{tx("orders.loyiha_izoh_label", undefined, "Loyiha haqida izoh")}:</strong> {viewingItem.module}
                   </div>
                 )}
                 {viewingItem.reason && (
-                  <div style={{ marginTop: 8, paddingTop: 6, borderTop: viewingItem.module ? "none" : "1px dashed var(--border-color, #e2e8f0)", fontSize: 12, color: "var(--muted)" }}>
+                  <div style={{ marginTop: 8, paddingTop: 6, borderTop: viewingItem.module ? "none" : "1px dashed var(--border)", fontSize: 12, color: "var(--muted)" }}>
                     <strong>{tx("orders.asos_sabab")}</strong> {viewingItem.reason}
                   </div>
                 )}
               </div>
               <div
                 style={{
-                  background: "#f0fdf4",
-                  border: "1px solid #bbf7d0",
+                  background: "var(--success-soft)",
+                  border: "1px solid var(--success-border)",
                   borderRadius: 8,
                   padding: "12px 14px",
                   marginBottom: 16,
@@ -2226,10 +2226,10 @@ export default function ChangeRequests() {
                 <div className="row middle" style={{ gap: 8 }}>
                   <span style={{ fontSize: 22 }}>📄</span>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: "#166534" }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: "var(--success)" }}>
                       {viewingItem.tz_file_name || tx("orders.biriktirilgan_tz_hujjati")}
                     </div>
-                    <div style={{ fontSize: 11.5, color: "#15803d" }}>
+                    <div style={{ fontSize: 11.5, color: "var(--success)" }}>
                       v{viewingItem.version || 1} {viewingItem.tz_file_size_display ? `• ${viewingItem.tz_file_size_display}` : ""}
                     </div>
                   </div>
@@ -2261,8 +2261,8 @@ export default function ChangeRequests() {
               {viewingItem.versions && viewingItem.versions.length > 1 && (
                 <div
                   style={{
-                    background: "#f8fafc",
-                    border: "1px solid var(--border-color, #e2e8f0)",
+                    background: "var(--surface-2)",
+                    border: "1px solid var(--border)",
                     borderRadius: 8,
                     padding: 12,
                     marginBottom: 16,
@@ -2277,8 +2277,8 @@ export default function ChangeRequests() {
                         key={v.id || v.version}
                         className="row between middle"
                         style={{
-                          background: v.version === viewingItem.version ? "#f0fdf4" : "#fff",
-                          border: "1px solid var(--border-color, #e2e8f0)",
+                          background: v.version === viewingItem.version ? "var(--success-soft)" : "var(--surface)",
+                          border: "1px solid var(--border)",
                           borderRadius: 6,
                           padding: "6px 10px",
                           fontSize: 12,
@@ -2313,28 +2313,28 @@ export default function ChangeRequests() {
                 viewingItem.assigned_pm && viewingItem.assigned_pm !== user?.id && !user?.is_platform_admin && !user?.is_boss ? (
                   <div
                     style={{
-                      background: "#f8fafc",
-                      border: "1.5px solid #cbd5e1",
+                      background: "var(--surface-2)",
+                      border: "1.5px solid var(--border-strong)",
                       borderRadius: 8,
                       padding: 16,
                       marginBottom: 10,
                     }}
                   >
-                    <div className="row middle" style={{ gap: 8, color: "#475569" }}>
+                    <div className="row middle" style={{ gap: 8, color: "var(--text-secondary)" }}>
                       <span style={{ fontSize: 20 }}>🔒</span>
-                      <strong style={{ fontSize: 13.5, color: "#334155" }}>
+                      <strong style={{ fontSize: 13.5, color: "var(--text-secondary)" }}>
                         {tx("orders.pm_panel_qulflangan")}
                       </strong>
                     </div>
-                    <p style={{ margin: "8px 0 0 0", fontSize: 13, color: "#64748b", lineHeight: 1.5 }}>
+                    <p style={{ margin: "8px 0 0 0", fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
                       {tx("orders.qulflangan_izoh", { pm_name: viewingItem.assigned_pm_name || "" })}
                     </p>
                   </div>
                 ) : !viewingItem.assigned_pm && !user?.is_platform_admin && !user?.is_boss ? (
                   <div
                     style={{
-                      background: "#eff6ff",
-                      border: "1.5px solid #bfdbfe",
+                      background: "var(--accent-soft)",
+                      border: "1.5px solid var(--accent-border)",
                       borderRadius: 8,
                       padding: 16,
                       marginBottom: 10,
@@ -2346,10 +2346,10 @@ export default function ChangeRequests() {
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 13.5, color: "#1e40af" }}>
+                      <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--accent)" }}>
                         {tx("orders.avval_qabul_qiling_sarlavha")}
                       </div>
-                      <div style={{ fontSize: 12, color: "#3b82f6", marginTop: 2 }}>
+                      <div style={{ fontSize: 12, color: "var(--accent)", marginTop: 2 }}>
                         {tx("orders.avval_qabul_qiling_izoh")}
                       </div>
                     </div>
@@ -2364,8 +2364,8 @@ export default function ChangeRequests() {
                 ) : (
                 <div
                   style={{
-                    background: "#eff6ff",
-                    border: "2px solid #3b82f6",
+                    background: "var(--accent-soft)",
+                    border: "2px solid var(--accent)",
                     borderRadius: 6,
                     padding: 16,
                     marginBottom: 10,
@@ -2373,15 +2373,15 @@ export default function ChangeRequests() {
                 >
                   <div className="row middle" style={{ gap: 8, marginBottom: 12 }}>
                     <span style={{ fontSize: 20 }}>⚡</span>
-                    <strong style={{ fontSize: 14, color: "#1d4ed8" }}>
+                    <strong style={{ fontSize: 14, color: "var(--accent)" }}>
                       {tx("orders.pm_paneli_sarlavha")}
                     </strong>
                   </div>
                   {pmSaveSuccess && (
                     <div
                       style={{
-                        background: "#dcfce7",
-                        color: "#15803d",
+                        background: "var(--success-soft)",
+                        color: "var(--success)",
                         padding: "8px 12px",
                         borderRadius: 4,
                         marginBottom: 12,
@@ -2465,7 +2465,7 @@ export default function ChangeRequests() {
                       </div>
                     </div>
                     <div className="field" style={{ marginBottom: 12 }}>
-                      <label style={{ fontWeight: 600, fontSize: 12, color: pmDecisionForm.status === "REJECTED" ? "#dc2626" : undefined }}>
+                      <label style={{ fontWeight: 600, fontSize: 12, color: pmDecisionForm.status === "REJECTED" ? "var(--danger)" : undefined }}>
                         {pmDecisionForm.status === "REJECTED"
                           ? tx("orders.rad_etish_sababi_va_izohi")
                           : tx("orders.pm_xulosasi_va_korsatma")}
@@ -2474,8 +2474,8 @@ export default function ChangeRequests() {
                         rows={pmDecisionForm.status === "REJECTED" ? 3 : 2}
                         required={pmDecisionForm.status === "REJECTED"}
                         style={{
-                          borderColor: pmDecisionForm.status === "REJECTED" ? "#ef4444" : undefined,
-                          background: pmDecisionForm.status === "REJECTED" ? "#fef2f2" : undefined,
+                          borderColor: pmDecisionForm.status === "REJECTED" ? "var(--danger)" : undefined,
+                          background: pmDecisionForm.status === "REJECTED" ? "var(--danger-soft)" : undefined,
                         }}
                         placeholder={
                           pmDecisionForm.status === "REJECTED"
@@ -2505,7 +2505,7 @@ export default function ChangeRequests() {
                         style={{
                           marginTop: 14,
                           paddingTop: 12,
-                          borderTop: "1px dashed #93c5fd",
+                          borderTop: "1px dashed var(--accent-border)",
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
@@ -2513,7 +2513,7 @@ export default function ChangeRequests() {
                           gap: 8,
                         }}
                       >
-                        <span style={{ fontSize: 12.5, color: "#1e40af" }}>
+                        <span style={{ fontSize: 12.5, color: "var(--accent)" }}>
                           💡 {tx("orders.ish_yakunlanganda_eslatma")}
                         </span>
                         <Button
@@ -2643,13 +2643,13 @@ export default function ChangeRequests() {
                 </div>
                 <div
                   style={{
-                    background: "#fffbeb",
-                    border: "1px solid #fde68a",
+                    background: "var(--attention-soft)",
+                    border: "1px solid var(--attention-border)",
                     borderRadius: 6,
                     padding: 12,
                     marginBottom: 14,
                     fontSize: 12.5,
-                    color: "#92400e",
+                    color: "var(--attention)",
                   }}
                 >
                   {tx("orders.holat_qaytarilishi_izohi")}
@@ -2689,7 +2689,7 @@ export default function ChangeRequests() {
                   </div>
                 </div>
                 {rejectFeedbackFile && (
-                  <div style={{ marginTop: 10, padding: "8px 12px", background: "var(--surface-2, #f8fafc)", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
+                  <div style={{ marginTop: 10, padding: "8px 12px", background: "var(--surface-2)", borderRadius: 8, border: "1px solid var(--border)" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12.5, color: "var(--text)" }}>
                       <input
                         type="checkbox"
@@ -2741,7 +2741,7 @@ export default function ChangeRequests() {
               <div className="modal-body" style={{ padding: 20 }}>
                 <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
                   {tx("orders.buyurtma_raqami")}: <strong>{uploadVersionModalItem.id}</strong> ({uploadVersionModalItem.system_name})
-                  <span className="badge" style={{ marginLeft: 8, background: "#4f46e5", color: "#fff", fontSize: 11 }}>
+                  <span className="badge" style={{ marginLeft: 8, background: "var(--accent)", color: "#fff", fontSize: 11 }}>
                     {tx("orders.hozirgi")}: v{uploadVersionModalItem.version || 1}
                   </span>
                 </div>
@@ -2823,17 +2823,17 @@ export default function ChangeRequests() {
                 <div className="modal-body" style={{ padding: 20 }}>
                   <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
                     {tx("orders.buyurtma")}: <strong>{approveVersionModalItem.id}</strong> • {tx("orders.tasdiqlanayotgan_versiya")}:{" "}
-                    <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || approveVersionModalItem.pending_version?.version || tx("orders.yangi_kichik")}</strong>
+                    <strong style={{ color: "var(--success)" }}>v{approveVersionTarget || approveVersionModalItem.pending_version?.version || tx("orders.yangi_kichik")}</strong>
                   </div>
                   <div
                     style={{
-                      background: "#ecfdf5",
-                      border: "1.5px solid #86efac",
+                      background: "var(--success-soft)",
+                      border: "1.5px solid var(--success-border)",
                       borderRadius: 6,
                       padding: 12,
                       marginBottom: 14,
                       fontSize: 12.5,
-                      color: "#166534",
+                      color: "var(--success)",
                       lineHeight: 1.5,
                     }}
                   >
@@ -2930,17 +2930,17 @@ export default function ChangeRequests() {
                 <div className="modal-body" style={{ padding: 20 }}>
                   <div style={{ marginBottom: 12, fontSize: 13, color: "var(--muted)" }}>
                     {tx("orders.buyurtma")}: <strong>{rejectVersionModalItem.id}</strong> • {tx("orders.versiya_label")}:{" "}
-                    <strong style={{ color: "#dc2626" }}>v{rejectVersionTarget || rejectVersionModalItem.pending_version?.version || tx("orders.yangi_kichik")}</strong>
+                    <strong style={{ color: "var(--danger)" }}>v{rejectVersionTarget || rejectVersionModalItem.pending_version?.version || tx("orders.yangi_kichik")}</strong>
                   </div>
                   <div
                     style={{
-                      background: "#fef2f2",
-                      border: "1px solid #fecaca",
+                      background: "var(--danger-soft)",
+                      border: "1px solid var(--danger-border)",
                       borderRadius: 6,
                       padding: 12,
                       marginBottom: 14,
                       fontSize: 12.5,
-                      color: "#991b1b",
+                      color: "var(--danger)",
                     }}
                   >
                     {tx("orders.versiya_rad_etiladi_izohi")}

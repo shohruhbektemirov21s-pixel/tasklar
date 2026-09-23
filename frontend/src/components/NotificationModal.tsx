@@ -27,63 +27,63 @@ function getNotificationVisuals(kind: string) {
   if (kind.startsWith("order.")) {
     return {
       icon: <IconOrder size={17} />,
-      bg: "var(--accent-soft, rgba(59, 130, 246, 0.12))",
-      color: "var(--accent, #3b82f6)",
+      bg: "var(--accent-soft)",
+      color: "var(--accent)",
       badgeClass: kind === "order.reminder" ? "badge-danger" : "badge-brand",
     };
   }
   if (kind === "task.review") {
     return {
       icon: <IconReview size={17} />,
-      bg: "rgba(99, 102, 241, 0.12)",
-      color: "var(--brand, #6366f1)",
+      bg: "var(--accent-soft)",
+      color: "var(--accent)",
       badgeClass: "badge-brand",
     };
   }
   if (kind === "task.decided") {
     return {
       icon: <IconCheck size={17} />,
-      bg: "rgba(16, 185, 129, 0.12)",
-      color: "var(--ok, #10b981)",
+      bg: "var(--success-soft)",
+      color: "var(--success)",
       badgeClass: "badge-ok",
     };
   }
   if (kind === "task.comment" || kind.startsWith("chat.")) {
     return {
       icon: <IconChat size={17} />,
-      bg: "rgba(14, 165, 233, 0.12)",
-      color: "#0284c7",
+      bg: "var(--accent-soft)",
+      color: "var(--accent)",
       badgeClass: "badge",
     };
   }
   if (kind === "join.request") {
     return {
       icon: <IconUserPlus size={17} />,
-      bg: "rgba(168, 85, 247, 0.12)",
-      color: "#9333ea",
+      bg: "var(--done-soft)",
+      color: "var(--done)",
       badgeClass: "badge-warn",
     };
   }
   if (kind === "project.deadline") {
     return {
       icon: <IconClock size={17} />,
-      bg: "rgba(245, 158, 11, 0.12)",
-      color: "var(--warn, #f59e0b)",
+      bg: "var(--attention-soft)",
+      color: "var(--attention)",
       badgeClass: "badge-danger",
     };
   }
   if (kind.startsWith("task.")) {
     return {
       icon: <IconTasks size={17} />,
-      bg: "var(--accent-soft, rgba(59, 130, 246, 0.12))",
-      color: "var(--accent, #3b82f6)",
+      bg: "var(--accent-soft)",
+      color: "var(--accent)",
       badgeClass: "badge-info",
     };
   }
   return {
     icon: <IconBell size={17} />,
-    bg: "var(--accent-soft, rgba(59, 130, 246, 0.12))",
-    color: "var(--accent, #3b82f6)",
+    bg: "var(--accent-soft)",
+    color: "var(--accent)",
     badgeClass: "badge",
   };
 }
@@ -228,7 +228,7 @@ export default function NotificationModal({
         justifyContent: "flex-start",
         overflowY: "auto",
         padding: "32px 16px",
-        background: "rgba(8, 11, 16, 0.72)",
+        background: "var(--overlay)",
         backdropFilter: "blur(4px)",
         WebkitBackdropFilter: "blur(4px)",
       }}
@@ -243,9 +243,9 @@ export default function NotificationModal({
           maxHeight: "calc(100vh - 64px)",
           display: "flex",
           flexDirection: "column",
-          borderRadius: "var(--radius-lg, 12px)",
+          borderRadius: "var(--radius-lg)",
           background: "var(--surface)",
-          boxShadow: "var(--shadow-lg, 0 20px 25px -5px rgba(0, 0, 0, 0.4))",
+          boxShadow: "var(--shadow-lg)",
           border: "1px solid var(--border)",
           overflow: "hidden",
         }}
@@ -329,7 +329,7 @@ export default function NotificationModal({
                 fontSize: 12.5,
                 display: "block",
                 marginBottom: 6,
-                color: "var(--text-muted)",
+                color: "var(--muted)",
               }}
             >
               {tx("notifications.yuboruvchi")}
@@ -379,7 +379,7 @@ export default function NotificationModal({
                   fontSize: 12.5,
                   display: "block",
                   marginBottom: 6,
-                  color: isReason ? "var(--danger)" : "var(--text-muted)",
+                  color: isReason ? "var(--danger)" : "var(--muted)",
                 }}
               >
                 {messageLabel}
@@ -388,9 +388,9 @@ export default function NotificationModal({
                 style={{
                   padding: "12px 14px",
                   borderRadius: 8,
-                  background: isReason ? "rgba(239, 68, 68, 0.08)" : "var(--surface-2)",
+                  background: isReason ? "var(--danger-soft)" : "var(--surface-2)",
                   border: isReason
-                    ? "1px solid rgba(239, 68, 68, 0.22)"
+                    ? "1px solid var(--danger-border)"
                     : "1px solid var(--border-muted)",
                   fontSize: 13.5,
                   lineHeight: 1.55,

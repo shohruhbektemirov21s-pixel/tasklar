@@ -445,13 +445,13 @@ export default function TaskForm() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            background: "rgba(59, 130, 246, 0.08)",
-            border: "1px solid rgba(59, 130, 246, 0.3)",
+            background: "var(--accent-soft)",
+            border: "1px solid var(--accent-border)",
             borderRadius: 8,
             padding: "10px 14px",
             marginBottom: 14,
             fontSize: 13,
-            color: "var(--color-fg-default)"
+            color: "var(--text)"
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span>📝</span>
@@ -519,10 +519,10 @@ export default function TaskForm() {
                 {memberSuccessMsg && (
                   <div style={{
                     padding: "8px 12px",
-                    background: "rgba(16, 185, 129, 0.1)",
-                    border: "1px solid rgba(16, 185, 129, 0.3)",
+                    background: "var(--success-soft)",
+                    border: "1px solid var(--success-border)",
                     borderRadius: 6,
-                    color: "var(--color-success, #10b981)",
+                    color: "var(--success)",
                     fontSize: 13,
                     marginBottom: 10,
                   }}>
@@ -580,7 +580,7 @@ export default function TaskForm() {
                                 <div key={c.id} className="row"
                                      style={{
                                        padding: "8px 10px", border: "1px solid var(--border)",
-                                       borderRadius: 6, background: "var(--card-bg, transparent)",
+                                       borderRadius: 6, background: "var(--surface)",
                                      }}>
                                   <Avatar user={c} size="sm" />
                                   <div>

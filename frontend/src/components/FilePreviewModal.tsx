@@ -257,8 +257,8 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
           display: "flex",
           flexDirection: "column",
           borderRadius: isFull ? 0 : 12,
-          background: "var(--surface, #ffffff)",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+          background: "var(--surface)",
+          boxShadow: "var(--shadow-modal)",
           border: isFull ? "none" : "1px solid var(--border)",
           overflow: "hidden",
           transition: "all 0.2s ease",
@@ -288,26 +288,26 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
                 height: 34,
                 borderRadius: 8,
                 background: isDocx
-                  ? "rgba(37, 99, 235, 0.12)"
+                  ? "var(--accent-soft)"
                   : isExcel
-                  ? "rgba(16, 185, 129, 0.14)"
+                  ? "var(--success-soft)"
                   : isPdf
-                  ? "rgba(239, 68, 68, 0.12)"
+                  ? "var(--danger-soft)"
                   : isVideo || isAudio
-                  ? "rgba(168, 85, 247, 0.12)"
+                  ? "var(--done-soft)"
                   : isImage
-                  ? "rgba(245, 158, 11, 0.12)"
-                  : "rgba(100, 116, 139, 0.12)",
+                  ? "var(--attention-soft)"
+                  : "var(--surface-2)",
                 color: isDocx
-                  ? "#2563eb"
+                  ? "var(--accent)"
                   : isExcel
-                  ? "#10b981"
+                  ? "var(--success)"
                   : isPdf
-                  ? "#ef4444"
+                  ? "var(--danger)"
                   : isVideo || isAudio
-                  ? "#a855f7"
+                  ? "var(--done)"
                   : isImage
-                  ? "#d97706"
+                  ? "var(--attention)"
                   : "var(--text)",
                 display: "flex",
                 alignItems: "center",
@@ -439,7 +439,7 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
           <div
             style={{
               padding: "8px 16px",
-              background: "var(--canvas-inset, #f1f5f9)",
+              background: "var(--canvas-inset)",
               borderBottom: "1px solid var(--border)",
               display: "flex",
               alignItems: "center",
@@ -462,9 +462,9 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
                     fontSize: 12,
                     fontWeight: 600,
                     border: "1px solid",
-                    borderColor: activeSheet === name ? "#10b981" : "var(--border)",
-                    background: activeSheet === name ? "#10b981" : "var(--surface)",
-                    color: activeSheet === name ? "#ffffff" : "var(--text)",
+                    borderColor: activeSheet === name ? "var(--success)" : "var(--border)",
+                    background: activeSheet === name ? "var(--success)" : "var(--surface)",
+                    color: activeSheet === name ? "#fff" : "var(--text)",
                     cursor: "pointer",
                     whiteSpace: "nowrap",
                     transition: "all 0.15s ease",
@@ -506,7 +506,7 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
             overflowY: "auto",
             overflowX: "auto",
             position: "relative",
-            background: isDocx ? "#e2e8f0" : isImage ? "#090d16" : "var(--surface-2, #f8fafc)",
+            background: isDocx ? "var(--surface-3)" : isImage ? "#090d16" : "var(--surface-2)",
             display: "flex",
             flexDirection: "column",
             alignItems: isImage ? "center" : "stretch",
@@ -519,7 +519,7 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "rgba(255, 255, 255, 0.8)",
+                background: "var(--surface)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -577,11 +577,11 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
                     width: "100%",
                     borderCollapse: "collapse",
                     fontSize: 12,
-                    fontFamily: "var(--font, system-ui, sans-serif)",
+                    fontFamily: "var(--font-sans)",
                     background: "var(--surface)",
                   }}
                 >
-                  <thead style={{ position: "sticky", top: 0, zIndex: 2, background: "var(--surface-2, #f1f5f9)" }}>
+                  <thead style={{ position: "sticky", top: 0, zIndex: 2, background: "var(--surface-2)" }}>
                     <tr>
                       <th
                         style={{
@@ -593,7 +593,7 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
                           color: "var(--muted)",
                           fontWeight: 700,
                           textAlign: "center",
-                          background: "var(--surface-2, #e2e8f0)",
+                          background: "var(--surface-2)",
                         }}
                       >
                         #
@@ -622,7 +622,7 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
                         key={rIdx}
                         style={{
                           borderBottom: "1px solid var(--border)",
-                          background: rIdx % 2 === 0 ? "var(--surface)" : "var(--canvas-inset, rgba(0,0,0,0.015))",
+                          background: rIdx % 2 === 0 ? "var(--surface)" : "var(--canvas-inset)",
                         }}
                       >
                         <td
@@ -631,7 +631,7 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
                             textAlign: "center",
                             fontWeight: 600,
                             color: "var(--muted)",
-                            background: "var(--surface-2, #f8fafc)",
+                            background: "var(--surface-2)",
                             borderRight: "2px solid var(--border)",
                             userSelect: "none",
                           }}
@@ -674,7 +674,7 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
                 width: "100%",
                 height: "100%",
                 border: "none",
-                background: "#ffffff",
+                background: "var(--surface)",
               }}
               title={file.name}
             />
@@ -759,8 +759,8 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
                   width: 90,
                   height: 90,
                   borderRadius: "50%",
-                  background: "rgba(168, 85, 247, 0.15)",
-                  color: "#a855f7",
+                  background: "var(--done-soft)",
+                  color: "var(--done)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -790,14 +790,14 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
                   borderRadius: 8,
                   overflow: "hidden",
                   fontSize: 13,
-                  fontFamily: "var(--mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace)",
+                  fontFamily: "var(--mono)",
                 }}
               >
                 {/* Qator raqamlari */}
                 <div
                   style={{
                     padding: "16px 12px",
-                    background: "var(--surface-2, #f8fafc)",
+                    background: "var(--surface-2)",
                     borderRight: "1px solid var(--border)",
                     color: "var(--muted)",
                     textAlign: "right",

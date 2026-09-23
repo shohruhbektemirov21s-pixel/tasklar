@@ -309,7 +309,7 @@ export default function People() {
               padding: "12px 16px",
               cursor: "pointer",
               border: f.workload === "" ? "2px solid var(--primary)" : "1px solid var(--border)",
-              background: f.workload === "" ? "var(--primary-soft, rgba(99, 102, 241, 0.08))" : "var(--surface)",
+              background: f.workload === "" ? "var(--primary-soft)" : "var(--surface)",
               borderRadius: 12,
               transition: "all 0.15s ease",
             }}
@@ -330,18 +330,18 @@ export default function People() {
             style={{
               padding: "12px 16px",
               cursor: "pointer",
-              border: f.workload === "free" ? "2px solid #16a34a" : "1px solid var(--border)",
-              background: f.workload === "free" ? "rgba(22, 163, 74, 0.12)" : "var(--surface)",
+              border: f.workload === "free" ? "2px solid var(--success)" : "1px solid var(--border)",
+              background: f.workload === "free" ? "var(--success-soft)" : "var(--surface)",
               borderRadius: 12,
               transition: "all 0.15s ease",
             }}
             onClick={() => setFilter({ workload: f.workload === "free" ? "" : "free" })}
           >
             <div className="row between middle">
-              <span style={{ fontSize: 13, color: "#16a34a", fontWeight: 600 }}>
+              <span style={{ fontSize: 13, color: "var(--success)", fontWeight: 600 }}>
                 🟢 {tx("people.bosh_xodimlar", undefined, "Bo'sh xodimlar (0 ta)")}
               </span>
-              <span className="badge badge-success" style={{ fontSize: 14, fontWeight: 700, background: "rgba(22, 163, 74, 0.18)", color: "#15803d" }}>
+              <span className="badge badge-success" style={{ fontSize: 14, fontWeight: 700, background: "var(--success-soft)", color: "var(--success)" }}>
                 {summaryData.free_users}
               </span>
             </div>
@@ -352,18 +352,18 @@ export default function People() {
             style={{
               padding: "12px 16px",
               cursor: "pointer",
-              border: f.workload === "busy" ? "2px solid #d97706" : "1px solid var(--border)",
-              background: f.workload === "busy" ? "rgba(217, 119, 6, 0.12)" : "var(--surface)",
+              border: f.workload === "busy" ? "2px solid var(--attention)" : "1px solid var(--border)",
+              background: f.workload === "busy" ? "var(--attention-soft)" : "var(--surface)",
               borderRadius: 12,
               transition: "all 0.15s ease",
             }}
             onClick={() => setFilter({ workload: f.workload === "busy" ? "" : "busy" })}
           >
             <div className="row between middle">
-              <span style={{ fontSize: 13, color: "#d97706", fontWeight: 600 }}>
+              <span style={{ fontSize: 13, color: "var(--attention)", fontWeight: 600 }}>
                 🟡 {tx("people.band_xodimlar", undefined, "Band xodimlar")}
               </span>
-              <span className="badge badge-warning" style={{ fontSize: 14, fontWeight: 700, background: "rgba(245, 158, 11, 0.18)", color: "#b45309" }}>
+              <span className="badge badge-warning" style={{ fontSize: 14, fontWeight: 700, background: "var(--attention-soft)", color: "var(--attention)" }}>
                 {summaryData.busy_users}
               </span>
             </div>
@@ -393,7 +393,7 @@ export default function People() {
       {/* FILTRLAR VA SARALASH */}
       <FilterBar>
         <div className="filter-search-box" style={{ minWidth: 260 }}>
-          <span style={{ color: "var(--text-muted)", fontSize: 13 }}>🔍</span>
+          <span style={{ color: "var(--muted)", fontSize: 13 }}>🔍</span>
           <input
             id={`${fid}-0`}
             value={searchVal}
@@ -451,7 +451,7 @@ export default function People() {
                   <div
                     style={{
                       padding: "8px 16px",
-                      background: "var(--accent-soft, rgba(99, 102, 241, 0.1))",
+                      background: "var(--accent-soft)",
                       borderBottom: "1px solid var(--border)",
                       display: "flex",
                       alignItems: "center",
@@ -526,7 +526,7 @@ export default function People() {
                         onClick={() => setActiveUser((prev) => (prev?.id === u.id ? null : u))}
                         style={{
                           cursor: "pointer",
-                          backgroundColor: isSelected ? "var(--primary-soft, rgba(99, 102, 241, 0.08))" : undefined,
+                          backgroundColor: isSelected ? "var(--primary-soft)" : undefined,
                           transition: "background-color 0.15s ease",
                         }}
                       >
@@ -567,8 +567,8 @@ export default function People() {
                               className="badge badge-warning"
                               style={{
                                 fontWeight: 600,
-                                color: "#b45309",
-                                background: "rgba(245, 158, 11, 0.15)",
+                                color: "var(--attention)",
+                                background: "var(--attention-soft)",
                                 cursor: canManageTasks ? "pointer" : "default",
                                 border: "none",
                                 padding: "4px 8px",
@@ -590,8 +590,8 @@ export default function People() {
                               className="badge badge-success"
                               style={{
                                 fontWeight: 600,
-                                color: "#15803d",
-                                background: "rgba(34, 197, 94, 0.15)",
+                                color: "var(--success)",
+                                background: "var(--success-soft)",
                                 padding: "4px 8px",
                                 display: "inline-flex",
                                 alignItems: "center",
@@ -616,7 +616,7 @@ export default function People() {
                         <td>{u.project_count ?? 0}</td>
                         <td>
                           {u.done_tasks && u.done_tasks > 0 ? (
-                            <span className="badge badge-success" style={{ fontWeight: 600, color: "#15803d", background: "rgba(34, 197, 94, 0.15)" }}>
+                            <span className="badge badge-success" style={{ fontWeight: 600, color: "var(--success)", background: "var(--success-soft)" }}>
                               ✓ {u.done_tasks} {tx("common.ta", undefined, "ta")}
                             </span>
                           ) : (
@@ -709,7 +709,7 @@ export default function People() {
                       gap: 12,
                       padding: "10px 12px",
                       marginBottom: 12,
-                      background: "var(--surface-sunken, rgba(0,0,0,0.03))",
+                      background: "var(--canvas-inset)",
                       borderRadius: 8,
                       border: "1px solid var(--border)",
                     }}
@@ -779,7 +779,7 @@ export default function People() {
                             onMouseEnter={(e) => {
                               e.currentTarget.style.borderColor = "var(--primary)";
                               e.currentTarget.style.transform = "translateY(-1px)";
-                              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
+                              e.currentTarget.style.boxShadow = "var(--sh-raised)";
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.borderColor = "var(--border)";
@@ -817,7 +817,7 @@ export default function People() {
                                 📁 {t.project_name}
                               </span>
                               {t.due_date && (
-                                <span style={{ color: t.is_overdue ? "var(--danger, #ef4444)" : undefined }}>
+                                <span style={{ color: t.is_overdue ? "var(--danger)" : undefined }}>
                                   📅 {fmtDate(t.due_date)}
                                 </span>
                               )}
@@ -866,7 +866,7 @@ export default function People() {
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backgroundColor: "var(--overlay)",
             backdropFilter: "blur(2px)",
             display: "flex",
             alignItems: "center",
@@ -880,8 +880,8 @@ export default function People() {
             style={{
               backgroundColor: "var(--surface)",
               border: "1px solid var(--border)",
-              borderRadius: "var(--radius-lg, 12px)",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.4)",
+              borderRadius: "var(--radius-lg)",
+              boxShadow: "var(--shadow-modal)",
               width: "100%",
               maxWidth: 580,
               maxHeight: "90vh",
@@ -900,7 +900,7 @@ export default function People() {
                       width: 32,
                       height: 32,
                       borderRadius: "50%",
-                      background: "var(--primary-soft, rgba(99, 102, 241, 0.15))",
+                      background: "var(--primary-soft)",
                       color: "var(--primary)",
                       display: "flex",
                       alignItems: "center",
@@ -950,7 +950,7 @@ export default function People() {
                         alignItems: "center",
                         gap: 6,
                         padding: "3px 8px 3px 6px",
-                        background: "var(--surface-hover, rgba(0, 0, 0, 0.05))",
+                        background: "var(--surface-3)",
                         border: "1px solid var(--border)",
                         borderRadius: 16,
                         fontSize: 12,
@@ -1007,7 +1007,7 @@ export default function People() {
                     style={{
                       marginTop: 8,
                       padding: "8px 10px",
-                      background: "rgba(99, 102, 241, 0.05)",
+                      background: "var(--accent-soft)",
                       borderRadius: 6,
                       border: "1px solid var(--border)",
                     }}
@@ -1138,7 +1138,7 @@ export default function People() {
           style={{
             position: "fixed",
             inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backgroundColor: "var(--overlay)",
             backdropFilter: "blur(2px)",
             display: "flex",
             alignItems: "center",
@@ -1152,8 +1152,8 @@ export default function People() {
             style={{
               backgroundColor: "var(--surface)",
               border: "1px solid var(--border)",
-              borderRadius: "var(--radius-lg, 12px)",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.4)",
+              borderRadius: "var(--radius-lg)",
+              boxShadow: "var(--shadow-modal)",
               width: "100%",
               maxWidth: 640,
               maxHeight: "90vh",
@@ -1206,7 +1206,7 @@ export default function People() {
                         border: "1px solid var(--border)",
                         borderRadius: 8,
                         padding: 12,
-                        background: isCurrent ? "rgba(245, 158, 11, 0.05)" : "var(--surface)",
+                        background: isCurrent ? "var(--attention-soft)" : "var(--surface)",
                       }}
                     >
                       <div className="row between middle">

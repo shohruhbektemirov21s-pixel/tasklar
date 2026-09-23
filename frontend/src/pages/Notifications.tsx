@@ -36,32 +36,32 @@ function KindIcon({ kind }: { kind: string }) {
 
   if (kind.startsWith("order.")) {
     glyph = <IconOrder size={16} />;
-    iconBg = "rgba(53, 98, 255, 0.12)";
-    iconColor = "#3562ff";
+    iconBg = "var(--accent-soft)";
+    iconColor = "var(--accent)";
   } else if (kind === "task.comment" || kind.startsWith("chat.")) {
     glyph = <IconChat size={16} />;
-    iconBg = "rgba(139, 92, 246, 0.12)";
-    iconColor = "#8b5cf6";
+    iconBg = "var(--done-soft)";
+    iconColor = "var(--done)";
   } else if (kind === "task.review") {
     glyph = <IconReview size={16} />;
-    iconBg = "rgba(245, 158, 11, 0.14)";
-    iconColor = "#f59e0b";
+    iconBg = "var(--attention-soft)";
+    iconColor = "var(--attention)";
   } else if (kind === "task.decided" || kind.includes("approve")) {
     glyph = <IconCheck size={16} />;
-    iconBg = "rgba(16, 185, 129, 0.14)";
-    iconColor = "#10b981";
+    iconBg = "var(--success-soft)";
+    iconColor = "var(--success)";
   } else if (kind === "project.deadline" || kind.includes("due")) {
     glyph = <IconClock size={16} />;
-    iconBg = "rgba(239, 68, 68, 0.12)";
-    iconColor = "#ef4444";
+    iconBg = "var(--danger-soft)";
+    iconColor = "var(--danger)";
   } else if (kind === "join.request") {
     glyph = <IconUserPlus size={16} />;
-    iconBg = "rgba(53, 98, 255, 0.12)";
-    iconColor = "#3562ff";
+    iconBg = "var(--accent-soft)";
+    iconColor = "var(--accent)";
   } else if (kind.startsWith("task.")) {
     glyph = <IconTasks size={16} />;
-    iconBg = "rgba(53, 98, 255, 0.12)";
-    iconColor = "#3562ff";
+    iconBg = "var(--accent-soft)";
+    iconColor = "var(--accent)";
   }
 
   return (
@@ -151,7 +151,7 @@ export default function Notifications() {
                   fontSize: 12,
                   fontWeight: 700,
                   background: "var(--accent)",
-                  color: "#ffffff",
+                  color: "#fff",
                   padding: "2px 8px",
                   borderRadius: 999,
                 }}
@@ -227,18 +227,18 @@ export default function Notifications() {
                     gap: 14,
                     padding: "16px 20px",
                     borderBottom: "1px solid var(--border-muted)",
-                    background: isUnread ? "rgba(53, 98, 255, 0.04)" : "transparent",
+                    background: isUnread ? "var(--accent-soft)" : "transparent",
                     cursor: "pointer",
                     transition: "background 0.12s ease",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = isUnread
-                      ? "rgba(53, 98, 255, 0.08)"
+                      ? "var(--accent-soft)"
                       : "var(--surface-2)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = isUnread
-                      ? "rgba(53, 98, 255, 0.04)"
+                      ? "var(--accent-soft)"
                       : "transparent";
                   }}
                 >

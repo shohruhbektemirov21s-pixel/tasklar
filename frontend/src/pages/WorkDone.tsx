@@ -172,9 +172,9 @@ export default function WorkDone() {
 
   function getRoleBadge(actor?: UserBrief | null) {
     if (!actor) return { label: tx("common.tizim", undefined, "Tizim"), bg: "var(--surface-2)", color: "var(--muted)" };
-    if (actor.is_boss) return { label: tx("role.boshliq", undefined, "Boshliq"), bg: "rgba(245, 158, 11, 0.15)", color: "#f59e0b" };
-    if (actor.is_manager) return { label: tx("role.loyiha_menejeri", undefined, "Loyiha menejeri"), bg: "rgba(139, 92, 246, 0.15)", color: "#8b5cf6" };
-    if (actor.is_platform_admin) return { label: tx("role.administrator", undefined, "Admin"), bg: "rgba(59, 130, 246, 0.15)", color: "#3b82f6" };
+    if (actor.is_boss) return { label: tx("role.boshliq", undefined, "Boshliq"), bg: "var(--attention-soft)", color: "var(--attention)" };
+    if (actor.is_manager) return { label: tx("role.loyiha_menejeri", undefined, "Loyiha menejeri"), bg: "var(--done-soft)", color: "var(--done)" };
+    if (actor.is_platform_admin) return { label: tx("role.administrator", undefined, "Admin"), bg: "var(--accent-soft)", color: "var(--accent)" };
     return {
       label: actor.specialty_display || actor.job_title || tx("role.xodim", undefined, "Xodim"),
       bg: "var(--surface-2)",
@@ -185,47 +185,47 @@ export default function WorkDone() {
   function getVerbMeta(item: Activity) {
     if (item.verb === "task.status" || item.verb === "task.approved") {
       return {
-        color: "#10b981",
-        bg: "rgba(16, 185, 129, 0.1)",
+        color: "var(--success)",
+        bg: "var(--success-soft)",
         icon: <IconCheck size={14} />,
         label: tx("work_done.verb_done", undefined, "Bajarildi"),
       };
     }
     if (item.verb === "task.commented") {
       return {
-        color: "#3b82f6",
-        bg: "rgba(59, 130, 246, 0.1)",
+        color: "var(--accent)",
+        bg: "var(--accent-soft)",
         icon: <IconChat size={14} />,
         label: tx("work_done.verb_comment", undefined, "Izoh"),
       };
     }
     if (item.verb === "task.worklog") {
       return {
-        color: "#f59e0b",
-        bg: "rgba(245, 158, 11, 0.1)",
+        color: "var(--attention)",
+        bg: "var(--attention-soft)",
         icon: <IconClock size={14} />,
         label: tx("work_done.verb_worklog", undefined, "Ish vaqti"),
       };
     }
     if (item.verb === "task.created") {
       return {
-        color: "#8b5cf6",
-        bg: "rgba(139, 92, 246, 0.1)",
+        color: "var(--done)",
+        bg: "var(--done-soft)",
         icon: <IconTasks size={14} />,
         label: tx("work_done.verb_created", undefined, "Yangi vazifa"),
       };
     }
     if (item.verb === "task.rejected") {
       return {
-        color: "#ef4444",
-        bg: "rgba(239, 68, 68, 0.1)",
+        color: "var(--danger)",
+        bg: "var(--danger-soft)",
         icon: <span style={{ fontWeight: 700 }}>✕</span>,
         label: tx("work_done.verb_rejected", undefined, "Qaytarildi"),
       };
     }
     return {
-      color: "#64748b",
-      bg: "rgba(100, 116, 139, 0.1)",
+      color: "var(--muted)",
+      bg: "var(--surface-2)",
       icon: <IconLayers size={14} />,
       label: tx("work_done.verb_updated", undefined, "Yangilanish"),
     };
@@ -510,7 +510,7 @@ export default function WorkDone() {
                   borderRadius: 12,
                   background: "var(--surface)",
                   border: "1px solid var(--border)",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                  boxShadow: "var(--shadow-xs)",
                   transition: "all 0.15s ease",
                   cursor: item.task ? "pointer" : "default",
                 }}

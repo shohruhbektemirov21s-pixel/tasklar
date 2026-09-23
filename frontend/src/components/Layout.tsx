@@ -69,7 +69,7 @@ function toPageTop() {
 function BackButton() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { history, currentIdx, goBackTo, clearHistory } = useNavHistory();
+  const { currentIdx } = useNavHistory();
   const isRootPage = location.pathname === "/panel" || location.pathname === "/";
   const hasHistory = currentIdx > 0 || (typeof window !== "undefined" && window.history.length > 1);
   const canGoBack = hasHistory || !isRootPage;
@@ -116,7 +116,7 @@ export default function Layout() {
     user?.global_role === "MANAGER" ||
     user?.specialty === "PM"
   );
-  const { subscribe, connected, reload: reloadRealtime, unread } = useRealtime();
+  const { subscribe, reload: reloadRealtime, unread } = useRealtime();
   const go = useGo();
   const loc = useLocation();
   const [counts, setCounts] = useState({ open: 0, reviews: 0, joins: 0, orders: 0, suggestions: 0 });

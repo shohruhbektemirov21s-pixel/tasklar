@@ -28,9 +28,9 @@ function getOrderStatusBadge(status: string, display?: string) {
         <span
           className="badge badge-brand"
           style={{
-            background: "rgba(168, 85, 247, 0.15)",
-            color: "#7e22ce",
-            borderColor: "rgba(168, 85, 247, 0.35)",
+            background: "var(--done-soft)",
+            color: "var(--done)",
+            borderColor: "var(--done-border)",
             fontWeight: 600,
           }}
         >
@@ -437,20 +437,20 @@ export default function Profile() {
               <div
                 className="card mb"
                 style={{
-                  border: "2px solid #a855f7",
-                  background: "linear-gradient(to bottom, rgba(168, 85, 247, 0.05), transparent)",
+                  border: "2px solid var(--done)",
+                  background: "linear-gradient(to bottom, var(--done-soft), transparent)",
                   borderRadius: 12,
-                  boxShadow: "0 4px 16px rgba(168, 85, 247, 0.12)",
+                  boxShadow: "var(--shadow-md)",
                 }}
               >
-                <div className="card-head row between middle" style={{ padding: "14px 18px", borderBottom: "1px solid rgba(168, 85, 247, 0.2)" }}>
+                <div className="card-head row between middle" style={{ padding: "14px 18px", borderBottom: "1px solid var(--done-border)" }}>
                   <div className="row middle" style={{ gap: 8 }}>
                     <span style={{ fontSize: 20 }}>📑</span>
-                    <strong style={{ fontSize: 15, color: "#7e22ce" }}>
+                    <strong style={{ fontSize: 15, color: "var(--done)" }}>
                       {tx("profile.tasdiqlash_kutilayotgan_buyurtmalar")}
                     </strong>
                   </div>
-                  <span className="badge badge-brand" style={{ background: "#7e22ce", color: "#fff", fontWeight: 700, padding: "2px 10px" }}>
+                  <span className="badge badge-brand" style={{ background: "var(--done)", color: "#fff", fontWeight: 700, padding: "2px 10px" }}>
                     {pendingOrders.length}
                   </span>
                 </div>
@@ -460,10 +460,10 @@ export default function Profile() {
                     <div
                       key={ord.id}
                       style={{
-                        border: "1px solid var(--border-color, #e2e8f0)",
+                        border: "1px solid var(--border)",
                         borderRadius: 10,
                         padding: 16,
-                        background: "var(--card-bg, #ffffff)",
+                        background: "var(--surface)",
                       }}
                     >
                       <div className="row between middle wrap" style={{ gap: 8, marginBottom: 10 }}>
@@ -495,8 +495,8 @@ export default function Profile() {
                       {ord.completion_note && (
                         <div
                           style={{
-                            background: "rgba(168, 85, 247, 0.08)",
-                            borderLeft: "4px solid #a855f7",
+                            background: "var(--done-soft)",
+                            borderLeft: "4px solid var(--done)",
                             padding: "10px 14px",
                             borderRadius: "0 8px 8px 0",
                             fontSize: 13,
@@ -504,7 +504,7 @@ export default function Profile() {
                             lineHeight: 1.5,
                           }}
                         >
-                          <strong style={{ color: "#7e22ce", display: "block", marginBottom: 2, fontSize: 12 }}>
+                          <strong style={{ color: "var(--done)", display: "block", marginBottom: 2, fontSize: 12 }}>
                             💬 {tx("profile.pm_hisobot_izohi")}:
                           </strong>
                           <span style={{ color: "var(--text)" }}>{ord.completion_note}</span>
@@ -517,7 +517,7 @@ export default function Profile() {
                           className="row middle wrap"
                           style={{
                             gap: 10,
-                            background: "var(--bg-subtle, #f8fafc)",
+                            background: "var(--surface-2)",
                             padding: "8px 12px",
                             borderRadius: 8,
                             marginBottom: 12,
@@ -546,7 +546,7 @@ export default function Profile() {
 
                       {/* Tasdiqlash / Qaytarish harakatlari */}
                       {canManageReview && (
-                        <div className="row wrap" style={{ gap: 10, marginTop: 6, paddingTop: 10, borderTop: "1px dashed var(--border-color, #e2e8f0)" }}>
+                        <div className="row wrap" style={{ gap: 10, marginTop: 6, paddingTop: 10, borderTop: "1px dashed var(--border)" }}>
                           <Button
                             variant="success" size="sm"
                             loading={orderActionBusy === ord.id}
@@ -871,13 +871,13 @@ export default function Profile() {
 
                 <div
                   style={{
-                    background: "#fffbeb",
-                    border: "1px solid #fef3c7",
+                    background: "var(--attention-soft)",
+                    border: "1px solid var(--attention-border)",
                     borderRadius: 6,
                     padding: 12,
                     marginBottom: 14,
                     fontSize: 12.5,
-                    color: "#92400e",
+                    color: "var(--attention)",
                   }}
                 >
                   Buyurtma kamchiliklar ko'rsatilgan holda mas'ul loyiha menejeriga (PM) qaytariladi va qayta ishlashga yuboriladi.

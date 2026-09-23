@@ -145,7 +145,7 @@ export default function CalendarPage() {
         from: dayNo(p.from),
         to: dayNo(p.to),
         label: p.name,
-        color: "#8b5cf6",
+        color: "var(--done)",
         overdue: p.overdue,
         openEnded: p.open_ended,
         startsHere: p.starts_here,
@@ -159,9 +159,9 @@ export default function CalendarPage() {
     const fromTasks: EventBar[] = data.tasks
       .filter((t: CalendarTask) => t.from && t.to)
       .map((t: CalendarTask) => {
-        let taskColor = "#3562ff";
-        if (t.done) taskColor = "#10b981";
-        else if (t.overdue) taskColor = "#f59e0b";
+        let taskColor = "var(--accent)";
+        if (t.done) taskColor = "var(--success)";
+        else if (t.overdue) taskColor = "var(--attention)";
 
         return {
           key: `t${t.id}`,
@@ -306,19 +306,19 @@ export default function CalendarPage() {
               {/* Aniq, tartibli ranglar legendasi */}
               <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 12, color: "var(--muted)" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#8b5cf6" }} />
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--done)" }} />
                   {tx("common.loyiha", undefined, "Loyiha")}
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3562ff" }} />
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)" }} />
                   {tx("common.vazifa", undefined, "Vazifa")}
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }} />
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--attention)" }} />
                   {tx("calendar.muddat_muddati_otgan", undefined, "Kechikkan")}
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--success)" }} />
                   {tx("common.bajarildi", undefined, "Yakunlangan")}
                 </span>
               </div>
@@ -422,7 +422,7 @@ export default function CalendarPage() {
                           gridColumn: `${weekday(bar.from) + 1} / ${weekday(bar.to) + 2}`,
                           gridRow: lane + 2,
                           background: bar.color,
-                          color: "#ffffff",
+                          color: "#fff",
                           borderRadius: 4,
                           fontWeight: 600,
                           fontSize: 11.5,
@@ -494,7 +494,7 @@ export default function CalendarPage() {
                             width: 8,
                             height: 8,
                             borderRadius: "50%",
-                            background: "#8b5cf6",
+                            background: "var(--done)",
                             flexShrink: 0,
                           }}
                         />
@@ -518,7 +518,7 @@ export default function CalendarPage() {
                               width: 8,
                               height: 8,
                               borderRadius: "50%",
-                              background: t.done ? "#10b981" : t.overdue ? "#f59e0b" : "#3562ff",
+                              background: t.done ? "var(--success)" : t.overdue ? "var(--attention)" : "var(--accent)",
                               flexShrink: 0,
                             }}
                           />

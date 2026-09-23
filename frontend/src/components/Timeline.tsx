@@ -81,9 +81,9 @@ export default function Timeline({
                       fontWeight: 700,
                       padding: "1px 5px",
                       borderRadius: 4,
-                      background: halfNum === 1 ? "var(--accent-bg, #eff6ff)" : "var(--warning-bg, #fef3c7)",
-                      color: halfNum === 1 ? "var(--accent, #2563eb)" : "var(--warning, #d97706)",
-                      border: `1px solid ${halfNum === 1 ? "rgba(37,99,235,0.2)" : "rgba(217,119,6,0.2)"}`,
+                      background: halfNum === 1 ? "var(--accent-soft)" : "var(--attention-soft)",
+                      color: halfNum === 1 ? "var(--accent)" : "var(--attention)",
+                      border: `1px solid ${halfNum === 1 ? "var(--accent-border)" : "var(--attention-border)"}`,
                     }}
                     title={halfNum === 1 ? tx("my_work.davr_1", undefined, "1-davr: 1—15 sanalar (1)") : tx("my_work.davr_2", undefined, "2-davr: 16—30 sanalar (2)")}
                   >

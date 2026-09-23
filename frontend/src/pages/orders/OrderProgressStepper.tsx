@@ -7,19 +7,19 @@ export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
     return (
       <div
         style={{
-          background: "#fef2f2",
-          border: "1px solid #fecaca",
+          background: "var(--danger-soft)",
+          border: "1px solid var(--danger-border)",
           borderRadius: 8,
           padding: "14px 16px",
           marginBottom: 16,
         }}
       >
-        <div className="row middle" style={{ gap: 8, color: "#991b1b", fontWeight: 700, fontSize: 13.5 }}>
+        <div className="row middle" style={{ gap: 8, color: "var(--danger)", fontWeight: 700, fontSize: 13.5 }}>
           <span style={{ fontSize: 18 }}>❌</span>
           <span>{tx("orders.stepper_rad_etilgan")}</span>
         </div>
         {item.pm_notes && (
-          <div style={{ marginTop: 6, fontSize: 12.5, color: "#7f1d1d", whiteSpace: "pre-wrap" }}>
+          <div style={{ marginTop: 6, fontSize: 12.5, color: "var(--danger)", whiteSpace: "pre-wrap" }}>
             <strong>{tx("orders.stepper_sabab_izoh")}</strong> {item.pm_notes}
           </div>
         )}
@@ -79,8 +79,8 @@ export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
   return (
     <div
       style={{
-        background: "var(--surface, #f8fafc)",
-        border: "1px solid var(--border-color, #e2e8f0)",
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
         borderRadius: 8,
         padding: "14px 16px",
         marginBottom: 16,
@@ -93,7 +93,7 @@ export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
             {item.status_display || ORDER_STATUS_CONFIG[item.status]?.label}
           </span>
         </div>
-        <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--brand, #2563eb)" }}>
+        <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--accent)" }}>
           {tx("orders.stepper_bosqich")} {Math.min(currentStep, 6)} / 6
         </div>
       </div>
@@ -110,20 +110,20 @@ export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
           const isCurrent = currentStep === st.num;
 
           const stepBg = isCurrent
-            ? "#eff6ff"
+            ? "var(--accent-soft)"
             : isPassed
-            ? "#f0fdf4"
-            : "#f8fafc";
+            ? "var(--success-soft)"
+            : "var(--surface-2)";
           const stepBorder = isCurrent
-            ? "#3b82f6"
+            ? "var(--accent)"
             : isPassed
-            ? "#86efac"
-            : "var(--border-color, #e2e8f0)";
+            ? "var(--success-border)"
+            : "var(--border)";
           const stepColor = isCurrent
-            ? "#1d4ed8"
+            ? "var(--accent)"
             : isPassed
-            ? "#15803d"
-            : "var(--muted, #64748b)";
+            ? "var(--success)"
+            : "var(--muted)";
 
           return (
             <div
@@ -153,7 +153,7 @@ export function OrderProgressStepper({ item }: { item: ChangeRequestItem }) {
               <div
                 style={{
                   fontSize: 10,
-                  color: "var(--muted, #64748b)",
+                  color: "var(--muted)",
                   marginTop: 3,
                   overflow: "hidden",
                   textOverflow: "ellipsis",

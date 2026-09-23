@@ -15,13 +15,12 @@ import { Link } from "react-router-dom";
 import { ApiError, api } from "@/api/client";
 import type { Forecast, Project } from "@/api/types";
 import { Avatar, Card, Empty, ErrorMsg, Loading, Stat, fmtDate } from "@/components/ui";
-import { toDeveloper, toProject, useGo } from "@/nav";
+import { toDeveloper, toProject } from "@/nav";
 import { tx } from "@/i18n";
 
 const TaskDetailModal = lazy(() => import("@/pages/TaskDetail"));
 
 export default function ForecastTab({ project }: { project: Project }) {
-  const go = useGo();
   const [data, setData] = useState<Forecast | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);

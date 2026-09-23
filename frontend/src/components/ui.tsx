@@ -42,7 +42,7 @@ export function Avatar({
     };
   }, []);
 
-  if (!user) return <span className={`avatar ${size}`} style={{ background: "#30363d" }}>?</span>;
+  if (!user) return <span className={`avatar ${size}`} style={{ background: "var(--surface-3)" }}>?</span>;
 
   const shouldHover = showHoverCard && size !== "xl";
 
@@ -350,7 +350,7 @@ export function AvatarStack({ users }: { users: UserBrief[] }) {
       {users.slice(0, 5).map((u) => (
         <Avatar key={u.id} user={u} size="sm" />
       ))}
-      {users.length > 5 && <span className="avatar sm" style={{ background: "#30363d" }}>+{users.length - 5}</span>}
+      {users.length > 5 && <span className="avatar sm" style={{ background: "var(--surface-3)" }}>+{users.length - 5}</span>}
     </span>
   );
 }
@@ -399,7 +399,7 @@ export function SpecialtyChip({
   icon?: string;
 }) {
   return (
-    <span className="badge" key={value} style={{ color: color || undefined, borderColor: (color || "#30363d") + "66" }}>
+    <span className="badge" key={value} style={{ color: color || undefined, borderColor: color ? color + "66" : "var(--border)" }}>
       {icon && <span className="mono">{icon}</span>}
       {label}
     </span>
@@ -473,12 +473,12 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   const finalBreadcrumb = breadcrumb || (breadcrumbs && (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-muted)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
       {breadcrumbs.map((b, i) => (
         <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
           {i > 0 && <span style={{ opacity: 0.5 }}>/</span>}
           {b.href ? (
-            <Link to={b.href} style={{ color: "var(--text-muted)", textDecoration: "none" }}>{b.label}</Link>
+            <Link to={b.href} style={{ color: "var(--muted)", textDecoration: "none" }}>{b.label}</Link>
           ) : (
             <span style={{ color: "var(--text)" }}>{b.label}</span>
           )}

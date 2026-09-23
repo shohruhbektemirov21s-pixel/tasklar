@@ -2,14 +2,14 @@ export function KpiCardSkeleton() {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #e2e8f0",
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
         borderRadius: 14,
         padding: "16px 20px",
         display: "flex",
         alignItems: "center",
         gap: 16,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+        boxShadow: "var(--shadow-xs)",
       }}
     >
       <div
@@ -29,9 +29,9 @@ export function KpiCardSkeleton() {
 
 export function TableRowSkeleton({ rowNum }: { rowNum: number }) {
   return (
-    <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+    <tr style={{ borderBottom: "1px solid var(--border-muted)" }}>
       <td style={{ textAlign: "center", padding: "16px 18px" }}>
-        <span style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 600 }}>{rowNum}</span>
+        <span style={{ fontSize: 13, color: "var(--subtle)", fontWeight: 600 }}>{rowNum}</span>
       </td>
       <td style={{ padding: "16px 18px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

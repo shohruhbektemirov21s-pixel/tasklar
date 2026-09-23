@@ -65,14 +65,14 @@ function InquiryRow({
   const isFor = item.my_vote === "FOR";
 
   const renderStatusPill = (status: InquiryStatusValue, label: string) => {
-    let bg = "#fef3c7";
-    let color = "#b45309";
+    let bg = "var(--attention-soft)";
+    let color = "var(--attention)";
     if (status === "APPROVED") {
-      bg = "#e6f4ea";
-      color = "#137333";
+      bg = "var(--success-soft)";
+      color = "var(--success)";
     } else if (status === "REJECTED") {
-      bg = "#fce8e6";
-      color = "#c5221f";
+      bg = "var(--danger-soft)";
+      color = "var(--danger)";
     }
     return (
       <span style={{
@@ -99,7 +99,7 @@ function InquiryRow({
         <div style={{
           width: 28, height: 28, borderRadius: 6, background: "var(--surface-2)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontWeight: 700, fontSize: 12, color: "var(--text-muted)", flexShrink: 0,
+          fontWeight: 700, fontSize: 12, color: "var(--muted)", flexShrink: 0,
         }}>
           {rank}
         </div>
@@ -128,7 +128,7 @@ function InquiryRow({
             </span>
           )}
         </div>
-        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+        <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
           {item.author ? item.author.full_name : tx("inquiries.anonim")} • {timeAgo(item.created_at)}
         </div>
       </div>

@@ -128,12 +128,12 @@ export default function PromptHost() {
                 width: "100%",
                 resize: "vertical",
                 boxSizing: "border-box",
-                borderRadius: "var(--radius, 8px)",
+                borderRadius: "var(--radius)",
                 padding: "8px 12px",
                 fontSize: 14,
-                border: "1px solid var(--border, #cbd5e1)",
-                background: "var(--surface, #fff)",
-                color: "var(--text, inherit)",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+                color: "var(--text)",
               }}
             />
           ) : (
@@ -148,12 +148,12 @@ export default function PromptHost() {
               style={{
                 width: "100%",
                 boxSizing: "border-box",
-                borderRadius: "var(--radius, 8px)",
+                borderRadius: "var(--radius)",
                 padding: "8px 12px",
                 fontSize: 14,
-                border: "1px solid var(--border, #cbd5e1)",
-                background: "var(--surface, #fff)",
-                color: "var(--text, inherit)",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+                color: "var(--text)",
               }}
             />
           )}

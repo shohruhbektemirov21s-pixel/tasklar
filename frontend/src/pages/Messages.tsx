@@ -140,7 +140,7 @@ export default function Messages() {
                       <strong style={{ fontSize: 14 }}>{partner.full_name}</strong>
                       <SpecialtyTag user={partner} compact />
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)" }}>
                       <span className="tf-status-dot" />
                       <span>{tx("common.onlayn") || "Faol"}</span>
                     </div>

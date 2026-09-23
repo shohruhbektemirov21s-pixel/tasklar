@@ -109,9 +109,9 @@ export default function Login() {
                 style={{
                   padding: "10px 14px",
                   borderRadius: 8,
-                  background: "rgba(239, 68, 68, 0.12)",
-                  border: "1px solid rgba(239, 68, 68, 0.35)",
-                  color: "var(--danger, #dc2626)",
+                  background: "var(--danger-soft)",
+                  border: "1px solid var(--danger-border)",
+                  color: "var(--danger)",
                   fontSize: 12.5,
                   fontWeight: 600,
                   marginBottom: 14,

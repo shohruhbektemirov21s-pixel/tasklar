@@ -57,7 +57,7 @@ function AccordionSection({
         marginBottom: 10,
         borderRadius: 8,
         border: isOpen ? "1px solid var(--border)" : "1px solid var(--border-muted)",
-        boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.04)" : "none",
+        boxShadow: isOpen ? "var(--sh-raised)" : "none",
         transition: "all 0.18s ease",
         overflow: "hidden",
       }}
@@ -454,7 +454,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
       return createPortal(
         <div className="modal-overlay" style={{
           position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center",
-          background: "rgba(8, 11, 16, 0.72)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
+          background: "var(--overlay)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
         }} onClick={onClose}>
           <div className="modal-window card" style={{ padding: 24, maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
             {errorBody}
@@ -475,7 +475,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
       return createPortal(
         <div className="modal-overlay" style={{
           position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center",
-          background: "rgba(8, 11, 16, 0.72)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
+          background: "var(--overlay)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
         }} onClick={onClose}>
           <div className="modal-window card" style={{ padding: 40 }} onClick={(e) => e.stopPropagation()}>
             <Loading />
@@ -610,7 +610,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
             {task.is_pm_or_boss_created && (
               <span
                 className="badge"
-                style={{ background: "var(--surface-subtle)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+                style={{ background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--muted)" }}
                 title={tx("task_detail.pm_boshliq_vazifasi_izoh")}
               >
                 👑 {tx("task_detail.pm_boshliq_vazifasi")}
@@ -738,7 +738,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                         padding: "12px 14px",
                         border: "1px solid var(--border-muted)",
                         borderRadius: 8,
-                        background: "var(--surface-subtle)",
+                        background: "var(--surface-2)",
                         display: "flex",
                         flexDirection: "column",
                         gap: 8,
@@ -790,7 +790,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                       </div>
 
                       {(a.start_date || a.due_date) && (
-                        <div className="row middle" style={{ fontSize: 12, color: "var(--text-muted)", gap: 14 }}>
+                        <div className="row middle" style={{ fontSize: 12, color: "var(--muted)", gap: 14 }}>
                           {a.start_date && (
                             <span>
                               <strong>{tx("task_detail.boshlanish", undefined, "Boshlanish")}:</strong> {fmtDateTime(a.start_date)}
@@ -851,7 +851,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                   ))}
                 </div>
               ) : (
-                <div style={{ textAlign: "center", padding: "16px 12px", background: "var(--surface-subtle)", borderRadius: 6 }}>
+                <div style={{ textAlign: "center", padding: "16px 12px", background: "var(--surface-2)", borderRadius: 6 }}>
                   <p className="muted" style={{ margin: "0 0 10px 0", fontSize: 13 }}>
                     {tx("task_detail.jamoa_bosh", undefined, "Ushbu vazifada hali jamoa a'zolari biriktirilmagan. 3 kishi yoki bir nechta dasturchini birlashtirib ishlashingiz mumkin.")}
                   </p>
@@ -1797,7 +1797,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(8, 11, 16, 0.72)",
+            background: "var(--overlay)",
             backdropFilter: "blur(6px)",
             WebkitBackdropFilter: "blur(6px)",
             padding: "20px 16px",
@@ -1809,9 +1809,9 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
             style={{
               width: "min(560px, 96vw)",
               borderRadius: 12,
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              boxShadow: "var(--shadow-modal)",
               overflow: "hidden",
-              background: "var(--card-bg, #ffffff)",
+              background: "var(--surface)",
               border: "1px solid var(--border)",
             }}
             onClick={(e) => e.stopPropagation()}
@@ -1954,7 +1954,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
           alignItems: "center",
           justifyContent: "center",
           padding: "20px 16px",
-          background: "rgba(8, 11, 16, 0.72)",
+          background: "var(--overlay)",
           backdropFilter: "blur(6px)",
           WebkitBackdropFilter: "blur(6px)",
           overflow: "hidden",
@@ -1969,9 +1969,9 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
             display: "flex",
             flexDirection: "column",
             borderRadius: 12,
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            boxShadow: "var(--shadow-modal)",
             overflow: "hidden",
-            background: "var(--bg, #f8fafc)",
+            background: "var(--canvas)",
             border: "1px solid var(--border)",
           }}
           onClick={(e) => e.stopPropagation()}
@@ -1984,7 +1984,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
               justifyContent: "space-between",
               padding: "12px 20px",
               borderBottom: "1px solid var(--border)",
-              background: "var(--card-bg, #ffffff)",
+              background: "var(--surface)",
               flexShrink: 0,
               gap: 12,
             }}

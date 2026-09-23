@@ -49,7 +49,7 @@ const EMPTY_FORM = {
 };
 
 const EMPTY_SPEC_FORM = {
-  name: "", code: "", color: "#2563eb", icon: "*", skills: "",
+  name: "", code: "", color: "var(--accent)", icon: "*", skills: "",
 };
 
 interface SpecialtyItem {
@@ -550,7 +550,7 @@ export default function Admin() {
                   </thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u.id} className={u.is_active ? "" : "muted"} style={!u.is_active ? { background: "rgba(234, 179, 8, 0.05)" } : undefined}>
+                      <tr key={u.id} className={u.is_active ? "" : "muted"} style={!u.is_active ? { background: "var(--attention-soft)" } : undefined}>
                         <td>
                           <div className="row">
                             <Avatar user={u} size="sm" />
@@ -742,7 +742,7 @@ export default function Admin() {
                                   width: 26,
                                   height: 26,
                                   borderRadius: 6,
-                                  background: s.color || "#2563eb",
+                                  background: s.color || "var(--accent)",
                                   color: "#fff",
                                   fontWeight: "bold",
                                   fontSize: 11,
@@ -764,8 +764,8 @@ export default function Admin() {
                                 width: 16,
                                 height: 16,
                                 borderRadius: 4,
-                                backgroundColor: s.color || "#2563eb",
-                                border: "1px solid rgba(0,0,0,0.15)",
+                                backgroundColor: s.color || "var(--accent)",
+                                border: "1px solid var(--border-strong)",
                                 verticalAlign: "middle",
                               }}
                               title={s.color}
@@ -824,11 +824,11 @@ export default function Admin() {
                 </thead>
                 <tbody>
                   {projects.map((p) => (
-                    <tr key={p.id} style={p.is_deleted ? { opacity: 0.75, background: "rgba(239, 68, 68, 0.04)" } : undefined}>
+                    <tr key={p.id} style={p.is_deleted ? { opacity: 0.75, background: "var(--danger-soft)" } : undefined}>
                       <td>
                         <span className="lang-dot" style={{ background: p.color }} />{" "}
                         {p.is_deleted ? (
-                          <span style={{ textDecoration: "line-through", color: "var(--text-muted)" }}>
+                          <span style={{ textDecoration: "line-through", color: "var(--muted)" }}>
                             {p.name}
                           </span>
                         ) : (
@@ -1128,11 +1128,11 @@ export default function Admin() {
                         width: 80,
                         height: 80,
                         borderRadius: 14,
-                        border: "2px dashed var(--border-color, #cbd5e1)",
+                        border: "2px dashed var(--border)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        background: "var(--surface-2, #f8fafc)",
+                        background: "var(--surface-2)",
                         overflow: "hidden",
                         flexShrink: 0,
                       }}

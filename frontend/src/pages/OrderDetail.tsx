@@ -59,13 +59,13 @@ import { toEditOrder, toOrders, toProject, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge } from "./ChangeRequests";
 import { Button, buttonClass } from "@/components/Button";
 
-const UserOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+const UserOutlineIcon = ({ size = 15, color = "var(--muted)" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
     <circle cx="12" cy="7" r="4" />
   </svg>
 );
-const CalendarOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+const CalendarOutlineIcon = ({ size = 15, color = "var(--muted)" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="4" width="18" height="18" rx="2" />
     <line x1="16" y1="2" x2="16" y2="6" />
@@ -73,35 +73,35 @@ const CalendarOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; 
     <line x1="3" y1="10" x2="21" y2="10" />
   </svg>
 );
-const ClockOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+const ClockOutlineIcon = ({ size = 15, color = "var(--muted)" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <polyline points="12 6 12 12 16 14" />
   </svg>
 );
-const TimerOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+const TimerOutlineIcon = ({ size = 15, color = "var(--muted)" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="14" r="8" />
     <line x1="12" y1="2" x2="12" y2="6" />
     <line x1="12" y1="14" x2="15" y2="11" />
   </svg>
 );
-const HourglassOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
+const HourglassOutlineIcon = ({ size = 15, color = "var(--muted)" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
   </svg>
 );
-const PaperclipOutlineIcon = ({ size = 16, color = "#3b82f6" }: { size?: number; color?: string }) => (
+const PaperclipOutlineIcon = ({ size = 16, color = "var(--accent)" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l7.88-7.88" />
   </svg>
 );
 const FolderFilledIcon = ({ size = 18 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="var(--attention)" stroke="var(--attention)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
   </svg>
 );
-const DocLilacIcon = ({ size = 20, color = "#8b5cf6" }: { size?: number; color?: string }) => (
+const DocLilacIcon = ({ size = 20, color = "var(--done)" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <polyline points="14 2 14 8 20 8" />
@@ -110,7 +110,7 @@ const DocLilacIcon = ({ size = 20, color = "#8b5cf6" }: { size?: number; color?:
     <polyline points="10 9 9 9 8 9" />
   </svg>
 );
-const ChevronDownOutlineIcon = ({ size = 16, color = "#64748b" }: { size?: number; color?: string }) => (
+const ChevronDownOutlineIcon = ({ size = 16, color = "var(--muted)" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="6 9 12 15 18 9" />
   </svg>
@@ -806,7 +806,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             alignItems: "center",
             justifyContent: "center",
             padding: "20px 16px",
-            background: "rgba(8, 11, 16, 0.72)",
+            background: "var(--overlay)",
             backdropFilter: "blur(6px)",
             WebkitBackdropFilter: "blur(6px)",
           }}
@@ -862,7 +862,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             alignItems: "center",
             justifyContent: "center",
             padding: "20px 16px",
-            background: "rgba(8, 11, 16, 0.72)",
+            background: "var(--overlay)",
             backdropFilter: "blur(6px)",
             WebkitBackdropFilter: "blur(6px)",
           }}
@@ -870,7 +870,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         >
           <div
             className="modal-window card"
-            style={{ width: "min(400px, 90vw)", padding: "36px 20px", textAlign: "center", borderRadius: 12, background: "var(--card-bg, #fff)" }}
+            style={{ width: "min(400px, 90vw)", padding: "36px 20px", textAlign: "center", borderRadius: 12, background: "var(--surface)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <Loading text="Buyurtma ma'lumotlari yuklanmoqda..." />
@@ -901,7 +901,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             alignItems: "center",
             justifyContent: "center",
             padding: "20px 16px",
-            background: "rgba(8, 11, 16, 0.72)",
+            background: "var(--overlay)",
             backdropFilter: "blur(6px)",
             WebkitBackdropFilter: "blur(6px)",
           }}
@@ -909,7 +909,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         >
           <div
             className="modal-window card"
-            style={{ width: "min(500px, 90vw)", padding: 30, textAlign: "center", borderRadius: 12, background: "var(--card-bg, #fff)" }}
+            style={{ width: "min(500px, 90vw)", padding: 30, textAlign: "center", borderRadius: 12, background: "var(--surface)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <ErrorMsg error={error || "Buyurtma topilmadi"} />
@@ -1024,14 +1024,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         {item.pending_version && (
           <div
             style={{
-              background: "#f0f7ff",
-              border: "1px solid #dbeafe",
+              background: "var(--accent-soft)",
+              border: "1px solid var(--accent-border)",
               borderRadius: 14,
               padding: "18px 22px",
               display: "flex",
               flexDirection: "column",
               gap: 14,
-              boxShadow: "0 1px 3px rgba(59, 130, 246, 0.05)",
+              boxShadow: "var(--shadow-xs)",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -1040,20 +1040,20 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   width: 44,
                   height: 44,
                   borderRadius: 12,
-                  background: "#ede9fe",
+                  background: "var(--done-soft)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
                 }}
               >
-                <DocLilacIcon size={22} color="#7c3aed" />
+                <DocLilacIcon size={22} color="var(--done)" />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text, #0f172a)" }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text)" }}>
                   {tx("orders.new_tz_uploaded_title", { v: item.pending_version.version })}
                 </div>
-                <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
+                <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
                   Yuklangan: <strong>{item.pending_version.uploaded_by_name || tx("orders.buyurtmachi")}</strong> • {fmtDateTime(item.pending_version.created_at)}
                 </div>
               </div>
@@ -1061,7 +1061,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
               {item.pending_version.tz_file_url && (
                 <Button
-                  icon={<DocLilacIcon size={16} color="#8b5cf6" />}
+                  icon={<DocLilacIcon size={16} color="var(--done)" />}
                   onClick={() => setPreviewFile({
                     url: item.pending_version!.tz_file_url!,
                     name: item.pending_version!.tz_file_name || tx("orders.yangi_tz_fayli"),
@@ -1089,12 +1089,12 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             {item.pending_version.change_note && (
               <div
                 style={{
-                  background: "rgba(255, 255, 255, 0.75)",
+                  background: "var(--surface)",
                   borderRadius: 8,
                   padding: "8px 12px",
                   fontSize: 12.5,
-                  borderLeft: "3px solid #7c3aed",
-                  color: "var(--text, #334155)",
+                  borderLeft: "3px solid var(--done)",
+                  color: "var(--text)",
                 }}
               >
                 <strong>O'zgarishlar tavsifi (sababi): </strong>
@@ -1106,8 +1106,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         {item.status === "DRAFT" && (
           <div
             style={{
-              background: "rgba(234, 179, 8, 0.08)",
-              border: "1px solid rgba(234, 179, 8, 0.35)",
+              background: "var(--attention-soft)",
+              border: "1px solid var(--attention-border)",
               borderRadius: 8,
               padding: "12px 16px",
               display: "flex",
@@ -1120,8 +1120,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 22 }}>📝</span>
               <div>
-                <strong style={{ color: "#b45309" }}>{tx("orders.status_draft")}: </strong>
-                <span style={{ fontSize: 13, color: "var(--color-fg-default)" }}>
+                <strong style={{ color: "var(--attention)" }}>{tx("orders.status_draft")}: </strong>
+                <span style={{ fontSize: 13, color: "var(--text)" }}>
                   {tx("orders.draft_badge_desc")}
                 </span>
               </div>
@@ -1159,8 +1159,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         {!item.assigned_pm && isPMOrAdmin && item.status !== "DRAFT" && (
           <div
             style={{
-              background: "var(--surface-2, #f8fafc)",
-              border: "1px solid var(--border-color, #e2e8f0)",
+              background: "var(--surface-2)",
+              border: "1px solid var(--border)",
               borderRadius: 8,
               padding: "10px 14px",
               display: "flex",
@@ -1192,8 +1192,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         {item.assigned_pm && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (item.status === "ACCEPTED" || item.status === "ASSIGNED_TO_DEV" || item.status === "IN_PROGRESS") && (
           <div
             style={{
-              background: "var(--surface-2, #f8fafc)",
-              border: "1px solid var(--border-color, #e2e8f0)",
+              background: "var(--surface-2)",
+              border: "1px solid var(--border)",
               borderRadius: 8,
               padding: "10px 14px",
               display: "flex",
@@ -1227,8 +1227,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         {item.status === "READY_FOR_REVIEW" && (
           <div
             style={{
-              background: "rgba(168, 85, 247, 0.08)",
-              border: "1.5px solid #a855f7",
+              background: "var(--done-soft)",
+              border: "1.5px solid var(--done)",
               borderRadius: 12,
               padding: "16px 18px",
               display: "flex",
@@ -1241,15 +1241,15 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             <div style={{ flex: 1, minWidth: 260 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 20 }}>📑</span>
-                <span style={{ fontWeight: 700, fontSize: 14.5, color: "#6b21a8" }}>
+                <span style={{ fontWeight: 700, fontSize: 14.5, color: "var(--done)" }}>
                   {tx("orders.boshqarma_tasdigiga_topshirilgan")}
                 </span>
               </div>
-              <div style={{ fontSize: 12.5, color: "#581c87", marginTop: 4 }}>
+              <div style={{ fontSize: 12.5, color: "var(--done)", marginTop: 4 }}>
                 {tx("orders.boshqarma_tasdigi_desc")}
               </div>
               {item.completion_note && (
-                <div style={{ fontSize: 12.5, color: "var(--text)", marginTop: 6, background: "rgba(255,255,255,0.7)", padding: "6px 10px", borderRadius: 6, borderLeft: "3px solid #a855f7" }}>
+                <div style={{ fontSize: 12.5, color: "var(--text)", marginTop: 6, background: "var(--surface)", padding: "6px 10px", borderRadius: 6, borderLeft: "3px solid var(--done)" }}>
                   <strong>{tx("orders.hisobot_izohi")}:</strong> {item.completion_note}
                 </div>
               )}
@@ -1288,7 +1288,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </Button>
               </div>
             ) : (
-              <div style={{ fontSize: 12.5, color: "#6b21a8", fontWeight: 600, background: "rgba(255,255,255,0.6)", padding: "6px 12px", borderRadius: 8 }}>
+              <div style={{ fontSize: 12.5, color: "var(--done)", fontWeight: 600, background: "var(--surface)", padding: "6px 12px", borderRadius: 8 }}>
                 ⏳ {tx("orders.boshqarma_tasdigi_kutilmoqda")}
               </div>
             )}
@@ -1297,8 +1297,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         {item.client_feedback_note && item.status !== "COMPLETED" && item.status !== "READY_FOR_REVIEW" && (
           <div
             style={{
-              background: "#fffbeb",
-              border: "1.5px solid #f59e0b",
+              background: "var(--attention-soft)",
+              border: "1.5px solid var(--attention)",
               borderRadius: 12,
               padding: "16px 18px",
               display: "flex",
@@ -1311,11 +1311,11 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             <div style={{ flex: 1, minWidth: 260 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 20 }}>⚠️</span>
-                <span style={{ fontWeight: 700, fontSize: 14.5, color: "#92400e" }}>
+                <span style={{ fontWeight: 700, fontSize: 14.5, color: "var(--attention)" }}>
                   {tx("orders.boshqarma_kamchilik_bildirdi")}
                 </span>
               </div>
-              <div style={{ fontSize: 13, color: "#78350f", marginTop: 6, whiteSpace: "pre-wrap", background: "rgba(255,255,255,0.7)", padding: "8px 12px", borderRadius: 6, borderLeft: "3px solid #f59e0b" }}>
+              <div style={{ fontSize: 13, color: "var(--attention)", marginTop: 6, whiteSpace: "pre-wrap", background: "var(--surface)", padding: "8px 12px", borderRadius: 6, borderLeft: "3px solid var(--attention)" }}>
                 {item.client_feedback_note}
               </div>
               {item.client_feedback_file_url && (
@@ -1349,12 +1349,12 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         {item.status === "REJECTED" && (item.pm_notes || item.client_feedback_note) && (
           <div
             style={{
-              background: "var(--surface-2, #f8fafc)",
-              border: "1px solid #fecaca",
+              background: "var(--surface-2)",
+              border: "1px solid var(--danger-border)",
               borderRadius: 8,
               padding: "10px 14px",
               fontSize: 13,
-              color: "var(--danger, #dc2626)",
+              color: "var(--danger)",
             }}
           >
             <strong>{tx("orders.rad_etish_sababi")}: </strong>
@@ -1367,16 +1367,16 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             className="card padded"
             style={{
               borderRadius: 16,
-              border: "1px solid var(--border-color, #e2e8f0)",
+              border: "1px solid var(--border)",
               padding: "24px 28px",
-              background: "var(--surface, #ffffff)",
-              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.03)",
+              background: "var(--surface)",
+              boxShadow: "var(--shadow-xs)",
             }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-            <div style={{ paddingTop: 2, color: "#3b82f6", display: "inline-flex" }}>
-              <CalendarOutlineIcon size={22} color="#3b82f6" />
+            <div style={{ paddingTop: 2, color: "var(--accent)", display: "inline-flex" }}>
+              <CalendarOutlineIcon size={22} color="var(--accent)" />
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div
@@ -1384,7 +1384,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: "0.06em",
-                  color: "#64748b",
+                  color: "var(--muted)",
                   textTransform: "uppercase",
                 }}
               >
@@ -1394,7 +1394,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 style={{
                   fontSize: 20,
                   fontWeight: 700,
-                  color: "var(--text, #0f172a)",
+                  color: "var(--text)",
                   margin: "4px 0 2px 0",
                   lineHeight: 1.3,
                 }}
@@ -1406,7 +1406,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   style={{
                     marginTop: 4,
                     fontSize: 13,
-                    color: "#64748b",
+                    color: "var(--muted)",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
@@ -1418,7 +1418,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     {...toProject(item.project_detail.id)}
                     style={{
                       fontWeight: 600,
-                      color: "var(--text, #0f172a)",
+                      color: "var(--text)",
                       textDecoration: "none",
                     }}
                   >
@@ -1428,7 +1428,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               )}
             </div>
           </div>
-          <div style={{ height: 1, background: "var(--border-muted, #f1f5f9)", margin: "20px 0" }} />
+          <div style={{ height: 1, background: "var(--border-muted)", margin: "20px 0" }} />
           <div
             style={{
               display: "grid",
@@ -1437,48 +1437,48 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             }}
           >
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
-                <UserOutlineIcon size={15} color="#64748b" />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
+                <UserOutlineIcon size={15} color="var(--muted)" />
                 <span>{tx("orders.mijoz", undefined, "Mijoz")}</span>
               </div>
-              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text, #0f172a)", marginTop: 4 }}>
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text)", marginTop: 4 }}>
                 {item.responsible_person || "—"}
               </div>
               {item.department && (
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
                   ({item.department})
                 </div>
               )}
             </div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
-                <UserOutlineIcon size={15} color="#64748b" />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
+                <UserOutlineIcon size={15} color="var(--muted)" />
                 <span>{tx("orders.masul_pm", undefined, "Mas'ul PM")}</span>
               </div>
-              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text, #0f172a)", marginTop: 4 }}>
-                {item.assigned_pm_name || <span style={{ color: "#94a3b8", fontWeight: 500 }}>{tx("orders.biriktirilmagan")}</span>}
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text)", marginTop: 4 }}>
+                {item.assigned_pm_name || <span style={{ color: "var(--subtle)", fontWeight: 500 }}>{tx("orders.biriktirilmagan")}</span>}
               </div>
             </div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
-                <CalendarOutlineIcon size={15} color="#64748b" />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
+                <CalendarOutlineIcon size={15} color="var(--muted)" />
                 <span>{tx("orders.muddat", undefined, "Muddat")}</span>
               </div>
-              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text, #0f172a)", marginTop: 4 }}>
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text)", marginTop: 4 }}>
                 {item.due_date ? fmtDate(item.due_date) : "—"}
               </div>
             </div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
-                <ClockOutlineIcon size={15} color="#64748b" />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
+                <ClockOutlineIcon size={15} color="var(--muted)" />
                 <span>{tx("orders.pm_belgilagan_muddat", undefined, "PM belgilagan muddat")}</span>
               </div>
-              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text, #0f172a)", marginTop: 4 }}>
-                {item.pm_deadline ? fmtDate(item.pm_deadline) : item.pm_estimated_duration || <span style={{ color: "#94a3b8", fontWeight: 500 }}>{tx("orders.kutilmoqda")}</span>}
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--text)", marginTop: 4 }}>
+                {item.pm_deadline ? fmtDate(item.pm_deadline) : item.pm_estimated_duration || <span style={{ color: "var(--subtle)", fontWeight: 500 }}>{tx("orders.kutilmoqda")}</span>}
               </div>
             </div>
           </div>
-          <div style={{ height: 1, background: "var(--border-muted, #f1f5f9)", margin: "20px 0" }} />
+          <div style={{ height: 1, background: "var(--border-muted)", margin: "20px 0" }} />
           <div
             style={{
               display: "grid",
@@ -1487,17 +1487,17 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             }}
           >
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
-                <ClockOutlineIcon size={15} color="#64748b" />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
+                <ClockOutlineIcon size={15} color="var(--muted)" />
                 <span>{tx("orders.masul_dasturchi", undefined, "Mas'ul dasturchi")}</span>
               </div>
-              <div style={{ fontWeight: item.assigned_developer_name ? 700 : 500, fontSize: 14, color: item.assigned_developer_name ? "var(--text, #0f172a)" : "#64748b", marginTop: 4 }}>
+              <div style={{ fontWeight: item.assigned_developer_name ? 700 : 500, fontSize: 14, color: item.assigned_developer_name ? "var(--text)" : "var(--muted)", marginTop: 4 }}>
                 {item.assigned_developer_name || tx("orders.biriktirilmagan")}
               </div>
             </div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
-                <ClockOutlineIcon size={15} color="#64748b" />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
+                <ClockOutlineIcon size={15} color="var(--muted)" />
                 <span>{tx("orders.muhimlik_turi", undefined, "Muhimlik turi")}</span>
               </div>
               <div style={{ marginTop: 4 }}>
@@ -1505,20 +1505,20 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   style={{
                     background:
                       item.priority === "URGENT"
-                        ? "#fef2f2"
+                        ? "var(--danger-soft)"
                         : item.priority === "HIGH"
-                        ? "#eff6ff"
+                        ? "var(--accent-soft)"
                         : item.priority === "MEDIUM"
-                        ? "#f0fdf4"
-                        : "#f8fafc",
+                        ? "var(--success-soft)"
+                        : "var(--surface-2)",
                     color:
                       item.priority === "URGENT"
-                        ? "#ef4444"
+                        ? "var(--danger)"
                         : item.priority === "HIGH"
-                        ? "#3b82f6"
+                        ? "var(--accent)"
                         : item.priority === "MEDIUM"
-                        ? "#10b981"
-                        : "#64748b",
+                        ? "var(--success)"
+                        : "var(--muted)",
                     padding: "3px 14px",
                     borderRadius: 20,
                     fontSize: 12,
@@ -1531,37 +1531,37 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               </div>
             </div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
-                <TimerOutlineIcon size={15} color="#64748b" />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
+                <TimerOutlineIcon size={15} color="var(--muted)" />
                 <span>{tx("orders.vaqt", undefined, "Vaqt")}</span>
               </div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text, #0f172a)", marginTop: 4 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)", marginTop: 4 }}>
                 {fmtDateTime(item.created_at || item.request_date)}
               </div>
             </div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#64748b" }}>
-                <HourglassOutlineIcon size={15} color="#64748b" />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
+                <HourglassOutlineIcon size={15} color="var(--muted)" />
                 <span>{tx("orders.qolgan_vaqt", undefined, "Qolgan vaqt")}</span>
               </div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text, #0f172a)", marginTop: 4 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)", marginTop: 4 }}>
                 {timeAgo(item.updated_at || item.created_at)}
               </div>
             </div>
           </div>
-          <div style={{ height: 1, background: "var(--border-muted, #f1f5f9)", margin: "20px 0" }} />
+          <div style={{ height: 1, background: "var(--border-muted)", margin: "20px 0" }} />
           <div
             style={{
-              background: "var(--surface-2, #f8fafc)",
-              border: "1px solid var(--border-color, #e2e8f0)",
+              background: "var(--surface-2)",
+              border: "1px solid var(--border)",
               borderRadius: 12,
               padding: "16px 20px",
               marginTop: 14,
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: (item.module || item.additional_materials) ? 10 : 0 }}>
-              <div style={{ width: 4, height: 16, borderRadius: 2, background: "#06b6d4" }} />
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text, #0f172a)" }}>
+              <div style={{ width: 4, height: 16, borderRadius: 2, background: "var(--accent)" }} />
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text)" }}>
                 {tx("orders.fayl_va_izohlar", undefined, "Izoh va fayllar")}
               </span>
             </div>
@@ -1569,17 +1569,17 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               <div
                 style={{
                   fontSize: 13.5,
-                  color: "var(--text, #334155)",
+                  color: "var(--text)",
                   lineHeight: 1.55,
                   whiteSpace: "pre-wrap",
-                  background: "var(--surface, #ffffff)",
+                  background: "var(--surface)",
                   padding: "10px 14px",
                   borderRadius: 8,
-                  border: "1px solid var(--border-color, #e2e8f0)",
+                  border: "1px solid var(--border)",
                   marginTop: 6,
                 }}
               >
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 4 }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", marginBottom: 4 }}>
                   {tx("orders.loyiha_izoh_label", undefined, "Loyiha haqida izoh")}
                 </div>
                 {item.module}
@@ -1589,13 +1589,13 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               <div
                 style={{
                   fontSize: 13.5,
-                  color: "var(--text, #334155)",
+                  color: "var(--text)",
                   lineHeight: 1.55,
                   whiteSpace: "pre-wrap",
-                  background: "var(--surface, #ffffff)",
+                  background: "var(--surface)",
                   padding: "10px 14px",
                   borderRadius: 8,
-                  border: "1px solid var(--border-color, #e2e8f0)",
+                  border: "1px solid var(--border)",
                   marginTop: 6,
                 }}
               >
@@ -1611,7 +1611,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               style={{
                 marginTop: 12,
                 paddingTop: 12,
-                borderTop: "1px dashed var(--border-color, #e2e8f0)",
+                borderTop: "1px dashed var(--border)",
                 display: "flex",
                 flexDirection: "column",
                 gap: 8,
@@ -1701,33 +1701,33 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div
               style={{
-                background: "var(--surface-2, #f8fafc)",
-                border: "1px solid var(--border-color, #e2e8f0)",
+                background: "var(--surface-2)",
+                border: "1px solid var(--border)",
                 borderRadius: 12,
                 padding: "14px 18px",
                 marginTop: 14,
                 cursor: "pointer",
                 userSelect: "none",
-                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.02)",
+                boxShadow: "var(--shadow-xs)",
               }}
               onClick={() => setFilesOpen((v) => !v)}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <PaperclipOutlineIcon size={18} color="#3b82f6" />
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #334155)" }}>
+                  <PaperclipOutlineIcon size={18} color="var(--accent)" />
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text)" }}>
                     {tx("orders.fayllar", undefined, "Fayllar")}
                   </span>
                   <span
                     style={{
-                      background: "var(--surface-3, #e2e8f0)",
-                      color: "var(--text-secondary, #475569)",
+                      background: "var(--surface-3)",
+                      color: "var(--text-secondary)",
                       fontSize: 11,
                       fontWeight: 600,
                       padding: "1px 8px",
                       borderRadius: 10,
-                      border: "1px solid var(--border, transparent)",
-                      fontFamily: "var(--mono, inherit)",
+                      border: "1px solid var(--border)",
+                      fontFamily: "var(--mono)",
                     }}
                   >
                     {totalFilesCount} {tx("common.ta")}
@@ -1735,13 +1735,13 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </div>
                 <div
                   style={{
-                    color: "#64748b",
+                    color: "var(--muted)",
                     display: "inline-flex",
                     transition: "transform 0.2s ease",
                     transform: filesOpen ? "rotate(180deg)" : "none",
                   }}
                 >
-                  <ChevronDownOutlineIcon size={16} color="#64748b" />
+                  <ChevronDownOutlineIcon size={16} color="var(--muted)" />
                 </div>
               </div>
               {filesOpen && (
@@ -1749,7 +1749,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   style={{
                     marginTop: 14,
                     paddingTop: 12,
-                    borderTop: "1px solid var(--border-color, #e2e8f0)",
+                    borderTop: "1px solid var(--border)",
                     display: "flex",
                     flexDirection: "column",
                     gap: 8,
@@ -1763,7 +1763,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                       onClick={() => setPreviewFile({ url: item.tz_file_url!, name: item.tz_file_name || "TZ_fayli", size: item.tz_file_size_display })}
                       title={tx("orders.veb_saytda_ochish")}
                     >
-                      <DocLilacIcon size={18} color="#8b5cf6" />
+                      <DocLilacIcon size={18} color="var(--done)" />
                       <span className="btn-grow">
                         {item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}
                       </span>
@@ -1777,14 +1777,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                       onClick={() => setPreviewFile({ url: att.url, name: att.original_name, size: att.size_display })}
                       title={tx("orders.veb_saytda_ochish")}
                     >
-                      <DocLilacIcon size={18} color="#8b5cf6" />
+                      <DocLilacIcon size={18} color="var(--done)" />
                       <span className="btn-grow">
                         {att.original_name} {att.size_display ? `(${att.size_display})` : ""}
                       </span>
                     </Button>
                   ))}
                   {(!item.tz_file_url && (!item.attachments || item.attachments.length === 0) && !item.completion_file_url) && (
-                    <div style={{ padding: "8px", fontSize: 12.5, color: "#64748b", textAlign: "center" }}>
+                    <div style={{ padding: "8px", fontSize: 12.5, color: "var(--muted)", textAlign: "center" }}>
                       {tx("orders.fayllar_yoq", undefined, "Fayllar mavjud emas")}
                     </div>
                   )}
@@ -1794,7 +1794,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                       onClick={() => setPreviewFile({ url: item.completion_file_url!, name: item.completion_file_name || "Hisobot_hujjati" })}
                       title={tx("orders.hisobot_korish")}
                     >
-                      <DocLilacIcon size={18} color="#8b5cf6" />
+                      <DocLilacIcon size={18} color="var(--done)" />
                       <span className="btn-grow">
                         {item.completion_file_name || tx("orders.hisobot_fayli")}
                       </span>
@@ -1806,27 +1806,27 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
 
             <div
               style={{
-                background: "var(--surface-2, #f8fafc)",
-                border: "1px solid var(--border-color, #e2e8f0)",
+                background: "var(--surface-2)",
+                border: "1px solid var(--border)",
                 borderRadius: 12,
                 padding: "14px 18px",
                 cursor: "pointer",
                 userSelect: "none",
-                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.02)",
+                boxShadow: "var(--shadow-xs)",
               }}
               onClick={() => setHistoryOpen((v) => !v)}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <FolderFilledIcon size={18} />
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text, #334155)" }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text)" }}>
                     {tx("orders.avvalgi_tz_versiyalari", undefined, "Avvalgi TZ versiyalari (Tarix)")}
                   </span>
                   {olderVersions.length > 0 && (
                     <span
                       style={{
-                        background: "#e2e8f0",
-                        color: "#475569",
+                        background: "var(--surface-3)",
+                        color: "var(--text-secondary)",
                         fontSize: 11,
                         fontWeight: 600,
                         padding: "1px 8px",
@@ -1839,13 +1839,13 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </div>
                 <div
                   style={{
-                    color: "#64748b",
+                    color: "var(--muted)",
                     display: "inline-flex",
                     transition: "transform 0.2s ease",
                     transform: historyOpen ? "rotate(180deg)" : "none",
                   }}
                 >
-                  <ChevronDownOutlineIcon size={16} color="#64748b" />
+                  <ChevronDownOutlineIcon size={16} color="var(--muted)" />
                 </div>
               </div>
               {historyOpen && (
@@ -1853,7 +1853,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   style={{
                     marginTop: 14,
                     paddingTop: 12,
-                    borderTop: "1px solid var(--border-color, #e2e8f0)",
+                    borderTop: "1px solid var(--border)",
                     display: "flex",
                     flexDirection: "column",
                     gap: 10,
@@ -1861,7 +1861,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   onClick={(e) => e.stopPropagation()}
                 >
                   {olderVersions.length === 0 ? (
-                    <div style={{ padding: "10px", fontSize: 12.5, color: "#64748b", textAlign: "center" }}>
+                    <div style={{ padding: "10px", fontSize: 12.5, color: "var(--muted)", textAlign: "center" }}>
                       Avvalgi versiyalar tarixi mavjud emas
                     </div>
                   ) : (
@@ -1873,12 +1873,12 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                           style={{
                             padding: "10px 12px",
                             borderRadius: 8,
-                            border: "1px solid var(--border-color, #e2e8f0)",
-                            background: isRejected ? "rgba(239, 68, 68, 0.03)" : "#ffffff",
+                            border: "1px solid var(--border)",
+                            background: isRejected ? "var(--danger-soft)" : "var(--surface)",
                             display: "flex",
                             flexDirection: "column",
                             gap: 8,
-                            boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                            boxShadow: "var(--shadow-xs)",
                           }}
                         >
                           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
@@ -1891,8 +1891,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                                     fontSize: 11,
                                     padding: "1px 5px",
                                     borderRadius: 4,
-                                    background: isRejected ? "var(--danger-soft, #fee2e2)" : "var(--brand-soft, #eff6ff)",
-                                    color: isRejected ? "var(--danger, #ef4444)" : "var(--brand, #2563eb)",
+                                    background: isRejected ? "var(--danger-soft)" : "var(--accent-soft)",
+                                    color: isRejected ? "var(--danger)" : "var(--accent)",
                                   }}
                                 >
                                   v{ver.version}
@@ -1935,7 +1935,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                                   size: ver.tz_file_size_display,
                                 })}
                                 style={{
-                                  background: "#f1f5f9",
+                                  background: "var(--surface-2)",
                                   border: "none",
                                   borderRadius: 6,
                                   padding: "4px 8px",
@@ -1945,7 +1945,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                                   cursor: "pointer",
                                   fontSize: 11.5,
                                   fontWeight: 600,
-                                  color: "#475569",
+                                  color: "var(--text-secondary)",
                                   flexShrink: 0,
                                 }}
                                 title={tx("orders.veb_saytda_ochish")}
@@ -1960,8 +1960,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                               style={{
                                 width: "100%",
                                 fontSize: 11.5,
-                                color: isRejected ? "var(--danger)" : "var(--text-muted, #475569)",
-                                background: isRejected ? "rgba(239, 68, 68, 0.06)" : "var(--surface-2, #f8fafc)",
+                                color: isRejected ? "var(--danger)" : "var(--muted)",
+                                background: isRejected ? "var(--danger-soft)" : "var(--surface-2)",
                                 padding: "6px 8px",
                                 borderRadius: 6,
                                 display: "flex",
@@ -2086,7 +2086,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: claimMode === "reject" ? "rgba(239, 68, 68, 0.12)" : "rgba(16, 185, 129, 0.14)",
+                    background: claimMode === "reject" ? "var(--danger-soft)" : "var(--success-soft)",
                     color: claimMode === "reject" ? "var(--danger)" : "var(--success)",
                     display: "flex",
                     alignItems: "center",
@@ -2150,7 +2150,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   <div
                     style={{
                       background: "var(--attention-soft)",
-                      border: "1px solid rgba(251, 191, 36, 0.3)",
+                      border: "1px solid var(--attention-border)",
                       borderRadius: 10,
                       padding: "8px 12px",
                       display: "flex",
@@ -2328,8 +2328,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     width: 38,
                     height: 38,
                     borderRadius: 10,
-                    background: "rgba(37, 99, 235, 0.12)",
-                    color: "#2563eb",
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -2399,13 +2399,13 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     style={{
                       maxHeight: 180,
                       overflowY: "auto",
-                      border: "1px solid var(--border-color, #e2e8f0)",
+                      border: "1px solid var(--border)",
                       borderRadius: 8,
                       padding: 4,
                       display: "flex",
                       flexDirection: "column",
                       gap: 4,
-                      background: "var(--surface-1, #fff)",
+                      background: "var(--surface)",
                     }}
                   >
                     {filteredPms.length === 0 ? (
@@ -2426,8 +2426,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                               padding: "8px 12px",
                               borderRadius: 6,
                               cursor: "pointer",
-                              background: isSelected ? "rgba(37, 99, 235, 0.08)" : "transparent",
-                              border: isSelected ? "1.5px solid #2563eb" : "1.5px solid transparent",
+                              background: isSelected ? "var(--accent-soft)" : "transparent",
+                              border: isSelected ? "1.5px solid var(--accent)" : "1.5px solid transparent",
                               transition: "all 0.15s",
                             }}
                           >
@@ -2443,7 +2443,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                               </div>
                             </div>
                             {isSelected && (
-                              <span style={{ color: "#2563eb", fontWeight: "bold", fontSize: 14 }}>✓</span>
+                              <span style={{ color: "var(--accent)", fontWeight: "bold", fontSize: 14 }}>✓</span>
                             )}
                           </div>
                         );
@@ -2554,12 +2554,12 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
                 <div
                   style={{
-                    background: "#fffbeb",
-                    border: "1px solid #fde68a",
+                    background: "var(--attention-soft)",
+                    border: "1px solid var(--attention-border)",
                     borderRadius: 8,
                     padding: "10px 14px",
                     fontSize: 12.5,
-                    color: "#92400e",
+                    color: "var(--attention)",
                     lineHeight: 1.45,
                   }}
                 >
@@ -2601,7 +2601,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   </div>
                 </div>
                 {rejectFile && (
-                  <div style={{ padding: "8px 12px", background: "var(--surface-2, #f8fafc)", borderRadius: 8, border: "1px solid var(--border-color, #e2e8f0)" }}>
+                  <div style={{ padding: "8px 12px", background: "var(--surface-2)", borderRadius: 8, border: "1px solid var(--border)" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12.5, color: "var(--text)" }}>
                       <input
                         type="checkbox"
@@ -2647,8 +2647,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: "rgba(59, 130, 246, 0.1)",
-                    color: "#2563eb",
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -2747,8 +2747,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: "rgba(59, 130, 246, 0.12)",
-                    color: "var(--brand)",
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -2890,7 +2890,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: "rgba(16, 185, 129, 0.14)",
+                    background: "var(--success-soft)",
                     color: "var(--success)",
                     display: "flex",
                     alignItems: "center",
@@ -2905,7 +2905,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 <div>
                   <strong style={{ fontSize: 16 }}>{tx("orders.approve_version_title")}</strong>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {item.system_name} • {tx("orders.version")}: <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || item.pending_version?.version || tx("orders.yangi")}</strong>
+                    {item.system_name} • {tx("orders.version")}: <strong style={{ color: "var(--success)" }}>v{approveVersionTarget || item.pending_version?.version || tx("orders.yangi")}</strong>
                   </div>
                 </div>
               </div>
@@ -3014,7 +3014,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 <div
                   style={{
                     background: "var(--danger-soft)",
-                    border: "1px solid rgba(239, 68, 68, 0.25)",
+                    border: "1px solid var(--danger-border)",
                     borderRadius: 8,
                     padding: "10px 14px",
                     fontSize: 12.5,
@@ -3119,7 +3119,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
           alignItems: "center",
           justifyContent: "center",
           padding: "20px 16px",
-          background: "rgba(8, 11, 16, 0.72)",
+          background: "var(--overlay)",
           backdropFilter: "blur(6px)",
           WebkitBackdropFilter: "blur(6px)",
           overflow: "hidden",
@@ -3134,9 +3134,9 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             display: "flex",
             flexDirection: "column",
             borderRadius: 12,
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            boxShadow: "var(--shadow-modal)",
             overflow: "hidden",
-            background: "var(--bg, #f8fafc)",
+            background: "var(--canvas)",
             border: "1px solid var(--border)",
           }}
           onClick={(e) => e.stopPropagation()}
@@ -3149,7 +3149,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               justifyContent: "space-between",
               padding: "12px 20px",
               borderBottom: "1px solid var(--border)",
-              background: "var(--card-bg, #ffffff)",
+              background: "var(--surface)",
               flexShrink: 0,
               gap: 12,
             }}

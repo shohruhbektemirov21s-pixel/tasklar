@@ -115,7 +115,7 @@ export default function Tasks() {
 
       <FilterBar>
         <div className="filter-search-box" style={{ minWidth: 260 }}>
-          <span style={{ color: "var(--text-muted)", fontSize: 13 }}>🔍</span>
+          <span style={{ color: "var(--muted)", fontSize: 13 }}>🔍</span>
           <input
             id={`${fid}-q`}
             value={f.search}

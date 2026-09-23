@@ -118,7 +118,7 @@ export default function TaskSubmission({ task, canWork, onChange, isOpen, onTogg
         marginBottom: 10,
         borderRadius: 8,
         border: open ? "1px solid var(--border)" : "1px solid var(--border-muted)",
-        boxShadow: open ? "0 2px 8px rgba(0,0,0,0.04)" : "none",
+        boxShadow: open ? "var(--sh-raised)" : "none",
         transition: "all 0.18s ease",
         overflow: "hidden",
       }}

@@ -38,11 +38,11 @@ function formatSummaryText(summary: string, cleanCode?: string) {
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; color: string; label: string }> = {
-  task: { bg: "rgba(53, 98, 255, 0.1)", color: "#3562ff", label: "Vazifa" },
-  order: { bg: "rgba(16, 185, 129, 0.1)", color: "#10b981", label: "Buyurtma" },
-  project: { bg: "rgba(139, 92, 246, 0.1)", color: "#8b5cf6", label: "Loyiha" },
-  comment: { bg: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", label: "Izoh" },
-  system: { bg: "rgba(100, 116, 139, 0.1)", color: "#64748b", label: "Tizim" },
+  task: { bg: "var(--accent-soft)", color: "var(--accent)", label: "Vazifa" },
+  order: { bg: "var(--success-soft)", color: "var(--success)", label: "Buyurtma" },
+  project: { bg: "var(--done-soft)", color: "var(--done)", label: "Loyiha" },
+  comment: { bg: "var(--attention-soft)", color: "var(--attention)", label: "Izoh" },
+  system: { bg: "var(--surface-2)", color: "var(--muted)", label: "Tizim" },
 };
 
 /** Loyiha hujjatlari va ularning tahrir tarixi (versiyalari) */
@@ -88,8 +88,8 @@ function ProjectDocumentsSection({
       <div
         style={{
           padding: "16px",
-          background: "var(--surface-2, #f8fafc)",
-          border: "1px dashed var(--border-color, #e2e8f0)",
+          background: "var(--surface-2)",
+          border: "1px dashed var(--border)",
           borderRadius: 8,
           textAlign: "center",
           color: "var(--muted)",
@@ -107,8 +107,8 @@ function ProjectDocumentsSection({
         <div
           key={f.id}
           style={{
-            background: "var(--surface-1, #ffffff)",
-            border: "1px solid var(--border-color, #e2e8f0)",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
             borderRadius: 8,
             padding: "12px 14px",
             display: "flex",
@@ -118,7 +118,7 @@ function ProjectDocumentsSection({
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
-              <div style={{ color: "#8b5cf6", flexShrink: 0 }}>
+              <div style={{ color: "var(--done)", flexShrink: 0 }}>
                 <IconFile size={20} />
               </div>
               <div style={{ minWidth: 0 }}>
@@ -131,8 +131,8 @@ function ProjectDocumentsSection({
                   </Button>
                   <span
                     style={{
-                      background: "var(--surface-3, #e2e8f0)",
-                      color: "var(--text-secondary, #475569)",
+                      background: "var(--surface-3)",
+                      color: "var(--text-secondary)",
                       fontSize: 11,
                       fontWeight: 700,
                       padding: "1px 6px",
@@ -181,8 +181,8 @@ function ProjectDocumentsSection({
 
           {/* Versiyalar / Tahrir tarixi */}
           {f.versions && f.versions.length > 0 && (
-            <details style={{ marginTop: 4, background: "var(--surface-2, #f8fafc)", borderRadius: 6, padding: "6px 10px" }}>
-              <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--text-secondary, #475569)" }}>
+            <details style={{ marginTop: 4, background: "var(--surface-2)", borderRadius: 6, padding: "6px 10px" }}>
+              <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
                 🕒 {tx("feed.tahrir_tarixi", undefined, "Tahrir tarixi")} ({f.versions.length} {tx("feed.ta_eski_nusxa", undefined, "ta eski nusxa")})
               </summary>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8, paddingLeft: 8 }}>
@@ -196,7 +196,7 @@ function ProjectDocumentsSection({
                       gap: 8,
                       fontSize: 12,
                       padding: "4px 0",
-                      borderBottom: "1px dashed var(--border-color, #e2e8f0)",
+                      borderBottom: "1px dashed var(--border)",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
@@ -307,9 +307,9 @@ function ProjectTimelineSection({ projectId }: { projectId: number }) {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "8px 12px",
-              background: "var(--surface-1, #fff)",
+              background: "var(--surface)",
               borderRadius: 6,
-              border: "1px solid var(--border-color, #e2e8f0)",
+              border: "1px solid var(--border)",
               fontSize: 12.5,
               gap: 10,
             }}
@@ -341,7 +341,7 @@ function ProjectTimelineSection({ projectId }: { projectId: number }) {
                   style={{
                     fontWeight: 600,
                     color: "var(--accent)",
-                    fontFamily: "var(--mono, monospace)",
+                    fontFamily: "var(--mono)",
                     fontSize: 12,
                     flexShrink: 0,
                   }}
@@ -424,7 +424,7 @@ export default function Feed() {
       {/* 2. Loyiha qidirish filtri */}
       <FilterBar>
         <div className="filter-search-box" style={{ minWidth: 300, flex: 1 }}>
-          <span style={{ color: "var(--text-muted)", fontSize: 13 }}>🔍</span>
+          <span style={{ color: "var(--muted)", fontSize: 13 }}>🔍</span>
           <input
             type="text"
             placeholder={tx("feed.nom_kalit_yoki_tavsif_boyicha", undefined, "Nom, kalit yoki tavsif bo'yicha qidiruv...")}
@@ -464,10 +464,10 @@ export default function Feed() {
               <div
                 key={p.id}
                 style={{
-                  background: "var(--surface-1, #ffffff)",
-                  border: isOpen ? "1.5px solid var(--accent, #3b82f6)" : "1px solid var(--border-color, #e2e8f0)",
+                  background: "var(--surface)",
+                  border: isOpen ? "1.5px solid var(--accent)" : "1px solid var(--border)",
                   borderRadius: 12,
-                  boxShadow: isOpen ? "0 4px 12px rgba(0, 0, 0, 0.05)" : "0 1px 3px rgba(0, 0, 0, 0.02)",
+                  boxShadow: isOpen ? "var(--sh-raised)" : "var(--shadow-xs)",
                   overflow: "hidden",
                   transition: "all 0.18s ease",
                 }}
@@ -483,7 +483,7 @@ export default function Feed() {
                     justifyContent: "space-between",
                     flexWrap: "wrap",
                     gap: 12,
-                    background: isOpen ? "var(--surface-2, #f8fafc)" : "transparent",
+                    background: isOpen ? "var(--surface-2)" : "transparent",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
@@ -492,7 +492,7 @@ export default function Feed() {
                         width: 12,
                         height: 12,
                         borderRadius: "50%",
-                        background: p.color || "var(--accent, #3b82f6)",
+                        background: p.color || "var(--accent)",
                         flexShrink: 0,
                       }}
                     />
@@ -503,13 +503,13 @@ export default function Feed() {
                         </span>
                         <span
                           style={{
-                            background: "var(--surface-3, #e2e8f0)",
-                            color: "var(--text-secondary, #475569)",
+                            background: "var(--surface-3)",
+                            color: "var(--text-secondary)",
                             fontSize: 11,
                             fontWeight: 700,
                             padding: "2px 8px",
                             borderRadius: 6,
-                            fontFamily: "var(--mono, monospace)",
+                            fontFamily: "var(--mono)",
                           }}
                         >
                           #{p.key}
@@ -534,8 +534,8 @@ export default function Feed() {
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <span
                       style={{
-                        background: "rgba(139, 92, 246, 0.1)",
-                        color: "#8b5cf6",
+                        background: "var(--done-soft)",
+                        color: "var(--done)",
                         fontSize: 12,
                         fontWeight: 600,
                         padding: "3px 10px",
@@ -551,8 +551,8 @@ export default function Feed() {
 
                     <span
                       style={{
-                        background: "rgba(59, 130, 246, 0.1)",
-                        color: "#2563eb",
+                        background: "var(--accent-soft)",
+                        color: "var(--accent)",
                         fontSize: 12,
                         fontWeight: 600,
                         padding: "3px 10px",
@@ -580,11 +580,11 @@ export default function Feed() {
                   <div
                     style={{
                       padding: "20px",
-                      borderTop: "1px solid var(--border-color, #e2e8f0)",
+                      borderTop: "1px solid var(--border)",
                       display: "flex",
                       flexDirection: "column",
                       gap: 22,
-                      background: "var(--surface-1, #ffffff)",
+                      background: "var(--surface)",
                     }}
                   >
                     {/* 1-BO'LIM: LOYIHA FAYLLARI VA ULARNING TARIXI */}
@@ -621,7 +621,7 @@ export default function Feed() {
                     </div>
 
                     {/* Pastki harakat tugmasi */}
-                    <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 8, borderTop: "1px dashed var(--border-color, #e2e8f0)" }}>
+                    <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 8, borderTop: "1px dashed var(--border)" }}>
                       <LinkButton
                         to={`/loyiha/${p.id}`}
                         variant="ghost" size="sm"

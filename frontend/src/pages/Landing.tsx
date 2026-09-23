@@ -128,9 +128,9 @@ export default function Landing() {
 
           <div className="terminal">
             <div className="terminal-bar">
-              <span className="d" style={{ background: "#f85149" }} />
-              <span className="d" style={{ background: "#d29922" }} />
-              <span className="d" style={{ background: "#3fb950" }} />
+              <span className="d" style={{ background: "var(--danger)" }} />
+              <span className="d" style={{ background: "var(--attention)" }} />
+              <span className="d" style={{ background: "var(--success)" }} />
               <span className="mono muted" style={{ marginLeft: 10 }}>{tx("landing.teamflow_docker")}</span>
             </div>
             <pre>
@@ -198,13 +198,13 @@ export default function Landing() {
             </div>
             <div className="demo-body">
               <div className="ev">
-                <span className="avatar sm" style={{ background: "#6c5ce7" }}>{tx("landing.jq")}</span>
+                <span className="avatar sm" style={{ background: "var(--done)" }}>{tx("landing.jq")}</span>
                 <span className="txt"><b>{tx("landing.jahongir")}</b> <span className="mono c-blue">{tx("landing.pay_14")}</span> {tx("landing.vazifasini_tekshiruvga_yubordi")}{" "}
                   <span className="badge badge-brand">{tx("common.tekshiruvda")}</span></span>
                 <span className="time">{tx("landing.2_daqiqa_oldin")}</span>
               </div>
               <div className="ev">
-                <span className="avatar sm" style={{ background: "#238636" }}>{tx("landing.ad")}</span>
+                <span className="avatar sm" style={{ background: "var(--success)" }}>{tx("landing.ad")}</span>
                 <span className="txt"><b>{tx("landing.admin")}</b> <span className="mono c-blue">{tx("landing.pay_13")}</span> {tx("landing.ni_tuzatishga_qaytardi")}{" "}
                   <span className="badge badge-warn">{tx("landing.tuzatish_kerak")}</span><br />
                   <span className="muted">{tx("landing.webhook_imzosi_tekshirilmagan_qayta_urinish")}</span>
@@ -212,14 +212,14 @@ export default function Landing() {
                 <span className="time">{tx("landing.1_soat_oldin")}</span>
               </div>
               <div className="ev">
-                <span className="avatar sm" style={{ background: "#d29922" }}>{tx("landing.sb")}</span>
+                <span className="avatar sm" style={{ background: "var(--attention)" }}>{tx("landing.sb")}</span>
                 <span className="txt"><b>{tx("landing.sardor")}</b> {tx("landing.ish_jurnaliga_yozdi")} <span className="mono">{tx("landing.3_5_soat")}</span><br />
                   <span className="muted">{tx("landing.idempotentlik_kaliti_qoshildi_redis_emas")}</span>
                 </span>
                 <span className="time">{tx("landing.kecha")}</span>
               </div>
               <div className="ev">
-                <span className="avatar sm" style={{ background: "#2f81f7" }}>{tx("landing.mk")}</span>
+                <span className="avatar sm" style={{ background: "var(--accent)" }}>{tx("landing.mk")}</span>
                 <span className="txt"><b>{tx("landing.malika")}</b> <span className="mono c-blue">{tx("landing.pay_11")}</span> {tx("landing.vazifasini_yakunladi")}{" "}
                   <span className="badge badge-ok">{tx("common.bajarildi")}</span></span>
                 <span className="time">{tx("landing.3_kun_oldin")}</span>

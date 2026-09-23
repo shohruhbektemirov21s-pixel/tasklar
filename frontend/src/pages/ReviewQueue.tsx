@@ -201,7 +201,7 @@ export default function ReviewQueue() {
               <div
                 className="card-body row between middle"
                 style={{
-                  borderTop: "1px solid var(--border-color)",
+                  borderTop: "1px solid var(--border)",
                   padding: "12px 16px",
                   flexWrap: "wrap",
                   gap: 12,

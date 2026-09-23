@@ -475,7 +475,7 @@ export default function ProjectForm({
             alignItems: "center",
             justifyContent: "center",
             padding: "20px 16px",
-            background: "rgba(8, 11, 16, 0.72)",
+            background: "var(--overlay)",
             backdropFilter: "blur(6px)",
             WebkitBackdropFilter: "blur(6px)",
           }}
@@ -483,7 +483,7 @@ export default function ProjectForm({
         >
           <div
             className="modal-window card"
-            style={{ width: "min(400px, 90vw)", padding: "36px 20px", textAlign: "center", borderRadius: 12, background: "var(--card-bg, #fff)" }}
+            style={{ width: "min(400px, 90vw)", padding: "36px 20px", textAlign: "center", borderRadius: 12, background: "var(--surface)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <Loading text="Loyiha ma'lumotlari yuklanmoqda..." />
@@ -503,7 +503,7 @@ export default function ProjectForm({
           <div className="field">
             <label htmlFor={`${fid}-order`}>
               {tx("project_form.boglanadigan_buyurtma")}
-              <span style={{ fontSize: 12, fontWeight: "normal", color: "var(--color-fg-muted)", marginLeft: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: "normal", color: "var(--muted)", marginLeft: 6 }}>
                 ({tx("common.ixtiyoriy")})
               </span>
             </label>
@@ -528,7 +528,7 @@ export default function ProjectForm({
                 </option>
               )}
             </select>
-            <div style={{ fontSize: 11, color: "var(--color-fg-muted)", marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
               {tx("project_form.buyurtma_tanlash_izohi")}
             </div>
           </div>
@@ -587,11 +587,11 @@ export default function ProjectForm({
                   marginBottom: "1rem",
                   padding: "0.6rem 0.85rem",
                   borderRadius: "8px",
-                  background: "var(--color-bg-subtle, rgba(59, 130, 246, 0.08))",
-                  border: "1px solid var(--color-border-subtle, rgba(59, 130, 246, 0.2))",
+                  background: "var(--surface-2)",
+                  border: "1px solid var(--border-muted)",
                   fontSize: "0.85rem",
                   fontWeight: 600,
-                  color: "var(--accent, #2563eb)",
+                  color: "var(--accent)",
                   display: "flex",
                   alignItems: "center",
                   gap: "0.5rem",
@@ -667,7 +667,7 @@ export default function ProjectForm({
           alignItems: "center",
           justifyContent: "center",
           padding: "20px 16px",
-          background: "rgba(8, 11, 16, 0.72)",
+          background: "var(--overlay)",
           backdropFilter: "blur(6px)",
           WebkitBackdropFilter: "blur(6px)",
           overflow: "hidden",
@@ -682,9 +682,9 @@ export default function ProjectForm({
             display: "flex",
             flexDirection: "column",
             borderRadius: 12,
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            boxShadow: "var(--shadow-modal)",
             overflow: "hidden",
-            background: "var(--bg, #f8fafc)",
+            background: "var(--canvas)",
             border: "1px solid var(--border)",
           }}
           onClick={(e) => e.stopPropagation()}
@@ -697,7 +697,7 @@ export default function ProjectForm({
               justifyContent: "space-between",
               padding: "12px 20px",
               borderBottom: "1px solid var(--border)",
-              background: "var(--card-bg, #ffffff)",
+              background: "var(--surface)",
               flexShrink: 0,
               gap: 12,
             }}

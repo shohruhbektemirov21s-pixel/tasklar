@@ -148,7 +148,7 @@ export default function DistributeTasksModal({
         alignItems: "center",
         justifyContent: "center",
         padding: "20px 16px",
-        background: "rgba(8, 11, 16, 0.72)",
+        background: "var(--overlay)",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
         overflow: "hidden",
@@ -163,9 +163,9 @@ export default function DistributeTasksModal({
           display: "flex",
           flexDirection: "column",
           borderRadius: 14,
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+          boxShadow: "var(--shadow-modal)",
           overflow: "hidden",
-          background: "var(--bg, #f8fafc)",
+          background: "var(--canvas)",
           border: "1px solid var(--border)",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -178,7 +178,7 @@ export default function DistributeTasksModal({
             justifyContent: "space-between",
             padding: "16px 24px",
             borderBottom: "1px solid var(--border)",
-            background: "var(--card-bg, #ffffff)",
+            background: "var(--surface)",
             flexShrink: 0,
             gap: 16,
           }}
@@ -186,7 +186,7 @@ export default function DistributeTasksModal({
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 20 }}>📋</span>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text, #0f172a)" }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text)" }}>
                 {tx("orders.vazifalarni_taqsimlash", undefined, "Vazifalarni taqsimlash")}
               </h2>
               <span className="badge badge-brand" style={{ fontSize: 12, fontWeight: 600 }}>
@@ -194,7 +194,7 @@ export default function DistributeTasksModal({
               </span>
             </div>
             {order && (
-              <div style={{ fontSize: 12.5, color: "#64748b", marginTop: 4 }}>
+              <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 4 }}>
                 Buyurtma: <strong>#{order.id} — {order.system_name}</strong>
               </div>
             )}
@@ -224,9 +224,9 @@ export default function DistributeTasksModal({
           {successMsg && (
             <div
               style={{
-                background: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                color: "#15803d",
+                background: "var(--success-soft)",
+                border: "1px solid var(--success-border)",
+                color: "var(--success)",
                 padding: "10px 16px",
                 borderRadius: 8,
                 marginBottom: 16,
@@ -242,13 +242,13 @@ export default function DistributeTasksModal({
             <div>
               <div
                 style={{
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
+                  background: "var(--surface-2)",
+                  border: "1px solid var(--border)",
                   borderRadius: 10,
                   padding: "12px 18px",
                   marginBottom: 18,
                   fontSize: 13,
-                  color: "#475569",
+                  color: "var(--text-secondary)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -318,16 +318,16 @@ export default function DistributeTasksModal({
                   style={{
                     textAlign: "center",
                     padding: "48px 20px",
-                    background: "#ffffff",
+                    background: "var(--surface)",
                     borderRadius: 12,
-                    border: "1px dashed #cbd5e1",
+                    border: "1px dashed var(--border-strong)",
                   }}
                 >
                   <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#1e293b", marginBottom: 6 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>
                     {tx("orders.hozircha_vazifalar_yoq", undefined, "Hozircha vazifalar mavjud emas")}
                   </div>
-                  <p style={{ fontSize: 13, color: "#64748b", maxWidth: 450, margin: "0 auto 18px" }}>
+                  <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: 450, margin: "0 auto 18px" }}>
                     Ushbu loyiha uchun hali vazifalar taqsimlanmagan. Yangi vazifa yaratish uchun quyidagi tugmani bosing.
                   </p>
                   <Button
@@ -340,7 +340,7 @@ export default function DistributeTasksModal({
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                    <div style={{ fontSize: 13, color: "#64748b" }}>
+                    <div style={{ fontSize: 13, color: "var(--muted)" }}>
                       Vazifa ustiga bosib, uning to'liq sahifasini ochishingiz, tahrirlashingiz yoki tasdiqlashingiz mumkin.
                     </div>
                     <Button
@@ -354,7 +354,7 @@ export default function DistributeTasksModal({
 
                   <div
                     style={{
-                      background: "#ffffff",
+                      background: "var(--surface)",
                       borderRadius: 10,
                       border: "1px solid var(--border)",
                       overflow: "hidden",
@@ -362,7 +362,7 @@ export default function DistributeTasksModal({
                   >
                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
                       <thead>
-                        <tr style={{ background: "#f8fafc", borderBottom: "1px solid var(--border)", fontSize: 12, color: "#64748b", textAlign: "left" }}>
+                        <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)", fontSize: 12, color: "var(--muted)", textAlign: "left" }}>
                           <th style={{ padding: "10px 14px", width: 50, textAlign: "center" }}>#</th>
                           <th style={{ padding: "10px 14px" }}>Vazifa nomi</th>
                           <th style={{ padding: "10px 14px" }}>Ijrochilar</th>
@@ -378,27 +378,27 @@ export default function DistributeTasksModal({
                           <tr
                             key={t.id}
                             style={{
-                              borderBottom: "1px solid #f1f5f9",
+                              borderBottom: "1px solid var(--border-muted)",
                               cursor: "pointer",
                               transition: "background 0.15s ease",
                             }}
                             onClick={() => setSelectedTaskId(t.id)}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background = "#f8fafc";
+                              e.currentTarget.style.background = "var(--surface-2)";
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.background = "transparent";
                             }}
                           >
-                            <td style={{ padding: "12px 14px", textAlign: "center", fontSize: 12.5, color: "#94a3b8", fontWeight: 600 }}>
+                            <td style={{ padding: "12px 14px", textAlign: "center", fontSize: 12.5, color: "var(--subtle)", fontWeight: 600 }}>
                               {idx + 1}
                             </td>
                             <td style={{ padding: "12px 14px" }}>
-                              <div style={{ fontWeight: 600, fontSize: 13.5, color: "#0f172a" }}>
+                              <div style={{ fontWeight: 600, fontSize: 13.5, color: "var(--text)" }}>
                                 {t.title}
                               </div>
                               {t.acceptance_criteria && (
-                                <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2, maxWidth: 380, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2, maxWidth: 380, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                   {t.acceptance_criteria}
                                 </div>
                               )}
@@ -409,14 +409,14 @@ export default function DistributeTasksModal({
                                   {t.assignees.map((a) => (
                                     <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                                       <Avatar user={a} size="sm" />
-                                      <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 500 }}>
+                                      <span style={{ fontSize: 12.5, color: "var(--text-secondary)", fontWeight: 500 }}>
                                         {a.full_name}
                                       </span>
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                <span style={{ fontSize: 12, color: "#94a3b8" }}>—</span>
+                                <span style={{ fontSize: 12, color: "var(--subtle)" }}>—</span>
                               )}
                             </td>
                             <td style={{ padding: "12px 14px" }}>
@@ -425,10 +425,10 @@ export default function DistributeTasksModal({
                             <td style={{ padding: "12px 14px" }}>
                               <Priority task={t} />
                             </td>
-                            <td style={{ padding: "12px 14px", fontSize: 12.5, color: "#64748b", whiteSpace: "nowrap" }}>
+                            <td style={{ padding: "12px 14px", fontSize: 12.5, color: "var(--muted)", whiteSpace: "nowrap" }}>
                               {t.start_date ? fmtDate(t.start_date) : "—"}
                             </td>
-                            <td style={{ padding: "12px 14px", fontSize: 12.5, color: "#64748b", whiteSpace: "nowrap" }}>
+                            <td style={{ padding: "12px 14px", fontSize: 12.5, color: "var(--muted)", whiteSpace: "nowrap" }}>
                               {t.due_date ? fmtDate(t.due_date) : "—"}
                             </td>
                             <td style={{ padding: "12px 14px", textAlign: "right" }}>

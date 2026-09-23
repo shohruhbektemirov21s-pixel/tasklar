@@ -165,7 +165,7 @@ export default function Chat({
     <div className="card chat" style={{ borderRadius: 16, border: "1px solid var(--border)", overflow: "hidden" }}>
       <div className="card-head" style={{ padding: "14px 18px", borderBottom: "1px solid var(--border-muted)" }}>
         <h3 style={{ margin: 0, fontSize: 15, fontWeight: 650 }}>{title}</h3>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: live ? "var(--success)" : "var(--text-muted)" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: live ? "var(--success)" : "var(--muted)" }}>
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: live ? "var(--success)" : "var(--border-strong)" }} />
           {live ? (tx("chat.jonli") || "jonli") : (tx("chat.ulanmoqda") || "ulanmoqda…")}
         </span>
