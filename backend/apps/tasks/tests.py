@@ -1,3 +1,5 @@
+from datetime import timedelta
+from django.utils import timezone
 from rest_framework.test import APIClient
 from apps.accounts.models import GlobalRole, Specialty
 from apps.projects.models import Project, ProjectMember, ProjectRole
@@ -143,11 +145,12 @@ class TaskTeamCollaborationTests(ApiTestCase):
         client.force_authenticate(user=self.dev1)
 
         # 1-a'zo (Backend)
+        now = timezone.now()
         res1 = client.post(f"/api/tasks/{self.task.id}/team/", {
             "user_id": self.dev1.id,
             "role": "Backend API",
-            "start_date": "2026-09-15T09:00:00Z",
-            "due_date": "2026-09-20T18:00:00Z",
+            "start_date": (now + timedelta(days=1)).isoformat(),
+            "due_date": (now + timedelta(days=5)).isoformat(),
             "allocated_hours": "16.0",
             "note": "Ma'lumotlar bazasi va API endpointlari",
         })
@@ -157,8 +160,8 @@ class TaskTeamCollaborationTests(ApiTestCase):
         res2 = client.post(f"/api/tasks/{self.task.id}/team/", {
             "user_id": self.dev2.id,
             "role": "Frontend UI",
-            "start_date": "2026-09-16T10:00:00Z",
-            "due_date": "2026-09-22T18:00:00Z",
+            "start_date": (now + timedelta(days=2)).isoformat(),
+            "due_date": (now + timedelta(days=6)).isoformat(),
             "allocated_hours": "20.0",
             "note": "React komponentlar va shakllar",
         })
@@ -168,8 +171,8 @@ class TaskTeamCollaborationTests(ApiTestCase):
         res3 = client.post(f"/api/tasks/{self.task.id}/team/", {
             "user_id": self.dev3.id,
             "role": "QA Testlash",
-            "start_date": "2026-09-20T09:00:00Z",
-            "due_date": "2026-09-25T18:00:00Z",
+            "start_date": (now + timedelta(days=3)).isoformat(),
+            "due_date": (now + timedelta(days=7)).isoformat(),
             "allocated_hours": "8.0",
             "note": "Regressiya va integratsion sinovlar",
         })
@@ -205,12 +208,13 @@ class TaskTeamCollaborationTests(ApiTestCase):
         })
 
         # Keyin yangilash
+        now = timezone.now()
         res = client.post(f"/api/tasks/{self.task.id}/team/", {
             "user_id": self.dev2.id,
             "role": "Dizayn va Prototip",
             "allocated_hours": "10.0",
-            "start_date": "2026-09-17T09:00:00Z",
-            "due_date": "2026-09-21T18:00:00Z",
+            "start_date": (now + timedelta(days=1)).isoformat(),
+            "due_date": (now + timedelta(days=4)).isoformat(),
             "note": "Yangilangan vazifa",
         })
         self.assertEqual(res.status_code, 200)

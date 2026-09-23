@@ -24,7 +24,7 @@ export default function Register() {
   const [specialties, setSpecialties] = useState<SpecialtyItem[]>([]);
   const [loadingSpecialties, setLoadingSpecialties] = useState(true);
   const [form, setForm] = useState({
-    full_name: "", email: "", specialty: "", department_name: "", password: "", password_confirm: "",
+    full_name: "", email: "", telegram: "", specialty: "", department_name: "", password: "", password_confirm: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -182,6 +182,19 @@ export default function Register() {
                 {errors.department_name && <div className="err">{errors.department_name}</div>}
               </div>
             )}
+
+            <div className="field">
+              <label htmlFor={`${fid}-tg`}>{tx("register.telegram") || "Telegram (ixtiyoriy)"}</label>
+              <input
+                id={`${fid}-tg`}
+                value={form.telegram}
+                name="telegram"
+                autoComplete="username"
+                onChange={(e) => set("telegram", e.target.value)}
+                placeholder={tx("register.telegram_placeholder") || "@foydalanuvchi yoki +998901234567"}
+              />
+              {errors.telegram && <div className="err">{errors.telegram}</div>}
+            </div>
 
             <div className="field">
               <label htmlFor={`${fid}-3`}>{tx("common.parol")}</label>

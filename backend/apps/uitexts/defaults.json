@@ -3671,6 +3671,10 @@
     "value": "Pm xulosasi va korsatma",
     "note": "pages/ChangeRequests.tsx"
   },
+  "orders.pm_xulosasi_placeholder": {
+    "value": "Ushbu versiya bo'yicha PM izohi yoki dasturchilarga ko'rsatma...",
+    "note": "pages/OrderDetail.tsx"
+  },
   "orders.pm_xulosasi_va_korsatmasi": {
     "value": "PM xulosasi va ko'rsatmasi",
     "note": "pages/OrderDetail.tsx"
@@ -4062,6 +4066,10 @@
   "orders.tasdiqlanmoqda": {
     "value": "Tasdiqlanmoqda",
     "note": "pages/ChangeRequests.tsx"
+  },
+  "orders.tasdiqlash_va_amalda_qollash": {
+    "value": "✓ Tasdiqlash va amalda qo'llash",
+    "note": "pages/OrderDetail.tsx"
   },
   "orders.tasdiqlash_va_yakunlash": {
     "value": "Ishni tasdiqlash va yakunlash",
@@ -6225,6 +6233,14 @@
   },
   "register.tanlang": {
     "value": "Tanlang",
+    "note": "pages/Register.tsx"
+  },
+  "register.telegram": {
+    "value": "Telegram (ixtiyoriy)",
+    "note": "pages/Register.tsx"
+  },
+  "register.telegram_placeholder": {
+    "value": "@foydalanuvchi yoki +998901234567",
     "note": "pages/Register.tsx"
   },
   "review_queue.aylana": {

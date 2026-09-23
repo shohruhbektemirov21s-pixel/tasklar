@@ -1197,7 +1197,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         if target_version.version > 1:
             # 1-versiya tasdiqlangan bo'lishi shart
             v1 = order.versions.filter(version=1).first()
-            if not v1 or v1.status != ChangeRequestStatus.ACCEPTED:
+            if not v1 or v1.status in [ChangeRequestStatus.NEW, ChangeRequestStatus.DRAFT, ChangeRequestStatus.REJECTED]:
                 raise ValidationError({
                     "detail": "Buyurtmaning 1-chi TZsi tasdiqlanmaguncha 2-chi TZ tasdiqlanmaydi. Avval 1-versiyani tasdiqlang."
                 })
@@ -1205,7 +1205,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             # target_version dan oldingi barcha versiyalar ko'rib chiqilgan bo'lishi shart
             unapproved_prev = order.versions.filter(
                 version__lt=target_version.version,
-                status=ChangeRequestStatus.NEW
+                status__in=[ChangeRequestStatus.NEW, ChangeRequestStatus.DRAFT]
             ).order_by("version").first()
             if unapproved_prev:
                 raise ValidationError({

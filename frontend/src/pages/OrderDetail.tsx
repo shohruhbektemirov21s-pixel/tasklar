@@ -196,7 +196,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   const [claimDeadlineInput, setClaimDeadlineInput] = useState("");
   const [claimNotesInput, setClaimNotesInput] = useState("");
   const [claimSubmitting, setClaimSubmitting] = useState(false);
-  const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>("/users/", { is_active: true });
+  const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>("/users/", { is_active: true, page_size: 200 });
   const usersList: UserBrief[] = useMemo(() => (usersData ? listOf<UserBrief>(usersData) : []), [usersData]);
   const developersList = useMemo(
     () => usersList.filter((u) => !u.is_sohaviy_boshqarma && u.specialty !== "SOHAVIY" && u.global_role !== "ADMIN" && u.global_role !== "BOSS" && !u.is_platform_admin && !u.is_boss),
@@ -205,9 +205,10 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   const pmList = useMemo(
     () =>
       usersList.filter((u) => {
-        if (u.global_role === "DEVELOPER" || u.specialty === "DEVELOPER") return false;
         if (u.is_sohaviy_boshqarma || u.specialty === "SOHAVIY" || u.global_role === "SOHAVIY") return false;
-        return Boolean(u.specialty === "PM" || u.global_role === "MANAGER" || u.is_manager);
+        if (u.global_role === "MANAGER" || u.is_manager || u.specialty === "PM") return true;
+        if (u.global_role === "BOSS" || u.is_boss || u.global_role === "ADMIN" || u.is_platform_admin) return true;
+        return false;
       }),
     [usersList]
   );
@@ -218,7 +219,6 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   const [approveVersionModal, setApproveVersionModal] = useState(false);
   const [approveVersionTarget, setApproveVersionTarget] = useState<number | null>(null);
   const [approveDeadline, setApproveDeadline] = useState("");
-  const [approveDuration, setApproveDuration] = useState("");
   const [approveDeveloper, setApproveDeveloper] = useState<number | null>(null);
   const [approveNote, setApproveNote] = useState("");
   const [approveSubmitting, setApproveSubmitting] = useState(false);
@@ -686,7 +686,9 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   function handleOpenApproveVersion(verNum?: number) {
     const targetVer = verNum || item?.pending_version?.version || null;
     const v1 = item?.versions?.find((v) => v.version === 1);
-    const isV1Accepted = v1 ? v1.status === "ACCEPTED" : item?.status !== "NEW";
+    const isV1Accepted = v1
+      ? (v1.status !== "NEW" && v1.status !== "REJECTED")
+      : (item?.status !== "NEW" && item?.status !== "DRAFT" && item?.status !== "REJECTED");
     if (targetVer && targetVer > 1 && !isV1Accepted) {
       setActionError(
         tx("orders.tz_birinchisi_tasdiqlanmaguncha_ikkinchisi_mumkin_emas") ||
@@ -696,7 +698,6 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
     }
     setApproveVersionTarget(targetVer);
     setApproveDeadline(item?.pm_deadline || item?.due_date || "");
-    setApproveDuration(item?.pm_estimated_duration || "");
     setApproveDeveloper(item?.assigned_developer || null);
     setApproveNote("");
     setApproveVersionModal(true);
@@ -710,13 +711,12 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
       const updated = await approveVersion(item.id, {
         version: approveVersionTarget || undefined,
         decision_note: approveNote.trim() || undefined,
-        pm_estimated_duration: approveDuration.trim() || undefined,
         pm_deadline: approveDeadline || undefined,
         assigned_developer: approveDeveloper,
       });
       setItem(updated);
       setApproveVersionModal(false);
-      setActionOk("Yangi TZ versiyasi muvaffaqiyatli tasdiqlandi va amalda kuchga kirdi!");
+      setActionOk(tx("orders.version_approved_success"));
     } catch (err: unknown) {
       setActionError((err as { message?: string })?.message || tx("orders.versiyani_tasdiqlashda_xatolik"));
     } finally {
@@ -3035,9 +3035,9 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   ✓
                 </div>
                 <div>
-                  <strong style={{ fontSize: 16 }}>Yangi TZ versiyasini tasdiqlash</strong>
+                  <strong style={{ fontSize: 16 }}>{tx("orders.approve_version_title")}</strong>
                   <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                    {item.system_name} • Versiya: <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || item.pending_version?.version || tx("orders.yangi")}</strong>
+                    {item.system_name} • {tx("orders.version")}: <strong style={{ color: "#16a34a" }}>v{approveVersionTarget || item.pending_version?.version || tx("orders.yangi")}</strong>
                   </div>
                 </div>
               </div>
@@ -3054,42 +3054,27 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             </div>
             <form onSubmit={handleApproveVersionSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div className="field">
-                    <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
-                      PM yakuniy muddati
-                    </label>
-                    <input
-                      type="date"
-                      min={new Date().toISOString().split("T")[0]}
-                      className="input"
-                      value={approveDeadline}
-                      onChange={(e) => setApproveDeadline(e.target.value)}
-                      style={{ width: "100%" }}
-                    />
-                  </div>
-                  <div className="field">
-                    <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
-                      Qanchada tugashi (baho)
-                    </label>
-                    <input
-                      type="text"
-                      className="input"
-                      placeholder="Masalan: 10 kun, 2 hafta"
-                      value={approveDuration}
-                      onChange={(e) => setApproveDuration(e.target.value)}
-                      style={{ width: "100%" }}
-                    />
-                  </div>
+                <div className="field">
+                  <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
+                    {tx("orders.pm_yakuniy_muddati")}
+                  </label>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    className="input"
+                    value={approveDeadline}
+                    onChange={(e) => setApproveDeadline(e.target.value)}
+                    style={{ width: "100%" }}
+                  />
                 </div>
                 <div className="field">
                   <label style={{ fontWeight: 600, fontSize: 12.5, display: "block", marginBottom: 6, color: "var(--text)" }}>
-                    PM xulosasi va ko'rsatmasi
+                    {tx("orders.pm_xulosasi_va_korsatmasi")}
                   </label>
                   <textarea
                     rows={3}
                     className="textarea"
-                    placeholder="Ushbu versiya bo'yicha PM izohi yoki dasturchilarga ko'rsatma..."
+                    placeholder={tx("orders.pm_xulosasi_placeholder")}
                     value={approveNote}
                     onChange={(e) => setApproveNote(e.target.value)}
                     style={{ width: "100%", resize: "vertical" }}
@@ -3111,7 +3096,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   disabled={approveSubmitting}
                   style={{ fontWeight: 600 }}
                 >
-                  {approveSubmitting ? tx("common.tasdiqlanmoqda") : "✓ Tasdiqlash va amalda qo'llash"}
+                  {approveSubmitting ? tx("common.tasdiqlanmoqda") : tx("orders.tasdiqlash_va_amalda_qollash")}
                 </button>
               </div>
             </form>

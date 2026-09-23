@@ -560,48 +560,6 @@ export default function ProjectForm({
           </div>
         </Card>
 
-        <Card title={tx("project_detail.arxitekturasi")}>
-          <div className="field">
-            <label htmlFor={`${fid}-arch`}>{tx("project_brief.arxitektura")}</label>
-            <textarea
-              id={`${fid}-arch`}
-              rows={3}
-              value={brief.architecture}
-              onChange={(e) => setBrief((b) => ({ ...b, architecture: e.target.value }))}
-              placeholder="Monorepo, backend/frontend, REST API, mikroservislar..."
-            />
-          </div>
-          <div className="field">
-            <label htmlFor={`${fid}-tech`}>{tx("project_brief.texnologiyalar")}</label>
-            <input
-              id={`${fid}-tech`}
-              value={brief.tech_stack}
-              onChange={(e) => setBrief((b) => ({ ...b, tech_stack: e.target.value }))}
-              placeholder="Django, React, IBM Db2, Redis, Docker..."
-            />
-          </div>
-          <div className="row">
-            <div className="field" style={{ flex: 1 }}>
-              <label htmlFor={`${fid}-goal`}>{tx("project_brief.loyiha_maqsadi")}</label>
-              <input
-                id={`${fid}-goal`}
-                value={brief.goal}
-                onChange={(e) => setBrief((b) => ({ ...b, goal: e.target.value }))}
-                placeholder="Loyihaning asosiy maqsadi"
-              />
-            </div>
-            <div className="field" style={{ flex: 1 }}>
-              <label htmlFor={`${fid}-pitfalls`}>{tx("project_brief.ehtiyot_boling")}</label>
-              <input
-                id={`${fid}-pitfalls`}
-                value={brief.pitfalls}
-                onChange={(e) => setBrief((b) => ({ ...b, pitfalls: e.target.value }))}
-                placeholder="Ehtiyot bo'lish kerak bo'lgan jihatlar"
-              />
-            </div>
-          </div>
-        </Card>
-
         {/* Tahrirlashda fayllar alohida «Fayllar» bolimida boshqariladi -
             bu yerda faqat yangi loyiha uchun boshlangich hujjatlar. */}
         {!editing && (

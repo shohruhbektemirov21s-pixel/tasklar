@@ -12,7 +12,8 @@
  * qoldi: sof funksiyalar (`fmtDate`, `toDateTimeInput`, ...) va o'sha
  * funksiyalarga tayanadigan maydonlar (`DateField`, `DateTimeField`).
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { IconCalendar } from "./icons";
 import { tx } from "@/i18n";
@@ -228,8 +229,10 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
   const toIso = withTime ? uzToIsoDateTime : uzToIsoDate;
   const mask = withTime ? maskDateTime : maskDate;
   const containerRef = useRef<HTMLSpanElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState(() => toUz(value));
   const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
   // Tanlangan sana yoki bugungi kunga asoslangan ko'rinish
   const initialDate = value ? new Date(value) : new Date();
@@ -250,11 +253,63 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
+  const updatePosition = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const popupWidth = 270;
+    const popupHeight = withTime ? 365 : 315;
+
+    // Maydon ekrandan chiqib ketgan bo'lsa popoverni yopish
+    if (rect.bottom < -60 || rect.top > window.innerHeight + 60) {
+      setOpen(false);
+      return;
+    }
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    // Agar pastda joy kam bo'lsa va tepada ko'proq bo'lsa, tepaga ochiladi
+    const openUpwards = spaceBelow < popupHeight && spaceAbove > spaceBelow;
+
+    let top = openUpwards ? rect.top - popupHeight - 6 : rect.bottom + 6;
+    if (top < 8) top = 8;
+    if (top + popupHeight > window.innerHeight - 8) {
+      top = Math.max(8, window.innerHeight - popupHeight - 8);
+    }
+
+    let left = rect.left;
+    if (left + popupWidth > window.innerWidth - 12) {
+      left = Math.max(12, rect.right - popupWidth);
+    }
+    if (left < 12) left = 12;
+
+    setCoords({ top: Math.round(top), left: Math.round(left) });
+  }, [withTime]);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    function handleScrollOrResize() {
+      updatePosition();
+    }
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [open, updatePosition]);
+
   // Popover tashqarisiga bosilganda yopish
   useEffect(() => {
     if (!open) return;
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        popupRef.current &&
+        !popupRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     }
@@ -268,6 +323,16 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
+
+  function handleToggleOpen() {
+    if (disabled) return;
+    if (!open) {
+      updatePosition();
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
+  }
 
   function type(raw: string) {
     const shown = mask(raw);
@@ -323,8 +388,8 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
     } else {
       onChange(datePart);
       setText(toUz(datePart));
+      setOpen(false);
     }
-    setOpen(false);
   }
 
   // Kalendar kataklarini yasash
@@ -378,13 +443,24 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
         disabled={disabled}
         aria-label={tx("ui.taqvimdan_tanlash")}
         title={tx("ui.taqvimdan_tanlash")}
-        onClick={() => !disabled && setOpen((v) => !v)}
+        onClick={handleToggleOpen}
       >
         <IconCalendar />
       </button>
 
-      {open && !disabled && (
-        <div className="dt-popup" role="dialog" aria-modal="true">
+      {open && !disabled && coords && createPortal(
+        <div
+          ref={popupRef}
+          className="dt-popup"
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            top: coords.top,
+            left: coords.left,
+            zIndex: 100005,
+          }}
+        >
           <div className="dt-popup-header">
             <span className="dt-popup-title">
               {UZ_MONTHS[viewMonth]} {viewYear}
@@ -477,7 +553,8 @@ function BaseDateField({ withTime, id, value, onChange, min, max, required, disa
               {tx("ui.yopish")}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </span>
   );

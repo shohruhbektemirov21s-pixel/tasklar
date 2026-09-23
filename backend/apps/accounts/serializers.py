@@ -257,6 +257,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     password_confirm = serializers.CharField(write_only=True)
     specialty = serializers.CharField(required=True)
     department_name = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    telegram = serializers.CharField(required=False, allow_blank=True, default="")
     seniority = serializers.ChoiceField(choices=Seniority.choices, required=False,
                                         default=Seniority.JUNIOR)
     years_experience = serializers.IntegerField(required=False, min_value=0, max_value=30,
@@ -265,7 +266,17 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["email", "full_name", "specialty", "seniority", "years_experience",
-                  "job_title", "skills", "password", "password_confirm", "department_name"]
+                  "job_title", "skills", "telegram", "password", "password_confirm", "department_name"]
+
+    def validate_telegram(self, value):
+        if not value:
+            return ""
+        val = value.strip()
+        if val.startswith("https://t.me/"):
+            val = "@" + val[len("https://t.me/"):].strip("/")
+        elif val.startswith("t.me/"):
+            val = "@" + val[len("t.me/"):].strip("/")
+        return val[:80]
 
     def validate_specialty(self, value):
         from apps.accounts.specialties import specialty_catalog

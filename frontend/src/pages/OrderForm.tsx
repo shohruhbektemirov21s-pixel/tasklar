@@ -117,11 +117,20 @@ export default function OrderForm() {
     }
   }, [user?.full_name, editing]);
 
-  const [serverDraftId, setServerDraftId] = useState<number | null>(null);
+  const [serverDraftId, setServerDraftId] = useState<number | string | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
+
+  const fRef = useRef(f);
+  fRef.current = f;
+  const serverDraftIdRef = useRef<number | string | null>(serverDraftId);
+  serverDraftIdRef.current = serverDraftId;
+  const filesRef = useRef(files);
+  filesRef.current = files;
+  const isSavingRef = useRef(false);
+  const dirtyRef = useRef(false);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -129,6 +138,116 @@ export default function OrderForm() {
       isMountedRef.current = false;
     };
   }, []);
+
+  function hasData(formData: typeof f, filesList: File[] = []) {
+    return Boolean(
+      formData.system_name?.trim() ||
+        formData.module?.trim() ||
+        formData.due_date ||
+        formData.project ||
+        formData.requested_change?.trim() ||
+        formData.current_state?.trim() ||
+        formData.reason?.trim() ||
+        formData.affected_modules?.trim() ||
+        formData.dependent_systems?.trim() ||
+        formData.additional_materials?.trim() ||
+        filesList.length > 0
+    );
+  }
+
+  function buildDraftPayload(formData: typeof f) {
+    const payload: Record<string, unknown> = {};
+    Object.entries(formData).forEach(([key, val]) => {
+      if (val === null || val === undefined) return;
+      if (key === "due_date" && !val) {
+        payload[key] = null;
+        return;
+      }
+      payload[key] = val;
+    });
+    if (!payload.system_name || !String(payload.system_name).trim()) {
+      payload.system_name = "Qoralama buyurtma";
+    }
+    if (!payload.due_date) {
+      payload.due_date = null;
+    }
+    if (!payload.project) {
+      payload.project = null;
+    }
+    payload.status = "DRAFT";
+    return payload;
+  }
+
+  // Qoralama sifatida serverga darhol saqlash funksiyasi
+  const saveDraftNow = async (
+    formData = fRef.current,
+    filesList = filesRef.current
+  ): Promise<number | string | null> => {
+    if (isPM) return null;
+    if (editing && (!loaded || existingItem?.status !== "DRAFT")) return null;
+    if (!hasData(formData, filesList)) return null;
+    if (isSavingRef.current) return serverDraftIdRef.current;
+
+    isSavingRef.current = true;
+    try {
+      if (isMountedRef.current) setAutoSaveStatus("saving");
+
+      const payload = buildDraftPayload(formData);
+      let draftId: number | string | null = editing && id ? id : serverDraftIdRef.current;
+
+      if (draftId) {
+        await api.patch<ChangeRequestItem>(`/orders/${draftId}/`, payload);
+      } else {
+        const res = await api.post<ChangeRequestItem>("/orders/", payload);
+        if (res?.id) {
+          draftId = res.id;
+          serverDraftIdRef.current = res.id;
+          if (isMountedRef.current) {
+            setServerDraftId(res.id);
+          }
+        }
+      }
+
+      if (draftId && filesList.length > 0) {
+        const fd = new FormData();
+        filesList.forEach((file) => fd.append("files", file));
+        const newAttachments = await addOrderAttachments(draftId, fd);
+        if (isMountedRef.current) {
+          setFiles([]);
+          filesRef.current = [];
+          if (Array.isArray(newAttachments)) {
+            setExistingAttachments((prev) => [...prev, ...newAttachments]);
+          }
+        }
+      }
+
+      const nowTime = new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+      if (!editing && draftId) {
+        try {
+          localStorage.setItem(
+            ORDER_DRAFT_KEY,
+            JSON.stringify({ f: formData, serverDraftId: draftId, lastSavedTime: nowTime })
+          );
+        } catch {
+          // ignore
+        }
+      }
+
+      dirtyRef.current = false;
+      if (isMountedRef.current) {
+        setAutoSaveStatus("saved");
+        setLastSavedTime(nowTime);
+      }
+      return draftId;
+    } catch {
+      if (isMountedRef.current) {
+        setAutoSaveStatus("idle");
+      }
+      return null;
+    } finally {
+      isSavingRef.current = false;
+    }
+  };
 
   // Qoralamani yuklash (agar foydalanuvchi oldin kiritib chiqib ketgan bo'lsa)
   useEffect(() => {
@@ -161,6 +280,7 @@ export default function OrderForm() {
           }));
           if (parsed.serverDraftId) {
             setServerDraftId(parsed.serverDraftId);
+            serverDraftIdRef.current = parsed.serverDraftId;
           }
           if (parsed.lastSavedTime) {
             setLastSavedTime(parsed.lastSavedTime);
@@ -173,103 +293,60 @@ export default function OrderForm() {
     }
   }, [editing, userDepartment, user?.full_name]);
 
-  // Web-saytda (brauzerda) ma'lumotlarni avtomatik saqlash (har bir o'zgarishda)
-  useEffect(() => {
-    if (editing) return;
-    const isDirty = Boolean(
-      f.system_name?.trim() ||
-        f.module?.trim() ||
-        f.due_date ||
-        f.project ||
-        f.requested_change?.trim() ||
-        f.current_state?.trim() ||
-        f.reason?.trim() ||
-        f.order_type !== "NEW" ||
-        (userDepartment && f.department && f.department !== userDepartment) ||
-        (user?.full_name && f.responsible_person && f.responsible_person !== user.full_name)
-    );
-    if (isDirty) {
-      try {
-        const nowTime = new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
-        localStorage.setItem(
-          ORDER_DRAFT_KEY,
-          JSON.stringify({ f, serverDraftId, lastSavedTime: nowTime })
-        );
-      } catch {
-        // ignore
-      }
-    }
-  }, [editing, f, serverDraftId, userDepartment, user?.full_name]);
-
-  // Serverga avtomatik saqlash (fondan bazada DRAFT holatida saqlanadi)
+  // Har bir o'zgarishda fonda avtomatik qoralama sifatida saqlash
   useEffect(() => {
     if (isPM) return;
     if (editing && (!loaded || existingItem?.status !== "DRAFT")) return;
-    const hasData = Boolean(
-      f.system_name?.trim() ||
-        f.module?.trim() ||
-        f.due_date ||
-        f.project ||
-        f.requested_change?.trim() ||
-        f.current_state?.trim() ||
-        f.reason?.trim() ||
-        files.length > 0
-    );
-    if (!hasData) return;
+    if (!hasData(f, files)) return;
+
+    dirtyRef.current = true;
 
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
     }
 
-    autoSaveTimerRef.current = setTimeout(async () => {
-      try {
-        if (!isMountedRef.current) return;
-        setAutoSaveStatus("saving");
-        const payload: Record<string, unknown> = {};
-        Object.entries(f).forEach(([key, val]) => {
-          if (val === null || val === undefined) return;
-          payload[key] = val;
-        });
-        payload.status = "DRAFT";
-
-        let draftId = editing && id ? id : serverDraftId;
-        if (draftId) {
-          await api.patch(`/orders/${draftId}/`, payload);
-        } else {
-          const res = await api.post<ChangeRequestItem>("/orders/", payload);
-          if (res?.id && isMountedRef.current) {
-            draftId = res.id;
-            setServerDraftId(res.id);
-          }
-        }
-        if (isMountedRef.current) {
-          const nowTime = new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
-          try {
-            if (!editing) {
-              localStorage.setItem(
-                ORDER_DRAFT_KEY,
-                JSON.stringify({ f, serverDraftId: draftId, lastSavedTime: nowTime })
-              );
-            }
-          } catch {
-            // ignore
-          }
-          setAutoSaveStatus("saved");
-          setLastSavedTime(nowTime);
-        }
-      } catch {
-        if (isMountedRef.current) {
-          setAutoSaveStatus("saved");
-        }
-      }
-    }, 1200);
+    autoSaveTimerRef.current = setTimeout(() => {
+      void saveDraftNow(f, files);
+    }, 1000);
 
     return () => {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [editing, loaded, existingItem?.status, id, f, isPM, serverDraftId, files.length]);
+  }, [editing, loaded, existingItem?.status, id, f, isPM, files.length]);
+
+  // Sahifadan chiqib ketganda (unmount) oxirgi qoralamani avtomatik saqlab qolish
+  useEffect(() => {
+    return () => {
+      if (
+        hasData(fRef.current, filesRef.current) &&
+        (!editing || existingItem?.status === "DRAFT") &&
+        dirtyRef.current
+      ) {
+        void saveDraftNow(fRef.current, filesRef.current);
+      }
+    };
+  }, [editing, existingItem?.status]);
+
+  // Brauzer oynasi yopilganda yoki yangilanganda localStorage ga darhol saqlash
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (hasData(fRef.current, filesRef.current)) {
+        const nowTime = new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+        try {
+          localStorage.setItem(
+            ORDER_DRAFT_KEY,
+            JSON.stringify({ f: fRef.current, serverDraftId: serverDraftIdRef.current, lastSavedTime: nowTime })
+          );
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
 
 
@@ -333,13 +410,24 @@ export default function OrderForm() {
     setF((p) => ({ ...p, [k]: v }));
   };
 
-  function handleCancelOrExit() {
+  async function handleCancelOrExit() {
+    if (
+      hasData(fRef.current, filesRef.current) &&
+      (!editing || existingItem?.status === "DRAFT")
+    ) {
+      setBusy(true);
+      await saveDraftNow(fRef.current, filesRef.current);
+      if (!editing) {
+        localStorage.removeItem(ORDER_DRAFT_KEY);
+      }
+      setBusy(false);
+    }
     go(toOrders());
   }
 
-  async function submit(e?: React.FormEvent, targetStatus: "NEW" | "DRAFT" = "NEW") {
+  async function submit(e?: React.FormEvent) {
     if (e) e.preventDefault();
-    if (targetStatus === "NEW" && f.due_date) {
+    if (f.due_date) {
       const today = new Date().toISOString().split("T")[0];
       if (f.due_date < today) {
         setErrors((p) => ({ ...p, due_date: tx("orders.muddat_otgan_xatolik") }));
@@ -355,11 +443,21 @@ export default function OrderForm() {
       const payload: Record<string, unknown> = {};
       Object.entries(f).forEach(([key, val]) => {
         if (val === null || val === undefined) return;
+        if (key === "due_date" && !val) {
+          payload[key] = null;
+          return;
+        }
         payload[key] = val;
       });
-      payload.status = targetStatus;
+      if (!payload.due_date) {
+        payload.due_date = null;
+      }
+      if (!payload.project) {
+        payload.project = null;
+      }
+      payload.status = "NEW";
 
-      const targetId = editing && id ? id : serverDraftId;
+      const targetId = editing && id ? id : serverDraftIdRef.current;
 
       if (targetId) {
         await api.patch(`/orders/${targetId}/`, payload);
@@ -372,7 +470,7 @@ export default function OrderForm() {
         if (files.length > 0) {
           const fd = new FormData();
           Object.entries(payload).forEach(([key, val]) => {
-            if (val !== null && val !== undefined) fd.append(key, String(val));
+            if (val !== null && val !== undefined && val !== "") fd.append(key, String(val));
           });
           files.forEach((file) => fd.append("files", file));
           await api.post("/orders/", fd);
@@ -381,6 +479,7 @@ export default function OrderForm() {
         }
       }
       localStorage.removeItem(ORDER_DRAFT_KEY);
+      dirtyRef.current = false;
       go(toOrders());
     } catch (err: unknown) {
       if (err instanceof ApiError) {
@@ -464,20 +563,10 @@ export default function OrderForm() {
         }
         actions={
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            {(!existingItem || existingItem.status === "DRAFT") && (
-              <button
-                type="button"
-                className="btn btn-outline"
-                disabled={busy}
-                onClick={() => void submit(undefined, "DRAFT")}
-              >
-                💾 {tx("orders.save_draft")}
-              </button>
-            )}
             <button className="btn btn-primary" form={formId} disabled={busy}>
               🚀 {busy ? tx("orders.submitting") : tx("orders.send_order")}
             </button>
-            <button type="button" className="btn" onClick={handleCancelOrExit}>
+            <button type="button" className="btn" disabled={busy} onClick={() => void handleCancelOrExit()}>
               {tx("common.bekor_qilish")}
             </button>
           </div>

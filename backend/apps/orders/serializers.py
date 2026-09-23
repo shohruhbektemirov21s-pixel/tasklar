@@ -82,6 +82,11 @@ class OrderTaskBriefSerializer(serializers.ModelSerializer):
 class SafeDateField(serializers.DateField):
     """Db2 TIMESTAMP yoki aware datetime qaytarganda date ga aylantirib beruvchi xavfsiz maydon."""
 
+    def to_internal_value(self, value):
+        if value in ("", None):
+            return None
+        return super().to_internal_value(value)
+
     def to_representation(self, value):
         if isinstance(value, datetime.datetime):
             value = value.date()

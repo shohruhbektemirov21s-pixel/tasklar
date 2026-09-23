@@ -114,7 +114,7 @@ export default function ChangeRequests() {
     const timer = setInterval(() => setTick((t) => t + 1), 30000);
     return () => clearInterval(timer);
   }, []);
-  const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>("/users/", { is_active: true });
+  const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>("/users/", { is_active: true, page_size: 200 });
   const items: ChangeRequestItem[] = useMemo(() => (data ? listOf<ChangeRequestItem>(data) : []), [data]);
   const displayItems = items;
   const usersList: UserBrief[] = useMemo(() => (usersData ? listOf<UserBrief>(usersData) : []), [usersData]);
@@ -125,9 +125,10 @@ export default function ChangeRequests() {
   const pmList = useMemo(
     () =>
       usersList.filter((u) => {
-        if (u.global_role === "DEVELOPER" || u.specialty === "DEVELOPER") return false;
         if (u.is_sohaviy_boshqarma || u.specialty === "SOHAVIY" || u.global_role === "SOHAVIY") return false;
-        return Boolean(u.specialty === "PM" || u.global_role === "MANAGER" || u.is_manager);
+        if (u.global_role === "MANAGER" || u.is_manager || u.specialty === "PM") return true;
+        if (u.global_role === "BOSS" || u.is_boss || u.global_role === "ADMIN" || u.is_platform_admin) return true;
+        return false;
       }),
     [usersList]
   );

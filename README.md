@@ -71,6 +71,22 @@ docker exec teamflow_backend python manage.py bootstrap_boss
 
 ---
 
+## ⚡ Ishga tushirish va Boshqaruv Skriptlari (Run Profiles)
+
+Loyiha ildizida barcha amallar uchun tayyorlangan qulay Windows va Docker skriptlari mavjud:
+
+| Skript | Vazifasi va tavsifi |
+|---|---|
+| `start_project.bat` | **Loyihani ishga tushirish:** Konteynerlarni ko'taradi, holatni tekshiradi va brauzerda ochish havolalarini taqdim etadi. |
+| `stop_project.bat` | **Xavfsiz to'xtatish:** Db2 tranzaksiyalarini toza yopgan holda barcha konteynerlarni xavfsiz to'xtatadi. |
+| `restart_project.bat` | **Qayta yuklash:** Konteynerlarni to'xtatib qayta ishga tushiradi va salomatlikni tekshiradi. |
+| `status_project.bat` | **Tizim diagnostikasi:** 5 ta konteyner, portlar (5183, 8010, 50000, 6379) va API sog'ligini rangli ko'rinishda ko'rsatadi. |
+| `test_project.bat` | **Avtomatik testlar:** Frontend (vitest) va Backend (Django test) sinovlarini to'liq tekshiradi. |
+| `manage.bat <buyruq>` | **Django boshqaruvi:** `python manage.py` buyruqlarini (migrate, seed_demo, shell va h.k.) hostdan turib chaqirish vositasi. |
+| `autostart.ps1` | **Avtomatik fon yuklanishi:** Windows ishga tushganda fonda Docker va TeamFlow'ni ko'taradi, holatini kuzatadi va Toast bildirishnoma chiqaradi. |
+
+---
+
 ## 🏛 Tizim arxitekturasi va Modullar
 
 TeamFlow qat'iy me'moriy qatlamlar asosida qurilgan:

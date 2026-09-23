@@ -1,13 +1,20 @@
 @echo off
 chcp 65001 > nul
-title TeamFlow To'xtatish
-echo ========================================================
-echo   TeamFlow Loyihasini To'xtatish...
-echo ========================================================
+title TeamFlow — To'xtatish
+color 0C
 cd /d "D:\Task"
-docker compose stop
+
+echo ==============================================================================
+echo       TEAMFLOW — TIZIMNI XAVFSIZ TO'XTATISH
+echo ==============================================================================
 echo.
-echo ========================================================
-echo   TeamFlow konteynerlari to'xtatildi.
-echo ========================================================
+echo [*] Konteynerlar to'xtatilmoqda (Db2 tranzaksiyalari saqlanmoqda)...
+docker compose stop
+
+echo.
+echo ==============================================================================
+echo   [OK] Barcha TeamFlow konteynerlari toza to'xtatildi!
+echo   Baza holati xavfsiz holatda saqlandi.
+echo ==============================================================================
+echo.
 timeout /t 3
