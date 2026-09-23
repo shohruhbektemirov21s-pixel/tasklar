@@ -15,6 +15,7 @@ from apps.projects.permissions import (CanCreateProject, ProjectAccess, check_ac
                                     visible_projects_q)
 from apps.notifications.models import NotificationKind
 from apps.notifications.services import notify, notify_many, send_to_users
+from apps.orders.services import link_order_to_project, unlink_project_orders
 from apps.core.queries import object_or_404
 from apps.core.throttles import AddMemberThrottle
 from apps.core.uploads import check_uploads
@@ -193,7 +194,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # so'rovlar soni loyihalar soniga ko'payib ketardi.
         qs = (base_mgr
               .select_related("workspace", "manager", "created_by", "updated_by", "deleted_by")
-              .prefetch_related("specialties", "memberships__user")
+              .prefetch_related("specialties", "memberships__user", "change_requests")
               # `progress_pct` faqat TARTIB uchun - javobga chiqmaydi
               # (seriyalizatorda bunday maydon yo'q). Ekrandagi foizni
               # oldingidek `progress()` beradi.
@@ -338,7 +339,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project = object_or_404(
             Project.objects
             .select_related("workspace", "manager", "created_by", "updated_by")
-            .prefetch_related("specialties", "memberships__user")
+            .prefetch_related("specialties", "memberships__user", "change_requests")
             .annotate(**project_counters(self.request.user)),
             pk=self.kwargs["pk"])
         need = "view" if self.request.method in ("GET", "HEAD", "OPTIONS") else "manage"
@@ -362,41 +363,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
                                   workspace=workspace)
 
         if order_id:
-            try:
-                from apps.orders.models import ChangeRequest, ChangeRequestStatus
-                order = ChangeRequest.objects.filter(pk=order_id).first()
-                if order:
-                    order.project = project
-                    order.status = ChangeRequestStatus.ASSIGNED_TO_DEV
-                    if not order.assigned_pm_id:
-                        order.assigned_pm_id = manager_id
-                    order.save(update_fields=["project", "status", "assigned_pm", "updated_at"])
-
-                    cur_ver = order.versions.filter(version=order.version).first()
-                    if cur_ver:
-                        cur_ver.status = ChangeRequestStatus.ASSIGNED_TO_DEV
-                        if not cur_ver.decided_by_id:
-                            cur_ver.decided_by_id = manager_id
-                            cur_ver.decided_at = timezone.now()
-                        cur_ver.save(update_fields=["status", "decided_by", "decided_at"])
-
-                    if order.created_by:
-                        try:
-                            from apps.notifications.models import NotificationKind
-                            from apps.notifications.services import notify
-                            notify(
-                                order.created_by,
-                                NotificationKind.TASK_ASSIGNED,
-                                title="Buyurtmangiz bo'yicha loyiha ochildi",
-                                body=f"«{project.name}» loyihasi ochildi va ishlar dasturchiga yo'naltirildi.",
-                                url=f"/loyiha/{project.pk}",
-                                actor=user,
-                                meta={"project": project.pk, "order": order.pk},
-                            )
-                        except Exception:
-                            pass
-            except Exception as exc:
-                logger.exception("Buyurtmani loyihaga biriktirishda xatolik: %s", exc)
+            # Xato YUTILMAYDI: bog'lab bo'lmasa (begona PM ning buyurtmasi,
+            # qoralama) loyiha ham yaratilmaydi - tranzaksiya butunicha
+            # qaytadi va odam sababni ko'radi.
+            link_order_to_project(order_id, project, user, created=True)
 
         brief_data = self.request.data.get("brief")
         brief_defaults = {"updated_by": user}
@@ -459,22 +429,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 project=project, user_id=manager_id,
                 defaults={"role": ProjectRole.MANAGER, "is_active": True})
 
-        if order_id is not None:
-            try:
-                from apps.orders.models import ChangeRequest, ChangeRequestStatus
-                if order_id:
-                    order = ChangeRequest.objects.filter(pk=order_id).first()
-                    if order:
-                        order.project = project
-                        if order.status in (ChangeRequestStatus.NEW, ChangeRequestStatus.ACCEPTED):
-                            order.status = ChangeRequestStatus.ASSIGNED_TO_DEV
-                        if not order.assigned_pm_id and project.manager_id:
-                            order.assigned_pm_id = project.manager_id
-                        order.save(update_fields=["project", "status", "assigned_pm", "updated_at"])
-                else:
-                    ChangeRequest.objects.filter(project=project).update(project=None)
-            except Exception:
-                pass
+        if order_id:
+            link_order_to_project(order_id, project, self.request.user, created=False)
+        elif order_id is not None:
+            # Formada buyurtma maydoni bo'shatildi.
+            unlink_project_orders(project)
 
         brief_data = self.request.data.get("brief")
         if isinstance(brief_data, dict):

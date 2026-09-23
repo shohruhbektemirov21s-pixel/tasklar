@@ -1,10 +1,16 @@
 """Axborot tizimiga o'zgartirish kiritish buyurtmalari bo'yicha bildirishnomalar xizmati."""
 import logging
+
 from django.db.models import Q
+from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 
 from apps.accounts.models import GlobalRole, Specialty, User
 from apps.notifications.models import NotificationKind
 from apps.notifications.services import notify, notify_many
+
+from .models import ChangeRequest, ChangeRequestStatus
+from .workflow import is_admin_or_boss
 
 logger = logging.getLogger(__name__)
 
@@ -299,3 +305,87 @@ def notify_order_version_rejected(order, version_obj, actor, reason):
         actor=actor,
         meta={"order_id": order.pk, "version": version_obj.version, "reason": reason_clean, "status": "REJECTED"},
     )
+
+
+# ---------------------------------------------------------------- loyiha bilan bog'lash
+#
+# Buyurtma asosida loyiha ochiladi yoki mavjud loyihaga biriktiriladi. Bu
+# qoida ilgari `projects/api.py` da, ikki joyda (yaratish va tahrirlash)
+# har xil yozilgan edi: biri holatni shartsiz `ASSIGNED_TO_DEV` qilardi
+# (yopilgan buyurtmani ham), ikkinchisi faqat NEW/ACCEPTED dan. Ikkovi ham
+# buyurtmaga kim egalik qilishini tekshirmasdi - istalgan menejer boshqa
+# PM ning buyurtmasini o'z loyihasiga tortib ola olardi. Ikkovi ham
+# istisnoni yutardi - `@transaction.atomic` ichida esa bu tranzaksiyani
+# buzadi.
+#
+# Endi `projects` buyurtmaning ichki tuzilishini bilmaydi: shu ikki
+# funksiyani chaqiradi, xolos.
+
+def order_earliest_start(order_id):
+    """Loyiha bu buyurtmadan oldin boshlana olmaydi - eng erta sana yoki None."""
+    order = ChangeRequest.objects.filter(pk=order_id).first()
+    if not order:
+        return None
+    order_date = order.request_date or (order.created_at.date() if order.created_at else None)
+    dates = [d for d in (order.pm_start_date, order_date) if d]
+    return min(dates) if dates else None
+
+
+def link_order_to_project(order_id, project, actor, *, created):
+    """Buyurtmani loyihaga biriktiradi.
+
+    `created=True` - loyiha shu buyurtma asosida hozirgina ochildi:
+    buyurtma egasiga xabar ketadi va joriy TZ versiyasi ham yangilanadi.
+    Holat faqat ochiq (NEW/ACCEPTED) buyurtmada `ASSIGNED_TO_DEV` ga
+    o'tadi - ishdagi yoki yopilgan buyurtmaning holatiga tegilmaydi.
+    """
+    order = ChangeRequest.objects.select_for_update().filter(pk=order_id).first()
+    if not order:
+        raise ValidationError({"order_id": "Buyurtma topilmadi."})
+    if order.status == ChangeRequestStatus.DRAFT:
+        raise ValidationError({"order_id": "Qoralama buyurtmani loyihaga biriktirib bo'lmaydi."})
+    # Allaqachon shu loyihada turgan buyurtma qayta tekshirilmaydi: tahrir
+    # formasi uni har saqlashda qayta yuboradi, PM esa keyin almashgan
+    # bo'lishi mumkin (`reassign-pm`) - loyihani saqlash to'xtab qolmasin.
+    owners = {actor.pk, project.manager_id}
+    if (order.project_id != project.pk and order.assigned_pm_id
+            and order.assigned_pm_id not in owners and not is_admin_or_boss(actor)):
+        raise ValidationError({"order_id": "Bu buyurtma boshqa loyiha menejeriga biriktirilgan."})
+
+    order.project = project
+    if not order.assigned_pm_id:
+        order.assigned_pm_id = project.manager_id or actor.pk
+    moved = order.status in (ChangeRequestStatus.NEW, ChangeRequestStatus.ACCEPTED)
+    if moved:
+        order.status = ChangeRequestStatus.ASSIGNED_TO_DEV
+    order.save(update_fields=["project", "status", "assigned_pm", "updated_at"])
+
+    if created and moved:
+        cur_ver = order.versions.filter(version=order.version).first()
+        if cur_ver:
+            cur_ver.status = ChangeRequestStatus.ASSIGNED_TO_DEV
+            if not cur_ver.decided_by_id:
+                cur_ver.decided_by_id = order.assigned_pm_id
+                cur_ver.decided_at = timezone.now()
+            cur_ver.save(update_fields=["status", "decided_by", "decided_at"])
+
+    if created and order.created_by:
+        try:
+            notify(
+                order.created_by,
+                NotificationKind.TASK_ASSIGNED,
+                title="Buyurtmangiz bo'yicha loyiha ochildi",
+                body=f"«{project.name}» loyihasi ochildi va ishlar dasturchiga yo'naltirildi.",
+                url=f"/loyiha/{project.pk}",
+                actor=actor,
+                meta={"project": project.pk, "order": order.pk},
+            )
+        except Exception:
+            # Xabar - qo'shimcha. U yiqilsa bog'lash bekor bo'lmasin.
+            logger.exception("Loyiha ochilgani haqida xabar yuborilmadi: buyurtma %s", order.pk)
+    return order
+
+
+def unlink_project_orders(project):
+    """Loyihadan barcha buyurtmalarni ajratadi (formada buyurtma olib tashlandi)."""
+    ChangeRequest.objects.filter(project=project).update(project=None)

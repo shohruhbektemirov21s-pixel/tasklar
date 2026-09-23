@@ -5,7 +5,7 @@ ichki tartibga tegishli, interfeys uchun hech narsa o'zgarmadi.
 """
 from django.urls import path
 
-from . import api, public, team
+from . import api, people, public, team
 
 urlpatterns = [
     path("dashboard/", api.dashboard, name="dashboard"),
@@ -15,6 +15,9 @@ urlpatterns = [
     path("counts/", api.sidebar_counts, name="sidebar_counts"),
     path("my-work/", api.my_work, name="my_work"),
     path("meta/", api.meta, name="meta"),
+    # Odamning ish sahifasi. Ilgari `accounts.UserViewSet` ichida edi -
+    # manzil o'sha, lekin besh domen ustidan o'qigani uchun panelga ko'chdi.
+    path("users/<int:pk>/work/", people.user_work, name="user_work"),
     # Jamoaga a'zo qo'shish - to'g'ridan-to'g'ri (ilgari taklif orqali edi)
     path("team/candidates/", team.candidates, name="team_candidates"),
     path("team/add/", team.add_member, name="team_add"),

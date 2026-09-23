@@ -2,6 +2,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.accounts.serializers import UserBriefSerializer
+from apps.orders.services import order_earliest_start
 
 from .models import (JoinRequest, Project, ProjectBrief, ProjectFile,
                      ProjectFileVersion, ProjectMember,
@@ -142,16 +143,12 @@ class ProjectSerializer(serializers.ModelSerializer):
         order_id = attrs.get("order_id", None)
         if order_id is None and hasattr(self, "initial_data") and "order_id" in self.initial_data:
             order_id = self.initial_data.get("order_id")
-        if order_id:
-            from apps.orders.models import ChangeRequest
-            order = ChangeRequest.objects.filter(pk=order_id).first()
-            if order and start:
-                order_date = order.request_date or (order.created_at.date() if order.created_at else None)
-                min_allowed = min(filter(None, [order.pm_start_date, order_date])) if (order.pm_start_date or order_date) else None
-                if min_allowed and start < min_allowed:
-                    raise serializers.ValidationError({
-                        "start_date": f"Loyihaning boshlanish sanasi buyurtma sanasidan ({min_allowed.strftime('%d.%m.%Y')}) oldin bo'lishi mumkin emas."
-                    })
+        if order_id and start:
+            min_allowed = order_earliest_start(order_id)
+            if min_allowed and start < min_allowed:
+                raise serializers.ValidationError({
+                    "start_date": f"Loyihaning boshlanish sanasi buyurtma sanasidan ({min_allowed.strftime('%d.%m.%Y')}) oldin bo'lishi mumkin emas."
+                })
         return attrs
 
     def get_progress(self, obj):
@@ -176,9 +173,17 @@ class ProjectSerializer(serializers.ModelSerializer):
         return obj.matches_user(request.user)
 
     def get_linked_order(self, obj):
-        orders_rel = getattr(obj, "orders", None)
+        # Teskari aloqa nomi `change_requests` (`ChangeRequest.project`).
+        # Ilgari bu yerda `obj.orders` turardi - bunday atribut yo'q, ya'ni
+        # javob DOIM `null` edi. Tahrir formasi esa shu qiymatni
+        # `order_id: null` qilib qaytarib yuborardi va har saqlashda
+        # buyurtma loyihadan jimgina ajralib ketardi.
+        # `.all()` - ro'yxatda oldindan yuklangan (`prefetch_related`), ya'ni
+        # har loyiha uchun alohida so'rov ketmaydi. Eng yangisi Python da
+        # tanlanadi: `.order_by()` prefetch'ni chetlab bazaga qaytib borardi.
+        orders_rel = getattr(obj, "change_requests", None)
         if orders_rel is not None:
-            first = orders_rel.first()
+            first = max(orders_rel.all(), key=lambda o: o.created_at, default=None)
             if first:
                 return {
                     "id": first.id,

@@ -32,6 +32,9 @@ from .services import (
     notify_order_version_approved,
     notify_order_version_rejected,
 )
+from .workflow import can_be_order_pm, check_transition, is_order_pm
+from .workflow import is_admin_or_boss as admin_or_boss
+from .visibility import can_access_orders, involved_q, is_sohaviy, visible_orders
 
 logger = logging.getLogger(__name__)
 
@@ -46,19 +49,7 @@ class CanAccessOrders(permissions.BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        if not (user and user.is_authenticated):
-            return False
-
-        can_access = bool(
-            user.is_platform_admin
-            or getattr(user, "is_boss", False)
-            or getattr(user, "is_manager", False)
-            or getattr(user, "can_access_orders", False)
-            or getattr(user, "is_sohaviy_boshqarma", False)
-            or getattr(user, "can_create_project", False)
-        )
-        
-        if not can_access:
+        if not can_access_orders(user):
             return False
 
         # Yangi buyurtma yaratish (POST create) faqat sohaviy boshqarma va admin/boss uchun.
@@ -173,56 +164,20 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         if type_param:
             qs = qs.filter(order_type=type_param)
 
-        from django.db.models import Q
-        is_admin_or_boss = bool(
-            user.is_authenticated
-            and (user.is_platform_admin or getattr(user, "is_boss", False))
-        )
-        is_sohaviy = bool(
-            user.is_authenticated
-            and (
-                getattr(user, "is_sohaviy_boshqarma", False)
-                or getattr(user, "specialty", "") == "SOHAVIY"
-                or getattr(user, "global_role", "") == "SOHAVIY"
-            )
-        )
-
-        if is_sohaviy and not is_admin_or_boss:
-            # Sohaviy boshqarma vakili faqat o'zining yoki o'z boshqarmasining buyurtmalarini ko'radi.
-            # DRAFT holatidagi buyurtmalar faqat uni yaratgan shaxsga ko'rinadi!
-            sohaviy_q = Q(created_by=user)
-            if getattr(user, "department_id", None) and user.department:
-                sohaviy_q |= (
-                    (Q(department__iexact=user.department.name) | Q(created_by__department=user.department))
-                    & ~Q(status=ChangeRequestStatus.DRAFT)
-                )
-            elif getattr(user, "department_name", None) and user.department_name != "Sohaviy boshqarmalar":
-                sohaviy_q |= (Q(department__iexact=user.department_name) & ~Q(status=ChangeRequestStatus.DRAFT))
-            qs = qs.filter(sohaviy_q)
-        else:
-            if not is_admin_or_boss:
-                if for_pm and user.is_authenticated:
-                    qs = qs.filter(Q(assigned_pm=user) | Q(project__manager=user)).exclude(status=ChangeRequestStatus.DRAFT)
-                elif mine and user.is_authenticated:
-                    mine_q = Q(created_by=user) | Q(assigned_pm=user) | Q(project__manager=user) | Q(assigned_developer=user)
-                    if getattr(user, "department_id", None) and user.department:
-                        mine_q |= (
-                            (Q(department__iexact=user.department.name) | Q(created_by__department=user.department))
-                            & ~Q(status=ChangeRequestStatus.DRAFT)
-                        )
-                    qs = qs.filter(mine_q)
-                elif user.is_authenticated:
-                    # Agar mine yoki for_pm berilmasa, baribir o'ziga tegishli (masalan developer) ni filtrlaymiz
-                    # agar ular PM bo'lmasa.
-                    is_pm = getattr(user, "is_manager", False) or getattr(user, "can_access_orders", False)
-                    if not is_pm:
-                        qs = qs.filter(Q(created_by=user) | Q(assigned_pm=user) | Q(assigned_developer=user) | Q(project__manager=user))
-
-        # Qoralamalar (DRAFT) userni o'zidan boshqa hech kimga (hatto admin yoki boshliqqa ham) ko'rinmaydi!
-        if user.is_authenticated:
-            qs = qs.exclude(Q(status=ChangeRequestStatus.DRAFT) & ~Q(created_by=user))
-        else:
-            qs = qs.exclude(status=ChangeRequestStatus.DRAFT)
+        # Asosiy chegara - `visibility.visible_orders` (profil sahifasi ham
+        # shundan o'qiydi). `?for_pm=` va `?mine=` uning USTIDAN toraytiradi.
+        qs = visible_orders(user, qs)
+        if not admin_or_boss(user) and not is_sohaviy(user):
+            if for_pm:
+                qs = qs.filter(Q(assigned_pm=user) | Q(project__manager=user)).exclude(status=ChangeRequestStatus.DRAFT)
+            elif mine:
+                mine_q = involved_q(user)
+                if getattr(user, "department_id", None) and user.department:
+                    mine_q |= (
+                        (Q(department__iexact=user.department.name) | Q(created_by__department=user.department))
+                        & ~Q(status=ChangeRequestStatus.DRAFT)
+                    )
+                qs = qs.filter(mine_q)
 
         deadline_param = self.request.query_params.get("deadline")
         if deadline_param:
@@ -393,7 +348,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         instance = serializer.instance
         user = self.request.user
-        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        is_admin_or_boss = admin_or_boss(user)
 
         # Foydalanuvchi talabi: Oddiy foydalanuvchilar buyurtmani tahrirlashi taqiqlangan!
         if instance.status != ChangeRequestStatus.DRAFT and not is_admin_or_boss:
@@ -409,6 +364,10 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             )
 
         old_status = instance.status
+        # Tahrirlash orqali holatni qo'lda o'zgartirish ham jadvaldan o'tadi:
+        # ilgari qoralama egasi PATCH bilan o'z buyurtmasini to'g'ridan-to'g'ri
+        # «Bajarildi» qilib qo'ya olardi.
+        check_transition(old_status, serializer.validated_data.get("status", old_status), manual=True)
         with transaction.atomic():
             order = serializer.save()
             self._save_order_attachments(order)
@@ -457,7 +416,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         user = self.request.user
-        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        is_admin_or_boss = admin_or_boss(user)
         is_sohaviy = bool(getattr(user, "is_sohaviy_boshqarma", False))
         if instance.status == ChangeRequestStatus.DRAFT and (is_admin_or_boss or is_sohaviy or instance.created_by_id == user.id):
             order_pk = instance.pk
@@ -477,7 +436,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         """Qoralama holatidagi buyurtmani rasman yuborish."""
         order = self.get_object()
         user = request.user
-        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        is_admin_or_boss = admin_or_boss(user)
         is_sohaviy = bool(getattr(user, "is_sohaviy_boshqarma", False))
 
         if not (is_admin_or_boss or is_sohaviy or order.created_by_id == user.id):
@@ -523,7 +482,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     def add_attachments(self, request, pk=None):
         order = self.get_object()
         user = request.user
-        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        is_admin_or_boss = admin_or_boss(user)
         if not is_admin_or_boss and order.created_by_id != user.id:
             return Response({"detail": "Fayl biriktirish huquqi yo'q."}, status=403)
         if order.status not in (ChangeRequestStatus.NEW, ChangeRequestStatus.REJECTED) and not is_admin_or_boss:
@@ -568,7 +527,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     def delete_attachment(self, request, pk=None, attachment_id=None):
         order = self.get_object()
         user = request.user
-        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        is_admin_or_boss = admin_or_boss(user)
         if not is_admin_or_boss and order.created_by_id != user.id:
             return Response({"detail": "Faylni o'chirish huquqi yo'q."}, status=403)
         if order.status not in (ChangeRequestStatus.NEW, ChangeRequestStatus.REJECTED) and not is_admin_or_boss:
@@ -586,14 +545,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     def claim_order(self, request, pk=None):
         """Loyiha menejeri (PM) yangi yoki ochiq buyurtmani o'z zimmasiga olishi (biriktirishi)."""
         user = request.user
-        is_pm_or_admin = bool(
-            user.is_platform_admin
-            or getattr(user, "is_boss", False)
-            or getattr(user, "is_manager", False)
-            or getattr(user, "specialty", "") == "PM"
-            or getattr(user, "global_role", "") == "MANAGER"
-        )
-        if not is_pm_or_admin:
+        if not is_order_pm(user):
             return Response(
                 {"detail": "Faqat loyiha menejeri (PM) yoki admin buyurtmani qabul qila oladi."},
                 status=403,
@@ -619,14 +571,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 target_user = User.objects.filter(id=new_pm_id, is_active=True).first()
                 if not target_user:
                     raise ValidationError({"assigned_pm": "Tanlangan loyiha menejeri topilmadi."})
-                is_target_pm = bool(
-                    target_user.is_platform_admin
-                    or target_user.is_boss
-                    or target_user.is_manager
-                    or target_user.global_role == "MANAGER"
-                    or target_user.specialty == "PM"
-                )
-                if not is_target_pm or target_user.specialty == "DEVELOPER" or target_user.global_role == "DEVELOPER":
+                if not can_be_order_pm(target_user):
                     raise ValidationError({"assigned_pm": "Buyurtmani faqat loyiha menejeriga (PM) biriktirish mumkin. Dasturchilarga biriktirilmaydi."})
                 order.assigned_pm = target_user
                 target_role = getattr(target_user, "get_global_role_display", lambda: "PM")()
@@ -698,14 +643,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             if not target_user:
                 raise ValidationError({"assigned_pm": "Tanlangan foydalanuvchi topilmadi."})
 
-            is_target_pm = bool(
-                target_user.is_platform_admin
-                or target_user.is_boss
-                or target_user.is_manager
-                or target_user.global_role == "MANAGER"
-                or target_user.specialty == "PM"
-            )
-            if not is_target_pm or target_user.specialty == "DEVELOPER" or target_user.global_role == "DEVELOPER":
+            if not can_be_order_pm(target_user):
                 raise ValidationError({"assigned_pm": "Buyurtmani faqat loyiha menejeriga (PM) topshirish mumkin. Dasturchilarga topshirilmaydi."})
 
             note = (request.data.get("notes") or request.data.get("pm_notes") or "").strip()
@@ -743,14 +681,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     def unclaim_order(self, request, pk=None):
         """Loyiha menejeri (PM) yoki admin buyurtmani qaytarishi (o'zidan yechib, yangi holatiga qaytarish)."""
         user = request.user
-        is_pm_or_admin = bool(
-            user.is_platform_admin
-            or getattr(user, "is_boss", False)
-            or getattr(user, "is_manager", False)
-            or getattr(user, "specialty", "") == "PM"
-            or getattr(user, "global_role", "") == "MANAGER"
-        )
-        if not is_pm_or_admin:
+        if not is_order_pm(user):
             return Response(
                 {"detail": "Faqat loyiha menejeri (PM) yoki admin buyurtmani qaytara oladi."},
                 status=403,
@@ -759,8 +690,12 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         target_pk = self.get_object().pk
         with transaction.atomic():
             order = ChangeRequest.objects.select_for_update().select_related("assigned_pm").get(pk=target_pk)
-            if order.status in (ChangeRequestStatus.COMPLETED, ChangeRequestStatus.READY_FOR_REVIEW):
+            # Qoralama ham qaytarilmaydi: DRAFT → NEW jadvalda bor (yuborish),
+            # lekin bu yo'l orqali u `send` tekshiruvlarisiz yuborilib qolardi.
+            if order.status in (ChangeRequestStatus.COMPLETED, ChangeRequestStatus.READY_FOR_REVIEW,
+                                ChangeRequestStatus.DRAFT):
                 raise ValidationError({"detail": "Ushbu holatdagi buyurtmani orqaga qaytarib bo'lmaydi."})
+            check_transition(order.status, ChangeRequestStatus.NEW)
 
             if order.assigned_pm_id and order.assigned_pm_id != user.id:
                 if not (user.is_platform_admin or getattr(user, "is_boss", False)):
@@ -791,12 +726,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     def set_pm_decision(self, request, pk=None):
         """PM (Loyiha menejeri) qarori, baholangan muddati va holatini belgilash."""
         user = request.user
-        is_pm_or_admin = bool(
-            user.is_platform_admin
-            or getattr(user, "is_boss", False)
-            or getattr(user, "is_manager", False)
-        )
-        if not is_pm_or_admin:
+        if not is_order_pm(user):
             return Response(
                 {"detail": "Faqat loyiha menejeri (PM), boshliq yoki admin muddat va qaror belgilay oladi."},
                 status=403,
@@ -825,6 +755,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                         {"detail": f"Ushbu buyurtmani {pm_name} o'z zimmasiga olgan. Boshqa PM unga qaror yoki muddat belgilay olmaydi."}
                     )
 
+            check_transition(order.status, data["status"], manual=True)
             order.status = data["status"]
             if "pm_estimated_duration" in data:
                 order.pm_estimated_duration = data["pm_estimated_duration"]
@@ -871,12 +802,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
     def submit_completion(self, request, pk=None):
         """PM ishni bajarib bo'lgach, tugatilgan ish hujjati bilan boshqarmaga topshirishi."""
         user = request.user
-        is_pm_or_admin = bool(
-            user.is_platform_admin
-            or getattr(user, "is_boss", False)
-            or getattr(user, "is_manager", False)
-        )
-        if not is_pm_or_admin:
+        if not is_order_pm(user):
             return Response(
                 {"detail": "Faqat loyiha menejeri (PM) yoki admin tugatilgan ish haqida hujjat topshira oladi."},
                 status=403,
@@ -890,6 +816,10 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 raise ValidationError(
                     {"detail": f"Ushbu buyurtmani {order.assigned_pm.full_name} o'z zimmasiga olgan. Faqat mas'ul PM tugatilgan ish hisobotini topshira oladi."}
                 )
+        # Faqat ishdagi buyurtma topshiriladi. Ilgari holat umuman
+        # tekshirilmasdi: qoralama, bekor qilingan va yopilgan buyurtma ham
+        # «Boshqarma tasdig'ida» ga qaytib tushardi.
+        check_transition(order.status, ChangeRequestStatus.READY_FOR_REVIEW)
         completion_file = request.FILES.get("completion_file")
         completion_note = (request.data.get("completion_note") or "").strip()
 
@@ -1073,7 +1003,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         # Huquq tekshiruvi: faqat buyurtmachi (boshqarma), sohaviy yoki admin/boss
         is_owner = order.created_by_id == user.id
         is_sohaviy = bool(getattr(user, "is_sohaviy_boshqarma", False) or getattr(user, "specialty", "") == "SOHAVIY")
-        is_admin_or_boss = bool(user.is_platform_admin or getattr(user, "is_boss", False))
+        is_admin_or_boss = admin_or_boss(user)
         if not (is_owner or is_sohaviy or is_admin_or_boss):
             raise ValidationError({"detail": "Yangi versiya yuborish faqat buyurtmachi boshqarma vakillariga ruxsat etilgan."})
 
@@ -1158,14 +1088,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         3. Buyurtma (ChangeRequest) yangi TZ fayli, versiya raqami va parametrlariga o'tkaziladi.
         """
         user = request.user
-        is_pm_or_admin = bool(
-            user.is_platform_admin
-            or getattr(user, "is_boss", False)
-            or getattr(user, "is_manager", False)
-            or getattr(user, "specialty", "") == "PM"
-            or getattr(user, "global_role", "") == "MANAGER"
-        )
-        if not is_pm_or_admin:
+        if not is_order_pm(user):
             return Response(
                 {"detail": "Faqat loyiha menejeri (PM) yoki admin yangi versiyani tasdiqlay oladi."},
                 status=403,
@@ -1217,6 +1140,10 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         pm_deadline = request.data.get("pm_deadline")
         assigned_developer_id = request.data.get("assigned_developer")
         status_choice = request.data.get("status")
+        if status_choice and status_choice in ChangeRequestStatus.values:
+            # Ilgari bu yerda istalgan holat qabul qilinardi - `COMPLETED`
+            # ham, ya'ni boshqarma tasdig'isiz yopish.
+            check_transition(order.status, status_choice, manual=True)
 
         with transaction.atomic():
             # 1. Eski tasdiqlangan barcha versiyalar atmen (CANCELLED) qilinadi
@@ -1284,14 +1211,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         eski versiyadagi TZ o'z kuchida qoladi.
         """
         user = request.user
-        is_pm_or_admin = bool(
-            user.is_platform_admin
-            or getattr(user, "is_boss", False)
-            or getattr(user, "is_manager", False)
-            or getattr(user, "specialty", "") == "PM"
-            or getattr(user, "global_role", "") == "MANAGER"
-        )
-        if not is_pm_or_admin:
+        if not is_order_pm(user):
             return Response(
                 {"detail": "Faqat loyiha menejeri (PM) yoki admin yangi versiyani rad eta oladi."},
                 status=403,
@@ -1344,11 +1264,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         order = self.get_object()
 
         is_pm_or_admin = bool(
-            user.is_platform_admin
-            or getattr(user, "is_boss", False)
-            or getattr(user, "is_manager", False)
-            or getattr(user, "specialty", "") == "PM"
-            or getattr(user, "global_role", "") == "MANAGER"
+            is_order_pm(user)
             or (order.assigned_pm_id == user.id)
             or (order.project and order.project.manager_id == user.id)
         )

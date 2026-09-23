@@ -166,6 +166,28 @@ def get_membership(user, project):
     return project.memberships.filter(user=user, is_active=True).select_related("user").first()
 
 
+def _projects_with_my_orders(user, alive=True):
+    """Sohaviy boshqarma vakilining (yoki boshqarmasining) buyurtmasi bor loyihalar.
+
+    `orders` ilovasi IMPORT QILINMAYDI - shart `ChangeRequest.project`
+    ning teskari aloqasi (`change_requests`) orqali yoziladi. Ilgari bu
+    yerda ikki joyda `from apps.orders.models import ChangeRequest` turardi
+    va `projects` bilan `orders` bir-birini import qiladigan halqa hosil
+    bo'lgan edi. Qoida esa bitta: `visible_projects_q` va
+    `ProjectAccess.can_view` shu funksiyadan o'qiydi, ya'ni ajralib ketmaydi.
+    """
+    from apps.projects.models import Project
+
+    cond = Q(change_requests__created_by=user)
+    dept_name = getattr(user, "department_name", "") or ""
+    if dept_name:
+        cond |= Q(change_requests__department=dept_name)
+    if getattr(user, "department_id", None):
+        cond |= Q(change_requests__created_by__department_id=user.department_id)
+    manager = Project.objects if alive else Project.all_objects
+    return manager.filter(cond)
+
+
 def in_workspace(user, project):
     """Foydalanuvchi loyihaning ish maydonida bormi.
 
@@ -219,14 +241,8 @@ def visible_projects_q(user, path=""):
 
     # Sohaviy boshqarma vakili: o'zi yoki o'z boshqarmasiga tegishli buyurtmasi (TZ) bor loyihalarni ko'radi
     if getattr(user, "is_sohaviy_boshqarma", False):
-        from apps.orders.models import ChangeRequest
-        cr_q = Q(project=OuterRef(project_ref), created_by=user)
-        dept_name = getattr(user, "department_name", "") or ""
-        if dept_name:
-            cr_q |= Q(project=OuterRef(project_ref), department=dept_name)
-        if getattr(user, "department_id", None):
-            cr_q |= Q(project=OuterRef(project_ref), created_by__department_id=user.department_id)
-        has_my_order = Exists(ChangeRequest.objects.filter(cr_q))
+        has_my_order = Exists(_projects_with_my_orders(user).filter(
+            pk=OuterRef(project_ref)))
         return member_of | has_my_order
 
     in_ws = Exists(WorkspaceMember.objects.filter(
@@ -383,14 +399,7 @@ class ProjectAccess:
         if self.sees_all or self.is_member:
             return True
         if self.is_sohaviy:
-            from apps.orders.models import ChangeRequest
-            cr_q = Q(project=self.project, created_by=self.user)
-            dept_name = getattr(self.user, "department_name", "") or ""
-            if dept_name:
-                cr_q |= Q(project=self.project, department=dept_name)
-            if getattr(self.user, "department_id", None):
-                cr_q |= Q(project=self.project, created_by__department_id=self.user.department_id)
-            return ChangeRequest.objects.filter(cr_q).exists()
+            return _projects_with_my_orders(self.user, alive=False).filter(pk=self.project.pk).exists()
         if self._in_workspace is None:
             self._in_workspace = in_workspace(self.user, self.project)
         if self.project.is_public and self._in_workspace:
