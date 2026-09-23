@@ -193,3 +193,19 @@ class BoardApproveTest(ApiTestCase):
         r2 = self.client_for(self.dev).get("/api/tasks/board/",
                                            {"project": self.project.pk})
         self.assertFalse(r2.data["access"]["can_review"])
+
+    def test_tekshiruvdagi_ish_uchun_bajarildi_royxatda_chiqadi(self):
+        """Tekshiruvdagi vazifada PM/rahbar uchun «Bajarildi» varianti chiqishi shart."""
+        self.submit()
+        # Menejer / PM
+        r = self.api.get("/api/tasks/{}/".format(self.task.pk))
+        self.assertEqual(r.status_code, 200)
+        transitions = [t["value"] for t in r.data["allowed_transitions"]]
+        self.assertIn(TaskStatus.DONE, transitions)
+
+        # Doskada ham karta menyusida «Bajarildi» bo'ladi
+        r_board = self.api.get("/api/tasks/board/", {"project": self.project.pk})
+        card = next(t for c in r_board.data["columns"] for t in c["tasks"] if t["id"] == self.task.pk)
+        board_transitions = [t["value"] for t in card["allowed_transitions"]]
+        self.assertIn(TaskStatus.DONE, board_transitions)
+

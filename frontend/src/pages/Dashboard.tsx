@@ -509,21 +509,22 @@ function FilterIcon({ size = 15, color = "currentColor" }: { size?: number; colo
 function getStatusPill(status: string) {
   switch (status) {
     case "ACCEPTED":
-      return { label: tx("dashboard.tasdiqlangan"), bg: "#f4f4f5", color: "#18181b", border: "#d4d4d8" };
+      return { label: tx("dashboard.tasdiqlangan"), bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE" };
     case "IN_PROGRESS":
     case "ASSIGNED_TO_DEV":
     case "TESTING":
-      return { label: tx("dashboard.jarayonda"), bg: "#f4f4f5", color: "#18181b", border: "#d4d4d8" };
+      return { label: tx("dashboard.jarayonda"), bg: "#FFF7ED", color: "#EA580C", border: "#FED7AA" };
     case "COMPLETED":
-      return { label: tx("dashboard.bajarilgan"), bg: "#18181b", color: "#ffffff", border: "#18181b" };
+      return { label: tx("dashboard.bajarilgan"), bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
     case "NEW":
-      return { label: tx("dashboard.kutilyapti"), bg: "#ffffff", color: "#52525b", border: "#a1a1aa", dashed: true };
+    case "DRAFT":
+      return { label: tx("dashboard.kutilyapti"), bg: "#EEF0FF", color: "#6255E8", border: "#D4D7FD", dashed: false };
     case "REJECTED":
-      return { label: tx("dashboard.rad_etilgan"), bg: "#fafafa", color: "#71717a", border: "#e4e4e7" };
+      return { label: tx("dashboard.rad_etilgan"), bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
     case "READY_FOR_REVIEW":
-      return { label: tx("dashboard.boshqarma_tasdigida"), bg: "#f4f4f5", color: "#18181b", border: "#18181b" };
+      return { label: tx("dashboard.boshqarma_tasdigida"), bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" };
     default:
-      return { label: status, bg: "#fafafa", color: "#52525b", border: "#e4e4e7" };
+      return { label: status, bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" };
   }
 }
 function getAvatarInitials(name: string) {
@@ -544,22 +545,22 @@ const PERIOD_THEMES: Record<
   }
 > = {
   year: {
-    iconBg: "#fef3c7",
-    iconColor: "#d97706",
+    iconBg: "#FFF7ED",
+    iconColor: "#EA580C",
     title: tx("dashboard.yil_boshidan"),
-    activeBg: "#fffbeb",
+    activeBg: "#FFFBF7",
   },
   month: {
-    iconBg: "#e0e7ff",
-    iconColor: "#4f46e5",
+    iconBg: "#EEF0FF",
+    iconColor: "#6255E8",
     title: tx("dashboard.oy_boshidan"),
-    activeBg: "#eef2ff",
+    activeBg: "#F7F8FF",
   },
   week: {
-    iconBg: "#d1fae5",
+    iconBg: "#ECFDF5",
     iconColor: "#059669",
     title: tx("dashboard.hafta_boshidan"),
-    activeBg: "#ecfdf5",
+    activeBg: "#F6FDF9",
   },
 };
 /** Boshqarma foydalanuvchisi uchun to'liq bosh panel ko'rinishi (yangi UX dizayn) */
@@ -637,16 +638,17 @@ function DepartmentDashboard() {
           role="button"
           tabIndex={0}
           style={{
-            background: "#fffbeb",
-            border: "1px solid #fcd34d",
-            borderRadius: 12,
-            padding: "12px 18px",
+            background: "#FFFBEB",
+            border: "1px solid #FDE68A",
+            borderRadius: 14,
+            padding: "14px 20px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             flexWrap: "wrap",
             gap: 12,
             cursor: "pointer",
+            boxShadow: "var(--shadow-xs)",
           }}
           onClick={() => void handleOpenReviewOrder()}
           onKeyDown={(e) => {
@@ -657,17 +659,17 @@ function DepartmentDashboard() {
           }}
         >
           <div>
-            <div style={{ fontWeight: 700, color: "#0f172a", fontSize: 13.5 }}>
+            <div style={{ fontWeight: 700, color: "#92400E", fontSize: 14 }}>
               {tx("dashboard.boshqarma_tasdigida")} ({readyForReviewCount})
             </div>
-            <div className="muted" style={{ fontSize: 12.5, marginTop: 1, color: "#64748b" }}>
+            <div style={{ fontSize: 12.5, marginTop: 2, color: "#B45309" }}>
               {tx("dashboard.boshqarma_tasdigida_izoh")}
             </div>
           </div>
           <button
             type="button"
-            className="btn btn-sm"
-            style={{ background: "#0f172a", color: "#fff", border: "1px solid #0f172a", borderRadius: 6 }}
+            className="btn btn-sm btn-primary"
+            style={{ borderRadius: 8, fontWeight: 600 }}
             onClick={(e) => {
               e.stopPropagation();
               void handleOpenReviewOrder();
@@ -691,12 +693,12 @@ function DepartmentDashboard() {
             <div
               key={p.key}
               style={{
-                background: isSelected ? theme.activeBg : "#fff",
-                borderRadius: 14,
-                border: isSelected ? `2px solid ${theme.iconColor}` : "1px solid #e2e8f0",
+                background: isSelected ? theme.activeBg : "#ffffff",
+                borderRadius: 16,
+                border: isSelected ? `2px solid ${theme.iconColor}` : "1px solid var(--border)",
                 boxShadow: isSelected
-                  ? "0 4px 12px rgba(15,23,42,0.06)"
-                  : "0 1px 3px rgba(0,0,0,0.02)",
+                  ? "var(--shadow-md)"
+                  : "var(--shadow-sm)",
                 padding: "20px 22px",
                 transition: "all 0.15s ease",
               }}
@@ -720,31 +722,32 @@ function DepartmentDashboard() {
                 }}
                 title={tx("orders.davr_buyurtmalarini_korish", { davr: theme.title })}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <div
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 10,
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
                       background: theme.iconBg,
                       color: theme.iconColor,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    <CalendarIcon size={20} color={theme.iconColor} />
+                    <CalendarIcon size={22} color={theme.iconColor} />
                   </div>
                   <div>
-                    <h3 style={{ fontSize: 15.5, fontWeight: 700, margin: 0, color: "#0f172a" }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text)" }}>
                       {theme.title}
                     </h3>
-                    <p style={{ fontSize: 12, color: "#64748b", margin: "2px 0 0" }}>
+                    <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "2px 0 0" }}>
                       {fmtDate(p.since)} – {tx("dashboard.bugun")}
                     </p>
                   </div>
                 </div>
-                <div style={{ color: isSelected ? "#0f172a" : "#cbd5e1", display: "flex", alignItems: "center" }}>
+                <div style={{ color: isSelected ? theme.iconColor : "var(--border-strong)", display: "flex", alignItems: "center" }}>
                   <ChevronRightIcon size={18} />
                 </div>
               </div>
@@ -753,11 +756,12 @@ function DepartmentDashboard() {
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr 1fr",
                   marginTop: 18,
-                  paddingTop: 14,
-                  borderTop: "1px solid #f4f4f5",
+                  paddingTop: 16,
+                  borderTop: "1px solid var(--border)",
                   gap: 10,
                 }}
               >
+                {/* 1. Jami */}
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -773,32 +777,32 @@ function DepartmentDashboard() {
                   }}
                   style={{
                     padding: "10px 12px",
-                    borderRadius: 10,
+                    borderRadius: 12,
                     cursor: "pointer",
                     transition: "all 0.15s ease",
                     background:
                       selectedPeriod === p.key && selectedMetric === "submitted"
                         ? theme.iconColor
-                        : "#ffffff",
+                        : "var(--surface-2)",
                     border:
                       selectedPeriod === p.key && selectedMetric === "submitted"
                         ? `1px solid ${theme.iconColor}`
-                        : "1px solid #e4e4e7",
+                        : "1px solid var(--border)",
                     boxShadow:
                       selectedPeriod === p.key && selectedMetric === "submitted"
-                        ? "0 2px 8px rgba(0,0,0,0.15)"
+                        ? "0 2px 8px rgba(0,0,0,0.12)"
                         : "none",
                   }}
                   onMouseEnter={(e) => {
                     if (!(selectedPeriod === p.key && selectedMetric === "submitted")) {
-                      e.currentTarget.style.background = "#f4f4f5";
-                      e.currentTarget.style.borderColor = "#d4d4d8";
+                      e.currentTarget.style.background = "#EFF2F7";
+                      e.currentTarget.style.borderColor = "#CBD5E1";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!(selectedPeriod === p.key && selectedMetric === "submitted")) {
-                      e.currentTarget.style.background = "#ffffff";
-                      e.currentTarget.style.borderColor = "#e4e4e7";
+                      e.currentTarget.style.background = "var(--surface-2)";
+                      e.currentTarget.style.borderColor = "var(--border)";
                     }
                   }}
                   title={`${theme.title} — ${tx("dashboard.jami")} (${p.submitted ?? 0})`}
@@ -809,7 +813,7 @@ function DepartmentDashboard() {
                       color:
                         selectedPeriod === p.key && selectedMetric === "submitted"
                           ? "#ffffff"
-                          : "#71717a",
+                          : "var(--text-muted)",
                       fontWeight: 600,
                       marginBottom: 4,
                     }}
@@ -818,18 +822,20 @@ function DepartmentDashboard() {
                   </div>
                   <div
                     style={{
-                      fontSize: 24,
-                      fontWeight: 800,
+                      fontSize: 22,
+                      fontWeight: 750,
                       color:
                         selectedPeriod === p.key && selectedMetric === "submitted"
                           ? "#ffffff"
-                          : "#18181b",
-                      lineHeight: 1.1,
+                          : "var(--text)",
+                      lineHeight: 1.15,
                     }}
                   >
                     {p.submitted ?? 0}
                   </div>
                 </div>
+
+                {/* 2. Jarayonda */}
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -845,35 +851,35 @@ function DepartmentDashboard() {
                   }}
                   style={{
                     padding: "10px 12px",
-                    borderRadius: 10,
+                    borderRadius: 12,
                     cursor: "pointer",
                     transition: "all 0.15s ease",
                     background:
                       selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
                         ? theme.iconColor
-                        : "#ffffff",
+                        : "var(--surface-2)",
                     border:
                       selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
                         ? `1px solid ${theme.iconColor}`
-                        : "1px solid #e4e4e7",
+                        : "1px solid var(--border)",
                     boxShadow:
                       selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
-                        ? "0 2px 8px rgba(0,0,0,0.15)"
+                        ? "0 2px 8px rgba(0,0,0,0.12)"
                         : "none",
                   }}
                   onMouseEnter={(e) => {
                     if (!(selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved"))) {
-                      e.currentTarget.style.background = "#f4f4f5";
-                      e.currentTarget.style.borderColor = "#d4d4d8";
+                      e.currentTarget.style.background = "#EFF2F7";
+                      e.currentTarget.style.borderColor = "#CBD5E1";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!(selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved"))) {
-                      e.currentTarget.style.background = "#ffffff";
-                      e.currentTarget.style.borderColor = "#e4e4e7";
+                      e.currentTarget.style.background = "var(--surface-2)";
+                      e.currentTarget.style.borderColor = "var(--border)";
                     }
                   }}
-                  title={`${theme.title} — ${tx("dashboard.tasdiqlangan_buyurtmalar")} (${p.in_progress ?? p.approved ?? 0})`}
+                  title={`${theme.title} — ${tx("dashboard.jarayonda")} (${p.in_progress ?? p.approved ?? 0})`}
                 >
                   <div
                     style={{
@@ -881,27 +887,29 @@ function DepartmentDashboard() {
                       color:
                         selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
                           ? "#ffffff"
-                          : "#71717a",
+                          : "var(--text-muted)",
                       fontWeight: 600,
                       marginBottom: 4,
                     }}
                   >
-                    {tx("dashboard.tasdiqlangan_buyurtmalar")}
+                    {tx("dashboard.jarayonda")}
                   </div>
                   <div
                     style={{
-                      fontSize: 24,
-                      fontWeight: 800,
+                      fontSize: 22,
+                      fontWeight: 750,
                       color:
                         selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
                           ? "#ffffff"
-                          : "#18181b",
-                      lineHeight: 1.1,
+                          : "var(--text)",
+                      lineHeight: 1.15,
                     }}
                   >
                     {p.in_progress ?? p.approved ?? 0}
                   </div>
                 </div>
+
+                {/* 3. Bajarilgan */}
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -917,32 +925,32 @@ function DepartmentDashboard() {
                   }}
                   style={{
                     padding: "10px 12px",
-                    borderRadius: 10,
+                    borderRadius: 12,
                     cursor: "pointer",
                     transition: "all 0.15s ease",
                     background:
                       selectedPeriod === p.key && selectedMetric === "completed"
                         ? theme.iconColor
-                        : "#ffffff",
+                        : "var(--surface-2)",
                     border:
                       selectedPeriod === p.key && selectedMetric === "completed"
                         ? `1px solid ${theme.iconColor}`
-                        : "1px solid #e4e4e7",
+                        : "1px solid var(--border)",
                     boxShadow:
                       selectedPeriod === p.key && selectedMetric === "completed"
-                        ? "0 2px 8px rgba(0,0,0,0.15)"
+                        ? "0 2px 8px rgba(0,0,0,0.12)"
                         : "none",
                   }}
                   onMouseEnter={(e) => {
                     if (!(selectedPeriod === p.key && selectedMetric === "completed")) {
-                      e.currentTarget.style.background = "#f4f4f5";
-                      e.currentTarget.style.borderColor = "#d4d4d8";
+                      e.currentTarget.style.background = "#EFF2F7";
+                      e.currentTarget.style.borderColor = "#CBD5E1";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!(selectedPeriod === p.key && selectedMetric === "completed")) {
-                      e.currentTarget.style.background = "#ffffff";
-                      e.currentTarget.style.borderColor = "#e4e4e7";
+                      e.currentTarget.style.background = "var(--surface-2)";
+                      e.currentTarget.style.borderColor = "var(--border)";
                     }
                   }}
                   title={`${theme.title} — ${tx("dashboard.bajarilgan")} (${p.completed ?? 0})`}
@@ -953,22 +961,22 @@ function DepartmentDashboard() {
                       color:
                         selectedPeriod === p.key && selectedMetric === "completed"
                           ? "#ffffff"
-                          : "#71717a",
+                          : "var(--text-muted)",
                       fontWeight: 600,
                       marginBottom: 4,
                     }}
                   >
-                    {tx("dashboard.bajarilgan_buyurtmalar")}
+                    {tx("dashboard.bajarilgan")}
                   </div>
                   <div
                     style={{
-                      fontSize: 24,
-                      fontWeight: 800,
+                      fontSize: 22,
+                      fontWeight: 750,
                       color:
                         selectedPeriod === p.key && selectedMetric === "completed"
                           ? "#ffffff"
-                          : "#18181b",
-                      lineHeight: 1.1,
+                          : "var(--text)",
+                      lineHeight: 1.15,
                     }}
                   >
                     {p.completed ?? 0}
@@ -980,9 +988,9 @@ function DepartmentDashboard() {
         })}
       </div>
       <div id="department-orders-section" style={{ scrollMarginTop: 24 }}>
-        <div className="row between middle" style={{ flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+        <div className="row between middle" style={{ flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: "#0f172a" }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: "var(--text)" }}>
               {selectedMetric === "approved"
                 ? tx("dashboard.tasdiqlangan_buyurtmalar")
                 : selectedMetric === "completed"
@@ -991,7 +999,7 @@ function DepartmentDashboard() {
                 ? tx("dashboard.jami_buyurtmalar")
                 : tx("dashboard.buyurtmalar")}
             </h2>
-            <span style={{ fontSize: 13.5, fontWeight: 600, color: "#64748b" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
               ({orders.length} {tx("common.ta")})
             </span>
             {selectedPeriod && (
@@ -1000,20 +1008,20 @@ function DepartmentDashboard() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  background: "#f4f4f5",
-                  color: "#18181b",
-                  borderRadius: 20,
+                  background: "var(--primary-soft)",
+                  color: "var(--primary)",
+                  borderRadius: 9999,
                   padding: "4px 12px",
-                  fontSize: 12.5,
+                  fontSize: 12,
                   fontWeight: 600,
-                  border: "1px solid #e4e4e7",
+                  border: "1px solid var(--primary-border)",
                 }}
               >
                 <span>{PERIOD_THEMES[selectedPeriod]?.title}</span>
                 {selectedMetric && (
-                  <span style={{ color: "#71717a" }}>
+                  <span style={{ opacity: 0.85 }}>
                     /{" "}
-                    <strong style={{ color: "#18181b" }}>
+                    <strong>
                       {selectedMetric === "approved"
                         ? tx("dashboard.tasdiqlangan")
                         : selectedMetric === "completed"
@@ -1034,10 +1042,10 @@ function DepartmentDashboard() {
                     border: "none",
                     padding: 0,
                     cursor: "pointer",
-                    color: "#71717a",
-                    fontSize: 13,
+                    color: "var(--primary)",
+                    fontSize: 12,
                     fontWeight: 700,
-                    marginLeft: 4,
+                    marginLeft: 2,
                   }}
                   title={tx("common.filtrni_tozalash")}
                 >
@@ -1047,15 +1055,15 @@ function DepartmentDashboard() {
             )}
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
           <div style={{ position: "relative", width: 340, maxWidth: "100%" }}>
             <span
               style={{
                 position: "absolute",
-                left: 12,
+                left: 14,
                 top: "50%",
                 transform: "translateY(-50%)",
-                color: "#94a3b8",
+                color: "var(--text-muted)",
                 display: "flex",
                 alignItems: "center",
                 pointerEvents: "none",
@@ -1070,25 +1078,26 @@ function DepartmentDashboard() {
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 width: "100%",
-                height: 40,
+                height: 42,
                 borderRadius: 10,
-                border: "1px solid #e2e8f0",
-                padding: "8px 14px 8px 36px",
-                fontSize: 13,
-                background: "#fff",
+                border: "1px solid var(--border)",
+                padding: "8px 14px 8px 38px",
+                fontSize: 13.5,
+                background: "var(--surface)",
+                color: "var(--text)",
                 outline: "none",
                 transition: "border-color 0.15s ease",
               }}
             />
           </div>
-          <div style={{ position: "relative", minWidth: 170 }}>
+          <div style={{ position: "relative", minWidth: 180 }}>
             <div
               style={{
                 position: "absolute",
                 left: 12,
                 top: "50%",
                 transform: "translateY(-50%)",
-                color: "#64748b",
+                color: "var(--text-muted)",
                 display: "flex",
                 alignItems: "center",
                 pointerEvents: "none",
@@ -1100,14 +1109,14 @@ function DepartmentDashboard() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               style={{
-                height: 40,
+                height: 42,
                 width: "100%",
                 borderRadius: 10,
-                border: "1px solid #e2e8f0",
+                border: "1px solid var(--border)",
                 padding: "0 14px 0 34px",
                 fontSize: 13,
-                background: "#fff",
-                color: "#334155",
+                background: "var(--surface)",
+                color: "var(--text)",
                 fontWeight: 500,
                 cursor: "pointer",
                 outline: "none",
@@ -1122,37 +1131,34 @@ function DepartmentDashboard() {
         </div>
         <div
           style={{
-            background: "#fff",
-            borderRadius: 14,
-            border: "1px solid #f1f5f9",
+            background: "var(--surface)",
+            borderRadius: 16,
+            border: "1px solid var(--border)",
             overflow: "hidden",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+            boxShadow: "var(--shadow-sm)",
           }}
         >
           {ordersLoading && !orders.length ? (
-            <div style={{ padding: 40, textAlign: "center" }}>
+            <div style={{ padding: 48, textAlign: "center" }}>
               <Loading text={tx("dashboard.panel_yuklanmoqda")} />
             </div>
           ) : orders.length === 0 ? (
             <div style={{ padding: "48px 20px", textAlign: "center" }}>
-              <h4 style={{ fontSize: 15, fontWeight: 600, color: "#18181b", margin: "0 0 6px" }}>
+              <h4 style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", margin: "0 0 6px" }}>
                 {tx("dashboard.talabnoma_topilmadi")}
               </h4>
-              <p className="muted" style={{ fontSize: 13, maxWidth: 420, margin: "0 auto 16px", color: "#71717a" }}>
+              <p style={{ fontSize: 13, maxWidth: 420, margin: "0 auto 18px", color: "var(--text-muted)" }}>
                 {tx("dashboard.talabnoma_topilmadi_izoh")}
               </p>
               <Link
                 to="/buyurtma/yangi"
-                className="btn btn-sm"
+                className="btn btn-sm btn-primary"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 6,
-                  background: "#18181b",
-                  color: "#fff",
-                  border: "1px solid #18181b",
-                  borderRadius: 6,
-                  padding: "6px 14px",
+                  borderRadius: 8,
+                  padding: "7px 16px",
                   fontWeight: 600,
                 }}
               >
@@ -1165,12 +1171,12 @@ function DepartmentDashboard() {
                 <thead>
                   <tr
                     style={{
-                      background: "#fafafa",
-                      borderBottom: "1px solid #e4e4e7",
+                      background: "var(--surface-2)",
+                      borderBottom: "1px solid var(--border)",
                       textAlign: "left",
                       fontSize: 12,
-                      fontWeight: 700,
-                      color: "#71717a",
+                      fontWeight: 650,
+                      color: "var(--text-secondary)",
                     }}
                   >
                     <th style={{ width: 44, textAlign: "center", padding: "12px 14px" }}>№</th>
@@ -1191,12 +1197,12 @@ function DepartmentDashboard() {
                         key={o.id}
                         onClick={() => setOpenOrderId(o.id)}
                         style={{
-                          borderBottom: "1px solid #f4f4f5",
+                          borderBottom: "1px solid var(--border-muted)",
                           transition: "background 0.1s ease",
                           cursor: "pointer",
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "#fafafa";
+                          e.currentTarget.style.background = "var(--surface-2)";
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = "transparent";
@@ -1207,18 +1213,18 @@ function DepartmentDashboard() {
                             textAlign: "center",
                             fontSize: 13,
                             fontWeight: 600,
-                            color: "#71717a",
+                            color: "var(--text-muted)",
                             padding: "14px",
                           }}
                         >
                           {idx + 1}
                         </td>
                         <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
-                          <div style={{ fontWeight: 600, fontSize: 13.5, color: "#18181b" }}>
+                          <div style={{ fontWeight: 600, fontSize: 13.5, color: "var(--text)" }}>
                             {o.system_name}
                           </div>
                           {o.module && (
-                            <div style={{ fontSize: 11.5, color: "#71717a", marginTop: 2 }}>
+                            <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>
                               {o.module}
                             </div>
                           )}
@@ -1227,7 +1233,7 @@ function DepartmentDashboard() {
                           <div
                             style={{
                               fontSize: 13,
-                              color: "#3f3f46",
+                              color: "var(--text-secondary)",
                               lineHeight: 1.4,
                               overflow: "hidden",
                               textOverflow: "ellipsis",
@@ -1240,11 +1246,11 @@ function DepartmentDashboard() {
                             {o.requested_change}
                           </div>
                         </td>
-                        <td style={{ padding: "14px", whiteSpace: "nowrap", fontSize: 12.5, color: "#52525b" }}>
+                        <td style={{ padding: "14px", whiteSpace: "nowrap", fontSize: 12.5, color: "var(--text-secondary)" }}>
                           {o.pm_deadline || o.due_date ? (
                             fmtDate(o.pm_deadline || o.due_date)
                           ) : (
-                            <span style={{ color: "#a1a1aa" }}>—</span>
+                            <span style={{ color: "var(--text-subtle)" }}>—</span>
                           )}
                         </td>
                         <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
@@ -1252,9 +1258,9 @@ function DepartmentDashboard() {
                             style={{
                               display: "inline-flex",
                               alignItems: "center",
-                              padding: "4px 10px",
-                              borderRadius: 6,
-                              fontSize: 12,
+                              padding: "3px 10px",
+                              borderRadius: 9999,
+                              fontSize: 11.5,
                               fontWeight: 600,
                               background: pill.bg,
                               color: pill.color,
@@ -1269,11 +1275,11 @@ function DepartmentDashboard() {
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <div
                                 style={{
-                                  width: 26,
-                                  height: 26,
+                                  width: 28,
+                                  height: 28,
                                   borderRadius: "50%",
-                                  background: "#18181b",
-                                  color: "#ffffff",
+                                  background: "var(--primary-soft)",
+                                  color: "var(--primary)",
                                   fontSize: 11,
                                   fontWeight: 700,
                                   display: "flex",
@@ -1283,19 +1289,19 @@ function DepartmentDashboard() {
                               >
                                 {pmInitials}
                               </div>
-                              <span style={{ fontSize: 12.5, fontWeight: 500, color: "#27272a" }}>
+                              <span style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text)" }}>
                                 {o.assigned_pm_name}
                               </span>
                             </div>
                           ) : (
-                            <span style={{ color: "#a1a1aa", fontSize: 13 }}>—</span>
+                            <span style={{ color: "var(--text-subtle)", fontSize: 13 }}>—</span>
                           )}
                         </td>
-                        <td style={{ padding: "14px", whiteSpace: "nowrap", fontSize: 12.5, color: "#52525b" }}>
+                        <td style={{ padding: "14px", whiteSpace: "nowrap", fontSize: 12.5, color: "var(--text-secondary)" }}>
                           {o.request_date ? (
                             fmtDate(o.request_date)
                           ) : (
-                            <span style={{ color: "#a1a1aa" }}>—</span>
+                            <span style={{ color: "var(--text-subtle)" }}>—</span>
                           )}
                         </td>
                       </tr>

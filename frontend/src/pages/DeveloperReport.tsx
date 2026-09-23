@@ -39,12 +39,12 @@ export default function DeveloperReport() {
       <PageHead
         title={
           <>
-            <Link className="muted" {...toProject(id, "tarix")}>{tx("developer_report.tarix")}</Link>
+            <Link className="muted" {...toProject(id)}>{tx("common.loyiha", undefined, "Loyiha")}</Link>
             <span className="muted"> / </span>
             <strong>{d.developer.full_name}</strong>
           </>
         }
-        actions={<Link className="btn btn-sm" {...toProject(id, "tarix")}>{tx("developer_report.loyiha_tarixi")}</Link>}
+        actions={<Link className="btn btn-sm" {...toProject(id)}>{tx("developer_report.loyiha_sahifasi", undefined, "Loyihaga o'tish")}</Link>}
       />
 
       <div className="content">

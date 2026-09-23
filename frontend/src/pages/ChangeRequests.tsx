@@ -601,14 +601,10 @@ export default function ChangeRequests() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                borderRadius: 8,
+                borderRadius: 10,
                 padding: "9px 18px",
                 fontWeight: 600,
                 fontSize: 13.5,
-                background: "#2563eb",
-                border: "none",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                cursor: "pointer",
               }}
               onClick={() => go(toNewOrder())}
             >
@@ -630,38 +626,39 @@ export default function ChangeRequests() {
             Array.from({ length: 5 }).map((_, i) => <KpiCardSkeleton key={i} />)
           ) : (
             <>
+              {/* 1. Barcha / Jami */}
               <div
                 onClick={() => {
                   setStatusFilter("");
                   setPage(1);
                 }}
                 style={{
-                  background: "#f0f7ff",
-                  border: !statusFilter ? "2px solid #2563eb" : "1px solid #dbeafe",
-                  borderRadius: 12,
-                  padding: "14px 18px",
+                  background: "var(--surface)",
+                  border: !statusFilter ? "2px solid var(--primary)" : "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: "16px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: 14,
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                  boxShadow: !statusFilter ? "var(--shadow-md)" : "var(--shadow-sm)",
                   transition: "all 0.15s ease",
                 }}
                 title={tx("orders.kpi_barcha")}
               >
                 <div
                   style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: "50%",
-                    background: "#dbeafe",
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: "var(--primary-soft)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                     <line x1="16" y1="13" x2="8" y2="13" />
@@ -670,46 +667,48 @@ export default function ChangeRequests() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.jami_sorovlar")}
                   </div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
+                  <div style={{ fontSize: 24, fontWeight: 750, color: "var(--text)", lineHeight: 1 }}>
                     {statsData?.total ?? total}
                   </div>
                 </div>
               </div>
+
+              {/* 2. Yangi */}
               <div
                 onClick={() => {
                   setStatusFilter("NEW");
                   setPage(1);
                 }}
                 style={{
-                  background: "#fffdf0",
-                  border: statusFilter === "NEW" ? "2px solid #d97706" : "1px solid #fef3c7",
-                  borderRadius: 12,
-                  padding: "14px 18px",
+                  background: "var(--surface)",
+                  border: statusFilter === "NEW" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: "16px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: 14,
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                  boxShadow: statusFilter === "NEW" ? "var(--shadow-md)" : "var(--shadow-sm)",
                   transition: "all 0.15s ease",
                 }}
                 title={tx("orders.kpi_yangi")}
               >
                 <div
                   style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: "50%",
-                    background: "#fef3c7",
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: "var(--primary-soft)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 22h14" />
                     <path d="M5 2h14" />
                     <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
@@ -717,146 +716,152 @@ export default function ChangeRequests() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.yangi")}
                   </div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
+                  <div style={{ fontSize: 24, fontWeight: 750, color: "var(--text)", lineHeight: 1 }}>
                     {statsData?.new ?? 0}
                   </div>
                 </div>
               </div>
+
+              {/* 3. Jarayonda */}
               <div
                 onClick={() => {
                   setStatusFilter("IN_PROGRESS");
                   setPage(1);
                 }}
                 style={{
-                  background: "#f0f9ff",
-                  border: statusFilter === "IN_PROGRESS" ? "2px solid #0284c7" : "1px solid #e0f2fe",
-                  borderRadius: 12,
-                  padding: "14px 18px",
+                  background: "var(--surface)",
+                  border: statusFilter === "IN_PROGRESS" ? "2px solid #EA580C" : "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: "16px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: 14,
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                  boxShadow: statusFilter === "IN_PROGRESS" ? "var(--shadow-md)" : "var(--shadow-sm)",
                   transition: "all 0.15s ease",
                 }}
                 title={tx("orders.kpi_jarayonda")}
               >
                 <div
                   style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: "50%",
-                    background: "#e0f2fe",
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: "#FFF7ED",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0284c7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.jarayonda")}
                   </div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
+                  <div style={{ fontSize: 24, fontWeight: 750, color: "var(--text)", lineHeight: 1 }}>
                     {(statsData?.in_progress_strict ?? 0) || (statsData?.in_progress ?? 0)}
                   </div>
                 </div>
               </div>
+
+              {/* 4. Bajarilgan */}
               <div
                 onClick={() => {
                   setStatusFilter("COMPLETED");
                   setPage(1);
                 }}
                 style={{
-                  background: "#f0fdf4",
-                  border: statusFilter === "COMPLETED" ? "2px solid #16a34a" : "1px solid #dcfce7",
-                  borderRadius: 12,
-                  padding: "14px 18px",
+                  background: "var(--surface)",
+                  border: statusFilter === "COMPLETED" ? "2px solid #059669" : "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: "16px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: 14,
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                  boxShadow: statusFilter === "COMPLETED" ? "var(--shadow-md)" : "var(--shadow-sm)",
                   transition: "all 0.15s ease",
                 }}
                 title={tx("orders.kpi_bajarilgan")}
               >
                 <div
                   style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: "50%",
-                    background: "#dcfce7",
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: "#ECFDF5",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                     <polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.tugallangan")}
                   </div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
+                  <div style={{ fontSize: 24, fontWeight: 750, color: "var(--text)", lineHeight: 1 }}>
                     {statsData?.completed ?? 0}
                   </div>
                 </div>
               </div>
+
+              {/* 5. Rad etilgan */}
               <div
                 onClick={() => {
                   setStatusFilter("REJECTED");
                   setPage(1);
                 }}
                 style={{
-                  background: "#fef2f2",
-                  border: statusFilter === "REJECTED" ? "2px solid #dc2626" : "1px solid #fee2e2",
-                  borderRadius: 12,
-                  padding: "14px 18px",
+                  background: "var(--surface)",
+                  border: statusFilter === "REJECTED" ? "2px solid #DC2626" : "1px solid var(--border)",
+                  borderRadius: 14,
+                  padding: "16px 18px",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: 14,
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                  boxShadow: statusFilter === "REJECTED" ? "var(--shadow-md)" : "var(--shadow-sm)",
                   transition: "all 0.15s ease",
                 }}
                 title={tx("orders.kpi_bekor_qilingan")}
               >
                 <div
                   style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: "50%",
-                    background: "#fee2e2",
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: "#FEF2F2",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <line x1="15" y1="9" x2="9" y2="15" />
                     <line x1="9" y1="9" x2="15" y2="15" />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12.5, color: "#475569", fontWeight: 500, marginBottom: 4 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontWeight: 500, marginBottom: 4 }}>
                     {tx("orders.bekor_qilingan")}
                   </div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", lineHeight: 1 }}>
+                  <div style={{ fontSize: 24, fontWeight: 750, color: "var(--text)", lineHeight: 1 }}>
                     {statsData?.rejected ?? 0}
                   </div>
                 </div>
@@ -1256,11 +1261,11 @@ export default function ChangeRequests() {
         {loading || displayItems.length > 0 ? (
           <div
             style={{
-              background: "#fff",
-              border: "1px solid #e2e8f0",
-              borderRadius: 12,
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 16,
               overflow: "hidden",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+              boxShadow: "var(--shadow-sm)",
             }}
           >
             <div
@@ -1273,15 +1278,15 @@ export default function ChangeRequests() {
             >
               <table className="table" style={{ margin: 0, width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                    <th style={{ width: 44, textAlign: "center", padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>#</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>{tx("orders.loyiha_tizim")}</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>{tx("orders.buyurtmachi_boshqarma")}</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>{tx("orders.yaratilgan_vaqti")}</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>{tx("orders.tavsif")}</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>{tx("orders.muddat")}</th>
-                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>{tx("orders.holat")}</th>
-                    <th style={{ width: 70, textAlign: "right", padding: "12px 14px", fontSize: 12, fontWeight: 700, color: "#64748b" }}>{tx("orders.amallar")}</th>
+                  <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--border)" }}>
+                    <th style={{ width: 44, textAlign: "center", padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>#</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.loyiha_tizim")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.buyurtmachi_boshqarma")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.yaratilgan_vaqti")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.tavsif")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.muddat")}</th>
+                    <th style={{ padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.holat")}</th>
+                    <th style={{ width: 70, textAlign: "right", padding: "12px 14px", fontSize: 12, fontWeight: 650, color: "var(--text-secondary)" }}>{tx("orders.amallar")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1297,12 +1302,12 @@ export default function ChangeRequests() {
                         key={item.id}
                         className="clickable"
                         style={{
-                          borderBottom: "1px solid #f1f5f9",
+                          borderBottom: "1px solid var(--border-muted)",
                           cursor: "pointer",
                           transition: "background 0.15s ease",
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "#f8fafc";
+                          e.currentTarget.style.background = "var(--surface-2)";
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = "transparent";
@@ -1320,7 +1325,7 @@ export default function ChangeRequests() {
                             : tx("orders.batafsil_korish")
                         }
                       >
-                        <td style={{ textAlign: "center", fontWeight: 700, fontSize: 13, color: "#0f172a", padding: "12px 14px" }}>
+                        <td style={{ textAlign: "center", fontWeight: 600, fontSize: 13, color: "var(--text-muted)", padding: "12px 14px" }}>
                           {rowNum}
                         </td>
                         <td style={{ padding: "12px 14px" }}>
@@ -1340,7 +1345,7 @@ export default function ChangeRequests() {
                               style={{
                                 fontWeight: 600,
                                 fontSize: 13.5,
-                                color: "#2563eb",
+                                color: "var(--text)",
                                 lineHeight: 1.3,
                                 textDecoration: "none",
                                 cursor: "pointer",
@@ -1348,12 +1353,10 @@ export default function ChangeRequests() {
                                 transition: "color 0.12s ease",
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.textDecoration = "underline";
-                                e.currentTarget.style.color = "#1d4ed8";
+                                e.currentTarget.style.color = "var(--primary)";
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.textDecoration = "none";
-                                e.currentTarget.style.color = "#2563eb";
+                                e.currentTarget.style.color = "var(--text)";
                               }}
                               title={
                                 item.status === "DRAFT" && canEditOrder(item)
@@ -1727,9 +1730,9 @@ export default function ChangeRequests() {
                           width: 32,
                           height: 32,
                           borderRadius: 8,
-                          border: p === page ? "none" : "1px solid #e2e8f0",
-                          background: p === page ? "#2563eb" : "#fff",
-                          color: p === page ? "#fff" : "#0f172a",
+                          border: p === page ? "none" : "1px solid var(--border)",
+                          background: p === page ? "var(--primary)" : "var(--surface)",
+                          color: p === page ? "#fff" : "var(--text)",
                           fontWeight: 600,
                           fontSize: 13,
                           cursor: "pointer",

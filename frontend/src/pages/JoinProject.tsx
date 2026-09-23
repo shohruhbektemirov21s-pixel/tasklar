@@ -40,7 +40,7 @@ export default function JoinProject() {
       const res = await api.post<{ joined?: boolean }>(`/projects/${id}/join/`, {
         message, desired_role: role, code,
       });
-      if (res.joined) go(toProject(id, "brif"));
+      if (res.joined) go(toProject(id));
       else go("/qoshilish");
 
     } catch (err) {
@@ -79,7 +79,7 @@ export default function JoinProject() {
           title={tx("join_project.boshqarma_uchun_mavjud_emas")}
           text={tx("join_project.boshqarma_uchun_izoh")}
         >
-          <Link className="btn btn-primary" {...toProject(id, "brif")}>{tx("public_project.loyihani_ochish")}</Link>
+          <Link className="btn btn-primary" {...toProject(id)}>{tx("public_project.loyihani_ochish")}</Link>
         </Empty>
       </div>
     );

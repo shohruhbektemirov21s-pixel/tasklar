@@ -1,5 +1,7 @@
 """Axborot tizimiga o'zgartirish kiritish buyurtmalari bo'yicha bildirishnomalar xizmati."""
+import datetime
 import logging
+import mimetypes
 
 from django.db.models import Q
 from django.utils import timezone
@@ -331,6 +333,215 @@ def order_earliest_start(order_id):
     return min(dates) if dates else None
 
 
+def _normalize_project_doc_date(project, raw_date):
+    """Hujjat sanasini loyiha boshlanish va tugash chegaralariga moslashtiradi."""
+    if not raw_date:
+        raw_date = timezone.now()
+    elif isinstance(raw_date, datetime.date) and not isinstance(raw_date, datetime.datetime):
+        raw_date = timezone.make_aware(datetime.datetime.combine(raw_date, datetime.time(12, 0)))
+    elif timezone.is_naive(raw_date):
+        raw_date = timezone.make_aware(raw_date)
+
+    day = timezone.localtime(raw_date).date()
+    if project.start_date and day < project.start_date:
+        raw_date = timezone.make_aware(datetime.datetime.combine(project.start_date, datetime.time(12, 0)))
+    elif project.due_date and day > project.due_date:
+        raw_date = timezone.make_aware(datetime.datetime.combine(project.due_date, datetime.time(12, 0)))
+    return raw_date
+
+
+def _attach_single_file_to_project(project, file_field, original_name, size, description, raw_date, uploaded_by, actor):
+    """Bitta faylni loyihaga ProjectFile sifatida saqlaydi yoki nusxalaydi."""
+    if not file_field or not getattr(file_field, "name", None):
+        return None
+
+    from apps.projects.models import ProjectFile
+
+    filename = (original_name or file_field.name.rsplit("/", 1)[-1])[:255]
+    if not filename:
+        return None
+
+    # Takrorlanmaslik tekshiruvi: ushbu loyihada ayni nomli faol fayl bo'lsa, qayta yaratilmaydi
+    if ProjectFile.objects.filter(project=project, original_name=filename, deleted_at__isnull=True).exists():
+        return None
+
+    doc_date = _normalize_project_doc_date(project, raw_date)
+    content_type, _ = mimetypes.guess_type(filename)
+    content_type = (content_type or "")[:120]
+    file_size = size or getattr(file_field, "size", 0) or 0
+    user = uploaded_by or actor
+
+    proj_file = ProjectFile(
+        project=project,
+        original_name=filename,
+        size=file_size,
+        content_type=content_type,
+        description=(description or filename)[:250],
+        doc_date=doc_date,
+        uploaded_by=user,
+        version=1,
+    )
+
+    saved = False
+    try:
+        # Fayl baytlarini ochib, loyihaning o'z saqlash yo'liga nusxalaymiz
+        with file_field.open("rb") as f:
+            proj_file.file.save(filename, f, save=True)
+            saved = True
+    except Exception:
+        # Fallback: agar open("rb") bo'lmasa, mavjud yo'l orqali biriktiramiz
+        try:
+            proj_file.file.name = file_field.name
+            proj_file.save()
+            saved = True
+        except Exception:
+            logger.exception("Faylni loyihaga biriktirishda xatolik: %s (loyiha: %s)", filename, project.pk)
+
+    if saved:
+        return proj_file
+    return None
+
+
+def copy_order_files_to_project(order, project, actor=None):
+    """Buyurtmaga biriktirilgan barcha fayllarni (TZ, ilovalar, versiyalar) loyihaga biriktiradi."""
+    if not order or not project:
+        return []
+
+    created_files = []
+    seen_file_names = set()
+
+    # 1. Asosiy TZ fayli
+    if order.tz_file:
+        tz_name = (order.tz_file_name or order.tz_file.name.rsplit("/", 1)[-1])[:255]
+        desc = f"Texnik topshiriq (Buyurtma #{order.id})"
+        res = _attach_single_file_to_project(
+            project=project,
+            file_field=order.tz_file,
+            original_name=tz_name,
+            size=order.tz_file_size,
+            description=desc,
+            raw_date=order.request_date or order.created_at,
+            uploaded_by=order.created_by,
+            actor=actor,
+        )
+        if res:
+            created_files.append(res)
+            seen_file_names.add(tz_name.lower())
+
+    # 2. Buyurtmaga biriktirilgan ilovalar (OrderAttachment)
+    for att in order.attachments.all():
+        if not att.file:
+            continue
+        att_name = (att.original_name or att.file.name.rsplit("/", 1)[-1])[:255]
+        if att_name.lower() in seen_file_names:
+            continue
+        desc = att.original_name or f"Buyurtma ilovasi (#{order.id})"
+        res = _attach_single_file_to_project(
+            project=project,
+            file_field=att.file,
+            original_name=att_name,
+            size=att.size,
+            description=desc,
+            raw_date=att.created_at,
+            uploaded_by=att.uploaded_by or order.created_by,
+            actor=actor,
+        )
+        if res:
+            created_files.append(res)
+            seen_file_names.add(att_name.lower())
+
+    # 3. TZ versiyalaridagi fayllar (ChangeRequestVersion)
+    for ver in order.versions.all():
+        if not ver.tz_file:
+            continue
+        ver_name = (ver.tz_file_name or ver.tz_file.name.rsplit("/", 1)[-1])[:255]
+        if ver_name.lower() in seen_file_names:
+            continue
+        desc = f"TZ v{ver.version} (Buyurtma #{order.id}) - {ver.change_note or 'Versiya hujjati'}"
+        res = _attach_single_file_to_project(
+            project=project,
+            file_field=ver.tz_file,
+            original_name=ver_name,
+            size=ver.tz_file_size,
+            description=desc,
+            raw_date=ver.created_at,
+            uploaded_by=ver.uploaded_by or order.created_by,
+            actor=actor,
+        )
+        if res:
+            created_files.append(res)
+            seen_file_names.add(ver_name.lower())
+
+    # 4. Kamchilik / Boshqarma fikri hujjati (client_feedback_file)
+    if order.client_feedback_file:
+        fb_name = (order.client_feedback_file_name or order.client_feedback_file.name.rsplit("/", 1)[-1])[:255]
+        if fb_name.lower() not in seen_file_names:
+            desc = f"Boshqarma kamchilik TZ hujjati (Buyurtma #{order.id})"
+            res = _attach_single_file_to_project(
+                project=project,
+                file_field=order.client_feedback_file,
+                original_name=fb_name,
+                size=order.client_feedback_file_size,
+                description=desc,
+                raw_date=order.client_approved_at or order.updated_at,
+                uploaded_by=order.client_approved_by or order.created_by,
+                actor=actor,
+            )
+            if res:
+                created_files.append(res)
+                seen_file_names.add(fb_name.lower())
+
+    # 5. Tugatilgan ish hujjati (completion_file)
+    if order.completion_file:
+        comp_name = (order.completion_file_name or order.completion_file.name.rsplit("/", 1)[-1])[:255]
+        if comp_name.lower() not in seen_file_names:
+            desc = f"Bajarilgan ish hujjati (Buyurtma #{order.id})"
+            res = _attach_single_file_to_project(
+                project=project,
+                file_field=order.completion_file,
+                original_name=comp_name,
+                size=order.completion_file_size,
+                description=desc,
+                raw_date=order.completed_at or order.updated_at,
+                uploaded_by=order.assigned_pm or actor,
+                actor=actor,
+            )
+            if res:
+                created_files.append(res)
+                seen_file_names.add(comp_name.lower())
+
+    # Jurnal va realtime xabarlar
+    if created_files:
+        try:
+            from apps.activity.services import log
+            log(
+                actor=actor or order.created_by,
+                verb="project.file",
+                project=project,
+                target=project,
+                summary=f"Buyurtma #{order.id} dan {len(created_files)} ta hujjat biriktirildi",
+                detail=", ".join(x.original_name for x in created_files),
+                meta={"order_id": order.id, "files": [x.original_name for x in created_files]},
+            )
+        except Exception:
+            logger.exception("Audit log yozishda xatolik")
+
+        try:
+            from apps.notifications.services import send_to_users
+            active_users = [m.user for m in project.memberships.filter(is_active=True).select_related("user")]
+            send_to_users(active_users, {
+                "event": "project.update",
+                "action": "file",
+                "project": project.pk,
+                "actor": getattr(actor, "pk", None),
+                "count": len(created_files),
+            })
+        except Exception:
+            logger.exception("Realtime signal yuborishda xatolik")
+
+    return created_files
+
+
 def link_order_to_project(order_id, project, actor, *, created):
     """Buyurtmani loyihaga biriktiradi.
 
@@ -359,6 +570,9 @@ def link_order_to_project(order_id, project, actor, *, created):
     if moved:
         order.status = ChangeRequestStatus.ASSIGNED_TO_DEV
     order.save(update_fields=["project", "status", "assigned_pm", "updated_at"])
+
+    # Buyurtmaga biriktirilgan barcha fayllarni loyiha hujjatlari sifatida biriktirish
+    copy_order_files_to_project(order, project, actor)
 
     if created and moved:
         cur_ver = order.versions.filter(version=order.version).first()

@@ -857,3 +857,61 @@ class OrdersSeniorDevTests(ApiTestCase):
         self.assertEqual(up_res2.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("Loyiha menejeri ishni yakunlab topshirgan", str(up_res2.data))
 
+    def test_order_files_are_attached_to_project_on_project_creation(self):
+        """Buyurtmadan loyiha yaratilganda buyurtmaga kelgan barcha fayllar loyihaga birikib ketishi."""
+        from apps.orders.models import OrderAttachment
+        from apps.projects.models import ProjectFile
+
+        # 1. Sohaviy boshqarma tomonidan buyurtma yaratiladi (TZ fayli bilan)
+        sohaviy_client = APIClient()
+        sohaviy_client.force_authenticate(user=self.sohaviy_user)
+
+        tz_file = SimpleUploadedFile("Asosiy_TZ_Hujjati.pdf", b"Texnik topshiriq mazmuni...", content_type="application/pdf")
+        att_file = SimpleUploadedFile("Ilova_Sxema.png", b"PNG sxema baytlari...", content_type="image/png")
+
+        create_res = sohaviy_client.post("/api/orders/", {
+            "system_name": "Avtomatlashtirilgan Ombor",
+            "order_type": ChangeRequestType.NEW,
+            "department": "Logistika",
+            "responsible_person": "Aliyev B.",
+            "tz_file": tz_file,
+            "files": [att_file],
+        }, format="multipart")
+        self.assertEqual(create_res.status_code, status.HTTP_201_CREATED)
+        order_id = create_res.json()["id"]
+
+        order = ChangeRequest.objects.get(id=order_id)
+        self.assertTrue(bool(order.tz_file))
+        self.assertEqual(order.attachments.count(), 1)
+
+        # 2. PM ushbu buyurtmani o'z zimmasiga oladi va uning asosida yangi loyiha ochadi
+        pm_client = APIClient()
+        pm_client.force_authenticate(user=self.pm_user)
+
+        pm_client.post(f"/api/orders/{order_id}/claim-order/", {})
+
+        # Loyiha yaratish (order_id bilan)
+        proj_res = pm_client.post("/api/projects/", {
+            "name": "Omborxonani Boshqarish Tizimi",
+            "description": "Buyurtma asosida ochilgan ombor loyihasi",
+            "order_id": order_id,
+            "start_date": str(timezone.localdate()),
+            "due_date": str(timezone.localdate() + timezone.timedelta(days=30)),
+        })
+        self.assertEqual(proj_res.status_code, status.HTTP_201_CREATED, proj_res.content)
+        new_proj_id = proj_res.json()["id"]
+
+        # 3. Yangi loyihaga buyurtma fayllari ProjectFile sifatida birikkanini tekshiramiz
+        proj_files = ProjectFile.objects.filter(project_id=new_proj_id)
+        self.assertGreaterEqual(proj_files.count(), 2)
+
+        file_names = list(proj_files.values_list("original_name", flat=True))
+        self.assertIn("Asosiy_TZ_Hujjati.pdf", file_names)
+        self.assertIn("Ilova_Sxema.png", file_names)
+
+        # Tavsiflarida buyurtma raqami va ma'lumotlari borligini tekshiramiz
+        tz_proj_file = proj_files.filter(original_name="Asosiy_TZ_Hujjati.pdf").first()
+        self.assertIsNotNone(tz_proj_file)
+        self.assertIn(f"#{order_id}", tz_proj_file.description)
+        self.assertGreater(tz_proj_file.size, 0)
+

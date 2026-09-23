@@ -1337,7 +1337,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                     bo'limlarni pastga surib yuborardi. */}
                 <div className="status-picker">
                   {picks.map((t) => (
-                    <button key={t.value} className="btn btn-sm" disabled={busy}
+                    <button key={t.value} className={`btn btn-sm ${t.value === "DONE" ? "btn-ok" : ""}`} disabled={busy}
                             onClick={() => void run(() => api.post(`/tasks/${task.id}/status/`, {
                               status: t.value,
                               blocked_reason: t.value === "BLOCKED" ? blockReason : "",

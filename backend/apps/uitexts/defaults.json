@@ -5415,6 +5415,18 @@
     "value": "Loyiha biror buyurtma (TZ) asosida yaratilayotgan bo'lsa, uni tanlang.",
     "note": "pages/ProjectForm.tsx"
   },
+  "project_form.buyurtma_fayllari_biriktiriladi": {
+    "value": "Buyurtmaga biriktirilgan fayllar loyihaga avtomatik biriktiriladi:",
+    "note": "pages/ProjectForm.tsx"
+  },
+  "project_form.asosiy_tz": {
+    "value": "Asosiy TZ hujjati",
+    "note": "pages/ProjectForm.tsx"
+  },
+  "project_form.ilova_hujjati": {
+    "value": "Ilova fayli",
+    "note": "pages/ProjectForm.tsx"
+  },
   "project_form.fayllar_uchun_hujjat_nomini_yozing": {
     "value": "Fayllar uchun hujjat nomini yozing.",
     "note": "pages/ProjectForm.tsx"

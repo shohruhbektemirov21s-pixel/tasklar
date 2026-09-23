@@ -521,6 +521,10 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 order.tz_file_size = getattr(first_f, "size", 0)
                 order.save(update_fields=["tz_file", "tz_file_name", "tz_file_size"])
 
+        if order.project_id:
+            from .services import copy_order_files_to_project
+            copy_order_files_to_project(order, order.project, user)
+
         return Response(OrderAttachmentSerializer(created, many=True).data, status=201)
 
     @action(detail=True, methods=["delete"], url_path=r"attachments/(?P<attachment_id>\d+)")
@@ -1190,6 +1194,10 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 order.status = ChangeRequestStatus.ACCEPTED
 
             order.save()
+
+            if order.project_id:
+                from .services import copy_order_files_to_project
+                copy_order_files_to_project(order, order.project, user)
 
         try:
             notify_order_version_approved(order, target_version, user, decision_note=decision_note)

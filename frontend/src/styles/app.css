@@ -819,20 +819,20 @@ html, body { transition: background-color .18s ease, color .18s ease; }
    uni "sayt yana so'ramasin" katakchasi bilan o'chirib qo'ya olmaydi. */
 .modal-scrim {
   position: fixed; inset: 0; z-index: 200000; display: grid; place-items: center;
-  padding: 24px; background: rgba(4, 7, 14, .62);
+  padding: 24px; background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   animation: photo-in .12s ease-out;
 }
 .modal-box {
   width: min(430px, 100%); background: var(--surface); color: var(--text);
-  border: 1px solid var(--border); border-radius: var(--radius-lg);
-  box-shadow: var(--sh-drawer); padding: 20px 22px 18px;
+  border: 1px solid var(--border); border-radius: 18px;
+  box-shadow: var(--shadow-xl); padding: 22px 24px 20px;
   animation: photo-zoom .14s cubic-bezier(.3, .9, .3, 1);
 }
-.modal-box h3 { margin: 0 0 8px; font-size: 16.5px; }
-.modal-box p { margin: 0; font-size: 13.5px; line-height: 1.55; }
+.modal-box h3 { margin: 0 0 8px; font-size: 17px; font-weight: 700; }
+.modal-box p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
 .modal-actions {
-  display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px;
+  display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;
 }
 /* Telefonda tugmalar keng bo'lsin - barmoq bilan aniq tegadi */
 @media (max-width: 480px) {
@@ -1476,33 +1476,33 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 }
 .deadline-grid { margin-top: 14px; }
 
-/* Ko'rinishi (shisha to'ldirmasi, qirra, soya) fayl oxiridagi umumiy
-   SHISHA blokidan keladi - bu yerda faqat shu ikki kartaga xos o'lchamlar. */
 .stat-band,
-.deadline-card { border-radius: 18px; }
+.deadline-card {
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
 .stat-band:hover,
 .deadline-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg), var(--glass-edge);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-border);
 }
 
 /* ---- Yuqori qator: davr kesimi ---- */
-.stat-band { padding: 16px 8px 18px; }
-.stat-band-head { text-align: center; padding: 0 10px; border-radius: 12px; }
-/* Sarlavha ham bosiladi: ochiq ro'yxatni shu davrga ko'chiradi. Kataklar
-   bilan bir xil belgilar - bosilsa bo'ladigani ostiga chiziladi, ochilgani
-   yumshoq fonda turadi. */
+.stat-band { padding: 18px 14px 20px; }
+.stat-band-head { text-align: center; padding: 4px 10px; border-radius: 12px; }
 .stat-band-head.pickable { cursor: pointer; }
 .stat-band-head.pickable:hover .stat-band-title { text-decoration: underline; }
-.stat-band-head.picked { background: var(--accent-soft); }
+.stat-band-head.picked { background: var(--primary-soft); }
 .stat-band-title {
-  margin: 0; font-size: 13.5px; font-weight: 700; color: var(--text);
+  margin: 0; font-size: 14.5px; font-weight: 700; color: var(--text);
   letter-spacing: -.01em;
 }
-/* Sarlavha ostidagi sana: «yil boshidan» degani qaysi kundan sanalayotganini
-   aytmaydi - shu qator aytadi. */
 .stat-band-since {
-  margin: 3px 0 0; font-size: 11px; color: var(--muted);
+  margin: 3px 0 0; font-size: 11.5px; color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1510,59 +1510,45 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 14px;
 }
-/* Raqamlar YUQORIDAN tekislanadi. `center` bo'lganda ikki qatorga tushgan
-   yorliq ("Muddati o'tgan") o'z katagidagi raqamni tepaga surib yuborardi
-   va uchta son bir chiziqda turmasdi. */
-/* Katak endi `<button>`: brauzer unga o'z shrifti, chegarasi va
-   markazlashini beradi - ularni qaytarib olamiz. */
 .stat-band-cell, .deadline-card {
   font: inherit; color: inherit; border: 0; background: none;
 }
-/* Bosiladigan katak: sichqoncha tekkanda ko'tariladi. Bo'sh katak (nol)
-   bosilmaydi - bo'sh ro'yxat ochish faqat chalg'itadi, shuning uchun u
-   oddiy matn bo'lib qoladi. */
 .stat-band-cell.pickable, .deadline-card.pickable { cursor: pointer; }
 .stat-band-cell.pickable:hover .v, .deadline-card.pickable:hover .v { text-decoration: underline; }
 .stat-band-cell.picked, .deadline-card.picked {
-  background: var(--accent-soft); border-radius: 12px;
+  background: var(--primary-soft); border-radius: 10px;
 }
 .stat-band-cell:disabled, .deadline-card:disabled { cursor: default; }
 
 .stat-band-cell {
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-  gap: 5px; padding: 2px 3px; text-align: center; min-width: 0;
+  gap: 5px; padding: 6px 4px; text-align: center; min-width: 0;
 }
-/* Ajratgich - ingichka chiziq, taxtaning ko'k fonida ko'rinadigan darajada.
-   Ilgari qalin ko'k tayoq edi: uchta taxtada oltita tayoq ekranning eng
-   to'q elementi bo'lib qolib, ko'z raqamlarga emas, chiziqlarga tushardi. */
-.stat-band-cell + .stat-band-cell { border-left: 1px solid var(--glass-line); }
-/* 11px - «Muddati o'tgan» eng tor ustunda ham BIR QATORDA sig'sin.
-   Ikki qatorga tushganda karta baland bo'lib, uchta taxta bir tekisda
-   turmay qolardi. */
-.stat-band-cell .k { font-size: 11px; color: var(--muted); text-wrap: balance; }
+.stat-band-cell + .stat-band-cell { border-left: 1px solid var(--border); }
+.stat-band-cell .k { font-size: 11.5px; color: var(--text-muted); text-wrap: balance; font-weight: 500; }
 
-/* ---- Pastki qator: muddat holati ----
-   Sarlavha tepada, raqam ostida - yuqoridagi taxtalarda aksincha (raqam
-   tepada). Ataylab shunday: ikki qator bir xil bo'lsa ular bitta uzun
-   ro'yxatga qo'shilib ketardi, endi ko'z ularni ikki blok deb ajratadi. */
+/* ---- Pastki qator: muddat holati ---- */
 .deadline-card {
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
   padding: 18px 14px; text-align: center;
 }
 .deadline-card .k {
-  font-size: 12.5px; font-weight: 600; color: var(--text); text-wrap: balance;
+  font-size: 12.5px; font-weight: 600; color: var(--text-secondary); text-wrap: balance;
 }
 
 /* ---- Raqamlar: ikkala qatorda ham bir xil ---- */
 .stat-band-cell .v,
 .deadline-card .v {
-  font-size: 28px; font-weight: 750; line-height: 1.1; letter-spacing: -.02em;
-  font-variant-numeric: tabular-nums;   /* son o'zgarganda kenglik sakramasin */
-  color: var(--accent);
+  font-size: 26px; font-weight: 750; line-height: 1.1; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
 }
-/* Nol - so'ngan rangda: "0 ta kechikkan ish" xabar emas, tinchlik. */
+.stat-band-cell.picked .v,
+.deadline-card.picked .v {
+  color: var(--primary);
+}
 .stat-band-cell .v.zero,
-.deadline-card .v.zero { color: var(--subtle); }
+.deadline-card .v.zero { color: var(--text-subtle); }
 
 /* Yon panel shu kenglikda yig'iladi - taxtalar ham shu yerda ustma-ust
    tushadi: uchovi yonma-yon qolsa raqamlar siqilib o'qilmay qolardi. */
@@ -3992,7 +3978,7 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(8, 11, 16, 0.72);
+  background: rgba(15, 23, 42, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4012,8 +3998,8 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 .modal-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  border-radius: 18px;
+  box-shadow: var(--shadow-xl);
   width: 100%;
   max-width: 580px;
   max-height: 90vh;
@@ -4042,15 +4028,15 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border-muted);
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 650;
+  font-size: 16.5px;
+  font-weight: 700;
   color: var(--text);
   display: flex;
   align-items: center;
@@ -4058,7 +4044,7 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 }
 
 .modal-body {
-  padding: 18px;
+  padding: 20px 22px;
   overflow-y: auto;
   flex: 1;
 }
@@ -4067,9 +4053,9 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-  padding: 12px 18px;
-  border-top: 1px solid var(--border-muted);
+  gap: 12px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
   background: var(--surface-2);
 }
 

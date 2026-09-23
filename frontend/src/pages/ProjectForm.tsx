@@ -418,9 +418,8 @@ export default function ProjectForm({
         onClose?.();
         return;
       }
-      // Vazifa yozilgan bolsa darrov doskani ochamiz - odam ishlar joyiga
-      // tushganini oz kozi bilan korsin.
-      go(toProject(saved.id, tasks ? "doska" : "brif"));
+      // Vazifalar joyiga tushganini o'z ko'zi bilan ko'rsin.
+      go(toProject(saved.id, "doska"));
     } catch (err) {
       if (err instanceof ApiError) {
         showError(err.message, err.fields);
@@ -564,6 +563,35 @@ export default function ProjectForm({
             bu yerda faqat yangi loyiha uchun boshlangich hujjatlar. */}
         {!editing && (
           <Card title={tx("project_form.boshlangich_fayllar")}>
+            {selectedOrder && (selectedOrder.tz_file_name || (selectedOrder.attachments && selectedOrder.attachments.length > 0)) && (
+              <div
+                style={{
+                  marginBottom: "1rem",
+                  padding: "0.75rem 1rem",
+                  borderRadius: "8px",
+                  background: "var(--color-bg-subtle, rgba(59, 130, 246, 0.08))",
+                  border: "1px solid var(--color-border-subtle, rgba(59, 130, 246, 0.2))",
+                  fontSize: "0.875rem",
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: "0.35rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span>📎</span>
+                  <span>{tx("project_form.buyurtma_fayllari_biriktiriladi")}</span>
+                </div>
+                <ul style={{ margin: "0.25rem 0 0 1.25rem", padding: 0, color: "var(--color-text-muted, #64748b)" }}>
+                  {selectedOrder.tz_file_name && (
+                    <li>
+                      <strong>{selectedOrder.tz_file_name}</strong> {selectedOrder.tz_file_size_display ? `(${selectedOrder.tz_file_size_display})` : ""} — {tx("project_form.asosiy_tz")}
+                    </li>
+                  )}
+                  {selectedOrder.attachments?.map((att) => (
+                    <li key={att.id}>
+                      <strong>{att.original_name}</strong> {att.size ? `(${(att.size / 1024).toFixed(0)} KB)` : ""} — {tx("project_form.ilova_hujjati")}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <FilePicker
               files={files}
               onChange={setFiles}

@@ -76,7 +76,6 @@ export default function Overview({ project }: { project: Project; onChange: () =
             <div className="row wrap" style={{ gap: 8 }}>
               {project.repo_url && <a className="btn btn-sm" href={project.repo_url} target="_blank" rel="noreferrer">{tx("project_overview.repozitoriy")}</a>}
               {project.docs_url && <a className="btn btn-sm" href={project.docs_url} target="_blank" rel="noreferrer">{tx("common.hujjatlar")}</a>}
-              <Link className="btn btn-sm" {...toProject(project.id, "brif")}>{tx("project_detail.arxitekturasi")}</Link>
             </div>
 
           </Card>
@@ -98,8 +97,7 @@ export default function Overview({ project }: { project: Project; onChange: () =
           </Card>
         )}
 
-        <Card title={tx("project_overview.songgi_harakatlar")}
-              action={<Link className="btn btn-sm" {...toProject(project.id, "tarix")}>{tx("project_overview.toliq_tarix")}</Link>}>
+        <Card title={tx("project_overview.songgi_harakatlar")}>
           <Timeline items={feed} showProject={false} />
         </Card>
       </div>

@@ -302,14 +302,12 @@ class Task(SoftDeleteModel):
     def allowed_transitions(self, access):
         """Foydalanuvchi shu taskni qaysi statuslarga otkaza oladi.
 
-        «Bajarildi» ro'yxatda yo'q - uni qo'lda qo'yib bo'lmaydi. Vazifa
-        tugadi deb faqat ish topshirilib, tekshiruvchi tasdiqlagandan keyin
-        hisoblanadi (`/review/` APPROVED). Aks holda "bajarildi" degan raqam
-        hech narsani anglatmay qoladi.
+        «Bajarildi» tekshiruvchi (PM, admin, boshliq) uchun vazifa tekshiruvda
+        bo'lganda (`IN_REVIEW`) ochiladi.
         """
         if access.can_review:
-            return [s for s in TaskStatus.values
-                    if s not in (self.status, TaskStatus.DONE)]
+            excluded = (self.status,) if self.status == TaskStatus.IN_REVIEW else (self.status, TaskStatus.DONE)
+            return [s for s in TaskStatus.values if s not in excluded]
         if access.can_work:
             return list(DEVELOPER_TRANSITIONS.get(self.status, []))
         return []
