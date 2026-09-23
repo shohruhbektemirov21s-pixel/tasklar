@@ -14,6 +14,7 @@ import type { UserBrief } from "@/api/types";
 import { IconPlus } from "./icons";
 import { Avatar, ErrorMsg, Pager, SpecialtyTag } from "./ui";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 const PAGE_SIZE = 10;
 
@@ -81,10 +82,10 @@ export default function DeveloperList({ pickedIds, excludeId, onPick }: Props) {
                 <strong>{u.full_name}</strong> <SpecialtyTag user={u} compact />
                 <small className="muted">{u.email}</small>
               </div>
-              <button type="button" className="btn btn-sm" onClick={() => onPick(u)}
+              <Button size="sm" onClick={() => onPick(u)}
                       title={tx("team_picker.jamoaga_qoshish")} aria-label={tx("team_picker.jamoaga_qoshish")}>
                 <IconPlus size={13} />
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

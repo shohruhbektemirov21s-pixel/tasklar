@@ -8,6 +8,7 @@ import { useRealtime } from "@/realtime/RealtimeContext";
 import { ErrorMsg, Loading, STATUS_DOT, TaskCard, TaskScopeNote } from "@/components/ui";
 import { toNewTask, toProject } from "@/nav";
 import { tx } from "@/i18n";
+import { LinkButton } from "@/components/Button";
 
 interface Column {
   status: TaskStatusValue;
@@ -121,9 +122,9 @@ export default function Board({ project }: { project: Project }) {
         </div>
         <span className="spacer" />
         {project.access?.can_create_task && (
-          <Link className="btn btn-sm btn-primary" {...toNewTask(project.id)}>
+          <LinkButton variant="primary" size="sm" {...toNewTask(project.id)}>
             + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-          </Link>
+          </LinkButton>
         )}
       </div>
 

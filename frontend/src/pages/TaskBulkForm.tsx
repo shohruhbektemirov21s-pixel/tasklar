@@ -1,5 +1,4 @@
 import { useEffect, useId, useState } from "react";
-import { Link } from "react-router-dom";
 import { ApiError, api } from "@/api/client";
 import type { Project } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
@@ -7,6 +6,7 @@ import { PageHead } from "@/components/Layout";
 import { Avatar, Card, DateTimeField, Empty, ErrorMsg, fromDateTimeInput, Loading } from "@/components/ui";
 import { toProject, useEntityId, useGo } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 export default function TaskBulkForm() {
   const fid = useId();
@@ -98,7 +98,7 @@ export default function TaskBulkForm() {
       <div className="content">
         <Empty title={tx("common.loyiha_tanlanmagan")}
                text={tx("task_bulk_form.bu_sahifa_loyiha_ichidan_ochiladi")}>
-          <Link className="btn btn-primary" to="/loyihalar">{tx("common.loyihalarim")}</Link>
+          <LinkButton variant="primary" to="/loyihalar">{tx("common.loyihalarim")}</LinkButton>
         </Empty>
       </div>
     );
@@ -244,10 +244,10 @@ export default function TaskBulkForm() {
           </div>
 
           <div className="form-actions">
-            <button className="btn btn-primary" disabled={busy || !titles.length}>
+            <Button variant="primary" type="submit" disabled={busy || !titles.length}>
               {busy ? tx("common.yaratilmoqda") : tx("task_bulk_form.nechta_vazifa_yaratish", { n: titles.length })}
-            </button>
-            <button type="button" className="btn" onClick={() => go(-1)}>{tx("common.bekor_qilish")}</button>
+            </Button>
+            <Button  onClick={() => go(-1)}>{tx("common.bekor_qilish")}</Button>
           </div>
         </form>
       </div>

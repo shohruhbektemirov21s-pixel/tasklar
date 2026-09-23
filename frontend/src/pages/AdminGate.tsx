@@ -25,6 +25,7 @@ import { Logo } from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ErrorMsg, Loading, PasswordInput } from "@/components/ui";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 export default function AdminGate() {
   const fid = useId();
@@ -72,9 +73,9 @@ export default function AdminGate() {
         {user && (
           <div className="callout mb">
             <strong>{user.full_name}</strong> {tx("admin_gate.hisobida_tizim_admini_huquqi_yoq")}{user.global_role_display}).{" "}
-            <button type="button" className="btn btn-sm" onClick={logout}>
+            <Button size="sm" onClick={logout}>
               {tx("common.chiqish")}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -98,9 +99,9 @@ export default function AdminGate() {
                              autoComplete="current-password"
                              onChange={setPassword} />
             </div>
-            <button className="btn btn-primary btn-block" disabled={busy}>
+            <Button variant="primary" block type="submit" disabled={busy}>
               {busy ? tx("admin_gate.tekshirilmoqda") : tx("common.kirish")}
-            </button>
+            </Button>
           </form>
         </div>
       </div>

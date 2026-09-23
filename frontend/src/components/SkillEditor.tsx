@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { IconClose, IconPlus } from "./icons";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 function parse(value: string) {
   return value.split(",").map((s) => s.trim()).filter(Boolean);
@@ -88,10 +89,10 @@ export default function SkillEditor({
           }}
           onBlur={() => add(draft)}
         />
-        <button type="button" className="btn btn-sm" disabled={!draft.trim()}
+        <Button size="sm" disabled={!draft.trim()}
                 onClick={() => add(draft)}>
           <IconPlus size={13} /> {tx("skill_editor.qoshish")}
-        </button>
+        </Button>
       </div>
 
       {!!free.length && (

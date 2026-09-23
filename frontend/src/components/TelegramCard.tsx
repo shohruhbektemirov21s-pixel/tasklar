@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api/client";
 import { Card, fmtDateTime } from "@/components/ui";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 interface TelegramState {
   enabled: boolean;
@@ -70,15 +71,15 @@ export default function TelegramCard() {
             <code>{tx("telegram_card.bugun")}</code> {tx("telegram_card.va")} <code>{tx("telegram_card.tekshiruv")}</code> {tx("telegram_card.buyruqlari_bor")}
           </p>
           <div className="row" style={{ gap: 8 }}>
-            <button type="button" className="btn btn-sm" disabled={busy}
+            <Button size="sm" disabled={busy}
                     onClick={() => void act(() =>
                       api.post<TelegramState>("/telegram/link/", { is_muted: !state.is_muted }))}>
               {state.is_muted ? tx("telegram_card.xabarlarni_yoqish") : tx("telegram_card.xabarlarni_ochirish")}
-            </button>
-            <button type="button" className="btn btn-sm" disabled={busy}
+            </Button>
+            <Button size="sm" disabled={busy}
                     onClick={() => void act(() => api.delete<TelegramState>("/telegram/link/"))}>
               {tx("telegram_card.uzish")}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

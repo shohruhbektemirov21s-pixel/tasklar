@@ -7,6 +7,7 @@ import { IconBell } from "./icons";
 import { Avatar, timeAgo } from "./ui";
 import { tx } from "@/i18n";
 import NotificationModal from "./NotificationModal";
+import { Button } from "@/components/Button";
 
 const TONE: Record<string, string> = {
   "join.request": "badge-warn",
@@ -87,9 +88,9 @@ export default function NotificationBell() {
             </strong>
             <span className="spacer" />
             {!!unread && (
-              <button className="btn btn-sm btn-ghost" onClick={() => void markAllRead()}>
+              <Button variant="ghost" size="sm" onClick={() => void markAllRead()}>
                 {tx("notification_bell.hammasini_oqildi")}
-              </button>
+              </Button>
             )}
           </div>
 

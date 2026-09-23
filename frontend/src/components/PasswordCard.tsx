@@ -16,6 +16,7 @@ import { useId, useState } from "react";
 import { ApiError, api, tokens } from "@/api/client";
 import { Card, ErrorMsg, PasswordInput } from "@/components/ui";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 interface Result {
   detail: string;
@@ -78,10 +79,10 @@ export default function PasswordCard() {
             {tx("password_card.parolni_faqat_ozingiz_almashtirasiz_buning")}
           </p>
           <div>
-            <button type="button" className="btn btn-sm"
+            <Button size="sm"
                     onClick={() => { setOpen(true); setOkMsg(null); }}>
               {tx("password_card.parolni_almashtirish")}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -106,13 +107,13 @@ export default function PasswordCard() {
             {tx("password_card.kamida_8_belgi_faqat_raqamdan")}
           </p>
           <div className="row" style={{ gap: 8 }}>
-            <button className="btn btn-primary btn-sm" disabled={busy}>
+            <Button variant="primary" size="sm" type="submit" disabled={busy}>
               {busy ? tx("password_card.almashtirilmoqda") : tx("common.saqlash")}
-            </button>
-            <button type="button" className="btn btn-sm"
+            </Button>
+            <Button size="sm"
                     onClick={() => { setOpen(false); reset(); }}>
               {tx("common.bekor_qilish")}
-            </button>
+            </Button>
           </div>
         </form>
       )}

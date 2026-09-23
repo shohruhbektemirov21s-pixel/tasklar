@@ -57,6 +57,8 @@ import { Avatar, Card, Empty, ErrorMsg, Loading, OkMsg, fmtDate, fmtDateTime, ti
 import { DateField } from "@/components/dates";
 import { toEditOrder, toOrders, toProject, useEntityNum, useGo } from "@/nav";
 import { OrderStatusBadge } from "./ChangeRequests";
+import { Button, buttonClass } from "@/components/Button";
+
 const UserOutlineIcon = ({ size = 15, color = "#64748b" }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -820,9 +822,9 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               title={tx("orders.buyurtma_tanlanmagan")}
               text={tx("orders.biror_buyurtmani_tanlang")}
             />
-            <button type="button" className="btn" style={{ marginTop: 16 }} onClick={onClose}>
+            <Button  style={{ marginTop: 16 }} onClick={onClose}>
               {tx("common.yopish")}
-            </button>
+            </Button>
           </div>
         </div>,
         document.body
@@ -838,9 +840,9 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               title={tx("orders.buyurtma_tanlanmagan")}
               text={tx("orders.biror_buyurtmani_tanlang")}
             >
-              <button className="btn btn-primary" onClick={() => go(toOrders())}>
+              <Button variant="primary" onClick={() => go(toOrders())}>
                 Buyurtmalar ro'yxatiga qaytish
-              </button>
+              </Button>
             </Empty>
           </Card>
         </div>
@@ -911,9 +913,9 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             onClick={(e) => e.stopPropagation()}
           >
             <ErrorMsg error={error || "Buyurtma topilmadi"} />
-            <button type="button" className="btn" style={{ marginTop: 16 }} onClick={onClose}>
+            <Button  style={{ marginTop: 16 }} onClick={onClose}>
               {tx("common.yopish")}
-            </button>
+            </Button>
           </div>
         </div>,
         document.body
@@ -924,9 +926,9 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
         <PageHead title={<strong>{tx("orders.sarlavha")}</strong>} />
         <div className="content" style={{ maxWidth: 900, margin: "0 auto", padding: "20px 16px" }}>
           <ErrorMsg error={error || "Buyurtma topilmadi"} />
-          <button className="btn" style={{ marginTop: 12 }} onClick={() => go(toOrders())}>
+          <Button  style={{ marginTop: 12 }} onClick={() => go(toOrders())}>
             ← Buyurtmalar ro'yxatiga qaytish
-          </button>
+          </Button>
         </div>
       </>
     );
@@ -935,83 +937,71 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
   const orderActions = (
     <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
       {item.status === "DRAFT" && (
-        <button
-          type="button"
-          className="btn btn-sm btn-primary row middle"
-          style={{ gap: 6 }}
+        <Button
+          variant="primary" size="sm" className="row middle"
           onClick={() => void handleSendDraftOrder()}
           disabled={sendingOrder}
         >
           <span>🚀</span>
           <span>{sendingOrder ? tx("common.yuborilmoqda") : tx("orders.send_order")}</span>
-        </button>
+        </Button>
       )}
       {isSohaviyOrAdmin && item.status !== "COMPLETED" && item.status !== "REJECTED" && item.status !== "READY_FOR_REVIEW" && item.status !== "CANCELLED" && (
-        <button
-          type="button"
-          className="btn btn-sm btn-outline"
+        <Button
+          size="sm"
           onClick={handleOpenUploadVersion}
         >
           + {tx("orders.yangi_tz_versiyasi")}
-        </button>
+        </Button>
       )}
       {isPMOrAdmin && (item.assigned_pm === user?.id || user?.is_platform_admin || user?.is_boss) && (
         <>
           {canSubmitCompletion && (
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
+            <Button
+              variant="primary" size="sm"
               onClick={handleOpenSubmitCompletion}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
             >
               <span>📁</span>
               <span>{tx("orders.yakunlash", undefined, "Yakunlash")}</span>
-            </button>
+            </Button>
           )}
           {canDistribute && (
             hasProject ? (
-              <button
-                type="button"
-                className="btn btn-sm btn-outline"
+              <Button
+                size="sm"
                 onClick={() => setDistributeTasksModalOpen(true)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
               >
                 <span>📋</span>
                 <span>{tx("orders.vazifalarni_taqsimlash", undefined, "Vazifalarni taqsimlash")}</span>
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button"
-                className="btn btn-sm btn-outline"
+              <Button
+                size="sm"
                 onClick={() => setProjectModalOpen(true)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
               >
                 <span>🚀</span>
                 <span>{tx("orders.loyihani_taqsimlash", undefined, "Loyihani taqsimlash")}</span>
-              </button>
+              </Button>
             )
           )}
         </>
       )}
       {canEdit && (
-        <button
-          type="button"
-          className="btn btn-sm btn-outline"
+        <Button
+          size="sm"
           onClick={() => go(toEditOrder(item.id))}
         >
           {tx("common.tahrirlash")}
-        </button>
+        </Button>
       )}
       {canDelete && (
-        <button
-          type="button"
-          className="btn btn-sm btn-ghost"
-          style={{ color: "var(--danger, #dc2626)", padding: "5px 8px" }}
+        <Button
+          variant="danger" size="sm"
           onClick={() => void handleDelete()}
           title={tx("common.ochirish")}
         >
           {tx("common.ochirish")}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -1070,80 +1060,29 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
               {item.pending_version.tz_file_url && (
-                <button
-                  type="button"
+                <Button
+                  icon={<DocLilacIcon size={16} color="#8b5cf6" />}
                   onClick={() => setPreviewFile({
                     url: item.pending_version!.tz_file_url!,
                     name: item.pending_version!.tz_file_name || tx("orders.yangi_tz_fayli"),
                     size: item.pending_version!.tz_file_size_display,
                   })}
-                  style={{
-                    background: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 10,
-                    padding: "7px 14px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 10,
-                    cursor: "pointer",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-                  }}
                   title={tx("orders.yangi_tz_korish")}
                 >
-                  <DocLilacIcon size={16} color="#8b5cf6" />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text, #1e293b)" }}>
-                    {item.pending_version.tz_file_name || tx("orders.yangi_tz_fayli")}
-                  </span>
+                  {item.pending_version.tz_file_name || tx("orders.yangi_tz_fayli")}
                   {item.pending_version.tz_file_size_display && (
-                    <span style={{ background: "#f1f5f9", color: "#64748b", fontSize: 11.5, fontWeight: 600, padding: "2px 8px", borderRadius: 6 }}>
-                      {item.pending_version.tz_file_size_display}
-                    </span>
+                    <span className="btn-count">{item.pending_version.tz_file_size_display}</span>
                   )}
-                </button>
+                </Button>
               )}
               {isPMOrAdmin && (
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <button
-                    type="button"
-                    style={{
-                      background: "#10b981",
-                      color: "#ffffff",
-                      border: "none",
-                      borderRadius: 10,
-                      padding: "8px 18px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      boxShadow: "0 1px 2px rgba(16, 185, 129, 0.2)",
-                    }}
-                    onClick={() => handleOpenApproveVersion(item.pending_version?.version)}
-                  >
-                    <span>✓</span>
-                    <span>{tx("orders.approve_tz_btn")}</span>
-                  </button>
-                  <button
-                    type="button"
-                    style={{
-                      background: "#ffffff",
-                      color: "#ef4444",
-                      border: "1px solid #fca5a5",
-                      borderRadius: 10,
-                      padding: "8px 18px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                    }}
-                    onClick={() => handleOpenRejectVersion(item.pending_version?.version)}
-                  >
-                    <span>✕</span>
-                    <span>{tx("orders.reject_tz_btn")}</span>
-                  </button>
+                  <Button variant="success" onClick={() => handleOpenApproveVersion(item.pending_version?.version)}>
+                    ✓ {tx("orders.approve_tz_btn")}
+                  </Button>
+                  <Button variant="danger" onClick={() => handleOpenRejectVersion(item.pending_version?.version)}>
+                    ✕ {tx("orders.reject_tz_btn")}
+                  </Button>
                 </div>
               )}
             </div>
@@ -1189,37 +1128,31 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             </div>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               {canEdit && (
-                <button
-                  type="button"
-                  className="btn btn-outline"
+                <Button
+                  
                   onClick={() => go(toEditOrder(item.id))}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
                 >
                   <span>✏️</span>
                   <span>{tx("common.tahrirlash")}</span>
-                </button>
+                </Button>
               )}
               {canDelete && (
-                <button
-                  type="button"
-                  className="btn btn-outline"
+                <Button variant="danger"
+                  
                   onClick={() => void handleDelete()}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600, color: "#dc2626", borderColor: "rgba(220, 38, 38, 0.4)" }}
                 >
                   <span>🗑️</span>
                   <span>{tx("common.ochirish")}</span>
-                </button>
+                </Button>
               )}
-              <button
-                type="button"
-                className="btn btn-primary"
+              <Button
+                variant="primary"
                 onClick={() => void handleSendDraftOrder()}
                 disabled={sendingOrder}
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
               >
                 <span>🚀</span>
                 <span>{sendingOrder ? tx("common.yuborilmoqda") : tx("orders.send_order")}</span>
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -1241,21 +1174,18 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               {tx("orders.masul_pm_yoq_qabul_qilasizmi")}
             </div>
             <div className="row middle" style={{ gap: 8 }}>
-              <button
-                type="button"
-                className="btn btn-xs btn-outline"
-                style={{ color: "var(--danger)", borderColor: "var(--danger)", fontWeight: 600 }}
+              <Button variant="danger"
+                size="xs"
                 onClick={() => handleOpenClaim("reject")}
               >
                 ↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")}
-              </button>
-              <button
-                type="button"
-                className="btn btn-xs btn-primary"
+              </Button>
+              <Button
+                variant="primary" size="xs"
                 onClick={() => handleOpenClaim("accept")}
               >
                 {tx("orders.ishni_qabul_qilish")}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -1279,10 +1209,8 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 : "Buyurtma sizga biriktirilgan. Uni boshqa PM ga topshirishingiz mumkin:"}
             </div>
             <div className="row middle" style={{ gap: 8 }}>
-              <button
-                type="button"
-                className="btn btn-xs btn-primary"
-                style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 6 }}
+              <Button
+                variant="primary" size="xs"
                 onClick={() => {
                   setTransferModalOpen(true);
                   setSelectedPmId(null);
@@ -1292,7 +1220,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 }}
               >
                 👥 {tx("orders.boshqa_pmga_topshirish", undefined, "Boshqa PM ga topshirish")}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -1327,43 +1255,37 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               )}
               {item.completion_file_url && (
                 <div style={{ marginTop: 8 }}>
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-outline"
+                  <Button
+                    size="xs"
                     onClick={() => setPreviewFile({
                       url: item.completion_file_url!,
                       name: item.completion_file_name || tx("orders.hisobot_hujjati"),
                       size: item.completion_file_size_display,
                     })}
-                    style={{ background: "#ffffff", borderColor: "#c084fc", color: "#7e22ce", gap: 6, fontWeight: 600 }}
                   >
                     <span>📁</span>
                     <span>{item.completion_file_name || tx("orders.hisobot_fayli")}</span>
                     {item.completion_file_size_display && <span style={{ opacity: 0.7 }}>({item.completion_file_size_display})</span>}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
             {canClientReview ? (
               <div className="row middle" style={{ gap: 10 }}>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-ok"
+                <Button
+                  variant="success" size="sm"
                   onClick={handleClientApprove}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
                 >
                   <span>✓</span>
                   <span>{tx("orders.tasdiqlash_va_yakunlash")}</span>
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-warning"
+                </Button>
+                <Button
+                  variant="warning" size="sm"
                   onClick={handleOpenReject}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
                 >
                   <span>⚠️</span>
                   <span>{tx("orders.kamchilik_bilan_qaytarish")}</span>
-                </button>
+                </Button>
               </div>
             ) : (
               <div style={{ fontSize: 12.5, color: "#6b21a8", fontWeight: 600, background: "rgba(255,255,255,0.6)", padding: "6px 12px", borderRadius: 8 }}>
@@ -1398,33 +1320,29 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
               </div>
               {item.client_feedback_file_url && (
                 <div style={{ marginTop: 8 }}>
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-outline"
+                  <Button variant="warning"
+                    size="xs"
                     onClick={() => setPreviewFile({
                       url: item.client_feedback_file_url!,
                       name: item.client_feedback_file_name || tx("orders.tuzatish_hujjati"),
                       size: item.client_feedback_file_size_display,
                     })}
-                    style={{ background: "#ffffff", borderColor: "#fcd34d", color: "#92400e", gap: 6, fontWeight: 600 }}
                   >
                     <span>📎</span>
                     <span>{tx("orders.tuzatish_hujjati_fayli")}: {item.client_feedback_file_name || tx("common.fayl", undefined, "Fayl")}</span>
                     {item.client_feedback_file_size_display && <span style={{ opacity: 0.7 }}>({item.client_feedback_file_size_display})</span>}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
             {canSubmitCompletion && (
-              <button
-                type="button"
-                className="btn btn-sm btn-primary"
+              <Button
+                variant="primary" size="sm"
                 onClick={handleOpenSubmitCompletion}
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
               >
                 <span>📁</span>
                 <span>{tx("orders.qayta_topshirish")}</span>
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -1763,16 +1681,15 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 />
               </div>
               <div className="row end" style={{ gap: 6 }}>
-                <button
-                  type="button"
-                  className="btn btn-xs btn-ghost"
+                <Button
+                  variant="ghost" size="xs"
                   onClick={() => setPmPanelOpen(false)}
                 >
                   Bekor qilish
-                </button>
-                <button type="submit" className="btn btn-xs btn-primary" disabled={pmSaving}>
+                </Button>
+                <Button type="submit" variant="primary" size="xs" disabled={pmSaving}>
                   {pmSaving ? tx("common.saqlanmoqda") : tx("common.saqlash")}
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -1841,62 +1758,30 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 >
                   {/* Asosiy TZ hujjati (agar attachments ichida aynan shu nom bilan takrorlanmagan bo'lsa) */}
                   {item.tz_file_url && (!item.attachments || !item.attachments.some((a) => a.original_name === item.tz_file_name)) && (
-                    <button
-                      type="button"
+                    <Button
+                      block className="btn-start"
                       onClick={() => setPreviewFile({ url: item.tz_file_url!, name: item.tz_file_name || "TZ_fayli", size: item.tz_file_size_display })}
-                      style={{
-                        background: "#ffffff",
-                        border: "1px solid var(--border-color, #e2e8f0)",
-                        borderRadius: 8,
-                        padding: "8px 12px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        cursor: "pointer",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "var(--text, #1e293b)",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                        textAlign: "left",
-                        width: "100%",
-                      }}
                       title={tx("orders.veb_saytda_ochish")}
                     >
                       <DocLilacIcon size={18} color="#8b5cf6" />
-                      <span style={{ textAlign: "left", flex: 1, wordBreak: "break-word" }}>
+                      <span className="btn-grow">
                         {item.tz_file_name || tx("orders.faylni_yuklab_olish")} {item.tz_file_size_display ? `(${item.tz_file_size_display})` : ""}
                       </span>
-                    </button>
+                    </Button>
                   )}
                   {/* Biriktirilgan ilova fayllar */}
                   {item.attachments && item.attachments.map((att) => (
-                    <button
+                    <Button
                       key={att.id}
-                      type="button"
+                      block className="btn-start"
                       onClick={() => setPreviewFile({ url: att.url, name: att.original_name, size: att.size_display })}
-                      style={{
-                        background: "#ffffff",
-                        border: "1px solid var(--border-color, #e2e8f0)",
-                        borderRadius: 8,
-                        padding: "8px 12px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        cursor: "pointer",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "var(--text, #1e293b)",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                        textAlign: "left",
-                        width: "100%",
-                      }}
                       title={tx("orders.veb_saytda_ochish")}
                     >
                       <DocLilacIcon size={18} color="#8b5cf6" />
-                      <span style={{ textAlign: "left", flex: 1, wordBreak: "break-word" }}>
+                      <span className="btn-grow">
                         {att.original_name} {att.size_display ? `(${att.size_display})` : ""}
                       </span>
-                    </button>
+                    </Button>
                   ))}
                   {(!item.tz_file_url && (!item.attachments || item.attachments.length === 0) && !item.completion_file_url) && (
                     <div style={{ padding: "8px", fontSize: 12.5, color: "#64748b", textAlign: "center" }}>
@@ -1904,32 +1789,16 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     </div>
                   )}
                   {item.completion_file_url && (
-                    <button
-                      type="button"
+                    <Button
+                      block className="btn-start"
                       onClick={() => setPreviewFile({ url: item.completion_file_url!, name: item.completion_file_name || "Hisobot_hujjati" })}
-                      style={{
-                        background: "#ffffff",
-                        border: "1px solid var(--border-color, #e2e8f0)",
-                        borderRadius: 8,
-                        padding: "8px 12px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        cursor: "pointer",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "var(--text, #1e293b)",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                        textAlign: "left",
-                        width: "100%",
-                      }}
                       title={tx("orders.hisobot_korish")}
                     >
                       <DocLilacIcon size={18} color="#8b5cf6" />
-                      <span style={{ textAlign: "left", flex: 1, wordBreak: "break-word" }}>
-                        {item.completion_file_name || "Hisobot fayli"}
+                      <span className="btn-grow">
+                        {item.completion_file_name || tx("orders.hisobot_fayli")}
                       </span>
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -2142,15 +2011,13 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </div>
                 <strong style={{ fontSize: 15 }}>Yangi TZ versiyasi yuklash</strong>
               </div>
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
+              <Button aria-label={tx("common.bekor_qilish")} iconOnly
+                variant="ghost" size="xs"
                 onClick={() => setVersionModal(false)}
-                style={{ width: 28, height: 28, padding: 0 }}
                 title={tx("common.bekor_qilish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleUploadVersionSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -2159,7 +2026,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     Yangi TZ fayli (PDF/DOCX/Rasm) <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                    <label className={buttonClass({ size: "sm" })}>
                       Fayl tanlash
                       <input
                         type="file"
@@ -2187,20 +2054,19 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </div>
               </div>
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   onClick={() => setVersionModal(false)}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-primary"
+                  variant="primary"
                   disabled={versionSubmitting || !versionFile}
                 >
                   {versionSubmitting ? tx("common.yuklanmoqda") : tx("common.yuborish")}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -2261,16 +2127,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
+              <Button aria-label={tx("common.bekor_qilish")} iconOnly
+                variant="ghost" size="xs"
                 onClick={() => setClaimModalOpen(false)}
                 disabled={claimSubmitting}
-                style={{ fontSize: 15, width: 30, height: 30, padding: 0 }}
                 title={tx("common.bekor_qilish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <form
               onSubmit={(e) => {
@@ -2300,17 +2164,15 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                       <span style={{ color: "var(--muted)" }}>{tx("orders.soralgan_muddat")}:</span>
                       <strong style={{ color: "var(--text)" }}>{fmtDate(item.due_date)}</strong>
                     </div>
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-ghost"
-                      style={{ fontSize: 11.5, color: "var(--accent)", fontWeight: 600 }}
+                    <Button
+                      variant="link" size="xs"
                       onClick={() => {
                         const d = item.due_date?.split("T")[0];
                         if (d) setClaimDeadlineInput(d);
                       }}
                     >
                       {tx("orders.claim_use_client_date")}
-                    </button>
+                    </Button>
                   </div>
                 )}
                 {(user?.is_platform_admin || user?.is_boss) && (
@@ -2406,20 +2268,18 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   gap: 10,
                 }}
               >
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   onClick={() => setClaimModalOpen(false)}
                   disabled={claimSubmitting}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
+                </Button>
                 {claimMode === "reject" ? (
-                  <button
+                  <Button
                     type="submit"
-                    className="btn btn-danger"
+                    variant="danger"
                     disabled={claimSubmitting || !claimNotesInput.trim()}
-                    style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
                   >
                     {claimSubmitting ? (
                       <>
@@ -2429,19 +2289,12 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     ) : (
                       <span>↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")}</span>
                     )}
-                  </button>
+                  </Button>
                 ) : (
-                <button
+                <Button
                   type="submit"
-                  className="btn btn-ok"
+                  variant="success"
                   disabled={claimSubmitting || !claimDeadlineInput}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
                 >
                   {claimSubmitting ? (
                     <>
@@ -2454,7 +2307,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                       <span>{tx("orders.claim_submit_btn", undefined, "Qabul qilish")}</span>
                     </>
                   )}
-                </button>
+                </Button>
                 )}
               </div>
             </form>
@@ -2512,16 +2365,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
+              <Button aria-label={tx("common.bekor_qilish")} iconOnly
+                variant="ghost" size="xs"
                 onClick={() => setTransferModalOpen(false)}
                 disabled={transferSubmitting}
-                style={{ fontSize: 15, width: 30, height: 30, padding: 0 }}
                 title={tx("common.bekor_qilish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleTransferPm}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -2629,24 +2480,17 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   gap: 10,
                 }}
               >
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   onClick={() => setTransferModalOpen(false)}
                   disabled={transferSubmitting}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-primary"
+                  variant="primary"
                   disabled={transferSubmitting || !selectedPmId}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontWeight: 600,
-                  }}
                 >
                   {transferSubmitting ? (
                     <>
@@ -2659,7 +2503,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                       <span>Topshirish</span>
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -2697,16 +2541,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
+              <Button aria-label={tx("common.bekor_qilish")} iconOnly
+                variant="ghost" size="xs"
                 onClick={() => setRejectModalOpen(false)}
                 disabled={rejectSubmitting}
-                style={{ width: 28, height: 28, padding: 0 }}
                 title={tx("common.bekor_qilish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleRejectSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -2741,7 +2583,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     {tx("orders.kamchilik_hujjati_tz")}
                   </label>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                    <label className={buttonClass({ size: "sm" })}>
                       Fayl tanlash
                       <input
                         type="file"
@@ -2772,21 +2614,20 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 )}
               </div>
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   onClick={() => setRejectModalOpen(false)}
                   disabled={rejectSubmitting}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-warning"
+                  variant="warning"
                   disabled={rejectSubmitting || (!rejectReason.trim() && !rejectFile)}
                 >
                   {rejectSubmitting ? tx("common.yuborilmoqda") : tx("orders.kamchilik_bilan_qaytarish")}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -2824,16 +2665,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
+              <Button aria-label={tx("common.bekor_qilish")} iconOnly
+                variant="ghost" size="xs"
                 onClick={() => setCompletionModalOpen(false)}
                 disabled={completionSubmitting}
-                style={{ width: 28, height: 28, padding: 0 }}
                 title={tx("common.bekor_qilish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleSubmitCompletion}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -2843,7 +2682,7 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                     Tugatilgan ish hujjati / Skrinshot (fayl yoki rasm)
                   </label>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                    <label className={buttonClass({ size: "sm" })}>
                       Fayl tanlash
                       <input
                         type="file"
@@ -2875,21 +2714,20 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </div>
               </div>
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   onClick={() => setCompletionModalOpen(false)}
                   disabled={completionSubmitting}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-primary"
+                  variant="primary"
                   disabled={completionSubmitting || (!completionFile && !completionNote.trim())}
                 >
                   {completionSubmitting ? tx("common.topshirilmoqda") : tx("common.topshirish")}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -2930,16 +2768,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
+              <Button aria-label={tx("common.bekor_qilish")} iconOnly
+                variant="ghost" size="xs"
                 onClick={() => setTaskModalOpen(false)}
                 disabled={taskSubmitting}
-                style={{ width: 30, height: 30, padding: 0 }}
                 title={tx("common.bekor_qilish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleCreateTaskSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -3021,22 +2857,20 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </div>
               </div>
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   onClick={() => setTaskModalOpen(false)}
                   disabled={taskSubmitting}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-primary"
+                  variant="primary"
                   disabled={taskSubmitting || !taskTitle.trim()}
-                  style={{ fontWeight: 600 }}
                 >
                   {taskSubmitting ? tx("common.yaratilmoqda") : tx("orders.task_submit_btn")}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -3075,16 +2909,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
+              <Button aria-label={tx("common.bekor_qilish")} iconOnly
+                variant="ghost" size="xs"
                 onClick={() => setApproveVersionModal(false)}
                 disabled={approveSubmitting}
-                style={{ width: 28, height: 28, padding: 0 }}
                 title={tx("common.bekor_qilish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleApproveVersionSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -3116,22 +2948,20 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </div>
               </div>
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   onClick={() => setApproveVersionModal(false)}
                   disabled={approveSubmitting}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-ok"
+                  variant="success"
                   disabled={approveSubmitting}
-                  style={{ fontWeight: 600 }}
                 >
                   {approveSubmitting ? tx("common.tasdiqlanmoqda", undefined, "Tasdiqlanmoqda...") : tx("orders.tasdiqlash_va_amalda_qollash")}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -3170,16 +3000,14 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
+              <Button aria-label={tx("common.bekor_qilish")} iconOnly
+                variant="ghost" size="xs"
                 onClick={() => setRejectVersionModal(false)}
                 disabled={rejectVersionSubmitting}
-                style={{ width: 28, height: 28, padding: 0 }}
                 title={tx("common.bekor_qilish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleRejectVersionSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -3212,22 +3040,20 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
                 </div>
               </div>
               <div className="modal-footer row between middle" style={{ padding: "14px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   onClick={() => setRejectVersionModal(false)}
                   disabled={rejectVersionSubmitting}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-danger"
+                  variant="danger"
                   disabled={rejectVersionSubmitting || !rejectVersionReason.trim()}
-                  style={{ fontWeight: 600 }}
                 >
                   {rejectVersionSubmitting ? tx("common.rad_etilmoqda") : "✕ Rad etish"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -3346,15 +3172,13 @@ export default function OrderDetail({ orderId: propOrderId, onClose }: OrderDeta
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
               {orderActions}
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
+              <Button iconOnly aria-label={tx("common.yopish")}
+                variant="ghost" size="sm"
                 onClick={onClose}
-                style={{ fontSize: 18, lineHeight: 1, padding: "4px 8px" }}
                 title={tx("common.yopish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
           </div>
 

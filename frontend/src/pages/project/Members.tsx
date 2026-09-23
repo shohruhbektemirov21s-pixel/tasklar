@@ -10,6 +10,7 @@ import { promptDialog } from "@/components/Prompt";
 import { useProjectLive } from "@/realtime/RealtimeContext";
 import { toDeveloper, toProjectJoin } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 export default function Members({ project, onChange }: { project: Project; onChange: () => void }) {
   const { meta, user } = useAuth();
@@ -107,16 +108,16 @@ export default function Members({ project, onChange }: { project: Project; onCha
                       <option key={x.value} value={String(x.value)}>{x.label}</option>
                     ))}
                   </select>
-                  <button className="btn btn-sm btn-primary" onClick={() => {
+                  <Button variant="primary" size="sm" onClick={() => {
                     const sel = document.getElementById(`role-${r.id}`) as HTMLSelectElement;
                     void act(() => api.post(`/projects/${project.id}/requests/${r.id}/decide/`, {
                       action: "approve", role: sel.value, note: tx("project_members.xush_kelibsiz"),
                     }));
-                  }}>{tx("common.qabul_qilish")}</button>
-                  <button className="btn btn-sm btn-danger" onClick={() =>
+                  }}>{tx("common.qabul_qilish")}</Button>
+                  <Button variant="danger" size="sm" onClick={() =>
                     void act(() => api.post(`/projects/${project.id}/requests/${r.id}/decide/`, {
                       action: "reject", note: tx("project_members.hozircha_orin_yoq"),
-                    }))}>{tx("project_members.rad_etish")}</button>
+                    }))}>{tx("project_members.rad_etish")}</Button>
                 </div>
                 {r.message && <div className="tl-detail" style={{ marginTop: 10 }}>{r.message}</div>}
               </div>
@@ -186,7 +187,7 @@ export default function Members({ project, onChange }: { project: Project; onCha
                         m.user.is_platform_admin ? (
                           /* Berilgan huquqni qaytarib olish. Oxirgi admin va bosh
                              hisob serverda himoyalangan - u yerdan 400 keladi. */
-                          <button className="btn btn-sm" title={tx("project_members.tizim_admini_huquqini_bekor_qilish")}
+                          <Button size="sm" title={tx("project_members.tizim_admini_huquqini_bekor_qilish")}
                                   onClick={() => void (async () => {
                                     const ok = await confirmDialog({
                                       title: tx("project_members.adminlikdan_chiqarilsinmi", { ism: m.user.full_name }),
@@ -201,9 +202,9 @@ export default function Members({ project, onChange }: { project: Project; onCha
                                       { action: "revoke_admin" }));
                                   })()}>
                             {tx("project_members.adminlikni_bekor_qilish")}
-                          </button>
+                          </Button>
                         ) : (
-                          <button className="btn btn-sm" title={tx("project_members.tizim_admini_qilib_tayinlash")}
+                          <Button size="sm" title={tx("project_members.tizim_admini_qilib_tayinlash")}
                                   onClick={() => void (async () => {
                                     const ok = await confirmDialog({
                                       title: tx("project_members.tizim_admini_bolsinmi", { ism: m.user.full_name }),
@@ -217,7 +218,7 @@ export default function Members({ project, onChange }: { project: Project; onCha
                                       { action: "appoint_admin" }));
                                   })()}>
                             {tx("project_members.admin_qilish")}
-                          </button>
+                          </Button>
                         )
                       )}
                       {acc.can_manage && (
@@ -234,7 +235,7 @@ export default function Members({ project, onChange }: { project: Project; onCha
                             {tx("project_members.himoyalangan")}
                           </span>
                         ) : (
-                          <button className="btn btn-sm btn-danger" onClick={() => void (async () => {
+                          <Button variant="danger" size="sm" onClick={() => void (async () => {
                             const note = await promptDialog({
                               title: tx("project_members.keyingi_dasturchi_uchun_topshiriq_eslatmasi"),
                               body: tx("project_members.topshiriq_eslatmasi_tushuntirish"),
@@ -247,7 +248,7 @@ export default function Members({ project, onChange }: { project: Project; onCha
                             await act(() => api.post(`/projects/${project.id}/members/${m.id}/`, {
                               action: "remove", handover_note: note,
                             }));
-                          })()}>{tx("project_members.chiqarish")}</button>
+                          })()}>{tx("project_members.chiqarish")}</Button>
                         )
                       )}
                       </div>
@@ -314,9 +315,9 @@ export default function Members({ project, onChange }: { project: Project; onCha
 
           {!acc.is_member && !isSohaviy && (
             <Card title={tx("common.qoshilish")}>
-              <Link className="btn btn-primary btn-block" {...toProjectJoin(project.id)}>
+              <LinkButton variant="primary" block {...toProjectJoin(project.id)}>
                 {tx("project_members.sorov_yuborish")}
-              </Link>
+              </LinkButton>
             </Card>
           )}
           {/* Chiqish - a'zoning O'Z qarori, shuning uchun MENEJERGA ham
@@ -331,7 +332,7 @@ export default function Members({ project, onChange }: { project: Project; onCha
                   {tx("project_members.siz_loyiha_menejerisiz_chiqsangiz_loyiha")}
                 </p>
               )}
-              <button className="btn btn-danger btn-block" onClick={() => void (async () => {
+              <Button variant="danger" block onClick={() => void (async () => {
                 if (acc.is_manager) {
                   const ok = await confirmDialog({
                     title: tx("project_members.loyiha_menejerligidan_chiqasizmi"),
@@ -353,7 +354,7 @@ export default function Members({ project, onChange }: { project: Project; onCha
                 if (note === null) return;
                 await act(() => api.post(`/projects/${project.id}/leave/`,
                                          { handover_note: note }));
-              })()}>{tx("common.chiqish")}</button>
+              })()}>{tx("common.chiqish")}</Button>
             </Card>
           )}
         </div>

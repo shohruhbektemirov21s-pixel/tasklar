@@ -8,6 +8,7 @@ import { PageHead } from "@/components/Layout";
 import { Card, Empty, ErrorMsg, Loading, Pager, SpecialtyTag } from "@/components/ui";
 import { toProject, toProjectJoin, useGo } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 /** Bir sahifada nechta ochiq loyiha. */
 const PER_PAGE = 30;
@@ -54,12 +55,12 @@ export default function Discover() {
                 <input id={`${fid}-0`} value={q} onChange={(e) => setQ(e.target.value)}
                        placeholder={tx("discover.loyiha_nomi_yoki_kaliti")} />
               </div>
-              <button className="btn">{tx("discover.qidirish")}</button>
+              <Button  type="submit">{tx("discover.qidirish")}</Button>
               {!!applied && (
-                <button type="button" className="btn btn-ghost"
+                <Button variant="ghost"
                         onClick={() => { setQ(""); setApplied(""); setPage(1); }}>
                   {tx("common.tozalash")}
-                </button>
+                </Button>
               )}
             </form>
 
@@ -86,10 +87,10 @@ export default function Discover() {
                             vazifalar va tarix ko'rinadi, fayllar esa faqat
                             jamoaga (serverda shunday cheklangan). */}
                         {!user?.is_sohaviy_boshqarma && (
-                          <Link className="btn btn-sm btn-primary" {...toProjectJoin(p.id)}
+                          <LinkButton variant="primary" size="sm" {...toProjectJoin(p.id)}
                                 onClick={(e) => e.stopPropagation()}>
                             {tx("common.qoshilish")}
-                          </Link>
+                          </LinkButton>
                         )}
                       </div>
                       {p.description && <p className="muted" style={{ margin: "8px 0 0" }}>{p.description}</p>}

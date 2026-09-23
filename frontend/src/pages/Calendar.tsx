@@ -18,6 +18,7 @@ import type { CalendarMonth, CalendarProject, CalendarTask } from "@/api/types";
 import { Avatar, Card, EmptyState, ErrorMsg, PageHeader, Skeleton, fmtDate } from "@/components/ui";
 import { toProject, toTask, useNavParams, type NavTarget } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, ButtonGroup } from "@/components/Button";
 
 const WEEKDAYS = ["dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba", "yakshanba"];
 const MONTHS = [
@@ -208,71 +209,47 @@ export default function CalendarPage() {
         action={
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {/* Month / Week / Day Rejim tugmalari */}
-            <div
-              style={{
-                display: "inline-flex",
-                background: "var(--surface-2)",
-                padding: 3,
-                borderRadius: 9,
-                border: "1px solid var(--border)",
-              }}
-            >
-              <button
-                type="button"
-                className={`btn btn-xs ${viewMode === "month" ? "btn-primary" : "btn-ghost"}`}
-                style={{ padding: "4px 12px", borderRadius: 7 }}
-                onClick={() => setViewMode("month")}
-              >
+            <ButtonGroup>
+              <Button size="xs" active={viewMode === "month"} onClick={() => setViewMode("month")}>
                 {tx("calendar.oy", undefined, "Oy")}
-              </button>
-              <button
-                type="button"
-                className={`btn btn-xs ${viewMode === "week" ? "btn-primary" : "btn-ghost"}`}
-                style={{ padding: "4px 12px", borderRadius: 7 }}
-                onClick={() => setViewMode("week")}
-              >
+              </Button>
+              <Button size="xs" active={viewMode === "week"} onClick={() => setViewMode("week")}>
                 {tx("calendar.hafta", undefined, "Hafta")}
-              </button>
-              <button
-                type="button"
-                className={`btn btn-xs ${viewMode === "day" ? "btn-primary" : "btn-ghost"}`}
-                style={{ padding: "4px 12px", borderRadius: 7 }}
+              </Button>
+              <Button
+                size="xs" active={viewMode === "day"}
                 onClick={() => {
                   setViewMode("day");
                   if (!picked && data) set("kun", data.today);
                 }}
               >
                 {tx("calendar.kun", undefined, "Kun")}
-              </button>
-            </div>
+              </Button>
+            </ButtonGroup>
 
             {/* Oldingi / Bugun / Keyingi navigatsiyasi */}
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <button
-                type="button"
-                className="btn btn-sm"
+              <Button iconOnly aria-label={tx("calendar.oldingi_oy", undefined, "Oldingi oy")}
+                size="sm"
                 title={tx("calendar.oldingi_oy", undefined, "Oldingi oy")}
                 onClick={() => data && set("oy", shiftMonth(data.month, -1))}
               >
                 ‹
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                style={{ fontWeight: 600 }}
+              </Button>
+              <Button
+                variant="ghost" size="sm"
                 title={tx("calendar.joriy_oy", undefined, "Joriy oy")}
                 onClick={() => set("oy", "")}
               >
                 {tx("common.bugun", undefined, "Bugun")}
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm"
+              </Button>
+              <Button iconOnly aria-label={tx("calendar.keyingi_oy", undefined, "Keyingi oy")}
+                size="sm"
                 title={tx("calendar.keyingi_oy", undefined, "Keyingi oy")}
                 onClick={() => data && set("oy", shiftMonth(data.month, 1))}
               >
                 ›
-              </button>
+              </Button>
             </div>
           </div>
         }
@@ -493,13 +470,12 @@ export default function CalendarPage() {
                   Number(picked.split("-")[1]) - 1
                 ]?.toLowerCase()} ${picked.split("-")[0]}`}
                 badge={
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-ghost"
+                  <Button
+                    variant="ghost" size="sm"
                     onClick={() => set("kun", "")}
                   >
                     ✕ {tx("common.yopish", undefined, "Yopish")}
-                  </button>
+                  </Button>
                 }
                 padded={false}
               >

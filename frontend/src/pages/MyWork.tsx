@@ -11,6 +11,7 @@ import {
 } from "@/components/ui";
 import { toTask, useNavParams } from "@/nav";
 import { tx } from "@/i18n";
+import { LinkButton } from "@/components/Button";
 
 /**
  * Doska ustunlari — MUDDAT bo'yicha, chapdan o'ngga torayib boradi.
@@ -204,9 +205,9 @@ function MyWorkBoard() {
       <PageHead
         title={<strong>{tx("my_work.mening_ishim", undefined, "Vazifalarim")}</strong>}
         actions={
-          <Link className="btn btn-sm btn-primary" to="/loyiha/vazifa-yaratish">
+          <LinkButton variant="primary" size="sm" to="/loyiha/vazifa-yaratish">
             + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-          </Link>
+          </LinkButton>
         }
       />
       <div className="content">
@@ -369,15 +370,15 @@ function MyWorkBoard() {
                 <Empty icon="☐" title={tx("my_work.sizga_hali_vazifa_biriktirilmagan")}
                        text={tx("my_work.loyihaga_qoshiling_menejer_mutaxassisligingi")}>
                   <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
-                    <Link className="btn btn-primary" to="/loyiha/vazifa-yaratish">
+                    <LinkButton variant="primary" to="/loyiha/vazifa-yaratish">
                       + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-                    </Link>
-                    <Link className="btn" to="/loyihalar">
+                    </LinkButton>
+                    <LinkButton  to="/loyihalar">
                       {tx("common.loyihalar")}
-                    </Link>
-                    <Link className="btn" to="/qoshilish">
+                    </LinkButton>
+                    <LinkButton  to="/qoshilish">
                       {tx("projects.loyiha_topish")}
-                    </Link>
+                    </LinkButton>
                   </div>
                 </Empty>
               </div>

@@ -24,6 +24,7 @@ import { Avatar, Priority, StatusBadge } from "@/components/ui";
 import { toProject } from "@/nav";
 import { tx } from "@/i18n";
 import { lockScroll, unlockScroll } from "./scrollLock";
+import { Button } from "@/components/Button";
 
 const TaskDetailModal = lazy(() => import("@/pages/TaskDetail"));
 
@@ -140,12 +141,12 @@ export default function TaskDrawer({ task, onClose }: { task: Task | null; onClo
         </div>
 
         <div className="drawer-foot">
-          <button type="button" className="btn btn-primary" onClick={() => setModalOpen(true)}>
+          <Button variant="primary" onClick={() => setModalOpen(true)}>
             {tx("task_drawer.toliq_ochish", undefined, "To'liq ochish")}
-          </button>
-          <button ref={closeBtn} type="button" className="btn" onClick={onClose}>
+          </Button>
+          <Button ref={closeBtn}  onClick={onClose}>
             {tx("common.yopish", undefined, "Yopish")}
-          </button>
+          </Button>
         </div>
       </aside>
 

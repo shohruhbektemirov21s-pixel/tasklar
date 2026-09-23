@@ -15,6 +15,7 @@ import UserSearch from "./UserSearch";
 import { IconClose, IconUserPlus } from "./icons";
 import { Avatar, Card, ErrorMsg, OkMsg, SpecialtyTag } from "./ui";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 interface Props {
   /** Loyihaga qo'shilsa — loyiha id si */
@@ -87,10 +88,10 @@ export default function AddMemberBox({
               <small className="muted mono">{picked.email}</small>
             </div>
             <span className="spacer" />
-            <button type="button" className="btn btn-sm btn-ghost" title={tx("add_member_box.boshqasini_tanlash")}
+            <Button variant="ghost" size="sm" title={tx("add_member_box.boshqasini_tanlash")}
                     onClick={() => setPicked(null)}>
               <IconClose size={14} />
-            </button>
+            </Button>
           </div>
 
           <div className="field mt">
@@ -102,9 +103,9 @@ export default function AddMemberBox({
             </select>
           </div>
 
-          <button className="btn btn-primary" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? tx("add_member_box.qoshilmoqda") : tx("add_member_box.jamoaga_qoshish")}
-          </button>
+          </Button>
         </form>
       )}
     </Card>

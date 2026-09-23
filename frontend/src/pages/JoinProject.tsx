@@ -1,5 +1,4 @@
 import { useEffect, useId, useState } from "react";
-import { Link } from "react-router-dom";
 import { ApiError, api } from "@/api/client";
 import type { Project } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
@@ -7,6 +6,7 @@ import { PageHead } from "@/components/Layout";
 import { Card, Empty, ErrorMsg, Loading, SpecialtyTag } from "@/components/ui";
 import { toProject, useEntityId, useGo } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 export default function JoinProject() {
   const fid = useId();
@@ -57,7 +57,7 @@ export default function JoinProject() {
       <div className="content">
         <Empty title={tx("common.loyiha_tanlanmagan")}
                text={tx("join_project.bu_sahifa_loyiha_ichidan_ochiladi")}>
-          <Link className="btn btn-primary" to="/loyihalar">{tx("common.loyihalarim")}</Link>
+          <LinkButton variant="primary" to="/loyihalar">{tx("common.loyihalarim")}</LinkButton>
         </Empty>
       </div>
     );
@@ -79,7 +79,7 @@ export default function JoinProject() {
           title={tx("join_project.boshqarma_uchun_mavjud_emas")}
           text={tx("join_project.boshqarma_uchun_izoh")}
         >
-          <Link className="btn btn-primary" {...toProject(id)}>{tx("public_project.loyihani_ochish")}</Link>
+          <LinkButton variant="primary" {...toProject(id)}>{tx("public_project.loyihani_ochish")}</LinkButton>
         </Empty>
       </div>
     );
@@ -116,9 +116,9 @@ export default function JoinProject() {
                   <input id={`${fid}-2`} value={code} onChange={(e) => setCode(e.target.value)} placeholder="A1B2C3D4" />
                 </div>
               )}
-              <button className="btn btn-primary btn-block" disabled={busy}>
+              <Button variant="primary" block type="submit" disabled={busy}>
                 {busy ? tx("join_project.yuborilmoqda") : tx("join_project.sorov_yuborish")}
-              </button>
+              </Button>
             </form>
           </Card>
 

@@ -6,6 +6,7 @@ import { Logo } from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ErrorMsg, PasswordInput } from "@/components/ui";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 interface SpecialtyItem {
   value: string;
@@ -112,9 +113,9 @@ export default function Register() {
           <p style={{ color: "var(--muted)", fontSize: 13.5, lineHeight: 1.5, marginTop: 8, marginBottom: 24 }}>
             {tx("register.admin_tasdiqlashi_kutilmoqda") || "Ro'yxatdan o'tish arizangiz muvaffaqiyatli yuborildi. Administrator hisobingizni tasdiqlagandan so'ng tizimga kirishingiz mumkin bo'ladi."}
           </p>
-          <Link to="/kirish" className="btn btn-primary btn-block">
+          <LinkButton to="/kirish" variant="primary" block>
             {tx("register.kirish_sahifasiga_otish") || "Kirish sahifasiga o'tish"}
-          </Link>
+          </LinkButton>
         </div>
       </div>
     );
@@ -212,9 +213,9 @@ export default function Register() {
               {errors.password_confirm && <div className="err">{errors.password_confirm}</div>}
             </div>
 
-            <button className="btn btn-primary btn-block" disabled={busy}>
+            <Button variant="primary" block type="submit" disabled={busy}>
               {busy ? tx("common.yaratilmoqda") : tx("register.akkaunt_yaratish")}
-            </button>
+            </Button>
           </form>
         </div>
 

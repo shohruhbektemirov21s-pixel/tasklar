@@ -11,6 +11,7 @@ import { lockScroll, unlockScroll } from "./scrollLock";
 import { fmtDateTime } from "./dates";
 import { toTask, useGo, type NavTarget } from "@/nav";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 /* ---------------------------------------------------------------- Avatar */
 export function Avatar({
@@ -563,9 +564,9 @@ export function EmptyState({
   onAction?: () => void;
 }) {
   const finalAction = action || (actionLabel && onAction && (
-    <button type="button" className="btn btn-sm btn-primary" onClick={onAction}>
+    <Button variant="primary" size="sm" onClick={onAction}>
       {actionLabel}
-    </button>
+    </Button>
   ));
 
   return (
@@ -803,11 +804,11 @@ export function RowMenu({ children, label = tx("common.amallar") }: {
 
   return (
     <div className="row-menu" ref={box}>
-      <button type="button" className="btn btn-sm btn-ghost" title={label}
+      <Button iconOnly aria-label={label} variant="ghost" size="sm" title={label}
               aria-haspopup="menu" aria-expanded={open}
               onClick={() => setOpen((v) => !v)}>
         ⋯
-      </button>
+      </Button>
       {open && (
         <div className="row-menu-list" role="menu" onClick={() => setOpen(false)}>
           {children}

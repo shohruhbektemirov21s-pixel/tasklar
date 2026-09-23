@@ -11,6 +11,7 @@ import {
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { toTask } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 /** «Qaytarish» uchun qaror kodi - serverdagi ro'yxatdan qidiriladi. */
 const REJECT_HINTS = ["CHANGES_REQUESTED", "REJECTED", "RETURNED"];
@@ -140,10 +141,10 @@ export default function ReviewQueue() {
                         <td><StatusBadge task={t} /></td>
                         <td>
                           <div className="row-actions">
-                            <button className="btn btn-sm btn-ok"
-                                    onClick={() => begin(t.id, "APPROVED")}>{tx("common.qabul_qilish")}</button>
-                            <button className="btn btn-sm btn-danger"
-                                    onClick={() => begin(t.id, rejectValue)}>{tx("review_queue.qaytarish")}</button>
+                            <Button variant="success" size="sm"
+                                    onClick={() => begin(t.id, "APPROVED")}>{tx("common.qabul_qilish")}</Button>
+                            <Button variant="danger" size="sm"
+                                    onClick={() => begin(t.id, rejectValue)}>{tx("review_queue.qaytarish")}</Button>
                           </div>
                         </td>
                       </tr>
@@ -180,12 +181,12 @@ export default function ReviewQueue() {
                                           placeholder={tx("review_queue.nimani_tuzatish_kerak_aniq_yozing")} />
                               </div>
                               <div className="row">
-                                <button className="btn btn-primary" disabled={busy}
-                                        onClick={() => void submit(t.id)}>{tx("review_queue.qarorni_saqlash")}</button>
-                                <Link className="btn" {...toTask(t.id)}>{tx("review_queue.vazifani_toliq_korish")}</Link>
-                                <button className="btn btn-ghost" onClick={() => setOpen(null)}>
+                                <Button variant="primary" disabled={busy}
+                                        onClick={() => void submit(t.id)}>{tx("review_queue.qarorni_saqlash")}</Button>
+                                <LinkButton  {...toTask(t.id)}>{tx("review_queue.vazifani_toliq_korish")}</LinkButton>
+                                <Button variant="ghost" onClick={() => setOpen(null)}>
                                   {tx("common.bekor_qilish")}
-                                </button>
+                                </Button>
                               </div>
                             </div>
                           </td>
@@ -226,12 +227,12 @@ export default function ReviewQueue() {
             <Empty icon="✓" title={tx("review_queue.navbat_bosh")}
                    text={tx("review_queue.hozircha_tekshirishga_yuborilgan_ish_yoq")}>
               <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
-                <Link className="btn btn-primary" to="/vazifalar">
+                <LinkButton variant="primary" to="/vazifalar">
                   {tx("common.vazifalar")}
-                </Link>
-                <Link className="btn" to="/loyihalar">
+                </LinkButton>
+                <LinkButton  to="/loyihalar">
                   {tx("common.loyihalar")}
-                </Link>
+                </LinkButton>
               </div>
             </Empty>
           </Card>

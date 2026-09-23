@@ -6,6 +6,7 @@ import { Logo } from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ErrorMsg, PasswordInput } from "@/components/ui";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 export default function Login() {
   const fid = useId();
@@ -124,13 +125,13 @@ export default function Login() {
                 <span>Xavfsizlik blokirovkasi: {lockoutSeconds} soniyadan so'ng qayta urinishingiz mumkin.</span>
               </div>
             )}
-            <button className="btn btn-primary btn-block" disabled={busy || lockoutSeconds > 0}>
+            <Button variant="primary" block type="submit" disabled={busy || lockoutSeconds > 0}>
               {busy
                 ? tx("login.tekshirilmoqda")
                 : lockoutSeconds > 0
                 ? `Qayta urinish: ${lockoutSeconds}s`
                 : tx("common.kirish")}
-            </button>
+            </Button>
           </form>
         </div>
 

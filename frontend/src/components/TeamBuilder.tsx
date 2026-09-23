@@ -22,6 +22,7 @@ import { Avatar, Card, ErrorMsg, SpecialtyTag, timeAgo } from "./ui";
 import { promptDialog } from "./Prompt";
 import { toProject, toUser } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 export default function TeamBuilder({
   projects, onChange,
@@ -85,7 +86,7 @@ export default function TeamBuilder({
       title={tx("team_builder.jamoa_yigish")}
       badge={requests.length ? <span className="badge badge-warn">{requests.length} {tx("team_builder.sorov")}</span> : undefined}
       action={project && (
-        <Link className="btn btn-sm" {...toProject(project.id, "jamoa")}>{tx("team_builder.toliq_bolim")}</Link>
+        <LinkButton size="sm" {...toProject(project.id, "jamoa")}>{tx("team_builder.toliq_bolim")}</LinkButton>
       )}
     >
       <ErrorMsg error={error} />
@@ -136,16 +137,16 @@ export default function TeamBuilder({
                       <option key={x.value} value={String(x.value)}>{x.label}</option>
                     ))}
                   </select>
-                  <button className="btn btn-sm btn-primary" onClick={() => {
+                  <Button variant="primary" size="sm" onClick={() => {
                     const sel = document.getElementById(`tb-role-${r.id}`) as HTMLSelectElement;
                     void act(() => api.post(`/projects/${r.project}/requests/${r.id}/decide/`, {
                       action: "approve", role: sel.value, note: tx("team_builder.xush_kelibsiz"),
                     }));
-                  }}>{tx("common.qabul_qilish")}</button>
-                  <button className="btn btn-sm btn-danger" onClick={() =>
+                  }}>{tx("common.qabul_qilish")}</Button>
+                  <Button variant="danger" size="sm" onClick={() =>
                     void act(() => api.post(`/projects/${r.project}/requests/${r.id}/decide/`, {
                       action: "reject", note: tx("team_builder.hozircha_orin_yoq"),
-                    }))}>{tx("team_builder.rad_etish")}</button>
+                    }))}>{tx("team_builder.rad_etish")}</Button>
                 </div>
                 {r.message && <div className="tl-detail" style={{ marginTop: 8 }}>{r.message}</div>}
               </div>
@@ -179,7 +180,7 @@ export default function TeamBuilder({
                     ? <span className="badge" title={tx("team_builder.menejerga_tegib_bolmaydi_u_loyihadan")}>
                         {tx("team_builder.himoyalangan")}
                       </span>
-                    : <button className="btn btn-sm btn-danger" onClick={() => void (async () => {
+                    : <Button variant="danger" size="sm" onClick={() => void (async () => {
                         const note = await promptDialog({
                           title: tx("team_builder.jamoadan_chiqariladi", { ism: m.user.full_name }),
                           body: tx("team_builder.topshiriq_eslatmasi_tarixda_saqlanadi"),
@@ -192,7 +193,7 @@ export default function TeamBuilder({
                         await act(() => api.post(`/projects/${projectId}/members/${m.id}/`, {
                           action: "remove", handover_note: note,
                         }));
-                      })()}>{tx("team_builder.chiqarish")}</button>
+                      })()}>{tx("team_builder.chiqarish")}</Button>
                 )}
               </div>
             ))}

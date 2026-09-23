@@ -9,6 +9,7 @@ import { PageHead } from "@/components/Layout";
 import { Avatar, Card, Empty, ErrorMsg, Loading, Progress } from "@/components/ui";
 import { toNewProject, toProject, toUser, toWorkspaceChat, useEntityId } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 export default function WorkspaceDetail() {
   const slug = useEntityId("workspace");
@@ -63,18 +64,18 @@ export default function WorkspaceDetail() {
         actions={
           <>
             {!ws.my_role && (
-              <button className="btn btn-sm btn-primary"
+              <Button variant="primary" size="sm"
                       onClick={() => void act(() => api.post(`/workspaces/${ws.slug}/join/`, {}))}>
                 {tx("common.qoshilish")}
-              </button>
+              </Button>
             )}
             {ws.my_role && (
-              <Link className="btn btn-sm" {...toWorkspaceChat(ws.slug)}>
+              <LinkButton size="sm" {...toWorkspaceChat(ws.slug)}>
                 <IconChat size={14} /> {tx("common.suhbat")}
-              </Link>
+              </LinkButton>
             )}
             {user?.can_create_project && (
-              <Link className="btn btn-sm btn-primary" {...toNewProject()}>{tx("common.yangi_loyiha")}</Link>
+              <LinkButton variant="primary" size="sm" {...toNewProject()}>{tx("common.yangi_loyiha")}</LinkButton>
             )}
           </>
         }
@@ -99,7 +100,7 @@ export default function WorkspaceDetail() {
                       </h3>
                       {p.matches_my_specialty && <span className="badge badge-info">{tx("workspace_detail.sizga_mos")}</span>}
                       <span className="spacer" />
-                      <Link className="btn btn-sm" {...toProject(p.id, "doska")}>{tx("workspace_detail.doska")}</Link>
+                      <LinkButton size="sm" {...toProject(p.id, "doska")}>{tx("workspace_detail.doska")}</LinkButton>
                     </div>
                     {p.description && (
                       <p className="muted" style={{ margin: "8px 0 0" }}>{p.description}</p>
@@ -115,7 +116,7 @@ export default function WorkspaceDetail() {
                 {!projects.length && (
                   <Empty title={tx("workspace_detail.loyiha_yoq")} text={tx("workspace_detail.bu_maydonda_hali_loyiha_yaratilmagan")}>
                     {user?.can_create_project && (
-                      <Link className="btn btn-primary btn-sm" {...toNewProject()}>{tx("workspace_detail.loyiha_yaratish")}</Link>
+                      <LinkButton variant="primary" size="sm" {...toNewProject()}>{tx("workspace_detail.loyiha_yaratish")}</LinkButton>
                     )}
                   </Empty>
                 )}

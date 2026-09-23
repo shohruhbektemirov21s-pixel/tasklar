@@ -14,6 +14,7 @@ import { api } from "@/api/client";
 import { DateTimeField, fromDateTimeInput } from "./ui";
 import { IconClose, IconFile } from "./icons";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 /** Ikkala endpoint ham 25 MB gacha qabul qiladi (serverda ham tekshiriladi). */
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -185,10 +186,10 @@ export default function FilePicker({
                   <small className="muted">{fileSize(f.size)}</small>
                 </div>
                 <span className="spacer" />
-                <button type="button" className="btn btn-sm" title={tx("file_picker.royxatdan_olib_tashlash")}
+                <Button size="sm" title={tx("file_picker.royxatdan_olib_tashlash")}
                         onClick={() => drop(i)}>
                   <IconClose size={13} />
-                </button>
+                </Button>
               </div>
 
             </div>

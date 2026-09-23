@@ -8,6 +8,7 @@ import { PageHead } from "@/components/Layout";
 import { Empty, ErrorMsg, Loading, Progress, fmtDateTime } from "@/components/ui";
 import { toNewTask, toProject, toProjectEdit, useEntityId } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 /**
  * Bo'limlar talab bo'yicha yuklanadi.
@@ -58,7 +59,7 @@ export default function ProjectDetail() {
       <div className="content">
         <Empty title={tx("common.loyiha_tanlanmagan")}
                text={tx("project_detail.manzilda_loyiha_raqami_saqlanmaydi_uni")}>
-          <Link className="btn btn-primary" to="/loyihalar">{tx("common.loyihalarim")}</Link>
+          <LinkButton variant="primary" to="/loyihalar">{tx("common.loyihalarim")}</LinkButton>
         </Empty>
       </div>
     );
@@ -116,24 +117,23 @@ export default function ProjectDetail() {
         actions={
           <>
             {acc.can_create_task && (
-              <Link className="btn btn-sm btn-primary" {...toNewTask(id)}>
+              <LinkButton variant="primary" size="sm" {...toNewTask(id)}>
                 {tx("common.yangi_vazifa")}
-              </Link>
+              </LinkButton>
             )}
             {acc.can_manage && (
               <>
                 {project.status !== "DONE" && (
-                  <button
-                    type="button"
-                    className="btn btn-sm"
+                  <Button
+                    size="sm"
                     disabled={statusBusy}
                     onClick={() => void handleComplete()}
                     title={tx("project_detail.loyihani_yakunlash")}
                   >
                     ✓ {tx("project_detail.loyihani_yakunlash")}
-                  </button>
+                  </Button>
                 )}
-                <Link className="btn btn-sm" {...toProjectEdit(id)}>{tx("project_detail.sozlamalar")}</Link>
+                <LinkButton size="sm" {...toProjectEdit(id)}>{tx("project_detail.sozlamalar")}</LinkButton>
               </>
             )}
           </>

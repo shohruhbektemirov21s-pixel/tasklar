@@ -13,15 +13,13 @@
  *   - Holati (Ko'rib chiqilmoqda, Qabul qilingan, Rad etilgan)
  * - Taklif ochilganda: title, description, project, creator, date, files, comments/activity
  */
-import { useCallback, useEffect, useId, useState } from "react";
-import { Link } from "react-router-dom";
-import { api, listOf, pagesOf, totalOf } from "@/api/client";
+import { useId, useState } from "react";
+import { api, listOf, pagesOf } from "@/api/client";
 import type { Suggestion, SuggestionStatusValue, VoteChoiceValue } from "@/api/types";
 import { useFetch } from "@/api/useFetch";
 import { useLive } from "@/realtime/RealtimeContext";
 import {
   IconCalendar,
-  IconIdea,
   IconPlus,
   IconSearch,
 } from "@/components/icons";
@@ -44,6 +42,7 @@ import {
   fmtDate,
 } from "@/components/ui";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 const PAGE_SIZE = 15;
 
@@ -123,10 +122,10 @@ export default function Suggestions() {
         subtitle={tx("suggestions.sahifa_izohi", undefined, "Jamoaning loyihalar va jarayonlar bo'yicha taklif hamda tashabbuslari")}
         action={
           !creating && !editing ? (
-            <button className="btn btn-primary" onClick={() => setCreating(true)}>
+            <Button variant="primary" onClick={() => setCreating(true)}>
               <IconPlus size={16} />
               <span>{tx("suggestions.yangi_taklif", undefined, "+ Yangi taklif")}</span>
-            </button>
+            </Button>
           ) : undefined
         }
       />
@@ -207,9 +206,8 @@ export default function Suggestions() {
         </div>
 
         {(!!search || !!status || !!period) && (
-          <button
-            type="button"
-            className="btn btn-ghost"
+          <Button
+            variant="ghost"
             onClick={() => {
               setSearch("");
               setStatus("");
@@ -218,7 +216,7 @@ export default function Suggestions() {
             }}
           >
             {tx("common.tozalash", undefined, "Tozalash")}
-          </button>
+          </Button>
         )}
       </FilterBar>
 
@@ -237,10 +235,10 @@ export default function Suggestions() {
             }
             action={
               !creating ? (
-                <button className="btn btn-primary" onClick={() => setCreating(true)}>
+                <Button variant="primary" onClick={() => setCreating(true)}>
                   <IconPlus size={14} />
                   <span>{tx("suggestions.yangi_taklif", undefined, "+ Yangi taklif")}</span>
-                </button>
+                </Button>
               ) : undefined
             }
           />
@@ -276,22 +274,11 @@ export default function Suggestions() {
                         <div>
                           <button
                             type="button"
-                            className="btn-link"
+                            className="link-title"
                             aria-expanded={isOpen}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedId(isOpen ? null : item.id);
-                            }}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              padding: 0,
-                              font: "inherit",
-                              fontWeight: 650,
-                              fontSize: 13.5,
-                              color: "var(--text)",
-                              cursor: "pointer",
-                              textAlign: "left",
                             }}
                           >
                             {item.title}
@@ -323,47 +310,40 @@ export default function Suggestions() {
                       </td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-subtle"
-                            style={{ padding: "3px 8px", fontSize: 12 }}
+                          <Button
+                            variant="ghost" size="sm"
                             aria-label={tx("suggestions.qoshilaman")}
                             title={tx("suggestions.qoshilaman")}
                             onClick={() => void handleQuickVote(item, "FOR")}
                           >
                             👍 {item.for_count}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-subtle"
-                            style={{ padding: "3px 8px", fontSize: 12 }}
+                          </Button>
+                          <Button
+                            variant="ghost" size="sm"
                             aria-label={tx("suggestions.qoshilmayman")}
                             title={tx("suggestions.qoshilmayman")}
                             onClick={() => void handleQuickVote(item, "AGAINST")}
                           >
                             👎 {item.against_count}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-subtle"
-                            style={{ padding: "3px 8px", fontSize: 12 }}
+                          </Button>
+                          <Button
+                            variant="ghost" size="sm"
                             aria-label={tx("suggestions.betarafman")}
                             title={tx("suggestions.betarafman")}
                             onClick={() => void handleQuickVote(item, "NEUTRAL")}
                           >
                             😐 {item.neutral_count}
-                          </button>
+                          </Button>
                         </div>
                       </td>
                       <td>{renderStatusBadge(item.status)}</td>
                       <td style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-ghost"
+                        <Button
+                          variant="ghost" size="sm"
                           onClick={() => setSelectedId(isOpen ? null : item.id)}
                         >
                           {tx("common.korish", undefined, "Ko'rish")}
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   );

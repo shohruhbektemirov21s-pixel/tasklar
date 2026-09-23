@@ -7,6 +7,7 @@ import { Avatar, Card, Empty, Priority, Stat, StatusBadge, fmtDate, fmtDateTime,
 
 import { toDeveloper, toProject, toTask } from "@/nav";
 import { tx } from "@/i18n";
+import { AnchorButton, LinkButton } from "@/components/Button";
 
 // `onChange` propi ataylab OLINMAYDI: bu ko'rinish faqat o'qiydi.
 // Turi qoldirildi - ota komponent uni baribir uzatadi.
@@ -78,8 +79,8 @@ export default function Overview({ project }: { project: Project; onChange: () =
           <Card title={tx("common.loyiha_haqida")}>
             <p className="pre-wrap">{project.description}</p>
             <div className="row wrap" style={{ gap: 8 }}>
-              {project.repo_url && <a className="btn btn-sm" href={project.repo_url} target="_blank" rel="noreferrer">{tx("project_overview.repozitoriy")}</a>}
-              {project.docs_url && <a className="btn btn-sm" href={project.docs_url} target="_blank" rel="noreferrer">{tx("common.hujjatlar")}</a>}
+              {project.repo_url && <AnchorButton size="sm" href={project.repo_url} target="_blank" rel="noreferrer">{tx("project_overview.repozitoriy")}</AnchorButton>}
+              {project.docs_url && <AnchorButton size="sm" href={project.docs_url} target="_blank" rel="noreferrer">{tx("common.hujjatlar")}</AnchorButton>}
             </div>
 
           </Card>
@@ -106,9 +107,9 @@ export default function Overview({ project }: { project: Project; onChange: () =
             title={tx("projects.bogliq_buyurtmalar", undefined, "Bog'liq buyurtmalar")}
             padded={false}
             action={
-              <Link className="btn btn-sm btn-ghost" to="/buyurtmalar">
+              <LinkButton variant="ghost" size="sm" to="/buyurtmalar">
                 {tx("common.barchasi", undefined, "Barchasi")}
-              </Link>
+              </LinkButton>
             }
           >
             <div className="table-wrap">
@@ -147,7 +148,7 @@ export default function Overview({ project }: { project: Project; onChange: () =
             ekrandan chiqarib yuborardi. Sanoq nishonda ko'rinadi. */}
         <Card title={tx("common.jamoa")} padded={false} collapsible defaultOpen={false}
               badge={<span className="badge">{(project.members || []).length}</span>}
-              action={<Link className="btn btn-sm" {...toProject(project.id, "jamoa")}>{tx("project_overview.boshqarish")}</Link>}>
+              action={<LinkButton size="sm" {...toProject(project.id, "jamoa")}>{tx("project_overview.boshqarish")}</LinkButton>}>
           <div className="card-list">
             {(project.members || []).map((m) => (
               <div className="card-body tight row" key={m.id}>

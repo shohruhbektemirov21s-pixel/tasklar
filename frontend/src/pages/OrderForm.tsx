@@ -8,6 +8,7 @@ import { PageHead } from "@/components/Layout";
 import { Card, ErrorMsg, Loading, fmtDateTime } from "@/components/ui";
 import { tx } from "@/i18n";
 import { toOrders, useEntityId, useGo, useIsPath } from "@/nav";
+import { Button } from "@/components/Button";
 
 const ORDER_DRAFT_KEY = "teamflow_draft_new_order";
 
@@ -502,9 +503,9 @@ export default function OrderForm() {
           <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
             {tx("orders.pm_yaratish_taqiq_desc")}
           </p>
-          <button className="btn btn-primary" onClick={() => go(toOrders())}>
+          <Button variant="primary" onClick={() => go(toOrders())}>
             {tx("orders.buyurtmalarga_qaytish")}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -535,9 +536,9 @@ export default function OrderForm() {
           <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
             «{existingItem?.system_name}» {tx("orders.locked_after_send_desc")}
           </p>
-          <button className="btn btn-primary" onClick={() => go(toOrders())}>
+          <Button variant="primary" onClick={() => go(toOrders())}>
             {tx("orders.buyurtmalarga_qaytish")}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -563,12 +564,12 @@ export default function OrderForm() {
         }
         actions={
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button className="btn btn-primary" form={formId} disabled={busy}>
+            <Button variant="primary" form={formId} disabled={busy}>
               🚀 {busy ? tx("orders.submitting") : tx("orders.send_order")}
-            </button>
-            <button type="button" className="btn" disabled={busy} onClick={() => void handleCancelOrExit()}>
+            </Button>
+            <Button  disabled={busy} onClick={() => void handleCancelOrExit()}>
               {tx("common.bekor_qilish")}
-            </button>
+            </Button>
           </div>
         }
       />
@@ -795,10 +796,8 @@ export default function OrderForm() {
                               : `${(file.size / (1024 * 1024)).toFixed(1)} MB`})
                           </span>
                         </span>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          style={{ padding: "2px 6px", minHeight: "auto", fontSize: 12 }}
+                        <Button iconOnly aria-label={tx("common.ochirish")}
+                          variant="ghost" size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             setFiles((prev) => prev.filter((_, i) => i !== idx));
@@ -806,7 +805,7 @@ export default function OrderForm() {
                           title={tx("common.ochirish")}
                         >
                           ✕
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -849,10 +848,8 @@ export default function OrderForm() {
                             </span>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          style={{ padding: "2px 6px", minHeight: "auto", fontSize: 12, color: "var(--danger, #dc2626)" }}
+                        <Button iconOnly aria-label={tx("orders.faylni_ochirish")}
+                          variant="danger" size="sm"
                           onClick={async (e) => {
                             e.stopPropagation();
                             if (!id) return;
@@ -868,7 +865,7 @@ export default function OrderForm() {
                           title={tx("orders.faylni_ochirish")}
                         >
                           ✕
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>

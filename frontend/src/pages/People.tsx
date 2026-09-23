@@ -12,6 +12,7 @@ const TaskDetailModal = lazy(() => import("@/pages/TaskDetail"));
 import { tx } from "@/i18n";
 import { IconClose } from "@/components/icons";
 import FilePicker, { uploadFiles } from "@/components/FilePicker";
+import { Button } from "@/components/Button";
 
 /** Bir sahifada nechta odam. */
 const PER_PAGE = 30;
@@ -464,10 +465,8 @@ export default function People() {
                       <span>{tx("people.tanlangan_xodimlar", undefined, "ta xodim tanlandi")}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-primary"
-                        style={{ fontSize: 12 }}
+                      <Button
+                        variant="primary" size="sm"
                         onClick={() => {
                           const pool = allUsers.length ? allUsers : (users || []);
                           const picked = pool.filter((u) => selectedUserIds.includes(u.id) && !isNonAssignable(u));
@@ -477,15 +476,13 @@ export default function People() {
                         }}
                       >
                         + {tx("people.vazifa_berish", undefined, "Vazifa berish")}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline"
-                        style={{ fontSize: 12 }}
+                      </Button>
+                      <Button
+                        size="sm"
                         onClick={() => setSelectedUserIds([])}
                       >
                         {tx("people.tanlovni_tozalash", undefined, "Tanlovni tozalash")}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -628,10 +625,9 @@ export default function People() {
                         </td>
                         <td className="right" style={{ whiteSpace: "nowrap" }} onClick={(e) => e.stopPropagation()}>
                           {canManageTasks && !isNonAssignable(u) && (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-primary"
-                              style={{ marginRight: 6, fontSize: 12, padding: "3px 9px", fontWeight: 500 }}
+                            <Button
+                              variant="primary" size="sm"
+                              style={{ marginRight: 6 }}
                               onClick={() => {
                                 setAssignTargets([u]);
                                 setAssignFiles([]);
@@ -640,24 +636,23 @@ export default function People() {
                               title={tx("people.vazifa_berish", undefined, "Vazifa berish")}
                             >
                               + {tx("people.vazifa_berish", undefined, "Vazifa berish")}
-                            </button>
+                            </Button>
                           )}
                           {canManageTasks && hasOpenTasks && (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline"
-                              style={{ marginRight: 6, fontSize: 12, padding: "3px 8px" }}
+                            <Button
+                              size="sm"
+                              style={{ marginRight: 6 }}
                               onClick={() => setReassignTarget(u)}
                               title={tx("people.vazifalarni_otkazish", undefined, "Vazifalarni o'tkazish")}
                             >
                               ⇄ {tx("people.vazifani_otkazish", undefined, "Boshqaga o'tkazish")}
-                            </button>
+                            </Button>
                           )}
                           {isAdmin && u.id !== user?.id && (
-                            <button className={`btn btn-sm ${u.is_active ? "btn-danger" : ""}`}
+                            <Button variant={u.is_active ? "danger" : "secondary"} size="sm"
                                     onClick={() => void change(u, { is_active: !u.is_active })}>
                               {u.is_active ? tx("people.bloklash") : tx("people.faollashtirish")}
-                            </button>
+                            </Button>
                           )}
                         </td>
                       </tr>
@@ -688,15 +683,13 @@ export default function People() {
               }
               action={
                 activeUser ? (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-subtle"
+                  <Button
+                    variant="ghost" size="sm"
                     onClick={() => setActiveUser(null)}
                     title={tx("common.yopish", undefined, "Yopish")}
-                    style={{ padding: "2px 6px", lineHeight: 1 }}
                   >
                     <IconClose size={14} />
-                  </button>
+                  </Button>
                 ) : undefined
               }
             >
@@ -731,10 +724,8 @@ export default function People() {
                       </div>
                     </div>
                     {canManageTasks && !isNonAssignable(activeUser) && (
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-primary"
-                        style={{ fontSize: 12, padding: "4px 8px", whiteSpace: "nowrap" }}
+                      <Button
+                        variant="primary" size="sm"
                         onClick={() => {
                           setAssignTargets([activeUser]);
                           setAssignFiles([]);
@@ -742,7 +733,7 @@ export default function People() {
                         }}
                       >
                         + {tx("people.vazifa_berish", undefined, "Vazifa berish")}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -755,9 +746,8 @@ export default function People() {
                     <div style={{ padding: "20px 12px", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
                       <p style={{ marginBottom: 10 }}>{tx("people.xodimda_vazifalar_yoq", undefined, "Ushbu xodimda hozircha vazifalar yo'q.")}</p>
                       {canManageTasks && !isNonAssignable(activeUser) && (
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-primary"
+                        <Button
+                          variant="primary" size="sm"
                           onClick={() => {
                             setAssignTargets([activeUser]);
                             setAssignFiles([]);
@@ -765,7 +755,7 @@ export default function People() {
                           }}
                         >
                           + {tx("people.yangi_vazifa_yuklash", undefined, "Yangi vazifa berish")}
-                        </button>
+                        </Button>
                       )}
                     </div>
                   ) : (
@@ -838,10 +828,8 @@ export default function People() {
 
                       {canManageTasks && !isNonAssignable(activeUser) && (
                         <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px dashed var(--border)" }}>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline"
-                            style={{ width: "100%", justifyContent: "center" }}
+                          <Button block
+                            size="sm"
                             onClick={() => {
                               setAssignTargets([activeUser]);
                               setAssignFiles([]);
@@ -849,7 +837,7 @@ export default function People() {
                             }}
                           >
                             + {tx("people.yangi_vazifa_yuklash", undefined, "Yangi vazifa berish")}
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -973,18 +961,10 @@ export default function People() {
                       {assignTargets.length > 1 && (
                         <button
                           type="button"
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            cursor: "pointer",
-                            padding: 0,
-                            marginLeft: 2,
-                            lineHeight: 1,
-                            color: "var(--text-muted)",
-                            fontSize: 13,
-                          }}
+                          className="chip-x"
                           onClick={() => setAssignTargets(assignTargets.filter((x) => x.id !== u.id))}
                           title={tx("common.ochirish", undefined, "O'chirish")}
+                          aria-label={tx("common.ochirish", undefined, "O'chirish")}
                         >
                           ✕
                         </button>
@@ -1132,21 +1112,20 @@ export default function People() {
               </div>
 
               <div className="row right" style={{ gap: 8 }}>
-                <button
-                  type="button"
-                  className="btn btn-outline"
+                <Button
+                  
                   onClick={() => !assignLoading && setAssignTargets([])}
                   disabled={assignLoading}
                 >
                   {tx("common.bekor_qilish", undefined, "Bekor qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-primary"
+                  variant="primary"
                   disabled={assignLoading || !assignTitle.trim() || !assignProject || assignTargets.length === 0}
                 >
                   {assignLoading ? tx("common.yuklanmoqda", undefined, "Yuklanmoqda...") : tx("people.vazifa_berish", undefined, "Vazifa berish")}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -1250,10 +1229,8 @@ export default function People() {
                             )}
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          className={`btn btn-sm ${isCurrent ? "btn-primary" : "btn-outline"}`}
-                          style={{ fontSize: 12 }}
+                        <Button
+                          variant={isCurrent ? "primary" : "secondary"} size="sm"
                           onClick={() => {
                             if (isCurrent) {
                               setActiveTaskToReassign(null);
@@ -1266,7 +1243,7 @@ export default function People() {
                           }}
                         >
                           {isCurrent ? tx("common.bekor_qilish", undefined, "Bekor qilish") : tx("people.vazifani_otkazish", undefined, "Boshqaga o'tkazish")}
-                        </button>
+                        </Button>
                       </div>
 
                       {isCurrent && (
@@ -1304,22 +1281,20 @@ export default function People() {
                             />
                           </div>
                           <div className="row right" style={{ gap: 8 }}>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline"
+                            <Button
+                              size="sm"
                               onClick={() => setActiveTaskToReassign(null)}
                               disabled={reassignLoading}
                             >
                               {tx("common.bekor_qilish", undefined, "Bekor qilish")}
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-primary"
+                            </Button>
+                            <Button
+                              variant="primary" size="sm"
                               disabled={reassignLoading || !newAssigneeId}
                               onClick={() => handleReassignTask(t.id)}
                             >
                               {reassignLoading ? tx("common.yuklanmoqda", undefined, "O'tkazilmoqda...") : tx("people.vazifani_otkazish", undefined, "O'tkazishni tasdiqlash")}
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       )}

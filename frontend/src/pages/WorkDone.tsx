@@ -6,6 +6,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { PageHead } from "@/components/Layout";
 import { Avatar, Empty, ErrorMsg, Loading, Pager, fmtDateTime, timeAgo } from "@/components/ui";
 import {
+  IconAlertTriangle,
   IconCheck,
   IconClock,
   IconChat,
@@ -15,6 +16,7 @@ import {
 } from "@/components/icons";
 import { useNavParams } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, ButtonGroup } from "@/components/Button";
 
 const TaskDetailModal = lazy(() => import("@/pages/TaskDetail"));
 
@@ -251,297 +253,37 @@ export default function WorkDone() {
                 {totalCount} {tx("common.ta", undefined, "ta")} {tx("work_done.yozuv", undefined, "yozuv")}
               </span>
             )}
-            <button
-              type="button"
-              className={`btn btn-sm ${isRefreshing ? "loading" : ""}`}
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              title={tx("common.yangilash", undefined, "Yangilash")}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-            >
-              <span style={{ display: "inline-block", transform: isRefreshing ? "rotate(180deg)" : "none", transition: "transform 0.4s ease" }}>
-                🔄
-              </span>
-              <span>{tx("common.yangilash", undefined, "Yangilash")}</span>
-            </button>
+            <Button size="sm" loading={isRefreshing} onClick={handleRefresh}
+                    title={tx("common.yangilash", undefined, "Yangilash")}>
+              {tx("common.yangilash", undefined, "Yangilash")}
+            </Button>
           </div>
         }
       />
 
-      {/* 1. Toifalar paneli (Segmented tab bar) */}
-      <div
-        className="card"
-        style={{
-          padding: "8px",
-          borderRadius: 12,
-          marginBottom: 16,
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            overflowX: "auto",
-            WebkitOverflowScrolling: "touch",
-            paddingBottom: 2,
-          }}
-        >
-          {/* Tab: Hammasi */}
-          <button
-            type="button"
-            className="btn btn-sm"
-            onClick={() => updateParam("tab", undefined)}
-            style={{
-              borderRadius: 8,
-              padding: "7px 14px",
-              fontSize: 13,
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              background: activeTab === "all" || !activeTab ? "var(--accent)" : "transparent",
-              color: activeTab === "all" || !activeTab ? "#fff" : "var(--text)",
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
+      {/* 1. Toifalar paneli */}
+      <ButtonGroup className="btn-group-scroll mb" aria-label={tx("work_done.sarlavha", undefined, "Qilingan ishlar")}>
+        {[
+          { key: "all", icon: <IconLayers size={14} />, label: tx("work_done.tab_hammasi", undefined, "Hammasi"), count: stats?.total, tone: "" },
+          { key: "done", icon: <IconCheck size={14} />, label: tx("work_done.tab_bajarilgan", undefined, "Bajarilganlar"), count: stats?.tasks_done, tone: "ok" },
+          { key: "todo", icon: <IconClock size={14} />, label: tx("work_done.tab_nazoratdagilar", undefined, "Nazoratdagilar"), count: stats?.tasks_todo, tone: "warn" },
+          { key: "overdue", icon: <IconAlertTriangle size={14} />, label: tx("work_done.tab_kechiktirilgan", undefined, "Kechiktirilgan"), count: stats?.tasks_overdue, tone: "bad" },
+          { key: "comments", icon: <IconChat size={14} />, label: tx("work_done.tab_izohlar", undefined, "Izohlar"), count: stats?.comments, tone: "" },
+          { key: "worklogs", icon: <IconClock size={14} />, label: tx("work_done.tab_ish_jurnali", undefined, "Ish jurnali"), count: stats?.worklogs, tone: "" },
+          { key: "status", icon: <IconTasks size={14} />, label: tx("work_done.tab_holatlar", undefined, "Holat o'zgarishlari"), count: undefined, tone: "" },
+        ].map((t) => (
+          <Button
+            key={t.key}
+            size="sm"
+            icon={t.icon}
+            active={t.key === "all" ? activeTab === "all" || !activeTab : activeTab === t.key}
+            onClick={() => updateParam("tab", t.key === "all" ? undefined : t.key)}
           >
-            <IconLayers size={14} />
-            <span>{tx("work_done.tab_hammasi", undefined, "Hammasi")}</span>
-            {typeof stats?.total === "number" && stats.total > 0 && (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "1px 6px",
-                  borderRadius: 10,
-                  background: activeTab === "all" || !activeTab ? "rgba(255,255,255,0.25)" : "var(--surface-2)",
-                  color: activeTab === "all" || !activeTab ? "#fff" : "var(--muted)",
-                }}
-              >
-                {stats.total}
-              </span>
-            )}
-          </button>
-
-          {/* Tab: Bajarilganlar */}
-          <button
-            type="button"
-            className="btn btn-sm"
-            onClick={() => updateParam("tab", "done")}
-            style={{
-              borderRadius: 8,
-              padding: "7px 14px",
-              fontSize: 13,
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              background: activeTab === "done" ? "var(--accent)" : "transparent",
-              color: activeTab === "done" ? "#fff" : "var(--text)",
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <IconCheck size={14} />
-            <span>{tx("work_done.tab_bajarilgan", undefined, "Bajarilganlar")}</span>
-            {typeof stats?.tasks_done === "number" && stats.tasks_done > 0 && (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "1px 6px",
-                  borderRadius: 10,
-                  background: activeTab === "done" ? "rgba(255,255,255,0.25)" : "var(--surface-2)",
-                  color: activeTab === "done" ? "#fff" : "#10b981",
-                }}
-              >
-                {stats.tasks_done}
-              </span>
-            )}
-          </button>
-
-          {/* Tab: Nazoratdagilar */}
-          <button
-            type="button"
-            className="btn btn-sm"
-            onClick={() => updateParam("tab", "todo")}
-            style={{
-              borderRadius: 8,
-              padding: "7px 14px",
-              fontSize: 13,
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              background: activeTab === "todo" ? "var(--accent)" : "transparent",
-              color: activeTab === "todo" ? "#fff" : "var(--text)",
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <IconClock size={14} />
-            <span>{tx("work_done.tab_nazoratdagilar", undefined, "Nazoratdagilar")}</span>
-            {typeof stats?.tasks_todo === "number" && stats.tasks_todo > 0 && (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "1px 6px",
-                  borderRadius: 10,
-                  background: activeTab === "todo" ? "rgba(255,255,255,0.25)" : "var(--surface-2)",
-                  color: activeTab === "todo" ? "#fff" : "#f59e0b",
-                }}
-              >
-                {stats.tasks_todo}
-              </span>
-            )}
-          </button>
-
-          {/* Tab: Kechiktirilgan */}
-          <button
-            type="button"
-            className="btn btn-sm"
-            onClick={() => updateParam("tab", "overdue")}
-            style={{
-              borderRadius: 8,
-              padding: "7px 14px",
-              fontSize: 13,
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              background: activeTab === "overdue" ? "var(--accent)" : "transparent",
-              color: activeTab === "overdue" ? "#fff" : "var(--text)",
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <span style={{ fontSize: 13 }}>⚠️</span>
-            <span>{tx("work_done.tab_kechiktirilgan", undefined, "Kechiktirilgan")}</span>
-            {typeof stats?.tasks_overdue === "number" && stats.tasks_overdue > 0 && (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "1px 6px",
-                  borderRadius: 10,
-                  background: activeTab === "overdue" ? "rgba(255,255,255,0.25)" : "rgba(239, 68, 68, 0.15)",
-                  color: activeTab === "overdue" ? "#fff" : "#ef4444",
-                }}
-              >
-                {stats.tasks_overdue}
-              </span>
-            )}
-          </button>
-
-          {/* Tab: Izohlar */}
-          <button
-            type="button"
-            className="btn btn-sm"
-            onClick={() => updateParam("tab", "comments")}
-            style={{
-              borderRadius: 8,
-              padding: "7px 14px",
-              fontSize: 13,
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              background: activeTab === "comments" ? "var(--accent)" : "transparent",
-              color: activeTab === "comments" ? "#fff" : "var(--text)",
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <IconChat size={14} />
-            <span>{tx("work_done.tab_izohlar", undefined, "Izohlar")}</span>
-            {typeof stats?.comments === "number" && stats.comments > 0 && (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "1px 6px",
-                  borderRadius: 10,
-                  background: activeTab === "comments" ? "rgba(255,255,255,0.25)" : "var(--surface-2)",
-                  color: activeTab === "comments" ? "#fff" : "var(--muted)",
-                }}
-              >
-                {stats.comments}
-              </span>
-            )}
-          </button>
-
-          {/* Tab: Ish jurnali */}
-          <button
-            type="button"
-            className="btn btn-sm"
-            onClick={() => updateParam("tab", "worklogs")}
-            style={{
-              borderRadius: 8,
-              padding: "7px 14px",
-              fontSize: 13,
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              background: activeTab === "worklogs" ? "var(--accent)" : "transparent",
-              color: activeTab === "worklogs" ? "#fff" : "var(--text)",
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <IconClock size={14} />
-            <span>{tx("work_done.tab_ish_jurnali", undefined, "Ish jurnali")}</span>
-            {typeof stats?.worklogs === "number" && stats.worklogs > 0 && (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "1px 6px",
-                  borderRadius: 10,
-                  background: activeTab === "worklogs" ? "rgba(255,255,255,0.25)" : "var(--surface-2)",
-                  color: activeTab === "worklogs" ? "#fff" : "var(--muted)",
-                }}
-              >
-                {stats.worklogs}
-              </span>
-            )}
-          </button>
-
-          {/* Tab: Holat o'zgarishlari */}
-          <button
-            type="button"
-            className="btn btn-sm"
-            onClick={() => updateParam("tab", "status")}
-            style={{
-              borderRadius: 8,
-              padding: "7px 14px",
-              fontSize: 13,
-              fontWeight: 600,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              background: activeTab === "status" ? "var(--accent)" : "transparent",
-              color: activeTab === "status" ? "#fff" : "var(--text)",
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <IconTasks size={14} />
-            <span>{tx("work_done.tab_holatlar", undefined, "Holat o'zgarishlari")}</span>
-          </button>
-        </div>
-      </div>
+            {t.label}
+            {!!t.count && <span className={`btn-count ${t.tone}`}>{t.count}</span>}
+          </Button>
+        ))}
+      </ButtonGroup>
 
       {/* 2. Qidiruv va Filtrlar qatori */}
       <div
@@ -599,20 +341,10 @@ export default function WorkDone() {
             {search && (
               <button
                 type="button"
+                className="input-clear"
                 onClick={() => setSearch("")}
-                style={{
-                  position: "absolute",
-                  right: 10,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "transparent",
-                  border: "none",
-                  color: "var(--muted)",
-                  cursor: "pointer",
-                  fontSize: 14,
-                  padding: 2,
-                }}
-                title="Tozalash"
+                title={tx("common.tozalash", undefined, "Tozalash")}
+                aria-label={tx("common.tozalash", undefined, "Tozalash")}
               >
                 ✕
               </button>
@@ -669,26 +401,13 @@ export default function WorkDone() {
 
           {/* Filtrlarni tozalash tugmasi */}
           {hasActiveFilters && (
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost"
+            <Button
+              variant="danger" size="sm"
               onClick={clearAllFilters}
-              style={{
-                borderRadius: 8,
-                height: 38,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                color: "var(--danger, #ef4444)",
-                fontWeight: 600,
-                fontSize: 13,
-                cursor: "pointer",
-              }}
               title={tx("work_done.tozalash", undefined, "Filtrlarni tozalash")}
             >
-              <span>✕</span>
-              <span>{tx("common.tozalash", undefined, "Tozalash")}</span>
-            </button>
+              ✕ {tx("common.tozalash", undefined, "Tozalash")}
+            </Button>
           )}
         </div>
 
@@ -710,78 +429,33 @@ export default function WorkDone() {
             </span>
 
             {search && (
-              <span
-                className="badge"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "3px 8px",
-                  fontSize: 12,
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--border)",
-                }}
-              >
+              <span className="chip">
                 <span>🔍 "{search}"</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSearch("")}
-                  style={{ cursor: "pointer", color: "var(--muted)", fontWeight: 700 }}
-                >
+                <button type="button" className="chip-x" onClick={() => setSearch("")}
+                        aria-label={tx("common.tozalash", undefined, "Tozalash")}>
                   ✕
-                </span>
+                </button>
               </span>
             )}
 
             {selectedProjectObj && (
-              <span
-                className="badge"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "3px 8px",
-                  fontSize: 12,
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--border)",
-                }}
-              >
+              <span className="chip">
                 <span>📁 {selectedProjectObj.name}</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => updateParam("project", undefined)}
-                  style={{ cursor: "pointer", color: "var(--muted)", fontWeight: 700 }}
-                >
+                <button type="button" className="chip-x" onClick={() => updateParam("project", undefined)}
+                        aria-label={tx("common.tozalash", undefined, "Tozalash")}>
                   ✕
-                </span>
+                </button>
               </span>
             )}
 
 
             {selectedDays && (
-              <span
-                className="badge"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "3px 8px",
-                  fontSize: 12,
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <span>📅 {selectedDays === "1" ? "Bugun" : `Oxirgi ${selectedDays} kun`}</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => updateParam("days", undefined)}
-                  style={{ cursor: "pointer", color: "var(--muted)", fontWeight: 700 }}
-                >
+              <span className="chip">
+                <span>📅 {selectedDays === "1" ? tx("work_done.davr_bugun", undefined, "Bugun") : tx("work_done.oxirgi_n_kun", { n: selectedDays })}</span>
+                <button type="button" className="chip-x" onClick={() => updateParam("days", undefined)}
+                        aria-label={tx("common.tozalash", undefined, "Tozalash")}>
                   ✕
-                </span>
+                </button>
               </span>
             )}
           </div>
@@ -803,14 +477,13 @@ export default function WorkDone() {
             text={tx("work_done.bosh_holat_matn", undefined, "Filtrlarni o'zgartiring yoki tozalab qaytadan ko'ring.")}
           >
             {hasActiveFilters && (
-              <button
-                type="button"
-                className="btn btn-primary"
+              <Button
+                variant="primary"
                 onClick={clearAllFilters}
                 style={{ marginTop: 12 }}
               >
                 {tx("work_done.barcha_filtrlarni_tozalash", undefined, "Barcha filtrlarni tozalash")}
-              </button>
+              </Button>
             )}
           </Empty>
         </div>
@@ -938,24 +611,16 @@ export default function WorkDone() {
                       {timeAgo(item.created_at)}
                     </span>
                     {item.task && (
-                      <button
-                        type="button"
+                      <Button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpenTask(item.task!, item.verb);
                         }}
-                        className="btn btn-ghost btn-sm"
-                        style={{
-                          padding: "3px 8px",
-                          fontSize: 12,
-                          color: "var(--accent)",
-                          cursor: "pointer",
-                          fontWeight: 600,
-                        }}
+                        variant="link" size="sm"
                         title={tx("work_done.vazifani_korish", undefined, "Vazifani ochish")}
                       >
                         {tx("work_done.korish", undefined, "Ko'rish")} →
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

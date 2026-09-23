@@ -21,6 +21,7 @@ import { IconCheck, IconClose, IconFile, IconPlus } from "./icons";
 import { Avatar, DateField, fromDateTimeInput, SpecialtyTag } from "./ui";
 import { useAuth } from "@/auth/AuthContext";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 /** Odamga atab yozilgan, hali yaratilmagan vazifa. */
 export interface PickTask {
@@ -279,10 +280,10 @@ export default function TeamPicker({
                   <small className="muted">{p.user.email}</small>
                 </div>
                 <span className="spacer" />
-                <button type="button" className="btn btn-sm" title={tx("team_picker.royxatdan_olib_tashlash")}
+                <Button size="sm" title={tx("team_picker.royxatdan_olib_tashlash")}
                         onClick={() => onChange(picks.filter((_, n) => n !== i))}>
                   <IconClose size={13} />
-                </button>
+                </Button>
               </div>
 
               <select value={p.role} onChange={(e) => patch(i, { role: e.target.value })}>
@@ -520,26 +521,26 @@ function TaskAdder({ priorities, value, onValue, onSubmit, onCancel, projectStar
             <option key={String(x.value)} value={String(x.value)}>{x.label}</option>
           ))}
         </select>
-        <button type="button" className="btn btn-sm" title={tx("team_picker.vazifaga_fayl_biriktirish")}
+        <Button size="sm" title={tx("team_picker.vazifaga_fayl_biriktirish")}
                 onClick={() => fileInput.current?.click()}>
           <IconFile size={13} /> {tx("team_picker.fayl")}
-        </button>
+        </Button>
         {/* Yashirin: tugma bosilganda dasturiy ravishda ochiladi. `name`
             bo'lmasa brauzer uni nomsiz maydon deb ogohlantiradi. */}
         <input ref={fileInput} type="file" name="fayllar" multiple
                tabIndex={-1} aria-hidden="true" style={{ display: "none" }}
                onChange={(e) => addFiles(e.target.files)} />
         {onCancel && (
-          <button type="button" className="btn btn-sm" onClick={onCancel}>
+          <Button size="sm" onClick={onCancel}>
             {tx("common.bekor_qilish")}
-          </button>
+          </Button>
         )}
-        <button type="button" className={`btn btn-sm${editing ? " btn-primary" : ""}`}
+        <Button variant={editing ? "primary" : "secondary"} size="sm"
                 disabled={!value.title.trim()} onClick={submit}>
           {editing
             ? <><IconCheck size={13} /> {tx("common.saqlash")}</>
             : <><IconPlus size={13} /> {tx("team_picker.qoshish")}</>}
-        </button>
+        </Button>
       </div>
 
       {!!value.files.length && (

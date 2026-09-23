@@ -79,6 +79,13 @@
   --danger: #e11d48;
   --danger-soft: #fff1f2;
 
+  /* Xira fondagi kartaning chegarasi: rang oilasi bir xil, ko'zga tegmaydi. */
+  --accent-border: #c7d2fe;
+  --success-border: #a7f3d0;
+  --attention-border: #fde68a;
+  --danger-border: #fecdd3;
+  --done-border: #ddd6fe;
+
   --green: #4f46e5;
   --green-hover: #4338ca;
   --btn: #ffffff;
@@ -163,6 +170,12 @@
   --attention-soft: rgba(245, 158, 11, .14);
   --danger: #f43f5e;
   --danger-soft: rgba(244, 63, 94, .14);
+
+  --accent-border: rgba(99, 102, 241, .35);
+  --success-border: rgba(16, 185, 129, .35);
+  --attention-border: rgba(245, 158, 11, .35);
+  --danger-border: rgba(244, 63, 94, .35);
+  --done-border: rgba(139, 92, 246, .35);
 
   --green: #6366f1;
   --green-hover: #818cf8;
@@ -741,44 +754,123 @@ html, body { transition: background-color .18s ease, color .18s ease; }
 .nowrap { white-space: nowrap; }
 .pre-wrap { white-space: pre-wrap; }
 
-/* ============ BUTTONS ============ */
+/* ============ BUTTONS ============
+   Yagona tugma tizimi - `components/Button.tsx` shu klasslarni beradi.
+   Variant: primary · secondary · ghost · danger · success · warning · link
+   O'lcham: xs · sm · (md) · lg      Qo'shimcha: block · icon · is-loading
+   Sahifa tugmaga `style` bilan rang/padding/radius BERMAYDI. */
 .btn {
-  display: inline-flex; align-items: center; gap: 7px; justify-content: center;
-  padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
-  background: var(--glass-fill-card); color: var(--text); font-size: 13px; font-weight: 600;
-  cursor: pointer; white-space: nowrap; line-height: 20px; min-height: 36px;
+  --btn-h: 36px; --btn-px: 14px; --btn-fs: 13px; --btn-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: var(--btn-h); padding: 0 var(--btn-px); border-radius: var(--btn-radius);
+  border: 1px solid var(--border); background: var(--glass-fill-card); color: var(--text);
+  font: inherit; font-size: var(--btn-fs); font-weight: 600; line-height: 1.2;
+  white-space: nowrap; text-decoration: none; cursor: pointer; user-select: none;
   box-shadow: var(--glass-specular), var(--shadow-xs);
-  -webkit-backdrop-filter: var(--glass-blur-card); backdrop-filter: var(--glass-blur-card);
-  transition: all .16s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease,
+              box-shadow .16s ease, transform .16s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.btn:hover {
-  background: var(--glass-hover-fill); border-color: var(--border-strong);
-  text-decoration: none; box-shadow: var(--glass-specular), var(--shadow-sm);
-  transform: translateY(-1px);
+.btn > svg { flex-shrink: 0; }
+.btn:hover { text-decoration: none; transform: translateY(-1px); }
+.btn:active { transform: translateY(0) scale(.975); }
+.btn:focus-visible { outline: none; box-shadow: var(--ring); }
+.btn:disabled {
+  opacity: .45; cursor: not-allowed; transform: none; box-shadow: none;
 }
-.btn:active { transform: scale(.975); }
-.btn-primary {
-  background: var(--accent); border-color: var(--accent); color: #fff;
-  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.3), 0 2px 8px rgba(79, 70, 229, 0.35);
-  backdrop-filter: none;
-}
-.btn-primary:hover {
-  background: var(--accent-hover); border-color: var(--accent-hover);
-  color: #fff; box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.4), var(--accent-glow);
-  transform: translateY(-1px);
-}
-.btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn-accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: var(--accent-glow); }
-.btn-ok { background: var(--success); border-color: var(--success); color: #fff; }
-.btn-ok:hover { background: #059669; border-color: #059669; color: #fff; box-shadow: 0 0 12px rgba(16, 185, 129, .4); }
-.btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
-.btn-danger:hover { background: var(--danger); border-color: var(--danger); color: #fff; box-shadow: 0 0 12px rgba(244, 63, 94, .4); }
+
+/* --- variantlar --- */
+.btn-secondary:hover { background: var(--glass-hover-fill); border-color: var(--border-strong);
+  box-shadow: var(--glass-specular), var(--shadow-sm); }
+
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff;
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, .3), 0 2px 8px rgba(79, 70, 229, .3); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff;
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, .4), var(--accent-glow); }
+
 .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); box-shadow: none; }
-.btn-ghost:hover { background: var(--surface-2); color: var(--text); border-color: transparent; }
-.btn-sm { padding: 3px 10px; font-size: 12px; line-height: 18px; min-height: 28px; border-radius: 6px; }
-.btn-lg { padding: 10px 22px; font-size: 14px; min-height: 42px; border-radius: 10px; }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+
+.btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); box-shadow: none; }
+.btn-danger:hover { background: var(--danger); border-color: var(--danger); color: #fff;
+  box-shadow: 0 0 12px rgba(244, 63, 94, .35); }
+
+.btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+.btn-success:hover { background: #047857; border-color: #047857; color: #fff;
+  box-shadow: 0 0 12px rgba(16, 185, 129, .35); }
+
+.btn-warning { background: transparent; border-color: var(--attention); color: var(--attention); box-shadow: none; }
+.btn-warning:hover { background: var(--attention); border-color: var(--attention); color: #fff;
+  box-shadow: 0 0 12px rgba(217, 119, 6, .35); }
+
+.btn-link { --btn-h: auto; --btn-px: 0; background: none; border: 0; border-radius: 0;
+  color: var(--accent); box-shadow: none; font-weight: 600;
+  white-space: normal; text-align: left; justify-content: flex-start; overflow-wrap: anywhere; }
+.btn-link:hover { color: var(--accent-hover); text-decoration: underline; transform: none; }
+
+/* --- o'lchamlar --- */
+.btn-xs { --btn-h: 26px; --btn-px: 8px;  --btn-fs: 11.5px; --btn-radius: 6px; gap: 5px; }
+.btn-sm { --btn-h: 30px; --btn-px: 11px; --btn-fs: 12.5px; --btn-radius: 7px; gap: 6px; }
+.btn-lg { --btn-h: 44px; --btn-px: 22px; --btn-fs: 14px;   --btn-radius: 10px; }
+.btn-link.btn-xs, .btn-link.btn-sm, .btn-link.btn-lg { --btn-h: auto; --btn-px: 0; }
+
 .btn-block { width: 100%; }
-.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-icon { padding: 0; width: var(--btn-h); min-width: var(--btn-h); }
+/* Ro'yxat qatori ko'rinishidagi tugma (fayl, element): matn chapda va o'raladi. */
+.btn-start { justify-content: flex-start; text-align: left; white-space: normal; padding-block: 8px; }
+.btn-grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+/* Ro'yxatdagi bosiladigan sarlavha: matn rangida, ustiga kelganda urg'u rangida. */
+.link-title {
+  padding: 0; border: 0; background: none; font: inherit; font-size: 13.5px; font-weight: 650;
+  color: var(--text); text-align: left; cursor: pointer;
+}
+.link-title:hover { color: var(--accent); }
+.link-title:focus-visible { outline: none; box-shadow: var(--ring); border-radius: 4px; }
+
+/* Qidiruv maydoni ichidagi «✕» (ota element `position: relative`). */
+.input-clear {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  display: grid; place-items: center; width: 24px; height: 24px; padding: 0;
+  border: 0; border-radius: 50%; background: transparent; color: var(--muted);
+  font-size: 13px; cursor: pointer;
+}
+.input-clear:hover { background: var(--surface-2); color: var(--text); }
+.input-clear:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* --- yuklanish --- */
+.btn.is-loading { cursor: progress; }
+.btn-spinner {
+  width: 1em; height: 1em; flex-shrink: 0; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+  animation: spin .7s linear infinite;
+}
+
+/* --- guruh: filtr, ko'rinish tanlash, tab --- */
+.btn-group {
+  display: inline-flex; align-items: center; flex-wrap: wrap; gap: 2px; padding: 3px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2);
+}
+.btn-group > .btn {
+  background: transparent; border-color: transparent; color: var(--muted); box-shadow: none;
+}
+.btn-group > .btn:hover { color: var(--text); transform: none; }
+.btn-group > .btn.is-active {
+  background: var(--surface); border-color: var(--border); color: var(--text);
+  box-shadow: var(--shadow-xs);
+}
+/* Tablar ko'p bo'lsa - bir qatorda, barmoq bilan suriladi. */
+.btn-group-scroll { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.btn-group-scroll::-webkit-scrollbar { display: none; }
+
+/* Tugma ichidagi son (tab yonidagi sanoq). */
+.btn-count {
+  padding: 1px 6px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700;
+  background: var(--surface-2); color: var(--muted); line-height: 16px;
+}
+.btn-count.ok { color: var(--success); background: var(--success-soft); }
+.btn-count.warn { color: var(--attention); background: var(--attention-soft); }
+.btn-count.bad { color: var(--danger); background: var(--danger-soft); }
+.btn-primary .btn-count { background: rgba(255, 255, 255, .22); color: #fff; }
 
 /* ============ BADGES ============
    Neo Developer Status Badges with Glowing Indicators */
@@ -2573,7 +2665,6 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
   .sec-head h2 { font-size: 28px; }
   .lp-nav { display: none; }
   .flow .step { border-right: none; border-bottom: 1px solid var(--border-muted); }
-  .btn { min-height: 42px; }        /* barmoq bilan bosish qulay boʻlsin */
 
   /* Doska: ustunlar barmoq bilan surilib, bittalab to'xtaydi */
   .board { scroll-snap-type: x mandatory; gap: 12px; }
@@ -2793,7 +2884,7 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
 .sg .repo-item:has(.row-menu-list) { z-index: 20; }
 /* Qatorda `position` yo'q edi - `z-index` ishlashi uchun kerak. */
 .sg .repo-item:has(.row-menu-list) { position: relative; }
-.row-menu > .btn { padding: 4px 10px; font-size: 16px; line-height: 1; }
+.row-menu > .btn { font-size: 16px; line-height: 1; }
 .row-menu-list {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 70;
   min-width: 172px; padding: 5px; border-radius: 12px;
@@ -4904,15 +4995,12 @@ textarea { resize: vertical; min-height: 92px; padding: 11px 14px; }
     border-top: 1px dashed var(--border-muted);
   }
 
-  /* Karta va tugmalar telefonda qulay teginish (touch target) */
-  .btn-sm {
-    min-height: 38px;
-    padding: 6px 12px;
-  }
-
-  .btn {
-    min-height: 44px;
-  }
+  /* Tugmalar telefonda barmoq bilan bosishga qulay bo'lsin (touch target) */
+  .btn    { --btn-h: 42px; }
+  .btn-sm { --btn-h: 36px; --btn-px: 12px; }
+  .btn-xs { --btn-h: 30px; }
+  .btn-lg { --btn-h: 46px; }
+  .btn-link { --btn-h: auto; }
 
   /* Sahifa bosh qismi telefonda */
   .top-title {

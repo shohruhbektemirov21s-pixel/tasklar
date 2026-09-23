@@ -37,6 +37,7 @@ import {
 import { useProjectLive } from "@/realtime/RealtimeContext";
 import { tx } from "@/i18n";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
+import { Button } from "@/components/Button";
 
 export default function Files({ project }: { project: Project }) {
   const fid = useId();
@@ -245,24 +246,12 @@ export default function Files({ project }: { project: Project }) {
                     ? <img src={f.url} alt={f.original_name} className="file-thumb" />
                     : <span className="file-ico"><IconFile size={16} /></span>}
                   <div style={{ minWidth: 0 }}>
-                    <button
-                      type="button"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        font: "inherit",
-                        fontWeight: 600,
-                        color: "var(--brand, #2563eb)",
-                        cursor: "pointer",
-                        textAlign: "left",
-                        textDecoration: "underline",
-                      }}
+                    <Button variant="link"
                       onClick={() => f.url && setPreviewFile({ url: f.url, name: f.original_name, size: f.size_display })}
                       title="Veb-saytda ochish"
                     >
                       {f.original_name}
-                    </button>
+                    </Button>
                     {f.version > 1 && (
                       <>
                         {" "}
@@ -285,17 +274,17 @@ export default function Files({ project }: { project: Project }) {
                       loyiha admini va tizim admini (serverda ham shunday). */}
                   {(acc.can_manage || f.uploaded_by?.id === user?.id) && (
                     <>
-                      <button className="btn btn-sm"
+                      <Button size="sm"
                               onClick={() => setEdit({
                                 id: f.id,
                                 name: f.description,
                                 date: toDateTimeInput(f.doc_date),
                               })}>
                         {tx("common.tahrirlash")}
-                      </button>
-                      <button className="btn btn-sm btn-danger" onClick={() => void remove(f)}>
+                      </Button>
+                      <Button variant="danger" size="sm" onClick={() => void remove(f)}>
                         {tx("common.ochirish")}
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -317,9 +306,9 @@ export default function Files({ project }: { project: Project }) {
                         : rangeText && <div className="help">{rangeText}</div>}
                     </div>
                     <div className="row" style={{ gap: 8 }}>
-                      <button className="btn btn-sm btn-primary" disabled={busy}
-                              onClick={() => void saveEdit()}>{tx("common.saqlash")}</button>
-                      <button className="btn btn-sm" onClick={() => setEdit(null)}>{tx("common.bekor_qilish")}</button>
+                      <Button variant="primary" size="sm" disabled={busy}
+                              onClick={() => void saveEdit()}>{tx("common.saqlash")}</Button>
+                      <Button size="sm" onClick={() => setEdit(null)}>{tx("common.bekor_qilish")}</Button>
                     </div>
                   </div>
                 )}
@@ -336,23 +325,12 @@ export default function Files({ project }: { project: Project }) {
                         <div key={v.id}>
                           <div className="row wrap" style={{ gap: 8 }}>
                             <span className="badge mono">{tx("project_files.v")}{v.version}</span>
-                            <button
-                              type="button"
-                              style={{
-                                background: "none",
-                                border: "none",
-                                padding: 0,
-                                font: "inherit",
-                                color: "var(--brand, #2563eb)",
-                                cursor: "pointer",
-                                textAlign: "left",
-                                textDecoration: "underline",
-                              }}
+                            <Button variant="link"
                               onClick={() => v.url && setPreviewFile({ url: v.url, name: v.original_name, size: v.size_display })}
                               title="Veb-saytda ochish"
                             >
                               {v.original_name}
-                            </button>
+                            </Button>
                             <small className="muted">
                               {v.size_display} · {v.uploaded_by?.full_name || "—"} {tx("project_files.yuklagan")}
                               {v.doc_date && tx("project_files.hujjat_sanasi_qatori", { sana: fmtDateTime(v.doc_date) })}

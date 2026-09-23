@@ -16,6 +16,7 @@ import { createSubtask, getAvailableSubtasks, linkSubtask, unlinkSubtask } from 
 import { tx } from "@/i18n";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 import { lockScroll, unlockScroll } from "@/components/scrollLock";
+import { Button, ButtonGroup, LinkButton } from "@/components/Button";
 
 const FILE_ICON: Record<string, string> = {
   pdf: "PDF", doc: "DOC", docx: "DOC", xls: "XLS", xlsx: "XLS",
@@ -458,7 +459,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
           <div className="modal-window card" style={{ padding: 24, maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
             {errorBody}
             <div style={{ textAlign: "right", marginTop: 12 }}>
-              <button type="button" className="btn" onClick={onClose}>{tx("common.yopish")}</button>
+              <Button  onClick={onClose}>{tx("common.yopish")}</Button>
             </div>
           </div>
         </div>,
@@ -554,21 +555,21 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
     <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
       {isDeleted ? (
         acc.can_manage && (
-          <button className="btn btn-sm btn-primary" onClick={() => void handleRestore()}>
+          <Button variant="primary" size="sm" onClick={() => void handleRestore()}>
             🔄 {tx("common.tiklash", undefined, "Tiklash")}
-          </button>
+          </Button>
         )
       ) : (
         <>
           {canEdit && (
-            <Link className="btn btn-sm btn-primary" {...toTaskEdit(task.id)} onClick={isModal ? onClose : undefined}>
+            <LinkButton variant="primary" size="sm" {...toTaskEdit(task.id)} onClick={isModal ? onClose : undefined}>
               ✏️ {tx("common.tahrirlash", undefined, "Tahrirlash")}
-            </Link>
+            </LinkButton>
           )}
           {acc.can_manage && (
-            <button className="btn btn-sm btn-danger" onClick={() => void handleDelete()}>
+            <Button variant="danger" size="sm" onClick={() => void handleDelete()}>
               {tx("common.ochirish_2", undefined, "O'chirish")}
-            </button>
+            </Button>
           )}
         </>
       )}
@@ -636,7 +637,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                     : (new Date().toISOString().split("T")[0] + "T00:00")}
                   onChange={setDue}
                 />
-                <button className="btn btn-sm btn-primary" onClick={() => void run(async () => {
+                <Button variant="primary" size="sm" onClick={() => void run(async () => {
                   if (due) {
                     const today = new Date().toISOString().split("T")[0];
                     if (due.split("T")[0] < today) {
@@ -653,16 +654,16 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                   }
                   await api.patch(`/tasks/${task.id}/`, { due_date: fromDateTimeInput(due) });
                   setEditDue(false);
-                })}>{tx("common.saqlash")}</button>
-                <button className="btn btn-sm" onClick={() => setEditDue(false)}>{tx("task_detail.bekor")}</button>
+                })}>{tx("common.saqlash")}</Button>
+                <Button size="sm" onClick={() => setEditDue(false)}>{tx("task_detail.bekor")}</Button>
               </span>
             ) : (
-              <button className="btn btn-sm" onClick={() => {
+              <Button size="sm" onClick={() => {
                 setDue(toDateTimeInput(task.due_date));
                 setEditDue(true);
               }}>
                 {task.due_date ? tx("task_detail.muddatni_ozgartirish") : tx("task_detail.muddat_qoyish")}
-              </button>
+              </Button>
             ))}
             {task.review_round > 0 && (
               <span className="badge badge-info">{task.review_round}{tx("task_detail.tekshiruv_aylanasi")}</span>
@@ -717,14 +718,13 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                   : tx("task_detail.jamoa_bosh", undefined, "Jamoa biriktirilmagan")
               }
               action={canEdit && task.status !== "DONE" && task.status !== "CANCELLED" && (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-primary"
+                <Button
+                  variant="primary" size="sm"
                   onClick={() => handleOpenTeamModal()}
                   disabled={busy}
                 >
                   + {tx("task_detail.jamoa_azosi_qoshish", undefined, "Jamoa a'zosi qo'shish")}
-                </button>
+                </Button>
               )}
               isOpen={openLeft === "team"}
               onToggle={() => toggleLeft("team")}
@@ -770,24 +770,20 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                           )}
                           {canEdit && task.status !== "DONE" && task.status !== "CANCELLED" && (
                             <div className="row middle" style={{ gap: 4 }}>
-                              <button
-                                type="button"
-                                className="btn btn-sm"
-                                style={{ padding: "3px 8px", fontSize: 12 }}
+                              <Button
+                                size="sm"
                                 onClick={() => handleOpenTeamModal(a)}
                                 title={tx("task_detail.jamoa_azosi_tahrirlash", undefined, "Tahrirlash")}
                               >
                                 ✏️
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-danger"
-                                style={{ padding: "3px 8px", fontSize: 12 }}
+                              </Button>
+                              <Button iconOnly aria-label={tx("task_detail.jamoa_chiqarish", undefined, "Chiqarish")}
+                                variant="danger" size="sm"
                                 onClick={() => handleRemoveTeamMember(a.user.id, a.user.full_name)}
                                 title={tx("task_detail.jamoa_chiqarish", undefined, "Chiqarish")}
                               >
                                 ✕
-                              </button>
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -844,14 +840,12 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                         </div>
                       </div>
                       {canEdit && task.status !== "DONE" && task.status !== "CANCELLED" && (
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-danger"
-                          style={{ padding: "2px 6px", fontSize: 11 }}
+                        <Button iconOnly aria-label={tx("common.yopish")}
+                          variant="danger" size="sm"
                           onClick={() => handleRemoveTeamMember(u.id, u.full_name)}
                         >
                           ✕
-                        </button>
+                        </Button>
                       )}
                     </div>
                   ))}
@@ -862,14 +856,13 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                     {tx("task_detail.jamoa_bosh", undefined, "Ushbu vazifada hali jamoa a'zolari biriktirilmagan. 3 kishi yoki bir nechta dasturchini birlashtirib ishlashingiz mumkin.")}
                   </p>
                   {canEdit && task.status !== "DONE" && task.status !== "CANCELLED" && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
+                    <Button
+                      variant="primary" size="sm"
                       onClick={() => handleOpenTeamModal()}
                       disabled={busy}
                     >
                       + {tx("task_detail.jamoa_azosi_qoshish", undefined, "Jamoa a'zosi qo'shish")}
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -892,14 +885,13 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                   : tx("task_detail.ostki_vazifalar_yoq")
               }
               action={canManageSubtasks && (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-primary"
+                <Button
+                  variant="primary" size="sm"
                   onClick={() => setSubtaskModalOpen(true)}
                   disabled={busy}
                 >
                   + {tx("task_detail.ostki_vazifa_qoshish")}
-                </button>
+                </Button>
               )}
               isOpen={openLeft === "subtasks"}
               onToggle={() => toggleLeft("subtasks")}
@@ -943,15 +935,13 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                           </span>
                         )}
                         {canManageSubtasks && (
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-ghost"
+                          <Button
+                            variant="ghost" size="sm"
                             title={tx("task_detail.ajratish")}
                             onClick={() => void handleUnlinkSubtask(s.id, s.title)}
-                            style={{ padding: "2px 8px", color: "var(--muted)", fontSize: 12 }}
                           >
                             ✕ {tx("task_detail.ajratish")}
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </li>
@@ -972,9 +962,9 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
               badge={<span className="badge">{attachments.length}</span>}
               statusText={`${attachments.length} ta fayl`}
               action={acc.can_work && (
-                <button className="btn btn-sm btn-primary" onClick={() => fileInput.current?.click()} disabled={busy}>
+                <Button variant="primary" size="sm" onClick={() => fileInput.current?.click()} disabled={busy}>
                   + {tx("task_detail.fayl_qoshish")}
-                </button>
+                </Button>
               )}
               isOpen={openLeft === "files"}
               onToggle={() => toggleLeft("files")}
@@ -1017,7 +1007,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                           type="button"
                           onClick={() => setPreviewFile({ url: a.url, name: a.original_name, size: a.size_display })}
                           style={{ padding: 0, border: "none", background: "none", cursor: "pointer", width: "100%", display: "block" }}
-                          title="Veb-saytda ochish"
+                          title={tx("orders.veb_saytda_ochish")}
                         >
                           <img src={a.url} alt={a.original_name}
                                style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
@@ -1028,7 +1018,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                           onClick={() => setPreviewFile({ url: a.url, name: a.original_name, size: a.size_display })}
                           style={{ width: "100%", height: 120, display: "grid", placeItems: "center",
                                    background: "var(--surface)", color: "var(--muted)", border: "none", cursor: "pointer" }}
-                          title="Veb-saytda ochish"
+                          title={tx("orders.veb_saytda_ochish")}
                         >
                           <span className="mono" style={{ fontSize: 20, fontWeight: 700 }}>
                             {FILE_ICON[a.extension] || a.extension.toUpperCase() || "FILE"}
@@ -1036,30 +1026,17 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                         </button>
                       )}
                       <div className="card-body tight">
-                        <button
-                          type="button"
-                          onClick={() => setPreviewFile({ url: a.url, name: a.original_name, size: a.size_display })}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            padding: 0,
-                            font: "inherit",
-                            fontSize: 13,
-                            color: "var(--brand, #2563eb)",
-                            cursor: "pointer",
-                            textAlign: "left",
-                            wordBreak: "break-all",
-                            textDecoration: "underline",
-                          }}
-                          title="Veb-saytda ochish"
+                        <Button variant="link"
+                          onClick={() => setPreviewFile({ url: a.url, name: a.original_name, size: a.size_display })} style={{ wordBreak: "break-all" }}
+                          title={tx("orders.veb_saytda_ochish")}
                         >
                           {a.original_name}
-                        </button>
+                        </Button>
                         <div className="row" style={{ marginTop: 6 }}>
                           <small className="muted">{a.size_display}</small>
                           <span className="spacer" />
                           {(acc.can_manage || a.uploaded_by?.id === user?.id) && (
-                            <button className="btn btn-sm btn-ghost" title={tx("common.ochirish_2")}
+                            <Button iconOnly aria-label={tx("common.ochirish_2")} variant="ghost" size="sm" title={tx("common.ochirish_2")}
                                     onClick={() => void (async () => {
                                       const ok = await confirmDialog({
                                         title: tx("task_detail.fayl_ochirilsinmi", { nom: a.original_name }),
@@ -1070,7 +1047,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                                       if (!ok) return;
                                       await run(() => api.delete(
                                         `/tasks/${task.id}/attachments/${a.id}/`));
-                                    })()}>×</button>
+                                    })()}>×</Button>
                           )}
                         </div>
                         <small className="muted">
@@ -1128,9 +1105,9 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                 <textarea rows={3} value={comment} placeholder={tx("task_detail.izoh_yozing")}
                           onChange={(e) => setComment(e.target.value)} />
                 <div className="form-actions">
-                  <button className="btn btn-primary btn-sm" disabled={busy || !comment.trim()}>
+                  <Button variant="primary" size="sm" type="submit" disabled={busy || !comment.trim()}>
                     {tx("task_detail.izoh_qoldirish")}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </AccordionSection>
@@ -1187,7 +1164,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                               placeholder={tx("task_detail.qaysi_yechim_tanlandi_va_nima")}
                               onChange={(e) => setLog({ ...log, note: e.target.value })} />
                   </div>
-                  <button className="btn btn-sm btn-primary" disabled={busy}>{tx("task_detail.jurnalga_yozish")}</button>
+                  <Button variant="primary" size="sm" type="submit" disabled={busy}>{tx("task_detail.jurnalga_yozish")}</Button>
                 </form>
               </AccordionSection>
             )}
@@ -1283,21 +1260,21 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
 
                   {histPages > 1 && (
                     <div className="row" style={{ justifyContent: "center", marginTop: 14 }}>
-                      <button
-                        className="btn btn-sm"
+                      <Button
+                        size="sm"
                         disabled={histPage === 1}
                         onClick={() => setHistPage((p) => p - 1)}
                       >
                         {tx("feed.oldingi")}
-                      </button>
+                      </Button>
                       <span className="muted">{histPage} / {histPages}</span>
-                      <button
-                        className="btn btn-sm"
+                      <Button
+                        size="sm"
                         disabled={histPage >= histPages}
                         onClick={() => setHistPage((p) => p + 1)}
                       >
                         {tx("feed.keyingi")}
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </AccordionSection>
@@ -1315,11 +1292,11 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                 isOpen={openRight === "withdraw"}
                 onToggle={() => toggleRight("withdraw")}
               >
-                <button className="btn btn-sm btn-warning" disabled={busy}
+                <Button variant="warning" size="sm" disabled={busy}
                         onClick={() => void run(() => api.post(`/tasks/${task.id}/status/`,
                                                               { status: withdraw.value }))}>
                   {tx("task_detail.qaytarib_olish")}
-                </button>
+                </Button>
               </AccordionSection>
             )}
 
@@ -1337,13 +1314,13 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                     bo'limlarni pastga surib yuborardi. */}
                 <div className="status-picker">
                   {picks.map((t) => (
-                    <button key={t.value} className={`btn btn-sm ${t.value === "DONE" ? "btn-ok" : ""}`} disabled={busy}
+                    <Button key={t.value} variant={t.value === "DONE" ? "success" : "secondary"} size="sm" disabled={busy}
                             onClick={() => void run(() => api.post(`/tasks/${task.id}/status/`, {
                               status: t.value,
                               blocked_reason: t.value === "BLOCKED" ? blockReason : "",
                             }))}>
                       {t.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 {picks.some((t) => t.value === "BLOCKED") && (
@@ -1387,7 +1364,7 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                               placeholder={tx("task_detail.nimani_tuzatish_kerak_aniq_yozing")}
                               onChange={(e) => setReview({ ...review, comment: e.target.value })} />
                   </div>
-                  <button className="btn btn-primary btn-block" disabled={busy}>{tx("task_detail.qarorni_saqlash")}</button>
+                  <Button variant="primary" block type="submit" disabled={busy}>{tx("task_detail.qarorni_saqlash")}</Button>
                 </form>
               </AccordionSection>
             )}
@@ -1572,9 +1549,9 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                     <input id={`${fid}-6`} value={handNote} placeholder={tx("task_detail.masalan_tatilga_chiqdi", undefined, "Masalan: ta'tilga chiqdi...")}
                            onChange={(e) => setHandNote(e.target.value)} />
                   </div>
-                  <button className="btn btn-primary btn-block" disabled={busy || !handTo}>
+                  <Button variant="primary" block type="submit" disabled={busy || !handTo}>
                     {tx("task_detail.otkazish", undefined, "O'tkazish")}
-                  </button>
+                  </Button>
                   <small className="muted">
                     {tx("task_detail.ish_bitta_odamga_otadi_oldingi", undefined, "Ish bitta odamga o'tadi, oldingisi xabar oladi.")}
                   </small>
@@ -1639,43 +1616,19 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                 <span>⚡</span>
                 <span>{tx("task_detail.ostki_vazifa_qoshish")}</span>
               </h3>
-              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setSubtaskModalOpen(false)}>✕</button>
+              <Button iconOnly aria-label={tx("common.yopish")} variant="ghost" size="sm" onClick={() => setSubtaskModalOpen(false)}>✕</Button>
             </div>
 
             {/* Rejim tablari: Yangi yaratish yoki Mavjudini biriktirish */}
-            <div style={{ display: "flex", borderBottom: "1px solid var(--border-muted)", padding: "0 18px", gap: 16 }}>
-              <button
-                type="button"
-                onClick={() => setSubtaskTab("create")}
-                style={{
-                  padding: "10px 0",
-                  background: "transparent",
-                  border: "none",
-                  borderBottom: subtaskTab === "create" ? "2px solid var(--accent)" : "2px solid transparent",
-                  color: subtaskTab === "create" ? "var(--accent)" : "var(--muted)",
-                  fontWeight: subtaskTab === "create" ? 600 : 400,
-                  cursor: "pointer",
-                  fontSize: 13.5,
-                }}
-              >
-                {tx("task_detail.ostki_vazifa_yaratish")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSubtaskTab("link")}
-                style={{
-                  padding: "10px 0",
-                  background: "transparent",
-                  border: "none",
-                  borderBottom: subtaskTab === "link" ? "2px solid var(--accent)" : "2px solid transparent",
-                  color: subtaskTab === "link" ? "var(--accent)" : "var(--muted)",
-                  fontWeight: subtaskTab === "link" ? 600 : 400,
-                  cursor: "pointer",
-                  fontSize: 13.5,
-                }}
-              >
-                {tx("task_detail.mavjud_vazifani_biriktirish")}
-              </button>
+            <div style={{ padding: "12px 18px 0" }}>
+              <ButtonGroup>
+                <Button size="sm" active={subtaskTab === "create"} onClick={() => setSubtaskTab("create")}>
+                  {tx("task_detail.ostki_vazifa_yaratish")}
+                </Button>
+                <Button size="sm" active={subtaskTab === "link"} onClick={() => setSubtaskTab("link")}>
+                  {tx("task_detail.mavjud_vazifani_biriktirish")}
+                </Button>
+              </ButtonGroup>
             </div>
 
             <div className="modal-body">
@@ -1807,27 +1760,27 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
             </div>
 
             <div className="modal-footer">
-              <button type="button" className="btn btn-sm" onClick={() => setSubtaskModalOpen(false)}>
+              <Button size="sm" onClick={() => setSubtaskModalOpen(false)}>
                 {tx("task_detail.bekor")}
-              </button>
+              </Button>
               {subtaskTab === "create" ? (
-                <button
+                <Button
                   type="submit"
                   form="subtask-create-form"
-                  className="btn btn-sm btn-primary"
+                  variant="primary" size="sm"
                   disabled={busy || !stTitle.trim()}
                 >
                   {busy ? tx("common.saqlanmoqda") : tx("common.saqlash")}
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   type="submit"
                   form="subtask-link-form"
-                  className="btn btn-sm btn-primary"
+                  variant="primary" size="sm"
                   disabled={busy || !selectedSubtaskId}
                 >
                   {busy ? tx("task_detail.biriktirilmoqda") : tx("task_detail.biriktirish")}
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -1877,14 +1830,12 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
                   ? tx("task_detail.jamoa_azosi_tahrirlash", undefined, "Jamoa a'zosi ma'lumotlarini tahrirlash")
                   : tx("task_detail.jamoa_azosi_qoshish", undefined, "Jamoa a'zosi qo'shish")}
               </h3>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
+              <Button iconOnly aria-label={tx("common.yopish")}
+                variant="ghost" size="sm"
                 onClick={() => setTeamModalOpen(false)}
-                style={{ fontSize: 18, lineHeight: 1, padding: "2px 6px" }}
               >
                 ✕
-              </button>
+              </Button>
             </div>
 
             <form onSubmit={handleSaveTeamMember} style={{ padding: "16px 20px" }}>
@@ -1963,20 +1914,19 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
               </div>
 
               <div className="form-actions" style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
-                <button
-                  type="button"
-                  className="btn btn-sm"
+                <Button
+                  size="sm"
                   onClick={() => setTeamModalOpen(false)}
                 >
                   {tx("common.bekor_qilish", undefined, "Bekor qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-sm btn-primary"
+                  variant="primary" size="sm"
                   disabled={busy || !teamMemberId}
                 >
                   {busy ? tx("common.saqlanmoqda", undefined, "Saqlanmoqda...") : tx("task_detail.jamoa_saqlash", undefined, "Saqlash")}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -2048,15 +1998,13 @@ export default function TaskDetail({ taskId: propTaskId, onClose, initialSection
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
               {taskActions}
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
+              <Button iconOnly aria-label={tx("common.yopish")}
+                variant="ghost" size="sm"
                 onClick={onClose}
-                style={{ fontSize: 18, lineHeight: 1, padding: "4px 8px" }}
                 title={tx("common.yopish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
           </div>
 

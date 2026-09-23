@@ -23,6 +23,7 @@ import { toTask, useNavParams } from "@/nav";
 import { tx } from "@/i18n";
 import { IconChevron, IconDownload, IconEye, IconFile } from "@/components/icons";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
+import { AnchorButton, Button, LinkButton } from "@/components/Button";
 
 function formatSummaryText(summary: string, cleanCode?: string) {
   let s = summary || "";
@@ -122,25 +123,12 @@ function ProjectDocumentsSection({
               </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    type="button"
+                  <Button variant="link"
                     onClick={() => f.url && onPreview({ url: f.url, name: f.original_name, size: f.size_display })}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      font: "inherit",
-                      fontSize: 13.5,
-                      fontWeight: 600,
-                      color: "var(--accent, #2563eb)",
-                      cursor: "pointer",
-                      textAlign: "left",
-                      textDecoration: "underline",
-                    }}
                     title="Veb-saytda ochish / ko'rish"
                   >
                     {f.original_name}
-                  </button>
+                  </Button>
                   <span
                     style={{
                       background: "var(--surface-3, #e2e8f0)",
@@ -166,30 +154,27 @@ function ProjectDocumentsSection({
 
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {f.url && (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline"
+                <Button
+                  size="sm"
                   onClick={() => onPreview({ url: f.url!, name: f.original_name, size: f.size_display })}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12 }}
                   title="Veb-saytda ko'rish"
                 >
                   <IconEye size={14} />
                   <span>{tx("feed.korish", undefined, "Ko'rish")}</span>
-                </button>
+                </Button>
               )}
               {f.url && (
-                <a
+                <AnchorButton
                   href={f.url}
                   download={f.original_name}
                   target="_blank"
                   rel="noreferrer"
-                  className="btn btn-sm btn-ghost"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, textDecoration: "none" }}
+                  variant="ghost" size="sm"
                   title="Yuklab olish"
                 >
                   <IconDownload size={14} />
                   <span>{tx("feed.yuklab_olish", undefined, "Yuklab olish")}</span>
-                </a>
+                </AnchorButton>
               )}
             </div>
           </div>
@@ -238,27 +223,24 @@ function ProjectDocumentsSection({
 
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {ver.url && (
-                        <button
-                          type="button"
-                          className="btn btn-xs btn-outline"
+                        <Button
+                          size="xs"
                           onClick={() => onPreview({ url: ver.url!, name: ver.original_name, size: ver.size_display })}
-                          style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11 }}
                         >
                           <IconEye size={12} />
                           <span>{tx("feed.korish", undefined, "Ko'rish")}</span>
-                        </button>
+                        </Button>
                       )}
                       {ver.url && (
-                        <a
+                        <AnchorButton
                           href={ver.url}
                           download={ver.original_name}
                           target="_blank"
                           rel="noreferrer"
-                          className="btn btn-xs btn-ghost"
-                          style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, textDecoration: "none" }}
+                          variant="ghost" size="xs"
                         >
                           <IconDownload size={12} />
-                        </a>
+                        </AnchorButton>
                       )}
                     </div>
                   </div>
@@ -451,14 +433,13 @@ export default function Feed() {
           />
         </div>
         {projectSearch && (
-          <button
-            type="button"
-            className="btn btn-sm btn-subtle"
+          <Button
+            variant="ghost" size="sm"
             onClick={() => setParam("q", "")}
-            style={{ height: 36, alignSelf: "flex-end" }}
+            style={{ alignSelf: "flex-end" }}
           >
             {tx("common.tozalash") || "Tozalash"}
-          </button>
+          </Button>
         )}
       </FilterBar>
 
@@ -615,14 +596,13 @@ export default function Feed() {
                             {tx("feed.loyihaga_oid_fayllar", undefined, "Loyihaga oid fayllar va ularning tarixi")}
                           </span>
                         </div>
-                        <Link
+                        <LinkButton
                           to={`/loyiha/${p.id}/fayllar`}
-                          className="btn btn-xs btn-outline"
-                          style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+                          size="xs"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <span>Barcha hujjatlar boshqaruvi →</span>
-                        </Link>
+                        </LinkButton>
                       </div>
 
                       <ProjectDocumentsSection projectId={p.id} onPreview={setPreviewFile} />
@@ -642,15 +622,14 @@ export default function Feed() {
 
                     {/* Pastki harakat tugmasi */}
                     <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 8, borderTop: "1px dashed var(--border-color, #e2e8f0)" }}>
-                      <Link
+                      <LinkButton
                         to={`/loyiha/${p.id}`}
-                        className="btn btn-sm btn-ghost"
-                        style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+                        variant="ghost" size="sm"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <span>{tx("feed.loyiha_sahifasiga_otish", undefined, "Loyiha sahifasiga o'tish")}</span>
                         <span>→</span>
-                      </Link>
+                      </LinkButton>
                     </div>
                   </div>
                 )}

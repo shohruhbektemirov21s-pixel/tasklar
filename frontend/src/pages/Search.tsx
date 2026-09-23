@@ -14,6 +14,7 @@ import { Empty, Loading, Progress } from "@/components/ui";
 import { useAuth } from "@/auth/AuthContext";
 import { toPublicProject, useNavParams } from "@/nav";
 import { tx } from "@/i18n";
+import { LinkButton } from "@/components/Button";
 
 export default function Search() {
   const fid = useId();
@@ -103,7 +104,7 @@ export default function Search() {
               : tx("search.hozircha_ochiq_loyiha_yoq_ozingiz")}
           >
             {!user && (
-              <Link className="btn btn-primary" to="/royxatdan-otish">{tx("common.royxatdan_otish")}</Link>
+              <LinkButton variant="primary" to="/royxatdan-otish">{tx("common.royxatdan_otish")}</LinkButton>
             )}
           </Empty>
         )}

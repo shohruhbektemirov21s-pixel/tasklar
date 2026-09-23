@@ -18,6 +18,7 @@
 import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 interface Props {
   children: ReactNode;
@@ -61,12 +62,12 @@ export default class ErrorBoundary extends Component<Props, State> {
           {/* Xato matni kerak bo'ladi: odam uni nusxalab yuborishi mumkin. */}
           <pre className="pre-wrap mono error-detail">{error.message}</pre>
           <div className="row center" style={{ gap: 8, marginTop: 14 }}>
-            <button type="button" className="btn btn-primary" onClick={this.reset}>
+            <Button variant="primary" onClick={this.reset}>
               {tx("error_boundary.qayta_urinish")}
-            </button>
-            <button type="button" className="btn" onClick={() => window.location.reload()}>
+            </Button>
+            <Button  onClick={() => window.location.reload()}>
               {tx("error_boundary.sahifani_yangilash")}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

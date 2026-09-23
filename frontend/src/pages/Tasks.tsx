@@ -3,14 +3,14 @@ import { Link } from "react-router-dom";
 import { useFetch } from "@/api/useFetch";
 import type { TeamWorkloadData, WorkloadRow, WorkloadStats } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
-import { PageHead } from "@/components/Layout";
 import { IconCalendar } from "@/components/icons";
 import {
-  Avatar, DUE_PERIODS, DateField, Empty, EmptyState, ErrorMsg, FilterBar, Loading, PageHeader, Pager, Progress,
-  SpecialtyTag, TableSkeleton, fmtDate,
+  Avatar, DUE_PERIODS, DateField, Empty, ErrorMsg, FilterBar, Loading, PageHeader, Pager, Progress,
+  SpecialtyTag, fmtDate,
 } from "@/components/ui";
 import { toTask, toUser } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 /**
  * «Vazifalar» - menejer va admin uchun alohida sahifa: kim nima qilayapti.
@@ -104,9 +104,9 @@ export default function Tasks() {
         actions={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {!!data && <span className="badge" style={{ fontSize: 13, padding: "5px 12px" }}>{data.count} {tx("common.kishi")}</span>}
-            <Link className="btn btn-sm btn-primary" to="/loyiha/vazifa-yaratish">
+            <LinkButton variant="primary" size="sm" to="/loyiha/vazifa-yaratish">
               + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-            </Link>
+            </LinkButton>
           </div>
         }
       />
@@ -175,14 +175,13 @@ export default function Tasks() {
         </div>
 
         {dirty && (
-          <button
-            type="button"
-            className="btn btn-sm btn-subtle"
+          <Button
+            variant="ghost" size="sm"
             onClick={clear}
-            style={{ height: 36, alignSelf: "flex-end" }}
+            style={{ alignSelf: "flex-end" }}
           >
             {tx("common.tozalash")}
-          </button>
+          </Button>
         )}
       </FilterBar>
 
@@ -194,13 +193,13 @@ export default function Tasks() {
                      : tx("tasks.boshqaruvingizdagi_loyihalarda_hali_ijrochi_")}>
               <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
                 {dirty ? (
-                  <button type="button" className="btn" onClick={clear}>
+                  <Button  onClick={clear}>
                     {tx("common.tozalash")}
-                  </button>
+                  </Button>
                 ) : (
-                  <Link className="btn btn-primary" to="/loyihalar">
+                  <LinkButton variant="primary" to="/loyihalar">
                     {tx("common.loyihalar")}
-                  </Link>
+                  </LinkButton>
                 )}
               </div>
             </Empty>

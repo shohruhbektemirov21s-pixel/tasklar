@@ -7,6 +7,7 @@ import { PageHead } from "@/components/Layout";
 import { Card, Empty, ErrorMsg, Loading } from "@/components/ui";
 import { toNewWorkspace, toWorkspace } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 export default function Workspaces() {
   const fid = useId();
@@ -44,9 +45,9 @@ export default function Workspaces() {
         {joined && <span className="badge">{w.my_role}</span>}
         <span className="spacer" />
         {joined ? (
-          <Link className="btn btn-sm" {...toWorkspace(w.slug)}>{tx("workspaces.ochish")}</Link>
+          <LinkButton size="sm" {...toWorkspace(w.slug)}>{tx("workspaces.ochish")}</LinkButton>
         ) : (
-          <button className="btn btn-sm btn-primary" onClick={() => void join(w)}>{tx("common.qoshilish")}</button>
+          <Button variant="primary" size="sm" onClick={() => void join(w)}>{tx("common.qoshilish")}</Button>
         )}
       </div>
       {w.description && <p className="muted" style={{ margin: "8px 0 0" }}>{w.description}</p>}
@@ -63,7 +64,7 @@ export default function Workspaces() {
       <PageHead
         title={<strong>{tx("workspaces.ish_maydonlari")}</strong>}
         actions={user?.can_create_project
-                 ? <Link className="btn btn-sm btn-primary" {...toNewWorkspace()}>{tx("workspaces.yangi_maydon")}</Link>
+                 ? <LinkButton variant="primary" size="sm" {...toNewWorkspace()}>{tx("workspaces.yangi_maydon")}</LinkButton>
                  : undefined}
       />
       <div className="content">
@@ -77,9 +78,9 @@ export default function Workspaces() {
                          text={tx("workspaces.yangi_maydon_yarating_yoki_ochiq")}>
                     {user?.can_create_project && (
                       <div className="row" style={{ justifyContent: "center", marginTop: 12 }}>
-                        <Link className="btn btn-primary" {...toNewWorkspace()}>
+                        <LinkButton variant="primary" {...toNewWorkspace()}>
                           {tx("workspaces.yangi_maydon")}
-                        </Link>
+                        </LinkButton>
                       </div>
                     )}
                   </Empty>

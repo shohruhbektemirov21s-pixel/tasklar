@@ -8570,5 +8570,33 @@
   "admin.holat_ochirilgan": {
     "value": "O'chirilgan",
     "note": "pages/Admin.tsx"
+  },
+  "common.korish": {
+    "value": "Ko'rish",
+    "note": "Umumiy: ko'rish tugmasi"
+  },
+  "orders.mavjud_vazifalarni_korish": {
+    "value": "Mavjud vazifalarni ko'rish ({n}) →",
+    "note": "components/DistributeTasksModal.tsx"
+  },
+  "inquiries.f_barchasi": {
+    "value": "Barchasi",
+    "note": "pages/Inquiries.tsx — filtr"
+  },
+  "inquiries.f_korib_chiqilmoqda": {
+    "value": "Ko'rib chiqilmoqda",
+    "note": "pages/Inquiries.tsx — filtr"
+  },
+  "inquiries.f_tasdiqlangan": {
+    "value": "Tasdiqlangan",
+    "note": "pages/Inquiries.tsx — filtr"
+  },
+  "inquiries.f_rad_etilgan": {
+    "value": "Rad etilgan",
+    "note": "pages/Inquiries.tsx — filtr"
+  },
+  "work_done.oxirgi_n_kun": {
+    "value": "Oxirgi {n} kun",
+    "note": "pages/WorkDone.tsx — faol filtr"
   }
 }

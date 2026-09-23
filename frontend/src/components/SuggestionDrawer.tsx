@@ -2,7 +2,6 @@
  * Taklif paneli — Taqvim uslubida sahifaning o'ng tarafida chiqadigan panel (Side Panel).
  */
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import type { Suggestion } from "@/api/types";
 import {
   Attachments, BossPanel, DecisionBox, STATUS_TONE, VoteBar,
@@ -11,6 +10,7 @@ import { Avatar, Card, timeAgo } from "@/components/ui";
 import { toSuggestion } from "@/nav";
 import { tx } from "@/i18n";
 import { IconClose, IconFile } from "@/components/icons";
+import { Button, LinkButton } from "@/components/Button";
 
 export default function SuggestionDrawer({
   item,
@@ -53,14 +53,13 @@ export default function SuggestionDrawer({
           </div>
         }
         badge={
-          <button
-            type="button"
-            className="btn btn-sm btn-ghost"
+          <Button
+            variant="ghost" size="sm"
             onClick={onClose}
             title={tx("common.yopish")}
           >
             <IconClose size={15} /> {tx("common.yopish")}
-          </button>
+          </Button>
         }
       >
         <div className="repo-meta" style={{ marginBottom: 16, display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}>
@@ -106,20 +105,19 @@ export default function SuggestionDrawer({
           </div>
         )}
         {item.can_decide && decided && !redeciding && (
-          <button
-            type="button"
-            className="btn btn-sm sg-redecide"
+          <Button
+            size="sm" className="sg-redecide"
             style={{ marginTop: 12 }}
             onClick={() => setRedeciding(true)}
           >
             {tx("suggestions.qarorni_ozgartirish")}
-          </button>
+          </Button>
         )}
 
         <div style={{ marginTop: 20, paddingTop: 14, borderTop: "1px solid var(--border-muted)", display: "flex", justifyContent: "flex-end" }}>
-          <Link className="btn btn-primary btn-sm" {...toSuggestion(item.id)}>
+          <LinkButton variant="primary" size="sm" {...toSuggestion(item.id)}>
             {tx("suggestions.toliq_sahifada")}
-          </Link>
+          </LinkButton>
         </div>
       </Card>
     </aside>

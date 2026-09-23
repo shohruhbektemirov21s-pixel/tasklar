@@ -10,6 +10,7 @@ import { Avatar, Card, DateTimeField, ErrorMsg, Loading, fromDateTimeInput, toDa
   from "@/components/ui";
 import { toTask, useEntityId, useGo, useIsPath } from "@/nav";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 interface Suggestion {
   user: UserBrief;
@@ -343,12 +344,12 @@ export default function TaskForm() {
               {tx("task_form.vazifa_yaratish_uchun_avval_loyiha", undefined, "Vazifa yaratish uchun avval birorta loyihaga a'zo bo'lishingiz yoki yangi loyiha ochishingiz kerak.")}
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button type="button" className="btn btn-primary" onClick={() => go("/loyihalar")}>
+              <Button variant="primary" onClick={() => go("/loyihalar")}>
                 {tx("common.loyihalar", undefined, "Loyihalar")}
-              </button>
-              <button type="button" className="btn" onClick={() => go("/qoshilish")}>
+              </Button>
+              <Button  onClick={() => go("/qoshilish")}>
                 {tx("join_project.qoshilish", undefined, "Loyihaga qo'shilish")}
-              </button>
+              </Button>
             </div>
           </Card>
         </div>
@@ -383,12 +384,12 @@ export default function TaskForm() {
               {tx("task_form.vazifa_yaratish_va_tahrirlash_faqat", undefined, "Vazifa yaratish va tahrirlash faqat jamoa a'zolariga ruxsat etilgan.")}
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button type="button" className="btn btn-primary" onClick={() => go(`/loyiha/${project.id}/qoshilish`)}>
+              <Button variant="primary" onClick={() => go(`/loyiha/${project.id}/qoshilish`)}>
                 {tx("join_project.qoshilish", undefined, "Loyihaga qo'shilish")}
-              </button>
-              <button type="button" className="btn" onClick={() => go("/loyihalar")}>
+              </Button>
+              <Button  onClick={() => go("/loyihalar")}>
                 {tx("common.loyihalar", undefined, "Loyihalar")}
-              </button>
+              </Button>
             </div>
           </Card>
         </div>
@@ -456,14 +457,12 @@ export default function TaskForm() {
               <span>📝</span>
               <span><strong>Qoralama tiklandi:</strong> Oldin kiritilgan ma'lumotlar avtomatik yuklandi.</span>
             </div>
-            <button
-              type="button"
-              className="btn btn-sm"
+            <Button variant="danger"
+              size="sm"
               onClick={clearDraft}
-              style={{ color: "var(--color-danger, #ef4444)" }}
             >
               Qoralamani tozalash
-            </button>
+            </Button>
           </div>
         )}
         <form onSubmit={submit}>
@@ -590,16 +589,15 @@ export default function TaskForm() {
                                     <small className="muted">{c.specialty_display || c.email}</small>
                                   </div>
                                   <span className="spacer" />
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-primary"
+                                  <Button
+                                    variant="primary" size="sm"
                                     disabled={addingUserId === c.id}
                                     onClick={() => void handleAddMember(c)}
                                   >
                                     {addingUserId === c.id
                                       ? tx("task_form.qoshilmoqda", undefined, "Qo'shilmoqda...")
                                       : tx("task_form.jamoaga_qoshish_btn", undefined, "+ Jamoaga qo'shish")}
-                                  </button>
+                                  </Button>
                                 </div>
                               ))}
                             </div>
@@ -641,16 +639,15 @@ export default function TaskForm() {
                                     <small className="muted">{c.specialty_display || c.email}</small>
                                   </div>
                                   <span className="spacer" />
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm"
+                                  <Button
+                                    size="sm"
                                     disabled={addingUserId === c.id}
                                     onClick={() => void handleAddMember(c)}
                                   >
                                     {addingUserId === c.id
                                       ? tx("task_form.qoshilmoqda", undefined, "Qo'shilmoqda...")
                                       : tx("task_form.jamoaga_qoshish_btn", undefined, "+ Jamoaga qo'shish")}
-                                  </button>
+                                  </Button>
                                 </div>
                               ))}
                             </div>
@@ -659,28 +656,24 @@ export default function TaskForm() {
                       ) : (
                         <div>
                           {!showAllCandidates ? (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-ghost"
+                            <Button
+                              variant="ghost" size="sm"
                               onClick={() => setShowAllCandidates(true)}
-                              style={{ fontSize: 13 }}
                             >
                               {tx("task_form.boshqa_xodimni_qoshish", undefined, "+ Yangi xodimni jamoaga qo'shish")}
-                            </button>
+                            </Button>
                           ) : (
                             <div>
                               <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
                                 <small className="muted" style={{ fontWeight: 600 }}>
                                   {tx("task_form.boshqa_xodimlar_jamoada_yoq", undefined, "Boshqa xodimlar (jamoada yo'q):")}
                                 </small>
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-ghost"
+                                <Button
+                                  variant="ghost" size="sm"
                                   onClick={() => setShowAllCandidates(false)}
-                                  style={{ fontSize: 12, padding: "2px 6px" }}
                                 >
                                   {tx("task_form.yashirish", undefined, "Yashirish")}
-                                </button>
+                                </Button>
                               </div>
                               <div className="stack">
                                 {candidates.map((c) => (
@@ -696,16 +689,15 @@ export default function TaskForm() {
                                       <small className="muted">{c.specialty_display || c.email}</small>
                                     </div>
                                     <span className="spacer" />
-                                    <button
-                                      type="button"
-                                      className="btn btn-sm"
+                                    <Button
+                                      size="sm"
                                       disabled={addingUserId === c.id}
                                       onClick={() => void handleAddMember(c)}
                                     >
                                       {addingUserId === c.id
                                         ? tx("task_form.qoshilmoqda", undefined, "Qo'shilmoqda...")
                                         : tx("task_form.jamoaga_qoshish_btn", undefined, "+ Jamoaga qo'shish")}
-                                    </button>
+                                    </Button>
                                   </div>
                                 ))}
                               </div>
@@ -746,14 +738,13 @@ export default function TaskForm() {
                         <div>
                           <strong>{parentTask.title}</strong>
                         </div>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-ghost"
+                        <Button iconOnly aria-label="Ota vazifani olib tashlash"
+                          variant="ghost" size="sm"
                           onClick={() => { setParentTaskId(""); setParentTask(null); }}
                           title="Ota vazifani olib tashlash"
                         >
                           ✕
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <p className="muted" style={{ margin: 0, fontSize: 12 }}>
@@ -868,10 +859,10 @@ export default function TaskForm() {
           </div>
 
           <div className="form-actions">
-            <button className="btn btn-primary" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {busy ? tx("common.saqlanmoqda") : editing ? tx("common.saqlash") : tx("task_form.vazifa_yaratish")}
-            </button>
-            <button type="button" className="btn" onClick={() => go(-1)}>{tx("common.bekor_qilish")}</button>
+            </Button>
+            <Button  onClick={() => go(-1)}>{tx("common.bekor_qilish")}</Button>
           </div>
         </form>
       </div>

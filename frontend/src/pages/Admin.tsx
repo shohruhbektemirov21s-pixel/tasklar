@@ -30,6 +30,7 @@ import { tx } from "@/i18n";
 import { useSystemBranding, updateSystemBranding } from "@/api/branding";
 import { Logo } from "@/components/Logo";
 import { OrderStatusBadge } from "./ChangeRequests";
+import { Button, ButtonGroup, LinkButton, buttonClass } from "@/components/Button";
 
 type Tab = "users" | "specialties" | "projects" | "orders" | "trash" | "branding";
 
@@ -444,10 +445,10 @@ export default function Admin() {
                   <option value="pending">{tx("admin.tasdiqlash_kutilayotganlar") || "Tasdiqlash kutilmoqda (Nofaol)"}</option>
                 </select>
               </div>
-              <button type="button" className="btn btn-primary"
+              <Button variant="primary"
                       onClick={() => { setCreating((v) => !v); setOkMsg(null); }}>
                 {creating ? tx("common.bekor_qilish") : tx("admin.yangi_hisob")}
-              </button>
+              </Button>
             </div>
 
             {creating && (
@@ -515,9 +516,9 @@ export default function Admin() {
                   <p className="muted" style={{ fontSize: 12.5 }}>
                     {tx("admin.parolni_hisob_egasiga_ozingiz_yetkazasiz")}
                   </p>
-                  <button className="btn btn-primary" disabled={busy}>
+                  <Button variant="primary" type="submit" disabled={busy}>
                     {busy ? tx("admin.ochilmoqda") : tx("admin.hisob_ochish")}
-                  </button>
+                  </Button>
                 </form>
               </Card>
             )}
@@ -593,22 +594,21 @@ export default function Admin() {
                         <td className="nowrap muted">{fmtDate(u.date_joined)}</td>
                         <td className="right nowrap">
                           {!u.is_active ? (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-ok"
+                            <Button
+                              variant="success" size="sm"
                               disabled={busy}
                               onClick={() => void patchUser(u, { is_active: true }, `«${u.full_name}» hisobi tasdiqlandi va faollashtirildi.`)}
                             >
                               ✓ {tx("admin.tasdiqlash") || "Tasdiqlash"}
-                            </button>
+                            </Button>
                           ) : (
                             <>
-                              <button type="button" className="btn btn-sm" disabled={busy}
-                                      onClick={() => void resetPassword(u)}>{tx("common.parol")}</button>{" "}
-                              <button type="button" className="btn btn-sm" disabled={busy || u.id === me?.id}
+                              <Button size="sm" disabled={busy}
+                                      onClick={() => void resetPassword(u)}>{tx("common.parol")}</Button>{" "}
+                              <Button size="sm" disabled={busy || u.id === me?.id}
                                       onClick={() => void toggleActive(u)}>
                                 {tx("common.ochirish")}
-                              </button>
+                              </Button>
                             </>
                           )}
                         </td>
@@ -632,13 +632,12 @@ export default function Admin() {
                   Tizimdagi mutaxassisliklar va yo'nalishlar. Yangi qo'shilgan mutaxassislik ro'yxatdan o'tishda, profilda va vazifalarda avtomatik chiqadi.
                 </span>
               </div>
-              <button
-                type="button"
-                className="btn btn-primary"
+              <Button
+                variant="primary"
                 onClick={() => { setCreatingSpec((v) => !v); setOkMsg(null); }}
               >
                 {creatingSpec ? tx("common.bekor_qilish") : "+ Yangi mutaxassislik"}
-              </button>
+              </Button>
             </div>
 
             {creatingSpec && (
@@ -697,16 +696,15 @@ export default function Admin() {
                   </div>
 
                   <div className="row" style={{ marginTop: 12, gap: 8 }}>
-                    <button className="btn btn-primary" disabled={busy}>
+                    <Button variant="primary" type="submit" disabled={busy}>
                       {busy ? "Saqlanmoqda..." : "Mutaxassislikni saqlash"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
+                    </Button>
+                    <Button
+                      
                       onClick={() => setCreatingSpec(false)}
                     >
                       {tx("common.bekor_qilish")}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </Card>
@@ -774,14 +772,13 @@ export default function Admin() {
                             />
                           </td>
                           <td className="right nowrap">
-                            <button
-                              type="button"
-                              className="btn btn-sm"
+                            <Button
+                              size="sm"
                               disabled={busy}
                               onClick={() => void deleteSpecialty(s)}
                             >
                               {tx("common.ochirish")}
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -850,18 +847,17 @@ export default function Admin() {
                       <td className="right">{p.progress}%</td>
                       <td className="right nowrap">
                         {p.is_deleted ? (
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline"
+                          <Button
+                            size="sm"
                             disabled={busy}
                             onClick={() => void handleRestoreProject(p.id, p.name)}
                           >
                             ♻️ {tx("admin.qayta_tiklash")}
-                          </button>
+                          </Button>
                         ) : (
-                          <Link {...toProjectEdit(p.id)} className="btn btn-sm btn-outline">
+                          <LinkButton {...toProjectEdit(p.id)} size="sm">
                             ✏️ {tx("common.tahrirlash")}
-                          </Link>
+                          </LinkButton>
                         )}
                       </td>
                     </tr>
@@ -942,17 +938,16 @@ export default function Admin() {
                         </td>
                         <td className="right nowrap">
                           {item.status !== "DRAFT" && item.status !== "COMPLETED" ? (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-primary"
+                            <Button
+                              variant="primary" size="sm"
                               onClick={() => handleOpenAssign(item)}
                             >
                               👥 {item.assigned_pm ? "Boshqa PM ga topshirish" : "PM tayinlash"}
-                            </button>
+                            </Button>
                           ) : (
-                            <Link {...toOrder(item.id)} className="btn btn-sm btn-ghost">
+                            <LinkButton {...toOrder(item.id)} variant="ghost" size="sm">
                               Ko'rish
-                            </Link>
+                            </LinkButton>
                           )}
                         </td>
                       </tr>
@@ -969,21 +964,21 @@ export default function Admin() {
           </Card>
         ) : tab === "trash" ? (
           <Card padded={false} title={`🗑️ ${tx("admin.ochirilganlar")}`}>
-            <div className="card-body" style={{ borderBottom: "1px solid var(--border)", display: "flex", gap: 8 }}>
-              <button
-                type="button"
-                className={`btn btn-sm ${trashSubTab === "projects" ? "btn-primary" : "btn-ghost"}`}
-                onClick={() => { setTrashSubTab("projects"); setTrashProjectPage(1); }}
-              >
-                📁 {tx("admin.ochirilgan_loyihalar")}
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm ${trashSubTab === "tasks" ? "btn-primary" : "btn-ghost"}`}
-                onClick={() => { setTrashSubTab("tasks"); setTrashTaskPage(1); }}
-              >
-                ✓ {tx("admin.ochirilgan_vazifalar")}
-              </button>
+            <div className="card-body" style={{ borderBottom: "1px solid var(--border)" }}>
+              <ButtonGroup>
+                <Button
+                  size="sm" active={trashSubTab === "projects"}
+                  onClick={() => { setTrashSubTab("projects"); setTrashProjectPage(1); }}
+                >
+                  📁 {tx("admin.ochirilgan_loyihalar")}
+                </Button>
+                <Button
+                  size="sm" active={trashSubTab === "tasks"}
+                  onClick={() => { setTrashSubTab("tasks"); setTrashTaskPage(1); }}
+                >
+                  ✓ {tx("admin.ochirilgan_vazifalar")}
+                </Button>
+              </ButtonGroup>
             </div>
 
             {trashSubTab === "projects" ? (
@@ -1022,14 +1017,13 @@ export default function Admin() {
                           </td>
                           <td>{p.deleted_by?.full_name || "—"}</td>
                           <td className="right nowrap">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-primary"
+                            <Button
+                              variant="primary" size="sm"
                               disabled={busy}
                               onClick={() => void handleRestoreProject(p.id, p.name)}
                             >
                               ♻️ {tx("admin.qayta_tiklash")}
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -1083,14 +1077,13 @@ export default function Admin() {
                             {t.deleted_at ? fmtDate(t.deleted_at) : "—"}
                           </td>
                           <td className="right nowrap">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-primary"
+                            <Button
+                              variant="primary" size="sm"
                               disabled={busy}
                               onClick={() => void handleRestoreTask(t.id, t.title)}
                             >
                               ♻️ {tx("admin.qayta_tiklash")}
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -1166,14 +1159,12 @@ export default function Admin() {
                         }}
                       />
                       <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
-                        <label htmlFor="adm-logo-file" className="btn btn-sm btn-primary" style={{ cursor: "pointer" }}>
+                        <label htmlFor="adm-logo-file" className={buttonClass({ variant: "primary", size: "sm" })}>
                           📁 {tx("admin.yangi_logo_tanlash")}
                         </label>
                         {(logoPreview || brandLogoFile) && (
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-ghost"
-                            style={{ color: "var(--danger, #dc2626)" }}
+                          <Button
+                            variant="danger" size="sm"
                             onClick={() => {
                               setBrandLogoFile(null);
                               setLogoPreview(null);
@@ -1181,7 +1172,7 @@ export default function Admin() {
                             }}
                           >
                             ✕ {tx("admin.standart_logoga_qaytish")}
-                          </button>
+                          </Button>
                         )}
                       </div>
                       <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
@@ -1192,9 +1183,9 @@ export default function Admin() {
                 </div>
 
                 <div className="row" style={{ marginTop: 24, gap: 10 }}>
-                  <button type="submit" className="btn btn-primary" disabled={busy}>
+                  <Button type="submit" variant="primary" disabled={busy}>
                     💾 {busy ? tx("common.saqlanmoqda") : tx("common.saqlash")}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </Card>
@@ -1282,21 +1273,20 @@ export default function Admin() {
                 />
               </div>
               <div className="modal-actions" style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-                <button
-                  type="button"
-                  className="btn"
+                <Button
+                  
                   disabled={assignBusy}
                   onClick={() => setAssignModalItem(null)}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-primary"
+                  variant="primary"
                   disabled={assignBusy || !assignPmId}
                 >
                   {assignBusy ? "Saqlanmoqda..." : "Topshirish"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

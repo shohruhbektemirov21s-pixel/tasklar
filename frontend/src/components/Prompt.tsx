@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { tx } from "@/i18n";
 import { lockScroll, unlockScroll } from "./scrollLock";
+import { Button } from "@/components/Button";
 
 export interface PromptOptions {
   title: string;
@@ -158,17 +159,16 @@ export default function PromptHost() {
           )}
         </div>
         <div className="modal-actions" style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-          <button type="button" className="btn" onClick={() => done(false)}>
+          <Button  onClick={() => done(false)}>
             {pending.cancelText || tx("common.bekor_qilish")}
-          </button>
-          <button
-            type="button"
-            className={`btn ${pending.danger ? "btn-danger" : "btn-primary"}`}
+          </Button>
+          <Button
+            variant={pending.danger ? "danger" : "primary"}
             disabled={pending.required && !value.trim()}
             onClick={() => done(true)}
           >
             {pending.confirmText || tx("confirm.davom_etish")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

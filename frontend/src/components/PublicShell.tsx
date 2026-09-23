@@ -14,6 +14,7 @@ import ThemeToggle from "./ThemeToggle";
 import { LogoWord } from "./Logo";
 import { toSearch, useGo } from "@/nav";
 import { tx } from "@/i18n";
+import { LinkButton } from "@/components/Button";
 
 export default function PublicShell({
   children, query = "", showSearch = true,
@@ -77,11 +78,11 @@ export default function PublicShell({
           <ThemeToggle />
 
           {user ? (
-            <Link className="btn btn-primary" to="/panel">{tx("public_shell.panelga_otish")}</Link>
+            <LinkButton variant="primary" to="/panel">{tx("public_shell.panelga_otish")}</LinkButton>
           ) : (
             <>
-              <Link className="btn" to="/kirish">{tx("common.kirish")}</Link>
-              <Link className="btn btn-primary" to="/royxatdan-otish">{tx("common.royxatdan_otish")}</Link>
+              <LinkButton  to="/kirish">{tx("common.kirish")}</LinkButton>
+              <LinkButton variant="primary" to="/royxatdan-otish">{tx("common.royxatdan_otish")}</LinkButton>
             </>
           )}
         </div>

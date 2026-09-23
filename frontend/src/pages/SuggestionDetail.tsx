@@ -30,6 +30,7 @@ import {
 import { Avatar, Card, Empty, ErrorMsg, Loading, timeAgo } from "@/components/ui";
 import { useEntityNum, useGo } from "@/nav";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 export default function SuggestionDetail() {
   const id = useEntityNum("suggestion");
@@ -85,9 +86,9 @@ export default function SuggestionDetail() {
           <Card>
             <Empty icon="💡" title={tx("suggestions.tanlanmagan")}
                    text={tx("suggestions.tanlanmagan_matn")}>
-              <button className="btn btn-primary" onClick={() => go("/takliflar")}>
+              <Button variant="primary" onClick={() => go("/takliflar")}>
                 {tx("suggestions.royxatga")}
-              </button>
+              </Button>
             </Empty>
           </Card>
         </div>
@@ -101,9 +102,9 @@ export default function SuggestionDetail() {
         <PageHead title={<strong>{tx("suggestions.taklif")}</strong>} />
         <div className="content">
           <ErrorMsg error={error} />
-          <button className="btn" onClick={() => go("/takliflar")}>
+          <Button  onClick={() => go("/takliflar")}>
             {tx("suggestions.royxatga")}
-          </button>
+          </Button>
         </div>
       </>
     );
@@ -121,18 +122,18 @@ export default function SuggestionDetail() {
           <>
             {item.can_edit && !editing && (
               <>
-                <button className="btn btn-sm" onClick={() => setEditing(true)}>
+                <Button size="sm" onClick={() => setEditing(true)}>
                   {tx("common.tahrirlash")}
-                </button>
-                <button className="btn btn-sm btn-ghost" onClick={() => void remove(item)}>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => void remove(item)}>
                   {tx("common.ochirish")}
-                </button>
+                </Button>
               </>
             )}
             {item.can_decide && decided && !redeciding && (
-              <button className="btn btn-sm" onClick={() => setRedeciding(true)}>
+              <Button size="sm" onClick={() => setRedeciding(true)}>
                 {tx("suggestions.qarorni_ozgartirish")}
-              </button>
+              </Button>
             )}
           </>
         }

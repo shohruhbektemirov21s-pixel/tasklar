@@ -10,6 +10,7 @@ import { Avatar, Card, timeAgo } from "@/components/ui";
 import { tx } from "@/i18n";
 import { IconClose, IconFile } from "@/components/icons";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
+import { Button } from "@/components/Button";
 
 export default function InquiryDrawer({
   item,
@@ -53,14 +54,13 @@ export default function InquiryDrawer({
           </div>
         }
         badge={
-          <button
-            type="button"
-            className="btn btn-sm btn-ghost"
+          <Button
+            variant="ghost" size="sm"
             onClick={onClose}
             title={tx("common.yopish")}
           >
             <IconClose size={15} /> {tx("common.yopish")}
-          </button>
+          </Button>
         }
       >
         <div className="repo-meta" style={{ marginBottom: 16, display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}>
@@ -130,13 +130,12 @@ export default function InquiryDrawer({
 
         {item.can_decide && decided && !redeciding && (
           <div style={{ marginTop: 14 }}>
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost"
+            <Button
+              variant="ghost" size="sm"
               onClick={() => setRedeciding(true)}
             >
               🔄 Qarorni qayta ko'rib chiqish
-            </button>
+            </Button>
           </div>
         )}
       </Card>

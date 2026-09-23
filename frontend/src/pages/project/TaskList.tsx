@@ -1,5 +1,4 @@
 import { useEffect, useId, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { listOf, pagesOf, totalOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import type { Project, Task } from "@/api/types";
@@ -8,6 +7,7 @@ import { useRealtime } from "@/realtime/RealtimeContext";
 import { Empty, ErrorMsg, Loading, Pager, TaskRow, TaskScopeNote } from "@/components/ui";
 import { toNewTask, useNavParams } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 /**
  * Filtr URL da turadi, komponent ichidagi holatda emas.
@@ -121,25 +121,25 @@ export default function TaskList({ project }: { project: Project }) {
           <input id={`${fid}-3`} value={f.search} onChange={(e) => set("search", e.target.value)}
                  placeholder={tx("project_task_list.sarlavha_yoki_tavsif")} />
         </div>
-        <button className={`btn ${f.open ? "btn-accent" : ""}`}
+        <Button variant={f.open ? "primary" : "secondary"}
                 onClick={() => set("open", f.open ? "" : "1")}>
           {tx("project_task_list.faqat_ochiqlar")}
-        </button>
+        </Button>
         {/* «Muddatlar» sahifasidagi «Muddati otgan» katagi shu filtr bilan
             keladi - tugma bo'lmasa odam uni o'chira olmasdi. */}
-        <button className={`btn ${f.overdue ? "btn-accent" : ""}`}
+        <Button variant={f.overdue ? "primary" : "secondary"}
                 onClick={() => set("overdue", f.overdue ? "" : "1")}>
           {tx("common.muddati_otgan")}
-        </button>
+        </Button>
         {filtered && (
-          <button className="btn" onClick={() => setParams(new URLSearchParams(), { replace: true })}>
+          <Button  onClick={() => setParams(new URLSearchParams(), { replace: true })}>
             {tx("common.tozalash")}
-          </button>
+          </Button>
         )}
         {project.access?.can_create_task && (
-          <Link className="btn btn-primary" {...toNewTask(project.id)}>
+          <LinkButton variant="primary" {...toNewTask(project.id)}>
             + {tx("common.yangi_vazifa", undefined, "Yangi vazifa")}
-          </Link>
+          </LinkButton>
         )}
       </div>
 
@@ -163,14 +163,14 @@ export default function TaskList({ project }: { project: Project }) {
                    ? tx("project_task_list.tanlangan_filtrga_mos_vazifa_yoq")
                    : tx("project_task_list.bu_loyihada_hali_vazifa_yoq")}>
             {filtered && (
-              <button className="btn" onClick={() => setParams(new URLSearchParams(), { replace: true })}>
+              <Button  onClick={() => setParams(new URLSearchParams(), { replace: true })}>
                 {tx("common.filtrni_tozalash")}
-              </button>
+              </Button>
             )}
             {project.access.can_create_task && (
-              <Link className="btn btn-primary" {...toNewTask(project.id)}>
+              <LinkButton variant="primary" {...toNewTask(project.id)}>
                 {tx("common.yangi_vazifa")}
-              </Link>
+              </LinkButton>
             )}
           </Empty>
         )}

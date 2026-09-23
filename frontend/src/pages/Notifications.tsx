@@ -25,6 +25,7 @@ import { EmptyState, PageHeader, timeAgo } from "@/components/ui";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import { tx } from "@/i18n";
 import NotificationModal from "@/components/NotificationModal";
+import { Button } from "@/components/Button";
 
 type TabKey = "all" | "unread" | "important";
 
@@ -164,23 +165,21 @@ export default function Notifications() {
         action={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {unreadCount > 0 && (
-              <button
-                type="button"
-                className="btn btn-sm btn-primary"
+              <Button
+                variant="primary" size="sm"
                 onClick={() => void markAllRead()}
               >
                 <span>✓</span>
                 <span>{tx("notifications.hammasini_oqilgan_deb_belgilash", undefined, "Barchasini o'qilgan deb belgilash")}</span>
-              </button>
+              </Button>
             )}
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost"
+            <Button
+              variant="ghost" size="sm"
               onClick={() => void clearRead()}
               title={tx("notifications.oqilganlarini_tozalash", undefined, "O'qilganlarini tozalash")}
             >
               {tx("notifications.tozalash", undefined, "Tozalash")}
-            </button>
+            </Button>
           </div>
         }
       />

@@ -14,6 +14,7 @@ import PublicShell from "@/components/PublicShell";
 import { Card, Empty, Loading, Progress, Stat, fmtDate } from "@/components/ui";
 import { toProject, toProjectJoin, useEntityId } from "@/nav";
 import { tx } from "@/i18n";
+import { LinkButton } from "@/components/Button";
 
 export default function PublicProject() {
   const id = useEntityId("project");
@@ -42,7 +43,7 @@ export default function PublicProject() {
       <PublicShell>
         <div className="lp-wrap" style={{ padding: "60px 24px" }}>
           <Empty icon="🔒" title={tx("public_project.korsatib_bolmadi")} text={error}>
-            <Link className="btn" to="/qidiruv">{tx("public_project.boshqa_loyihalarni_korish")}</Link>
+            <LinkButton  to="/qidiruv">{tx("public_project.boshqa_loyihalarni_korish")}</LinkButton>
           </Empty>
         </div>
       </PublicShell>
@@ -105,23 +106,23 @@ export default function PublicProject() {
                     {tx("public_project.siz_tizimdasiz_loyihaga_sorov_yuborishingiz")}
                   </p>
                   {!user?.is_sohaviy_boshqarma && (
-                    <Link className="btn btn-primary btn-block" {...toProjectJoin(project.id)}>
+                    <LinkButton variant="primary" block {...toProjectJoin(project.id)}>
                       {tx("public_project.sorov_yuborish")}
-                    </Link>
+                    </LinkButton>
                   )}
-                  <Link className="btn btn-block mt" {...toProject(project.id)}>
+                  <LinkButton block className="mt" {...toProject(project.id)}>
                     {tx("public_project.loyihani_ochish")}
-                  </Link>
+                  </LinkButton>
                 </>
               ) : (
                 <>
                   <p className="muted" style={{ marginTop: 0 }}>
                     {tx("public_project.royxatdan_oting_va_mutaxassisligingizni_tanl")}
                   </p>
-                  <Link className="btn btn-primary btn-block" to="/royxatdan-otish">
+                  <LinkButton variant="primary" block to="/royxatdan-otish">
                     {tx("common.royxatdan_otish")}
-                  </Link>
-                  <Link className="btn btn-block mt" to="/kirish">{tx("public_project.hisobga_kirish")}</Link>
+                  </LinkButton>
+                  <LinkButton block className="mt" to="/kirish">{tx("public_project.hisobga_kirish")}</LinkButton>
                 </>
               )}
             </Card>

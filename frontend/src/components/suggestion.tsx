@@ -29,6 +29,7 @@ import { Card, ErrorMsg, timeAgo } from "@/components/ui";
 import { tx } from "@/i18n";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
 import { useAuth } from "@/auth/AuthContext";
+import { Button } from "@/components/Button";
 
 /** Holat nishonining rangi - ro'yxatda ham, sahifada ham bir xil. */
 export const STATUS_TONE: Record<SuggestionStatusValue, string> = {
@@ -193,11 +194,11 @@ export function SuggestionForm({ initial, editing, onCancel, onSaved }: {
                   </a>
                   <small className="muted">{file.size_display}</small>
                   <span className="spacer" />
-                  <button type="button" className="btn btn-sm btn-ghost"
+                  <Button variant="ghost" size="sm"
                           title={tx("common.ochirish")}
                           onClick={() => void dropFile(file)}>
                     <IconClose size={13} />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -208,13 +209,13 @@ export function SuggestionForm({ initial, editing, onCancel, onSaved }: {
         </div>
 
         <div className="form-actions">
-          <button className="btn btn-primary" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? tx("common.saqlanmoqda")
                   : editing ? tx("common.saqlash") : tx("suggestions.yuborish")}
-          </button>
-          <button type="button" className="btn" onClick={onCancel}>
+          </Button>
+          <Button  onClick={onCancel}>
             {tx("common.bekor_qilish")}
-          </button>
+          </Button>
         </div>
       </form>
     </Card>
@@ -258,21 +259,21 @@ export function BossPanel({ item, onDone, onCancel }: {
                   onChange={(e) => setNote(e.target.value)} />
       </div>
       <div className="row wrap" style={{ gap: 8 }}>
-        <button className="btn btn-sm btn-primary" disabled={busy}
+        <Button variant="primary" size="sm" disabled={busy}
                 onClick={() => void send("APPROVED")}>
           <IconCheck size={13} /> {tx("suggestions.tasdiqlash")}
-        </button>
-        <button className="btn btn-sm btn-danger" disabled={busy}
+        </Button>
+        <Button variant="danger" size="sm" disabled={busy}
                 onClick={() => void send("REJECTED")}>
           <IconClose size={13} /> {tx("suggestions.rad_etish")}
-        </button>
-        <button className="btn btn-sm btn-ghost" disabled={busy} onClick={() => void send()}>
+        </Button>
+        <Button variant="ghost" size="sm" disabled={busy} onClick={() => void send()}>
           {tx("suggestions.izohni_saqlash")}
-        </button>
+        </Button>
         {onCancel && (
-          <button className="btn btn-sm btn-ghost" disabled={busy} onClick={onCancel}>
+          <Button variant="ghost" size="sm" disabled={busy} onClick={onCancel}>
             {tx("common.bekor_qilish")}
-          </button>
+          </Button>
         )}
       </div>
     </div>

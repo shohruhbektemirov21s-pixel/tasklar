@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ApiError, api } from "@/api/client";
 import { deleteProject } from "@/api/projects";
@@ -15,6 +15,7 @@ import { PageHead } from "@/components/Layout";
 import { Card, DateField, ErrorMsg, Loading } from "@/components/ui";
 import { toProject, useEntityId, useGo, useIsPath } from "@/nav";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 export interface ProjectFormProps {
   initialOrderId?: number | null;
@@ -80,6 +81,23 @@ export default function ProjectForm({
   });
 
   const targetOrderId = initialOrderId ?? initialOrder?.id ?? null;
+
+  // Yangi loyiha yaratishda faqat «Rejalashtirilmoqda» va «Faol» holatlari ko'rinadi
+  const statusOptions = useMemo(() => {
+    const list = meta?.project_status?.length
+      ? meta.project_status
+      : [
+          { value: "PLANNING", label: "Rejalashtirilmoqda" },
+          { value: "ACTIVE", label: "Faol" },
+          { value: "PAUSED", label: "Toxtatilgan" },
+          { value: "DONE", label: "Yakunlangan" },
+          { value: "ARCHIVED", label: "Arxivlangan" },
+        ];
+    if (!editing) {
+      return list.filter((s) => s.value === "PLANNING" || s.value === "ACTIVE");
+    }
+    return list;
+  }, [meta?.project_status, editing]);
 
   const [f, setF] = useState(() => {
     if (initialOrder) {
@@ -608,10 +626,10 @@ export default function ProjectForm({
             qolgandi. */}
         {editing && acc?.can_delete_project && (
           <Card title={tx("project_form.loyihani_ochirish")}>
-            <button type="button" className="btn btn-danger btn-block" disabled={busy}
+            <Button variant="danger" block disabled={busy}
                     onClick={() => void removeProject()}>
               {tx("project_form.loyihani_butunlay_ochirish")}
-            </button>
+            </Button>
           </Card>
         )}
 
@@ -705,13 +723,12 @@ export default function ProjectForm({
                 style={{ width: "auto", minWidth: 140 }}
                 onChange={(e) => set("status", e.target.value)}
               >
-                {(meta?.project_status || []).map((s) => (
+                {statusOptions.map((s) => (
                   <option key={s.value} value={String(s.value)}>{s.label}</option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="btn btn-primary"
+              <Button
+                variant="primary"
                 disabled={busy}
                 onClick={() => {
                   if (formRef.current) {
@@ -724,16 +741,14 @@ export default function ProjectForm({
                 }}
               >
                 {busy ? tx("common.saqlanmoqda") : editing ? tx("common.saqlash") : tx("project_form.loyiha_yaratish")}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
+              </Button>
+              <Button iconOnly aria-label={tx("common.yopish")}
+                variant="ghost" size="sm"
                 onClick={onClose}
-                style={{ fontSize: 18, lineHeight: 1, padding: "4px 8px" }}
                 title={tx("common.yopish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -770,13 +785,12 @@ export default function ProjectForm({
             <select aria-label={tx("project_form.loyiha_holati")} title={tx("project_form.loyiha_holati")} value={f.status}
                     style={{ width: "auto", minWidth: 140 }}
                     onChange={(e) => set("status", e.target.value)}>
-              {(meta?.project_status || []).map((s) => (
+              {statusOptions.map((s) => (
                 <option key={s.value} value={String(s.value)}>{s.label}</option>
               ))}
             </select>
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button
+              variant="primary"
               disabled={busy}
               onClick={() => {
                 if (formRef.current) {
@@ -789,8 +803,8 @@ export default function ProjectForm({
               }}
             >
               {busy ? tx("common.saqlanmoqda") : editing ? tx("common.saqlash") : tx("project_form.loyiha_yaratish")}
-            </button>
-            <button type="button" className="btn" onClick={() => go(-1)}>{tx("common.bekor_qilish")}</button>
+            </Button>
+            <Button  onClick={() => go(-1)}>{tx("common.bekor_qilish")}</Button>
           </div>
         )}
       />

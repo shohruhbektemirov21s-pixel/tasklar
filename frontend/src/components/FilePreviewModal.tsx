@@ -6,6 +6,7 @@ import { IconClose, IconDownload, IconFile, IconSearch } from "./icons";
 import { Loading } from "./ui";
 import { lockScroll, unlockScroll } from "./scrollLock";
 import { tx } from "@/i18n";
+import { AnchorButton, Button } from "@/components/Button";
 
 export interface PreviewFile {
   url: string;
@@ -347,105 +348,89 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
             {/* Rasm boshqaruv tugmalari */}
             {isImage && (
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginRight: 8 }}>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-ghost"
+                <Button
+                  variant="ghost" size="sm"
                   onClick={() => setZoom((z) => Math.max(0.3, z - 0.2))}
                   title={tx("file_preview.kichiklashtirish")}
-                  style={{ padding: "4px 8px" }}
                 >
                   −
-                </button>
+                </Button>
                 <span style={{ fontSize: 11, minWidth: 40, textAlign: "center", fontWeight: 600, color: "var(--muted)" }}>
                   {Math.round(zoom * 100)}%
                 </span>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-ghost"
+                <Button
+                  variant="ghost" size="sm"
                   onClick={() => setZoom((z) => Math.min(3, z + 0.2))}
                   title={tx("file_preview.kattalashtirish")}
-                  style={{ padding: "4px 8px" }}
                 >
                   +
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-ghost"
+                </Button>
+                <Button
+                  variant="ghost" size="sm"
                   onClick={() => setRotation((r) => (r + 90) % 360)}
                   title={tx("file_preview.aylantirish")}
-                  style={{ padding: "4px 8px" }}
                 >
                   ↻
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-ghost"
+                </Button>
+                <Button
+                  variant="ghost" size="sm"
                   onClick={() => { setZoom(1); setRotation(0); }}
                   title={tx("file_preview.asl_olcham")}
-                  style={{ fontSize: 11, padding: "4px 6px" }}
                 >
                   1:1
-                </button>
+                </Button>
               </div>
             )}
 
             {/* Matndan nusxa olish */}
             {shouldRenderText && textContent !== null && (
-              <button
-                type="button"
-                className="btn btn-sm btn-outline"
+              <Button
+                size="sm"
                 onClick={copyText}
-                style={{ display: "flex", alignItems: "center", gap: 6 }}
               >
                 {copied ? tx("file_preview.nusxa_olindi") : tx("file_preview.nusxa_olish")}
-              </button>
+              </Button>
             )}
 
             {/* Yangi oynada ochish */}
-            <a
+            <AnchorButton
               href={file.url}
               target="_blank"
               rel="noreferrer"
-              className="btn btn-sm btn-ghost"
+              variant="ghost" size="sm"
               title={tx("file_preview.yangi_oynada_ochish")}
-              style={{ display: "flex", alignItems: "center", padding: "6px 8px" }}
             >
               ↗
-            </a>
+            </AnchorButton>
 
             {/* Yuklab olish */}
-            <a
+            <AnchorButton
               href={file.url}
               download={file.name}
-              className="btn btn-sm btn-outline"
-              style={{ display: "flex", alignItems: "center", gap: 6 }}
+              size="sm"
               title={tx("file_preview.saqlash_title")}
             >
               <IconDownload size={14} />
               <span className="hide-mobile">{tx("file_preview.yuklab_olish")}</span>
-            </a>
+            </AnchorButton>
 
             {/* To'liq ekran */}
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost"
+            <Button
+              variant="ghost" size="sm"
               onClick={() => setIsFull((f) => !f)}
               title={tx("file_preview.toliq_ekran")}
-              style={{ padding: "6px 8px" }}
             >
               {isFull ? "🗗" : "🗖"}
-            </button>
+            </Button>
 
             {/* Yopish */}
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost"
+            <Button
+              variant="ghost" size="sm"
               onClick={onClose}
               title={tx("file_preview.yopish")}
-              style={{ padding: "6px 8px" }}
             >
               <IconClose size={16} />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -555,12 +540,12 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
               <div style={{ fontSize: 36, marginBottom: 12 }}>⚠️</div>
               <p style={{ color: "var(--danger)", fontWeight: 600, fontSize: 14 }}>{error}</p>
               <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 16 }}>
-                <button type="button" onClick={handleForceText} className="btn btn-outline">
+                <Button onClick={handleForceText} >
                   {tx("file_preview.matn_sifatida_ochish")}
-                </button>
-                <a href={file.url} download={file.name} className="btn btn-primary">
+                </Button>
+                <AnchorButton href={file.url} download={file.name} variant="primary">
                   <IconDownload size={14} /> {tx("file_preview.faylni_yuklab_olish")}
-                </a>
+                </AnchorButton>
               </div>
             </div>
           )}
@@ -854,22 +839,19 @@ export default function FilePreviewModal({ file, onClose }: FilePreviewModalProp
                 {tx("file_preview.nomalum_format_izoh", { ext: ext.toUpperCase() || "fayl" })}
               </p>
               <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                <button
-                  type="button"
+                <Button
                   onClick={handleForceText}
-                  className="btn btn-outline"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+                  
                 >
                   📄 {tx("file_preview.matn_sifatida_ochish")}
-                </button>
-                <a
+                </Button>
+                <AnchorButton
                   href={file.url}
                   download={file.name}
-                  className="btn btn-primary"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+                  variant="primary"
                 >
                   <IconDownload size={16} /> {tx("file_preview.faylni_yuklab_olish")}
-                </a>
+                </AnchorButton>
               </div>
             </div>
           )}

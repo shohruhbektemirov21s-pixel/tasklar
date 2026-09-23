@@ -8,6 +8,7 @@ import {
 } from "@/components/ui";
 import { toProject, toTask, useEntityId } from "@/nav";
 import { tx } from "@/i18n";
+import { LinkButton } from "@/components/Button";
 
 export default function DeveloperReport() {
   // Loyiha va odam raqami manzilda emas, sahifa holatida - `src/nav`.
@@ -23,7 +24,7 @@ export default function DeveloperReport() {
       <div className="content">
         <Empty title={tx("developer_report.hisobot_tanlanmagan")}
                text={tx("developer_report.dasturchi_hisoboti_loyiha_jamoasidan_ochilad")}>
-          <Link className="btn btn-primary" to="/loyihalar">{tx("common.loyihalarim")}</Link>
+          <LinkButton variant="primary" to="/loyihalar">{tx("common.loyihalarim")}</LinkButton>
         </Empty>
       </div>
     );
@@ -44,7 +45,7 @@ export default function DeveloperReport() {
             <strong>{d.developer.full_name}</strong>
           </>
         }
-        actions={<Link className="btn btn-sm" {...toProject(id)}>{tx("developer_report.loyiha_sahifasi", undefined, "Loyihaga o'tish")}</Link>}
+        actions={<LinkButton size="sm" {...toProject(id)}>{tx("developer_report.loyiha_sahifasi", undefined, "Loyihaga o'tish")}</LinkButton>}
       />
 
       <div className="content">

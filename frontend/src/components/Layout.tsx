@@ -13,6 +13,7 @@ import { Avatar, Loading, SpecialtyTag } from "./ui";
 import { toFeed, toMessages, toSelfProfile, toUser, type NavTarget, useGo, useHistoryTracker, useNavHistory, getFallbackParentRoute } from "@/nav";
 import { tx } from "@/i18n";
 import { lockScroll, unlockScroll, resetScrollLock } from "./scrollLock";
+import { Button } from "@/components/Button";
 
 /**
  * Sahifa nomi turadigan UYA - yuqori paneldagi bo'sh tugun.
@@ -475,15 +476,15 @@ export default function Layout() {
                 <span className="email">{user?.email}</span>
               </span>
             </Link>
-            <button
-              className="btn btn-sm btn-block btn-logout"
+            <Button
+              size="sm" block className="btn-logout"
               onClick={() => {
                 logout();
                 go("/kirish");
               }}
             >
               <IconLogout size={14} /> {tx("common.chiqish")}
-            </button>
+            </Button>
           </div>
         </aside>
 

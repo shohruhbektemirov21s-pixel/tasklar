@@ -38,6 +38,7 @@ import { IconPlus } from "@/components/icons";
 import TaskDrawer from "@/components/TaskDrawer";
 import { toTask } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 const OrderDetailModal = lazy(() => import("@/pages/OrderDetail"));
 const LABELS: Record<DashboardPeriod, string> = {
@@ -298,7 +299,7 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
     <div className="panel-split">
     <Card title={picked.title} padded={false}
           badge={data ? <span className="badge">{data.count}</span> : undefined}
-          action={<button type="button" className="btn btn-sm" onClick={onClose}>{tx("common.yopish")}</button>}>
+          action={<Button size="sm" onClick={onClose}>{tx("common.yopish")}</Button>}>
       <div className="filters filters-inline">
         <div className="f grow">
           <label htmlFor={fid + "-q"}>{tx("common.qidiruv")}</label>
@@ -354,7 +355,7 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
                 value={f.assignee} onChange={(v) => set("assignee", v)}
                 placeholder={tx("dashboard.xodim_nomini_yozing")} />
         {filtered && (
-          <button type="button" className="btn" onClick={clear}>{tx("common.tozalash")}</button>
+          <Button  onClick={clear}>{tx("common.tozalash")}</Button>
         )}
       </div>
       {loading ? <Loading /> : !tasks?.length ? (
@@ -363,7 +364,7 @@ function PickedTasks({ picked, onClose }: { picked: Picked; onClose: () => void 
                  ? tx("dashboard.tanlangan_filtrga_mos_vazifa_topilmadi")
                  : tx("dashboard.bu_katakka_kirgan_vazifa_topilmadi")}>
           {filtered && (
-            <button type="button" className="btn" onClick={clear}>{tx("common.filtrni_tozalash")}</button>
+            <Button  onClick={clear}>{tx("common.filtrni_tozalash")}</Button>
           )}
         </Empty>
       ) : (
@@ -666,17 +667,15 @@ function DepartmentDashboard() {
               {tx("dashboard.boshqarma_tasdigida_izoh")}
             </div>
           </div>
-          <button
-            type="button"
-            className="btn btn-sm btn-primary"
-            style={{ borderRadius: 8, fontWeight: 600 }}
+          <Button
+            variant="primary" size="sm"
             onClick={(e) => {
               e.stopPropagation();
               void handleOpenReviewOrder();
             }}
           >
             {tx("dashboard.korish")} →
-          </button>
+          </Button>
         </div>
       )}
       <div
@@ -1032,22 +1031,14 @@ function DepartmentDashboard() {
                 )}
                 <button
                   type="button"
+                  className="chip-x"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedPeriod(null);
                     setSelectedMetric(null);
                   }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                    color: "var(--primary)",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    marginLeft: 2,
-                  }}
                   title={tx("common.filtrni_tozalash")}
+                  aria-label={tx("common.filtrni_tozalash")}
                 >
                   ✕
                 </button>
@@ -1150,20 +1141,12 @@ function DepartmentDashboard() {
               <p style={{ fontSize: 13, maxWidth: 420, margin: "0 auto 18px", color: "var(--text-muted)" }}>
                 {tx("dashboard.talabnoma_topilmadi_izoh")}
               </p>
-              <Link
+              <LinkButton
                 to="/buyurtma/yangi"
-                className="btn btn-sm btn-primary"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  borderRadius: 8,
-                  padding: "7px 16px",
-                  fontWeight: 600,
-                }}
+                variant="primary" size="sm"
               >
                 <IconPlus size={14} /> {tx("dashboard.birinchi_tz_yuborish")}
-              </Link>
+              </LinkButton>
             </div>
           ) : (
             <div className="table-responsive">
@@ -1392,12 +1375,12 @@ export default function Dashboard() {
               {tx("dashboard.boshlash_uchun_tavsiya")}
             </p>
             <div className="row" style={{ justifyContent: "center", gap: 10 }}>
-              <Link className="btn btn-primary" to="/loyihalar">
+              <LinkButton variant="primary" to="/loyihalar">
                 {tx("dashboard.loyihalarga_otish")}
-              </Link>
-              <Link className="btn" to="/qoshilish">
+              </LinkButton>
+              <LinkButton  to="/qoshilish">
                 {tx("projects.loyiha_topish")}
-              </Link>
+              </LinkButton>
             </div>
           </div>
         )}

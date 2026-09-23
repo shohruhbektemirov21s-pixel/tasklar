@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { tx } from "@/i18n";
 import { lockScroll, unlockScroll } from "./scrollLock";
+import { Button } from "@/components/Button";
 
 interface ConfirmOptions {
   title: string;
@@ -102,14 +103,14 @@ export default function ConfirmHost() {
         )}
         {pending.body && <p className="muted">{pending.body}</p>}
         <div className="modal-actions">
-          <button type="button" className="btn" onClick={() => done(false)}>
+          <Button  onClick={() => done(false)}>
             {pending.cancelText || tx("common.bekor_qilish")}
-          </button>
-          <button ref={confirmBtn} type="button"
-                  className={`btn ${pending.danger ? "btn-danger" : "btn-primary"}`}
+          </Button>
+          <Button ref={confirmBtn}
+                  variant={pending.danger ? "danger" : "primary"}
                   onClick={() => done(true)}>
             {pending.confirmText || tx("confirm.davom_etish")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

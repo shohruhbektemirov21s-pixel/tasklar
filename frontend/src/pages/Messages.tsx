@@ -13,6 +13,7 @@ import { Avatar, EmptyState, PageHeader, SpecialtyTag, timeAgo } from "@/compone
 import { useRealtime } from "@/realtime/RealtimeContext";
 import { toMessages, toUser, useEntityId, useGo } from "@/nav";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 export default function Messages() {
   const userId = useEntityId("user");
@@ -125,15 +126,14 @@ export default function Messages() {
             <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
               <div className="tf-chat-header">
                 <div className="tf-chat-header-user">
-                  <button
-                    type="button"
-                    className="btn btn-sm"
-                    style={{ padding: "4px 8px", marginRight: 4 }}
+                  <Button
+                    size="sm"
+                    style={{ marginRight: 4 }}
                     onClick={() => go(toMessages())}
                     title="Ortga"
                   >
                     ←
-                  </button>
+                  </Button>
                   <Avatar user={partner} size="sm" />
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -146,13 +146,12 @@ export default function Messages() {
                     </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-subtle"
+                <Button
+                  variant="ghost" size="sm"
                   onClick={() => go(toUser(partner.id))}
                 >
                   {tx("messages.profil")}
-                </button>
+                </Button>
               </div>
 
               <div style={{ flex: 1, minHeight: 0 }}>

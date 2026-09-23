@@ -7,6 +7,8 @@ import TeamPicker, { addPickedMembers, createPickedTasks, taskCount, tasksOf, ty
 import { Avatar, ErrorMsg, Loading, Priority, StatusBadge, fmtDate } from "@/components/ui";
 import { tx } from "@/i18n";
 import type { ChangeRequestItem, Project, Task } from "@/api/types";
+import { Button, ButtonGroup } from "@/components/Button";
+import { IconClose } from "@/components/icons";
 
 const TaskDetailModal = lazy(() => import("@/pages/TaskDetail"));
 
@@ -199,59 +201,20 @@ export default function DistributeTasksModal({
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                background: "#f1f5f9",
-                borderRadius: 8,
-                padding: 3,
-                gap: 4,
-              }}
-            >
-              <button
-                type="button"
-                className="btn btn-sm"
-                style={{
-                  background: activeTab === "assign" ? "#ffffff" : "transparent",
-                  color: activeTab === "assign" ? "#0f172a" : "#64748b",
-                  fontWeight: activeTab === "assign" ? 700 : 500,
-                  boxShadow: activeTab === "assign" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "5px 12px",
-                }}
-                onClick={() => setActiveTab("assign")}
-              >
+            <ButtonGroup>
+              <Button size="sm" active={activeTab === "assign"} onClick={() => setActiveTab("assign")}>
                 ⚡ {tx("orders.yangi_vazifalar_taqsimlash", undefined, "Yangi vazifalar taqsimlash")}{" "}
-                {newTasksCount > 0 && <span className="badge badge-primary ml-1" style={{ fontSize: 11 }}>{newTasksCount}</span>}
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm"
-                style={{
-                  background: activeTab === "list" ? "#ffffff" : "transparent",
-                  color: activeTab === "list" ? "#0f172a" : "#64748b",
-                  fontWeight: activeTab === "list" ? 700 : 500,
-                  boxShadow: activeTab === "list" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "5px 12px",
-                }}
-                onClick={() => setActiveTab("list")}
-              >
+                {newTasksCount > 0 && <span className="badge badge-primary">{newTasksCount}</span>}
+              </Button>
+              <Button size="sm" active={activeTab === "list"} onClick={() => setActiveTab("list")}>
                 📋 {tx("orders.mavjud_vazifalar", undefined, "Mavjud vazifalar")} ({totalTasks})
-              </button>
-            </div>
+              </Button>
+            </ButtonGroup>
 
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              style={{ padding: "6px 10px", fontSize: 18, color: "#64748b" }}
-              onClick={onClose}
-              title={tx("common.yopish")}
-            >
-              ✕
-            </button>
+            <Button variant="ghost" size="sm" iconOnly onClick={onClose}
+                    title={tx("common.yopish")} aria-label={tx("common.yopish")}>
+              <IconClose size={16} />
+            </Button>
           </div>
         </div>
 
@@ -297,14 +260,9 @@ export default function DistributeTasksModal({
                   💡 <strong>Qulaylik:</strong> Bir yoki bir nechta dasturchini tanlang. Har biriga bir nechta vazifa, boshlanish/tugash sanalari va fayllar biriktirishingiz mumkin.
                 </span>
                 {totalTasks > 0 && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-ghost"
-                    style={{ fontSize: 12.5, color: "#2563eb", fontWeight: 600 }}
-                    onClick={() => setActiveTab("list")}
-                  >
-                    Mavjud vazifalarni ko'rish ({totalTasks}) →
-                  </button>
+                  <Button variant="link" size="sm" onClick={() => setActiveTab("list")}>
+                    {tx("orders.mavjud_vazifalarni_korish", { n: totalTasks })}
+                  </Button>
                 )}
               </div>
 
@@ -330,20 +288,17 @@ export default function DistributeTasksModal({
                   gap: 12,
                 }}
               >
-                <button
-                  type="button"
-                  className="btn btn-outline"
+                <Button
+                  
                   onClick={onClose}
                   disabled={saving}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
+                </Button>
+                <Button
+                  variant="primary"
                   onClick={() => void handleSaveTasks()}
                   disabled={saving || newTasksCount === 0}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 20px" }}
                 >
                   <span>{saving ? "⏳" : "💾"}</span>
                   <span>
@@ -351,7 +306,7 @@ export default function DistributeTasksModal({
                       ? tx("common.saqlanmoqda")
                       : `${tx("orders.vazifa_biriktirish", undefined, "Vazifalarni biriktirish")} (${newTasksCount})`}
                   </span>
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
@@ -375,13 +330,12 @@ export default function DistributeTasksModal({
                   <p style={{ fontSize: 13, color: "#64748b", maxWidth: 450, margin: "0 auto 18px" }}>
                     Ushbu loyiha uchun hali vazifalar taqsimlanmagan. Yangi vazifa yaratish uchun quyidagi tugmani bosing.
                   </p>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
+                  <Button
+                    variant="primary"
                     onClick={() => setActiveTab("assign")}
                   >
                     ⚡ {tx("orders.yangi_vazifalar_taqsimlash", undefined, "Yangi vazifalar taqsimlash")}
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -389,15 +343,13 @@ export default function DistributeTasksModal({
                     <div style={{ fontSize: 13, color: "#64748b" }}>
                       Vazifa ustiga bosib, uning to'liq sahifasini ochishingiz, tahrirlashingiz yoki tasdiqlashingiz mumkin.
                     </div>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline"
+                    <Button
+                      size="sm"
                       onClick={() => setActiveTab("assign")}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                     >
                       <span>+</span>
                       <span>{tx("orders.yangi_vazifalar_taqsimlash", undefined, "Yangi vazifa taqsimlash")}</span>
-                    </button>
+                    </Button>
                   </div>
 
                   <div
@@ -480,17 +432,15 @@ export default function DistributeTasksModal({
                               {t.due_date ? fmtDate(t.due_date) : "—"}
                             </td>
                             <td style={{ padding: "12px 14px", textAlign: "right" }}>
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-ghost"
-                                style={{ color: "#2563eb", fontWeight: 600, fontSize: 12 }}
+                              <Button
+                                variant="link" size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedTaskId(t.id);
                                 }}
                               >
-                                Ko'rish →
-                              </button>
+                                {tx("common.korish")} →
+                              </Button>
                             </td>
                           </tr>
                         ))}

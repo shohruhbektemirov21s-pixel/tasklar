@@ -4,7 +4,6 @@ import { ApiError, api } from "@/api/client";
 import type { Task, User, UserWork, ChangeRequestItem } from "@/api/types";
 import { clientApprove, clientReject } from "@/api/orders";
 import { useAuth } from "@/auth/AuthContext";
-import { PageHead } from "@/components/Layout";
 import { IconChat } from "@/components/icons";
 import Timeline from "@/components/Timeline";
 import FilePreviewModal, { PreviewFile } from "@/components/FilePreviewModal";
@@ -17,6 +16,7 @@ import { toMessages, toProject, toTask, toOrder, useEntityId, useGo, useNavParam
 import PasswordCard from "@/components/PasswordCard";
 import TelegramCard from "@/components/TelegramCard";
 import { tx } from "@/i18n";
+import { Button, ButtonGroup, LinkButton, buttonClass } from "@/components/Button";
 
 /** Profil kartasidagi vazifalar ro'yxati bir sahifada nechta. */
 const TASKS_PER_PAGE = 10;
@@ -332,24 +332,24 @@ export default function Profile() {
         actions={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {!isSelf && (
-              <Link className="btn btn-sm btn-subtle" {...toMessages(target.id)}>
+              <LinkButton variant="ghost" size="sm" {...toMessages(target.id)}>
                 <IconChat size={14} /> {tx("profile.xabar_yozish")}
-              </Link>
+              </LinkButton>
             )}
             {isSelf && !edit && (
-              <button className="btn btn-sm btn-primary" onClick={() => setEdit(true)}>
+              <Button variant="primary" size="sm" onClick={() => setEdit(true)}>
                 {tx("common.tahrirlash")}
-              </button>
+              </Button>
             )}
             {isSelf && edit && (
               <>
-                <button className="btn btn-sm btn-primary" type="submit"
+                <Button variant="primary" size="sm" type="submit"
                         form={`${fid}-form`} disabled={busy}>
                   {busy ? tx("common.saqlanmoqda") : tx("common.saqlash")}
-                </button>
-                <button className="btn btn-sm btn-subtle" type="button" onClick={() => setEdit(false)}>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setEdit(false)}>
                   {tx("common.bekor_qilish")}
-                </button>
+                </Button>
               </>
             )}
           </div>
@@ -368,7 +368,7 @@ export default function Profile() {
                   <AvatarViewable user={target} size="xl" />
                   {isSelf && (
                     <div className="avatar-edit" style={{ marginTop: 10 }}>
-                      <label className="btn btn-sm" style={{ marginBottom: 0 }}>
+                      <label className={buttonClass({ size: "sm" })} style={{ marginBottom: 0 }}>
                         {target.avatar ? tx("profile.almashtirish") : tx("profile.rasm_qoyish")}
                         <input type="file" accept="image/*" disabled={photoBusy}
                                onChange={(e) => {
@@ -378,10 +378,10 @@ export default function Profile() {
                                }} />
                       </label>
                       {target.avatar && (
-                        <button type="button" className="btn btn-sm btn-danger"
+                        <Button variant="danger" size="sm"
                                 disabled={photoBusy} onClick={() => void removePhoto()}>
                           {tx("common.ochirish_2")}
-                        </button>
+                        </Button>
                       )}
                     </div>
                   )}
@@ -485,9 +485,9 @@ export default function Profile() {
                               PM: {ord.assigned_pm_name}
                             </span>
                           )}
-                          <Link className="btn btn-sm btn-ghost" {...toOrder(ord.id)}>
+                          <LinkButton variant="ghost" size="sm" {...toOrder(ord.id)}>
                             {tx("profile.batafsil_korish")} →
-                          </Link>
+                          </LinkButton>
                         </div>
                       </div>
 
@@ -525,9 +525,8 @@ export default function Profile() {
                           }}
                         >
                           <span>📄 <strong>{tx("profile.topshirilgan_hujjat")}:</strong></span>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline"
+                          <Button
+                            size="sm"
                             onClick={() =>
                               setPreviewFile({
                                 url: ord.completion_file_url!,
@@ -535,41 +534,35 @@ export default function Profile() {
                                 size: ord.completion_file_size_display,
                               })
                             }
-                            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                           >
                             <span>👁️</span>
                             <span>{ord.completion_file_name || tx("profile.hujjatni_korish")}</span>
                             {ord.completion_file_size_display && (
                               <small className="muted">({ord.completion_file_size_display})</small>
                             )}
-                          </button>
+                          </Button>
                         </div>
                       )}
 
                       {/* Tasdiqlash / Qaytarish harakatlari */}
                       {canManageReview && (
                         <div className="row wrap" style={{ gap: 10, marginTop: 6, paddingTop: 10, borderTop: "1px dashed var(--border-color, #e2e8f0)" }}>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-primary"
-                            style={{ background: "#16a34a", borderColor: "#16a34a", color: "#fff", display: "inline-flex", alignItems: "center", gap: 6 }}
-                            disabled={orderActionBusy === ord.id}
+                          <Button
+                            variant="success" size="sm"
+                            loading={orderActionBusy === ord.id}
                             onClick={() => void handleApproveOrder(ord)}
                           >
-                            <span>✓</span>
-                            <span>{orderActionBusy === ord.id ? "Tasdiqlanmoqda..." : tx("profile.tasdiqlash_va_yakunlash")}</span>
-                          </button>
+                            ✓ {tx("profile.tasdiqlash_va_yakunlash")}
+                          </Button>
 
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline"
-                            style={{ color: "#d97706", borderColor: "#d97706", display: "inline-flex", alignItems: "center", gap: 6 }}
+                          <Button variant="warning"
+                            size="sm"
                             disabled={orderActionBusy === ord.id}
                             onClick={() => handleOpenRejectModal(ord)}
                           >
                             <span>⚠️</span>
                             <span>{tx("profile.tuzatishga_qaytarish")}</span>
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -585,39 +578,34 @@ export default function Profile() {
                 padded={false}
                 badge={<span className="badge">{filteredOrders.length}</span>}
                 action={
-                  <div className="row wrap" style={{ gap: 4 }}>
-                    <button
-                      type="button"
-                      className={`btn btn-sm ${orderFilter === "all" ? "btn-primary" : "btn-ghost"}`}
+                  <ButtonGroup>
+                    <Button
+                      size="sm" active={orderFilter === "all"}
                       onClick={() => { setOrderFilter("all"); setOrderPage(1); }}
                     >
                       {tx("profile.barcha_buyurtmalar")} ({work.orders.length})
-                    </button>
+                    </Button>
                     {pendingOrders.length > 0 && (
-                      <button
-                        type="button"
-                        className={`btn btn-sm ${orderFilter === "pending_review" ? "btn-primary" : "btn-ghost"}`}
+                      <Button
+                        size="sm" active={orderFilter === "pending_review"}
                         onClick={() => { setOrderFilter("pending_review"); setOrderPage(1); }}
-                        style={orderFilter !== "pending_review" ? { color: "#7e22ce" } : { background: "#7e22ce" }}
                       >
                         📑 {tx("profile.boshqarma_tasdigida")} ({pendingOrders.length})
-                      </button>
+                      </Button>
                     )}
-                    <button
-                      type="button"
-                      className={`btn btn-sm ${orderFilter === "in_progress" ? "btn-primary" : "btn-ghost"}`}
+                    <Button
+                      size="sm" active={orderFilter === "in_progress"}
                       onClick={() => { setOrderFilter("in_progress"); setOrderPage(1); }}
                     >
                       ⚙️ {tx("profile.jarayonda")} ({work.order_stats?.in_progress ?? 0})
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn btn-sm ${orderFilter === "completed" ? "btn-primary" : "btn-ghost"}`}
+                    </Button>
+                    <Button
+                      size="sm" active={orderFilter === "completed"}
                       onClick={() => { setOrderFilter("completed"); setOrderPage(1); }}
                     >
                       ✓ {tx("profile.yakunlangan")} ({work.order_stats?.completed ?? 0})
-                    </button>
-                  </div>
+                    </Button>
+                  </ButtonGroup>
                 }
               >
                 <div className="table-wrap">
@@ -652,31 +640,27 @@ export default function Profile() {
                           <td className="nowrap" onClick={(e) => e.stopPropagation()}>
                             {ord.status === "READY_FOR_REVIEW" && canManageReview ? (
                               <div className="row" style={{ gap: 4 }}>
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-primary"
-                                  style={{ background: "#16a34a", padding: "2px 8px", fontSize: 11.5 }}
+                                <Button
+                                  variant="success" size="sm"
                                   disabled={orderActionBusy === ord.id}
                                   onClick={() => void handleApproveOrder(ord)}
                                   title={tx("profile.tasdiqlash_va_yakunlash")}
                                 >
                                   ✓
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-outline"
-                                  style={{ color: "#d97706", borderColor: "#d97706", padding: "2px 8px", fontSize: 11.5 }}
+                                </Button>
+                                <Button variant="warning"
+                                  size="sm"
                                   disabled={orderActionBusy === ord.id}
                                   onClick={() => handleOpenRejectModal(ord)}
                                   title={tx("profile.tuzatishga_qaytarish")}
                                 >
                                   ⚠️
-                                </button>
+                                </Button>
                               </div>
                             ) : (
-                              <Link className="btn btn-sm btn-ghost" {...toOrder(ord.id)} style={{ padding: "2px 8px", fontSize: 11.5 }}>
-                                Ko'rish →
-                              </Link>
+                              <LinkButton variant="ghost" size="sm" {...toOrder(ord.id)}>
+                                {tx("common.korish")} →
+                              </LinkButton>
                             )}
                           </td>
                         </tr>
@@ -707,10 +691,10 @@ export default function Profile() {
             <Card title={isSelf ? tx("profile.songgi_vazifalarim") : tx("profile.songgi_vazifalari")} padded={false}
                   badge={<span className="badge">{tasks.length}</span>}
                   action={pickedStat && (
-                    <button type="button" className="btn btn-sm"
+                    <Button size="sm"
                             onClick={clearStat}>
                       {tx("common.filtrni_tozalash")}
-                    </button>
+                    </Button>
                   )}>
               <div className="table-wrap"><table className="table">
                 <tbody>
@@ -868,13 +852,12 @@ export default function Profile() {
                 <span style={{ fontSize: 20 }}>⚠️</span>
                 <strong>{tx("profile.tuzatish_modal_title")}</strong>
               </div>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
+              <Button iconOnly aria-label={tx("common.yopish")}
+                variant="ghost" size="sm"
                 onClick={() => !rejectSubmitting && setRejectModalItem(null)}
               >
                 ✕
-              </button>
+              </Button>
             </div>
 
             <form onSubmit={handleRejectSubmit}>
@@ -933,22 +916,20 @@ export default function Profile() {
               </div>
 
               <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   disabled={rejectSubmitting}
                   onClick={() => setRejectModalItem(null)}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-primary"
-                  style={{ background: "#d97706", borderColor: "#d97706" }}
+                  variant="warning"
                   disabled={rejectSubmitting || (!rejectFeedbackNote.trim() && !rejectFile)}
                 >
                   {rejectSubmitting ? "Yuborilmoqda..." : tx("profile.tuzatish_yuborish")}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

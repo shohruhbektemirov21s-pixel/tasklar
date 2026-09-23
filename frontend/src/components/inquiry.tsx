@@ -15,6 +15,7 @@ import {
 } from "@/components/icons";
 import { Card, ErrorMsg } from "@/components/ui";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 export const STATUS_TONE: Record<InquiryStatusValue, string> = {
   PENDING: "badge-warn",
@@ -164,9 +165,10 @@ export function InquiryForm({ initial, editing, onCancel, onSaved }: {
               {kept.map((file) => (
                 <span key={file.id} className="badge" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                   <IconFile size={13} /> {file.original_name}
-                  <button type="button" className="btn-icon" onClick={() => dropFile(file)} title="O'chirish">
+                  <Button variant="ghost" size="xs" iconOnly onClick={() => dropFile(file)}
+                          title={tx("common.ochirish")} aria-label={tx("common.ochirish")}>
                     <IconClose size={12} />
-                  </button>
+                  </Button>
                 </span>
               ))}
             </div>
@@ -178,12 +180,12 @@ export function InquiryForm({ initial, editing, onCancel, onSaved }: {
         </div>
 
         <div className="row gap-2" style={{ justifyContent: "flex-end", marginTop: 12 }}>
-          <button type="button" className="btn" onClick={onCancel} disabled={busy}>
+          <Button  onClick={onCancel} disabled={busy}>
             {tx("common.bekor_qilish")}
-          </button>
-          <button type="submit" className="btn btn-primary" disabled={busy || !f.title.trim() || !f.body.trim()}>
+          </Button>
+          <Button type="submit" variant="primary" disabled={busy || !f.title.trim() || !f.body.trim()}>
             {busy ? tx("common.saqlanmoqda") : tx("common.yuborish")}
-          </button>
+          </Button>
         </div>
       </form>
     </Card>
@@ -218,33 +220,27 @@ export function InquiryVoteBar({ item, onChange }: {
 
   return (
     <div className="row gap-2" style={{ alignItems: "center" }}>
-      <button
-        type="button"
-        className={`btn btn-sm ${isFor ? "btn-primary" : "btn-outline"}`}
+      <Button
+        variant={isFor ? "primary" : "secondary"} size="sm"
         onClick={() => cast("FOR")}
         disabled={busy}
-        style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
       >
         <IconThumbUp size={14} /> {item.for_count}
-      </button>
-      <button
-        type="button"
-        className={`btn btn-sm ${isNeutral ? "btn-primary" : "btn-outline"}`}
+      </Button>
+      <Button
+        variant={isNeutral ? "primary" : "secondary"} size="sm"
         onClick={() => cast("NEUTRAL")}
         disabled={busy}
-        style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
       >
         <IconNeutral size={14} /> {item.neutral_count}
-      </button>
-      <button
-        type="button"
-        className={`btn btn-sm ${isAgainst ? "btn-danger" : "btn-outline"}`}
+      </Button>
+      <Button
+        variant={isAgainst ? "danger" : "secondary"} size="sm"
         onClick={() => cast("AGAINST")}
         disabled={busy}
-        style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
       >
         <IconThumbDown size={14} /> {item.against_count}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -287,22 +283,20 @@ export function InquiryBossPanel({ item, onDone }: {
             placeholder="Qaror izohi (ixtiyoriy)..."
           />
           <div className="row gap-2" style={{ justifyContent: "flex-end" }}>
-            <button
-              type="button"
-              className="btn btn-sm btn-danger"
+            <Button
+              variant="danger" size="sm"
               onClick={() => decide("REJECTED")}
               disabled={busy}
             >
               Rad etish
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
+            </Button>
+            <Button
+              variant="primary" size="sm"
               onClick={() => decide("APPROVED")}
               disabled={busy}
             >
               Tasdiqlash
-            </button>
+            </Button>
           </div>
         </div>
       </Card>

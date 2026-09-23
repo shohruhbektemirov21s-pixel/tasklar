@@ -15,6 +15,7 @@ import { Avatar, DiffView, ErrorMsg, OkMsg, fmtDateTime, timeAgo } from "./ui";
 import { toTask } from "@/nav";
 import { tx } from "@/i18n";
 import FilePreviewModal, { PreviewFile } from "./FilePreviewModal";
+import { Button } from "@/components/Button";
 
 interface Props {
   task: Task;
@@ -221,17 +222,17 @@ export default function TaskSubmission({ task, canWork, onChange, isOpen, onTogg
               hidden
               onChange={(e) => setFiles(Array.from(e.target.files || []))}
             />
-            <button type="button" className="btn btn-sm"
+            <Button size="sm"
                     onClick={() => fileInput.current?.click()}>
               {tx("task_submission.fayl_tanlash")}
-            </button>
+            </Button>
             {!!files.length && (
               <div className="help">{files.map((f) => f.name).join(", ")}</div>
             )}
           </div>
-          <button className="btn btn-primary" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {busy ? tx("task_submission.topshirilmoqda") : tx("task_submission.ishni_topshirish")}
-          </button>
+          </Button>
           <span className="muted" style={{ marginLeft: 10, fontSize: 12.5 }}>
             {tx("task_submission.vazifa_tekshiruvga_otadi_va_menejer")}
           </span>
@@ -259,13 +260,13 @@ export default function TaskSubmission({ task, canWork, onChange, isOpen, onTogg
               <span className="spacer" />
               {s.can_edit && editing !== s.id && (
                 <>
-                  <button className="btn btn-sm btn-ghost"
+                  <Button variant="ghost" size="sm"
                           onClick={() => { setEditing(s.id); setEditText(s.text); }}>
                     {tx("common.tahrirlash")}
-                  </button>
-                  <button className="btn btn-sm btn-danger" onClick={() => void remove(s.id)}>
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={() => void remove(s.id)}>
                     <IconClose size={13} /> {tx("common.ochirish")}
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -274,10 +275,10 @@ export default function TaskSubmission({ task, canWork, onChange, isOpen, onTogg
               <div className="mt">
                 <textarea rows={3} value={editText} onChange={(e) => setEditText(e.target.value)} />
                 <div className="row" style={{ marginTop: 8 }}>
-                  <button className="btn btn-sm btn-primary" onClick={() => void saveEdit(s.id)}>
+                  <Button variant="primary" size="sm" onClick={() => void saveEdit(s.id)}>
                     <IconCheck size={13} /> {tx("common.saqlash")}
-                  </button>
-                  <button className="btn btn-sm" onClick={() => setEditing(null)}>{tx("common.bekor_qilish")}</button>
+                  </Button>
+                  <Button size="sm" onClick={() => setEditing(null)}>{tx("common.bekor_qilish")}</Button>
                 </div>
               </div>
             ) : (
@@ -304,11 +305,11 @@ export default function TaskSubmission({ task, canWork, onChange, isOpen, onTogg
 
             {s.is_edited && (
               <div style={{ marginTop: 10 }}>
-                <button className="btn btn-sm btn-ghost"
+                <Button variant="ghost" size="sm"
                         onClick={() => setOpenHistory(openHistory === s.id ? null : s.id)}>
                   <IconHistory size={13} />{" "}
                   {openHistory === s.id ? tx("task_submission.tahrir_tarixini_yashirish") : tx("task_submission.tahrir_tarixi")}
-                </button>
+                </Button>
                 {openHistory === s.id && (
                   <div className="edit-history">
                     {s.edits.map((e) => (

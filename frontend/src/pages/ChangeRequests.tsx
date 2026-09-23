@@ -8,7 +8,6 @@
  * - Rasmiy Word (.docx) blanki va biriktirilgan TZ fayllarini yuklab olish.
  */
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { api, listOf, pagesOf, totalOf } from "@/api/client";
 
 const ProjectFormModal = lazy(() => import("@/pages/ProjectForm"));
@@ -31,6 +30,7 @@ import {
   ErrorMsg,
   fmtDate,
   fmtDateTime,
+  Pager,
   timeAgo,
 } from "@/components/ui";
 import { tx } from "@/i18n";
@@ -39,6 +39,8 @@ export { ORDER_TYPE_CONFIG, OrderTypeBadge, ORDER_STATUS_CONFIG, OrderStatusBadg
 export { OrderProgressStepper } from "./orders/OrderProgressStepper";
 import { OrderStatusBadge } from "./orders/OrderBadges";
 import { KpiCardSkeleton, TableRowSkeleton } from "./orders/OrderSkeletons";
+import { Button, LinkButton, buttonClass } from "@/components/Button";
+
 export default function ChangeRequests() {
   const { user, meta } = useAuth();
   const go = useGo();
@@ -572,9 +574,9 @@ export default function ChangeRequests() {
         <p style={{ color: "var(--muted)", lineHeight: 1.6, marginBottom: 24, fontSize: 14 }}>
           {tx("orders.ruxsat_cheklangan_izoh")}
         </p>
-        <Link to="/panel" className="btn btn-primary" style={{ padding: "8px 20px" }}>
+        <LinkButton to="/panel" variant="primary">
           {tx("common.bosh_sahifa")}
-        </Link>
+        </LinkButton>
       </div>
     );
   }
@@ -595,21 +597,12 @@ export default function ChangeRequests() {
         }
         actions={
           canCreateOrder ? (
-            <button
-              className="btn btn-primary"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                borderRadius: 10,
-                padding: "9px 18px",
-                fontWeight: 600,
-                fontSize: 13.5,
-              }}
+            <Button
+              variant="primary"
               onClick={() => go(toNewOrder())}
             >
               <IconPlus size={16} /> {tx("orders.yangi_buyurtma")}
-            </button>
+            </Button>
           ) : undefined
         }
       />
@@ -921,23 +914,10 @@ export default function ChangeRequests() {
             {search && (
               <button
                 type="button"
+                className="input-clear"
                 onClick={() => setSearch("")}
-                style={{
-                  position: "absolute",
-                  right: 10,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "transparent",
-                  border: "none",
-                  color: "#94a3b8",
-                  cursor: "pointer",
-                  padding: 4,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 13,
-                }}
                 title={tx("orders.qidiruvni_tozalash")}
+                aria-label={tx("orders.qidiruvni_tozalash")}
               >
                 ✕
               </button>
@@ -1173,10 +1153,10 @@ export default function ChangeRequests() {
               </span>
             </div>
           )}
-          <button
-            type="button"
-            className="btn btn-ghost"
+          <Button
+            iconOnly
             title={tx("common.filtrni_tozalash")}
+            aria-label={tx("common.filtrni_tozalash")}
             onClick={() => {
               setSearch("");
               setStatusFilter("");
@@ -1186,19 +1166,6 @@ export default function ChangeRequests() {
               setPriorityFilter("");
               setDepartmentFilter("");
               setPage(1);
-            }}
-            style={{
-              width: 42,
-              height: 42,
-              padding: 0,
-              borderRadius: 8,
-              border: "1px solid #e2e8f0",
-              background: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#64748b",
-              cursor: "pointer",
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1212,7 +1179,7 @@ export default function ChangeRequests() {
               <line x1="9" y1="8" x2="15" y2="8" />
               <line x1="17" y1="16" x2="23" y2="16" />
             </svg>
-          </button>
+          </Button>
         </div>
         {error && (
           <div
@@ -1240,22 +1207,12 @@ export default function ChangeRequests() {
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              className="btn btn-secondary"
+            <Button variant="danger"
+              
               onClick={() => reload()}
-              style={{
-                borderRadius: 8,
-                padding: "6px 14px",
-                fontSize: 12.5,
-                fontWeight: 600,
-                background: "#fff",
-                borderColor: "#fca5a5",
-                color: "#991b1b",
-              }}
             >
               {`🔄 ${tx("orders.qayta_urinish")}`}
-            </button>
+            </Button>
           </div>
         )}
         {loading || displayItems.length > 0 ? (
@@ -1389,14 +1346,13 @@ export default function ChangeRequests() {
                           {fmtDate(item.created_at || item.request_date)}
                         </td>
                         <td style={{ textAlign: "right", padding: "14px" }} onClick={(e) => e.stopPropagation()}>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-ghost"
+                          <Button
+                            variant="ghost" size="sm"
                             onClick={() => handleOpenView(item)}
                             title={tx("orders.batafsil_korish", undefined, "Batafsil ko'rish")}
                           >
                             {tx("common.korish", undefined, "Ko'rish")}
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -1420,79 +1376,7 @@ export default function ChangeRequests() {
                 <div style={{ fontSize: 13, color: "#64748b" }}>
                   {tx("orders.jami_ta_buyurtma", { n: total })}
                 </div>
-                {pages > 1 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      style={{
-                        width: 32,
-                        height: 32,
-                        padding: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: 8,
-                        background: "#fff",
-                        color: page <= 1 ? "#cbd5e1" : "#64748b",
-                        cursor: page <= 1 ? "default" : "pointer",
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="15 18 9 12 15 6" />
-                      </svg>
-                    </button>
-                    {Array.from({ length: Math.max(1, pages) }, (_, i) => i + 1).map((p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setPage(p)}
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 8,
-                          border: p === page ? "none" : "1px solid var(--border)",
-                          background: p === page ? "var(--primary)" : "var(--surface)",
-                          color: p === page ? "#fff" : "var(--text)",
-                          fontWeight: 600,
-                          fontSize: 13,
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      disabled={page >= Math.max(1, pages)}
-                      onClick={() => setPage((p) => Math.min(pages, p + 1))}
-                      style={{
-                        width: 32,
-                        height: 32,
-                        padding: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: 8,
-                        background: "#fff",
-                        color: page >= Math.max(1, pages) ? "#cbd5e1" : "#64748b",
-                        cursor: page >= Math.max(1, pages) ? "default" : "pointer",
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-                  </div>
-                )}
+                {pages > 1 && <Pager page={page} pages={pages} onPick={setPage} />}
               </div>
             )}
           </div>
@@ -1516,10 +1400,8 @@ export default function ChangeRequests() {
                 <p style={{ color: "#64748b", fontSize: 13.5, maxWidth: 460, margin: "0 auto 20px" }}>
                   {tx("orders.mos_topilmadi_matn")}
                 </p>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  style={{ borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600 }}
+                <Button
+                  
                   onClick={() => {
                     setSearch("");
                     setStatusFilter("");
@@ -1532,7 +1414,7 @@ export default function ChangeRequests() {
                   }}
                 >
                   {tx("common.tozalash")}
-                </button>
+                </Button>
               </>
             ) : (
               <>
@@ -1541,22 +1423,12 @@ export default function ChangeRequests() {
                   {tx("orders.bosh_holat")}
                 </div>
                 {canCreateOrder && (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    style={{
-                      borderRadius: 8,
-                      padding: "9px 20px",
-                      fontSize: 13.5,
-                      fontWeight: 600,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
+                  <Button
+                    variant="primary"
                     onClick={() => go(toNewOrder())}
                   >
                     <IconPlus size={16} /> {tx("orders.yangi_buyurtma")}
-                  </button>
+                  </Button>
                 )}
               </>
             )}
@@ -1616,16 +1488,14 @@ export default function ChangeRequests() {
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn btn-xs btn-ghost"
+              <Button aria-label={tx("common.bekor_qilish")} iconOnly
+                variant="ghost" size="xs"
                 onClick={() => setClaimModalItem(null)}
                 disabled={claimSubmitting}
-                style={{ fontSize: 15, width: 30, height: 30, padding: 0 }}
                 title={tx("common.bekor_qilish")}
               >
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleClaimSubmit}>
               <div className="modal-body" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -1647,17 +1517,15 @@ export default function ChangeRequests() {
                       <span style={{ color: "var(--muted)" }}>{tx("orders.soralgan_muddat")}:</span>
                       <strong style={{ color: "var(--text)" }}>{fmtDate(claimModalItem.due_date)}</strong>
                     </div>
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-ghost"
-                      style={{ fontSize: 11.5, color: "var(--accent)", fontWeight: 600 }}
+                    <Button
+                      variant="link" size="xs"
                       onClick={() => {
                         const d = claimModalItem.due_date?.split("T")[0];
                         if (d) setClaimDeadline(d);
                       }}
                     >
                       {tx("orders.claim_use_client_date")}
-                    </button>
+                    </Button>
                   </div>
                 )}
                 {(user?.is_platform_admin || user?.is_boss) && (
@@ -1746,36 +1614,26 @@ export default function ChangeRequests() {
                 }}
               >
                 <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
+                  <Button
+                    variant="ghost"
                     onClick={() => setClaimModalItem(null)}
                     disabled={claimSubmitting}
                   >
                     {tx("common.bekor_qilish")}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-danger btn-outline"
+                  </Button>
+                  <Button
+                    variant="danger"
                     disabled={claimSubmitting}
                     onClick={handleClaimReject}
-                    style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}
                     title="Buyurtmani kamchilik yoki sabab bilan orqaga qaytarish"
                   >
                     ↩ {tx("orders.orqaga_qaytarish", undefined, "Orqaga qaytarish")}
-                  </button>
+                  </Button>
                 </div>
-                <button
+                <Button
                   type="submit"
-                  className="btn btn-ok"
+                  variant="success"
                   disabled={claimSubmitting || !claimDeadline}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
                 >
                   {claimSubmitting ? (
                     <>
@@ -1788,7 +1646,7 @@ export default function ChangeRequests() {
                       <span>{tx("orders.claim_submit_btn", undefined, "Qabul qilish")}</span>
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -1824,33 +1682,29 @@ export default function ChangeRequests() {
               </div>
               <div className="row middle" style={{ gap: 8 }}>
                 {isSohaviyOrAdmin && viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && viewingItem.status !== "READY_FOR_REVIEW" && viewingItem.status !== "CANCELLED" && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-primary"
-                    style={{ background: "#0284c7", borderColor: "#0284c7" }}
+                  <Button
+                    variant="primary" size="sm"
                     onClick={() => handleOpenUploadVersion(viewingItem)}
                   >
                     📤 {tx("orders.upload_new_version")}
-                  </button>
+                  </Button>
                 )}
                 {viewingItem.tz_file_url && (
-                  <button
-                    type="button"
+                  <Button
                     onClick={() => setPreviewFile({
                       url: viewingItem.tz_file_url!,
                       name: viewingItem.tz_file_name || "TZ_fayli.docx",
                       size: viewingItem.tz_file_size_display,
                     })}
-                    className="btn btn-sm btn-outline row middle"
-                    style={{ gap: 4 }}
+                    size="sm" className="row middle"
                     title={tx("orders.tz_preview_tooltip")}
                   >
                     <IconPaperclip size={14} /> {tx("orders.tz_hujjati")}
-                  </button>
+                  </Button>
                 )}
                 {canEditOrder(viewingItem) && (
-                  <button
-                    className="btn btn-sm btn-ghost"
+                  <Button
+                    variant="ghost" size="sm"
                     onClick={() => {
                       const oid = viewingItem.id;
                       setViewingItem(null);
@@ -1858,11 +1712,11 @@ export default function ChangeRequests() {
                     }}
                   >
                     {tx("common.tahrirlash")}
-                  </button>
+                  </Button>
                 )}
-                <button className="btn btn-sm btn-ghost" onClick={() => setViewingItem(null)}>
+                <Button iconOnly aria-label={tx("common.yopish")} variant="ghost" size="sm" onClick={() => setViewingItem(null)}>
                   ✕
-                </button>
+                </Button>
               </div>
             </div>
             <div className="modal-body" style={{ padding: 20 }}>
@@ -1901,36 +1755,32 @@ export default function ChangeRequests() {
                     </div>
                     <div className="row middle" style={{ gap: 8, flexWrap: "wrap" }}>
                       {viewingItem.pending_version.tz_file_url && (
-                        <button
-                          type="button"
+                        <Button
                           onClick={() => setPreviewFile({
                             url: viewingItem.pending_version!.tz_file_url!,
                             name: viewingItem.pending_version!.tz_file_name || `Yangi_TZ_v${viewingItem.pending_version!.version}.docx`,
                             size: viewingItem.pending_version!.tz_file_size_display,
                           })}
-                          className="btn btn-sm btn-outline row middle"
-                          style={{ gap: 4, background: "#fff" }}
+                          size="sm" className="row middle"
                           title={tx("orders.yangi_tz_tooltip")}
                         >
                           <span>📄</span> {tx("orders.yangi_tz_fayli_btn")} (v{viewingItem.pending_version.version})
-                        </button>
+                        </Button>
                       )}
                       {isPMOrAdmin && (user?.is_platform_admin || user?.is_boss || !viewingItem.assigned_pm || viewingItem.assigned_pm === user?.id) && (
                         <>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-ok"
+                          <Button
+                            variant="success" size="sm"
                             onClick={() => handleOpenApproveVersion(viewingItem, viewingItem.pending_version?.version)}
                           >
                             ✓ {tx("orders.approve_version_btn")}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-danger"
+                          </Button>
+                          <Button
+                            variant="danger" size="sm"
                             onClick={() => handleOpenRejectVersion(viewingItem, viewingItem.pending_version?.version)}
                           >
                             ✕ {tx("orders.reject_version_btn")}
-                          </button>
+                          </Button>
                         </>
                       )}
                     </div>
@@ -1965,33 +1815,29 @@ export default function ChangeRequests() {
                   </div>
                   <div className="row" style={{ gap: 8 }}>
                     {canEditOrder(viewingItem) && (
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline"
+                      <Button
+                        size="sm"
                         onClick={() => {
                           const oid = viewingItem.id;
                           setViewingItem(null);
                           go(toEditOrder(oid));
                         }}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
                       >
                         <span>✏️</span>
                         <span>{tx("common.tahrirlash")}</span>
-                      </button>
+                      </Button>
                     )}
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
+                    <Button
+                      variant="primary" size="sm"
                       onClick={async () => {
                         const itm = viewingItem;
                         setViewingItem(null);
                         await handleSendOrder(itm);
                       }}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
                     >
                       <span>🚀</span>
                       <span>{tx("orders.send_order")}</span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : !viewingItem.assigned_pm ? (
@@ -2021,15 +1867,13 @@ export default function ChangeRequests() {
                     </div>
                   </div>
                   {isPMOrAdmin && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
-                      style={{ background: "#059669", borderColor: "#059669" }}
+                    <Button
+                      variant="success" size="sm"
                       onClick={() => handleClaimOrder(viewingItem)}
                       disabled={claimingId === viewingItem.id}
                     >
                       📌 {claimingId === viewingItem.id ? tx("orders.claim_submitting") : tx("orders.ishni_qabul_qilish")}
-                    </button>
+                    </Button>
                   )}
                 </div>
               ) : (
@@ -2052,15 +1896,13 @@ export default function ChangeRequests() {
                     <span>{tx("orders.masul_pm_label")} {viewingItem.assigned_pm_name || user?.full_name || tx("orders.siz")}</span>
                   </div>
                   {(user?.is_platform_admin || user?.is_boss || viewingItem.assigned_pm === user?.id) && viewingItem.status !== "COMPLETED" && (
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-outline"
-                      style={{ fontSize: 12, fontWeight: 600, color: "#2563eb", borderColor: "#bfdbfe" }}
+                    <Button variant="link"
+                      size="xs"
                       onClick={() => handleClaimOrder(viewingItem)}
                       disabled={claimingId === viewingItem.id}
                     >
                       👥 {tx("orders.boshqa_pmga_topshirish", undefined, "Boshqa PM ga topshirish")}
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -2118,15 +1960,15 @@ export default function ChangeRequests() {
                     </div>
                     {(isSohaviyOrAdmin || (user && viewingItem.created_by === user.id)) && (
                       <div className="row middle" style={{ gap: 8 }}>
-                        <button
-                          className="btn btn-sm btn-ok"
+                        <Button
+                          variant="success" size="sm"
                           onClick={() => handleClientApprove(viewingItem)}
                           disabled={approvingId === viewingItem.id}
                         >
                           {tx("orders.ishni_qabul_qilish_yopish")}
-                        </button>
-                        <button
-                          className="btn btn-sm btn-warning"
+                        </Button>
+                        <Button
+                          variant="warning" size="sm"
                           onClick={() => {
                             setRejectModalItem(viewingItem);
                             setRejectFeedbackNote("");
@@ -2136,7 +1978,7 @@ export default function ChangeRequests() {
                           }}
                         >
                           {tx("orders.kamchilik_mavjud_qaytarish")}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -2161,20 +2003,18 @@ export default function ChangeRequests() {
                   </div>
                   {viewingItem.client_feedback_file_url && (
                     <div style={{ marginTop: 8 }}>
-                      <button
-                        type="button"
-                        className="btn btn-xs btn-outline"
+                      <Button variant="warning"
+                        size="xs"
                         onClick={() => setPreviewFile({
                           url: viewingItem.client_feedback_file_url!,
                           name: viewingItem.client_feedback_file_name || "Tuzatish_hujjati",
                           size: viewingItem.client_feedback_file_size_display,
                         })}
-                        style={{ background: "#ffffff", borderColor: "#fcd34d", color: "#92400e", gap: 6, fontWeight: 600 }}
                       >
                         <span>📎</span>
                         <span>{tx("orders.tuzatish_hujjati_fayli")}: {viewingItem.client_feedback_file_name || tx("orders.fayl")}</span>
                         {viewingItem.client_feedback_file_size_display && <span style={{ opacity: 0.7 }}>({viewingItem.client_feedback_file_size_display})</span>}
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -2219,18 +2059,17 @@ export default function ChangeRequests() {
                       </div>
                     </div>
                     {viewingItem.completion_file_url && (
-                      <button
-                        type="button"
+                      <Button
                         onClick={() => setPreviewFile({
                           url: viewingItem.completion_file_url!,
                           name: viewingItem.completion_file_name || "Hisobot_hujjati.docx",
                           size: viewingItem.completion_file_size_display,
                         })}
-                        className="btn btn-sm btn-primary"
+                        variant="primary" size="sm"
                         title={tx("orders.hisobot_vebsaytda_ochish_tooltip")}
                       >
                         <span>📄</span> {tx("orders.hujjatni_korish")}
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {viewingItem.completion_note && (
@@ -2397,28 +2236,25 @@ export default function ChangeRequests() {
                 </div>
                 <div className="row middle" style={{ gap: 6 }}>
                   {viewingItem.tz_file_url && (
-                    <button
-                      type="button"
+                    <Button
                       onClick={() => setPreviewFile({
                         url: viewingItem.tz_file_url!,
                         name: viewingItem.tz_file_name || "TZ_fayli.docx",
                         size: viewingItem.tz_file_size_display,
                       })}
-                      className="btn btn-sm btn-primary"
-                      style={{ background: "#16a34a", borderColor: "#16a34a" }}
+                      variant="success" size="sm"
                       title={tx("orders.tz_vebsaytda_ochish_tooltip")}
                     >
                       <span>📄</span> {tx("orders.tz_faylini_korish")}
-                    </button>
+                    </Button>
                   )}
                   {isSohaviyOrAdmin && viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && viewingItem.status !== "READY_FOR_REVIEW" && viewingItem.status !== "CANCELLED" && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline"
+                    <Button
+                      size="sm"
                       onClick={() => handleOpenUploadVersion(viewingItem)}
                     >
                       📤 {tx("orders.yangi_versiya")}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -2456,18 +2292,17 @@ export default function ChangeRequests() {
                           )}
                         </div>
                         {v.tz_file_url && (
-                          <button
-                            type="button"
+                          <Button
                             onClick={() => setPreviewFile({
                               url: v.tz_file_url!,
                               name: v.tz_file_name || `TZ_v${v.version}.docx`,
                               size: v.tz_file_size_display,
                             })}
-                            className="btn btn-xs btn-outline"
+                            size="xs"
                             title={tx("orders.tz_vebsaytda_ochish_tooltip")}
                           >
                             <span>📄</span> {tx("orders.korish_btn")}
-                          </button>
+                          </Button>
                         )}
                       </div>
                     ))}
@@ -2518,14 +2353,13 @@ export default function ChangeRequests() {
                         {tx("orders.avval_qabul_qiling_izoh")}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
+                    <Button
+                      variant="primary" size="sm"
                       onClick={() => handleClaimOrder(viewingItem)}
                       disabled={claimingId === viewingItem.id}
                     >
                       📌 {claimingId === viewingItem.id ? tx("orders.claim_submitting") : tx("orders.ishni_qabul_qilish")}
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                 <div
@@ -2658,13 +2492,13 @@ export default function ChangeRequests() {
                       />
                     </div>
                     <div className="row end">
-                      <button
+                      <Button
                         type="submit"
-                        className="btn btn-primary btn-sm"
+                        variant="primary" size="sm"
                         disabled={pmSaveLoading}
                       >
                         {pmSaveLoading ? tx("common.saqlanmoqda") : tx("orders.pm_qarorini_saqlash")}
-                      </button>
+                      </Button>
                     </div>
                     {viewingItem.status !== "COMPLETED" && viewingItem.status !== "REJECTED" && (
                       <div
@@ -2682,9 +2516,8 @@ export default function ChangeRequests() {
                         <span style={{ fontSize: 12.5, color: "#1e40af" }}>
                           💡 {tx("orders.ish_yakunlanganda_eslatma")}
                         </span>
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm"
+                        <Button
+                          variant="primary" size="sm"
                           onClick={() => {
                             setCompletionModalItem(viewingItem);
                             setCompletionFile(null);
@@ -2693,7 +2526,7 @@ export default function ChangeRequests() {
                           }}
                         >
                           📁 {tx("orders.hisobot_topshirish_btn")}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </form>
@@ -2704,9 +2537,9 @@ export default function ChangeRequests() {
             <div className="modal-footer row between middle" style={{ padding: "12px 20px" }}>
               <div className="row middle" style={{ gap: 8 }}>
               </div>
-              <button className="btn btn-ghost" onClick={() => setViewingItem(null)}>
+              <Button variant="ghost" onClick={() => setViewingItem(null)}>
                 {tx("common.yopish")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -2723,9 +2556,9 @@ export default function ChangeRequests() {
                 <span style={{ fontSize: 20 }}>📁</span>
                 <strong>{tx("orders.tugatilgan_ish_hisobotini_topshirish")}</strong>
               </div>
-              <button className="btn btn-sm btn-ghost" onClick={() => setCompletionModalItem(null)}>
+              <Button iconOnly aria-label={tx("common.yopish")} variant="ghost" size="sm" onClick={() => setCompletionModalItem(null)}>
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleSubmitCompletion}>
               <div className="modal-body" style={{ padding: 20 }}>
@@ -2738,7 +2571,7 @@ export default function ChangeRequests() {
                     {tx("orders.tugatilgan_ish_hujjati_label")}
                   </label>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                    <label className={buttonClass({ size: "sm" })}>
                       Fayl tanlash
                       <input
                         type="file"
@@ -2768,21 +2601,20 @@ export default function ChangeRequests() {
                 </div>
               </div>
               <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   onClick={() => setCompletionModalItem(null)}
                   disabled={completionSubmitting}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-primary"
+                  variant="primary"
                   disabled={completionSubmitting}
                 >
                   {completionSubmitting ? tx("orders.topshirilmoqda") : tx("orders.boshqarma_tasdigiga_topshirish")}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -2800,9 +2632,9 @@ export default function ChangeRequests() {
                 <span style={{ fontSize: 20 }}>⚠️</span>
                 <strong>{tx("orders.xatolik_sababli_qaytarish_sarlavha")}</strong>
               </div>
-              <button className="btn btn-sm btn-ghost" onClick={() => setRejectModalItem(null)}>
+              <Button iconOnly aria-label={tx("common.yopish")} variant="ghost" size="sm" onClick={() => setRejectModalItem(null)}>
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleClientReject}>
               <div className="modal-body" style={{ padding: 20 }}>
@@ -2839,7 +2671,7 @@ export default function ChangeRequests() {
                     {tx("orders.kamchilik_hujjati_label")}
                   </label>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                    <label className={buttonClass({ size: "sm" })}>
                       Fayl tanlash
                       <input
                         type="file"
@@ -2870,21 +2702,20 @@ export default function ChangeRequests() {
                 )}
               </div>
               <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
+                <Button
+                  variant="ghost"
                   onClick={() => setRejectModalItem(null)}
                   disabled={rejectSubmitting}
                 >
                   {tx("common.bekor_qilish")}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="btn btn-warning"
+                  variant="warning"
                   disabled={rejectSubmitting || (!rejectFeedbackNote.trim() && !rejectFeedbackFile)}
                 >
                   {rejectSubmitting ? tx("orders.qaytarilmoqda") : tx("orders.qayta_ishlashga_qaytarish")}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -2902,9 +2733,9 @@ export default function ChangeRequests() {
                 <span style={{ fontSize: 20 }}>📤</span>
                 <strong>{tx("orders.upload_version_title")}</strong>
               </div>
-              <button className="btn btn-sm btn-ghost" onClick={() => setUploadVersionModalItem(null)}>
+              <Button iconOnly aria-label={tx("common.yopish")} variant="ghost" size="sm" onClick={() => setUploadVersionModalItem(null)}>
                 ✕
-              </button>
+              </Button>
             </div>
             <form onSubmit={handleUploadVersionSubmit}>
               <div className="modal-body" style={{ padding: 20 }}>
@@ -2921,7 +2752,7 @@ export default function ChangeRequests() {
                     {tx("orders.tz_file_label")} *
                   </label>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <label className="btn btn-outline" style={{ cursor: "pointer", padding: "6px 12px", fontSize: 13, background: "#fff", display: "inline-flex", alignItems: "center", margin: 0 }}>
+                    <label className={buttonClass({ size: "sm" })}>
                       Fayl tanlash
                       <input
                         type="file"
@@ -2953,21 +2784,20 @@ export default function ChangeRequests() {
 
                 </div>
                 <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
+                  <Button
+                    variant="ghost"
                     onClick={() => setUploadVersionModalItem(null)}
                     disabled={versionSubmitting}
                   >
                     {tx("common.bekor_qilish")}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    className="btn btn-primary"
+                    variant="primary"
                     disabled={versionSubmitting || !versionFile || !versionChangeNote.trim()}
                   >
                     {versionSubmitting ? tx("orders.yuborilmoqda") : tx("orders.yuborish_pm_korib_chiqish")}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -2985,9 +2815,9 @@ export default function ChangeRequests() {
                   <span style={{ fontSize: 20 }}>✅</span>
                   <strong>{tx("orders.approve_version_title")}</strong>
                 </div>
-                <button className="btn btn-sm btn-ghost" onClick={() => setApproveVersionModalItem(null)}>
+                <Button iconOnly aria-label={tx("common.yopish")} variant="ghost" size="sm" onClick={() => setApproveVersionModalItem(null)}>
                   ✕
-                </button>
+                </Button>
               </div>
               <form onSubmit={handleApproveVersionSubmit}>
                 <div className="modal-body" style={{ padding: 20 }}>
@@ -3061,21 +2891,20 @@ export default function ChangeRequests() {
                   </div>
                 </div>
                 <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
+                  <Button
+                    variant="ghost"
                     onClick={() => setApproveVersionModalItem(null)}
                     disabled={approveSubmitting}
                   >
                     {tx("common.bekor_qilish")}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    className="btn btn-ok"
+                    variant="success"
                     disabled={approveSubmitting}
                   >
                     {approveSubmitting ? tx("orders.tasdiqlanmoqda") : tx("orders.tasdiqlash_va_yangi_tz")}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -3093,9 +2922,9 @@ export default function ChangeRequests() {
                   <span style={{ fontSize: 20 }}>✕</span>
                   <strong>{tx("orders.reject_version_title")}</strong>
                 </div>
-                <button className="btn btn-sm btn-ghost" onClick={() => setRejectVersionModalItem(null)}>
+                <Button iconOnly aria-label={tx("common.yopish")} variant="ghost" size="sm" onClick={() => setRejectVersionModalItem(null)}>
                   ✕
-                </button>
+                </Button>
               </div>
               <form onSubmit={handleRejectVersionSubmit}>
                 <div className="modal-body" style={{ padding: 20 }}>
@@ -3131,21 +2960,20 @@ export default function ChangeRequests() {
                   </div>
                 </div>
                 <div className="modal-footer row end" style={{ gap: 10, padding: "12px 20px" }}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
+                  <Button
+                    variant="ghost"
                     onClick={() => setRejectVersionModalItem(null)}
                     disabled={rejectVersionSubmitting}
                   >
                     {tx("common.bekor_qilish")}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    className="btn btn-danger"
+                    variant="danger"
                     disabled={rejectVersionSubmitting || !rejectVersionReason.trim()}
                   >
                     {rejectVersionSubmitting ? tx("orders.rad_etilmoqda") : tx("orders.versiyani_rad_etish_btn")}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>

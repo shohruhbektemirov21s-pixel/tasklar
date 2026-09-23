@@ -5,6 +5,7 @@ import { PageHead } from "@/components/Layout";
 import { Card, ErrorMsg } from "@/components/ui";
 import { toWorkspace, useGo } from "@/nav";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 export default function WorkspaceForm() {
   const fid = useId();
@@ -52,10 +53,10 @@ export default function WorkspaceForm() {
               {tx("workspace_form.ochiq_qoshilish_kodisiz_qoshilsa_boladi")}
             </label>
             <div className="form-actions">
-              <button className="btn btn-primary" disabled={busy}>
+              <Button variant="primary" type="submit" disabled={busy}>
                 {busy ? tx("common.yaratilmoqda") : tx("workspace_form.yaratish")}
-              </button>
-              <button type="button" className="btn" onClick={() => go(-1)}>{tx("common.bekor_qilish")}</button>
+              </Button>
+              <Button  onClick={() => go(-1)}>{tx("common.bekor_qilish")}</Button>
             </div>
           </form>
         </Card>

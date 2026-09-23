@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
-import { listOf, pagesOf, totalOf } from "@/api/client";
+import { listOf, pagesOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
 import type { Project } from "@/api/types";
 import { IconCalendar, IconPlus, IconSearch } from "@/components/icons";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui";
 import { toNewProject, toProject, useGo } from "@/nav";
 import { tx } from "@/i18n";
+import { Button, LinkButton } from "@/components/Button";
 
 const PER_PAGE = 20;
 
@@ -96,10 +97,10 @@ export default function Projects() {
         subtitle={tx("projects.sahifa_izohi", undefined, "Barcha faol va rejalashtirilgan loyihalar boshqaruvi")}
         action={
           user?.can_create_project ? (
-            <Link className="btn btn-primary" {...toNewProject()}>
+            <LinkButton variant="primary" {...toNewProject()}>
               <IconPlus size={16} />
               <span>{tx("common.yangi_loyiha", undefined, "+ Yangi loyiha")}</span>
-            </Link>
+            </LinkButton>
           ) : undefined
         }
       />
@@ -174,9 +175,8 @@ export default function Projects() {
         </div>
 
         {(!!search || !!status || !!period) && (
-          <button
-            type="button"
-            className="btn btn-ghost"
+          <Button
+            variant="ghost"
             onClick={() => {
               setSearch("");
               setStatus("");
@@ -185,7 +185,7 @@ export default function Projects() {
             }}
           >
             {tx("common.tozalash", undefined, "Tozalash")}
-          </button>
+          </Button>
         )}
       </FilterBar>
 
@@ -205,10 +205,10 @@ export default function Projects() {
             }
             action={
               user?.can_create_project ? (
-                <Link className="btn btn-primary" {...toNewProject()}>
+                <LinkButton variant="primary" {...toNewProject()}>
                   <IconPlus size={14} />
                   <span>{tx("common.yangi_loyiha", undefined, "+ Yangi loyiha")}</span>
-                </Link>
+                </LinkButton>
               ) : undefined
             }
           />

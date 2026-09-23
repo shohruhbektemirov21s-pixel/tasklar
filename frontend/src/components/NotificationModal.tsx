@@ -15,6 +15,7 @@ import {
   IconUserPlus,
 } from "./icons";
 import { tx } from "@/i18n";
+import { Button } from "@/components/Button";
 
 interface NotificationModalProps {
   notification: AppNotification | null;
@@ -283,15 +284,13 @@ export default function NotificationModal({
               {notification.kind_display || tx("notifications.tafsilot")}
             </strong>
           </div>
-          <button
-            type="button"
-            className="btn btn-xs btn-ghost"
+          <Button aria-label={tx("common.yopish")} iconOnly
+            variant="ghost" size="xs"
             onClick={onClose}
-            style={{ width: 28, height: 28, padding: 0 }}
             title={tx("common.yopish")}
           >
             ✕
-          </button>
+          </Button>
         </div>
 
         {/* Modal Body */}
@@ -418,29 +417,26 @@ export default function NotificationModal({
             background: "var(--surface-2)",
           }}
         >
-          <button
-            type="button"
-            className="btn btn-ghost"
+          <Button
+            variant="ghost"
             onClick={onClose}
           >
             {tx("common.bekor_qilish")}
-          </button>
+          </Button>
           {targetUrl ? (
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button
+              variant="primary"
               onClick={handleNavigate}
             >
               {actionLabel} →
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button
+              variant="primary"
               onClick={onClose}
             >
               {tx("common.tushunarli", undefined, "Tushunarli")}
-            </button>
+            </Button>
           )}
         </div>
       </div>

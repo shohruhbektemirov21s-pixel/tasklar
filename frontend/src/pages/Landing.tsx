@@ -9,6 +9,7 @@ import {
 } from "@/components/icons";
 import { toSearch, useGo } from "@/nav";
 import { tx } from "@/i18n";
+import { LinkButton } from "@/components/Button";
 
 const FEATURES = [
   { cls: "", ico: <IconWorkspace size={20} />, h: tx("common.loyihalar"),
@@ -105,8 +106,8 @@ export default function Landing() {
             <kbd>/</kbd>
           </form>
           <ThemeToggle />
-          <Link className="btn" to="/kirish">{tx("common.kirish")}</Link>
-          <Link className="btn btn-primary" to="/royxatdan-otish">{tx("landing.royxatdan_otish")}</Link>
+          <LinkButton  to="/kirish">{tx("common.kirish")}</LinkButton>
+          <LinkButton variant="primary" to="/royxatdan-otish">{tx("landing.royxatdan_otish")}</LinkButton>
         </div>
       </header>
 
@@ -118,8 +119,8 @@ export default function Landing() {
             {tx("landing.loyiha_oching_jamoani_mutaxassisligi_boyicha")}
           </p>
           <div className="hero-actions">
-            <Link className="btn btn-lg btn-primary" to="/royxatdan-otish">{tx("landing.bepul_boshlash")}</Link>
-            <Link className="btn btn-lg" to="/kirish">{tx("landing.hisobga_kirish")}</Link>
+            <LinkButton variant="primary" size="lg" to="/royxatdan-otish">{tx("landing.bepul_boshlash")}</LinkButton>
+            <LinkButton size="lg" to="/kirish">{tx("landing.hisobga_kirish")}</LinkButton>
           </div>
           <div className="mono muted" style={{ marginTop: 18, fontSize: 13 }}>
             {tx("landing.django_rest_react_typescript_ibm")}
@@ -271,8 +272,8 @@ export default function Landing() {
           <h2>{tx("landing.bugundan_boshlang")}</h2>
           <p>{tx("landing.akkaunt_yarating_mutaxassisligingizni_tanlan")}</p>
           <div className="hero-actions">
-            <Link className="btn btn-lg btn-primary" to="/royxatdan-otish">{tx("landing.royxatdan_otish")}</Link>
-            <Link className="btn btn-lg" to="/kirish">{tx("common.kirish")}</Link>
+            <LinkButton variant="primary" size="lg" to="/royxatdan-otish">{tx("landing.royxatdan_otish")}</LinkButton>
+            <LinkButton size="lg" to="/kirish">{tx("common.kirish")}</LinkButton>
           </div>
         </div>
       </div>

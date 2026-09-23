@@ -27,6 +27,7 @@ import {
   timeAgo,
 } from "@/components/ui";
 import { tx } from "@/i18n";
+import { Button, ButtonGroup } from "@/components/Button";
 
 type Sort = "top" | "new" | "old";
 const PAGE_SIZE = 10;
@@ -133,45 +134,45 @@ function InquiryRow({
       </div>
 
       {item.scope === "OPEN" && (
-        <button
-          type="button"
-          className={`btn btn-sm ${isFor ? "btn-primary" : "btn-ghost"}`}
+        <Button
+          variant={isFor ? "primary" : "ghost"} size="sm"
+          active={isFor}
+          icon={<IconThumbUp size={13} />}
           onClick={(e) => {
             e.stopPropagation();
             onQuickVote("FOR");
           }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0 }}
+          style={{ flexShrink: 0 }}
           title={tx("inquiries.qoshilaman")}
         >
-          <IconThumbUp size={13} />
-          <span>{item.for_count}</span>
-        </button>
+          {item.for_count}
+        </Button>
       )}
 
       {item.can_edit && (
-        <div style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
-          <button
-            type="button"
-            className="btn-icon"
+        <div className="row" style={{ gap: 4 }}>
+          <Button
+            variant="ghost" size="sm" iconOnly
             onClick={(e) => {
               e.stopPropagation();
               onEdit();
             }}
             title={tx("common.tahrirlash")}
+            aria-label={tx("common.tahrirlash")}
           >
             ✏️
-          </button>
-          <button
-            type="button"
-            className="btn-icon"
+          </Button>
+          <Button
+            variant="ghost" size="sm" iconOnly
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
             }}
             title={tx("common.ochirish")}
+            aria-label={tx("common.ochirish")}
           >
             🗑️
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -277,17 +278,15 @@ export default function Inquiries() {
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>So'rovlar</h1>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-primary"
+        <Button
+          variant="primary"
           onClick={() => {
             setEditingItem(null);
             setFormOpen(true);
           }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
         >
-          <IconPlus size={15} /> Yangi so'rov
-        </button>
+          <IconPlus size={15} /> {tx("inquiries.yangi_sorov")}
+        </Button>
       </div>
 
       <OkMsg text={ok} />
@@ -329,58 +328,36 @@ export default function Inquiries() {
             />
           </div>
 
-          <div className="row gap-1" style={{ flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className={`btn btn-sm ${filters.status === "" && !filters.mine ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => {
-                setFilters((prev) => ({ ...prev, status: "", mine: false }));
-                setPage(1);
-              }}
-            >
-              Barchasi ({counts.all})
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${filters.status === "PENDING" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => {
-                setFilters((prev) => ({ ...prev, status: "PENDING", mine: false }));
-                setPage(1);
-              }}
-            >
-              Ko'rib chiqilmoqda ({counts.PENDING})
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${filters.status === "APPROVED" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => {
-                setFilters((prev) => ({ ...prev, status: "APPROVED", mine: false }));
-                setPage(1);
-              }}
-            >
-              Tasdiqlangan ({counts.APPROVED})
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${filters.status === "REJECTED" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => {
-                setFilters((prev) => ({ ...prev, status: "REJECTED", mine: false }));
-                setPage(1);
-              }}
-            >
-              Rad etilgan ({counts.REJECTED})
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${filters.mine ? "btn-primary" : "btn-ghost"}`}
+          <ButtonGroup>
+            {([
+              ["", tx("inquiries.f_barchasi"), counts.all],
+              ["PENDING", tx("inquiries.f_korib_chiqilmoqda"), counts.PENDING],
+              ["APPROVED", tx("inquiries.f_tasdiqlangan"), counts.APPROVED],
+              ["REJECTED", tx("inquiries.f_rad_etilgan"), counts.REJECTED],
+            ] as const).map(([status, label, n]) => (
+              <Button
+                key={status || "all"}
+                size="sm"
+                active={filters.status === status && !filters.mine}
+                onClick={() => {
+                  setFilters((prev) => ({ ...prev, status, mine: false }));
+                  setPage(1);
+                }}
+              >
+                {label} <span className="btn-count">{n}</span>
+              </Button>
+            ))}
+            <Button
+              size="sm"
+              active={filters.mine}
               onClick={() => {
                 setFilters((prev) => ({ ...prev, mine: !prev.mine, status: "" }));
                 setPage(1);
               }}
             >
-              {tx("inquiries.mening_sorovlarim")} ({counts.mine})
-            </button>
-          </div>
+              {tx("inquiries.mening_sorovlarim")} <span className="btn-count">{counts.mine}</span>
+            </Button>
+          </ButtonGroup>
         </div>
       </div>
 
@@ -398,27 +375,25 @@ export default function Inquiries() {
               >
                 <div className="row" style={{ justifyContent: "center", gap: 10, marginTop: 12 }}>
                   {filters.search || filters.status || filters.scope || filters.mine ? (
-                    <button
-                      type="button"
-                      className="btn"
+                    <Button
+                      
                       onClick={() => {
                         setFilters(NO_FILTERS);
                         setPage(1);
                       }}
                     >
                       {tx("common.tozalash")}
-                    </button>
+                    </Button>
                   ) : (
-                    <button
-                      type="button"
-                      className="btn btn-primary"
+                    <Button
+                      variant="primary"
                       onClick={() => {
                         setEditingItem(null);
                         setFormOpen(true);
                       }}
                     >
                       <IconPlus size={14} /> {tx("inquiries.yangi_sorov")}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </Empty>
