@@ -46,12 +46,20 @@ const TERMS = [
  * «Mening ishim» — muddat bo'yicha ustunlar.
  */
 export default function MyWork() {
-  const fid = useId();
+  // Yo'naltirish ALOHIDA komponentda: ilgari u shu yerda, hook'lardan
+  // OLDIN `return` qilardi - foydalanuvchi ma'lumoti yangilanib shart
+  // o'zgarsa React «Rendered more hooks» bilan sahifani yiqitardi.
   const { user } = useAuth();
   const isPm = Boolean(user?.is_manager || user?.global_role === "MANAGER" || user?.specialty === "PM");
   if (user?.is_boss || isPm) {
     return <Navigate to="/panel" replace />;
   }
+  return <MyWorkBoard />;
+}
+
+function MyWorkBoard() {
+  const fid = useId();
+  const { user } = useAuth();
 
   const [dragId, setDragId] = useState<number | null>(null);
   const dragRef = useRef<number | null>(null);

@@ -32,7 +32,7 @@ Faqat `backend/` ichida ishla. Frontend fayllariga tegma — u boshqa agentning 
 ## Buyruqlar — konteyner ichida
 
 ```bash
-cd /d/hjasdhkjahskdha
+cd /d/Task
 docker compose exec -T backend python manage.py makemigrations
 docker compose exec -T backend python manage.py migrate
 docker compose exec -T backend python manage.py test

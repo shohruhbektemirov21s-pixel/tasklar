@@ -1,6 +1,6 @@
 # TeamFlow
 
-Vazifa boshqaruv tizimi. Repo: `shohruhbektemirov21s-pixel/taskmangeri`. Ildiz: `D:\hjasdhkjahskdha`.
+Vazifa boshqaruv tizimi. Repo: `shohruhbektemirov21s-pixel/taskmangeri`. Ildiz: `D:\Task`.
 
 ## Muloqot va til
 
@@ -24,6 +24,11 @@ Vazifa boshqaruv tizimi. Repo: `shohruhbektemirov21s-pixel/taskmangeri`. Ildiz: 
 | redis | `teamflow_redis` | — |
 | backend | `teamflow_backend` | **8010** → 8000 |
 | frontend | `teamflow_frontend` | **5183** → 5173 |
+| telegram | `teamflow_telegram` | — (long polling) |
+| scheduler | `teamflow_scheduler` | — (har `SCHEDULER_INTERVAL` soniyada: `send_deadline_reminders`, `check_unopened_tasks`) |
+
+> Docker ma'lumotlari **D:** da (`D:\Docker\wsl`, `%LOCALAPPDATA%\Docker\wsl` — junction).
+> C: to'lsa Docker va Bash qotib qoladi — birinchi shu yerni tekshir.
 
 Brauzerda ochiladigan manzillar: frontend `http://localhost:5183`, Django admin `http://localhost:5183/admin/` (yoki `http://localhost:8010/admin/`), API `http://localhost:8010/api/`.
 
@@ -31,7 +36,7 @@ Brauzerda ochiladigan manzillar: frontend `http://localhost:5183`, Django admin 
 Hostda `python` yoki `npm` ni to'g'ridan-to'g'ri ishlatma — konteyner ichida ishlat:
 
 ```bash
-cd /d/hjasdhkjahskdha
+cd /d/Task
 docker compose up -d
 docker compose exec -T backend python manage.py <buyruq>
 docker compose exec -T frontend npm run <script>
@@ -107,13 +112,38 @@ Backend `./backend/.env` faylini `env_file` orqali oladi. U yerda `DB2_*`, `REDI
 
 ## Backend tuzilishi va konvensiyalar
 
-`backend/apps/` ichida: `accounts`, `activity`, `chat`, `core`, `notifications`, `panel`, `projects`, `suggestions`, `tasks`, `telegram`, `uitexts`, `workspaces`.
+`backend/apps/` ichida: `accounts`, `activity`, `chat`, `core`, `inquiries`, `notifications`, `orders`, `panel`, `projects`, `suggestions`, `tasks`, `telegram`, `uitexts`, `workspaces`.
+
+Qo'lda yuritiladigan skriptlar (benchmark, hujjat generatori, bazani tozalash) — `backend/scripts/`
+(`__init__.py` ataylab yo'q — test runner ularga kirmaydi; `python -m scripts.benchmarks.<nom>`).
+Ildizga bir martalik `fix_*.py` / `update*.js` qo'yma — ish bitgach o'chir.
 
 ### Qatlam tartibi — buzma
 
 ```
-panel  →  projects · tasks · activity · accounts · workspaces  →  core
+panel · telegram
+   ↓
+orders · inquiries · suggestions · chat · uitexts
+   ↓
+projects ⇄ tasks · activity · notifications · accounts · workspaces
+   ↓
+core
 ```
+
+Haqiqiy holat (sentabr 2026 tekshiruvi): `projects` ⇄ `tasks` bir-biriga
+bog'langan (vazifa loyihaga tegishli, loyiha foizi vazifadan) — bu qabul
+qilingan. Qolgan bog'liqliklar faqat YUQORIDAN PASTGA.
+
+- **`projects` buyurtmalarning ichini bilmaydi.** Buyurtmani loyihaga
+  bog'lash — `apps/orders/services.py` (`link_order_to_project`,
+  `unlink_project_orders`, `order_earliest_start`). Sohaviy vakil
+  buyurtmasi bor loyihani ko'rishi esa `orders` ni import qilmasdan,
+  teskari aloqa (`change_requests__…`) orqali yozilgan —
+  `permissions._projects_with_my_orders`. `from apps.orders.models`
+  ni `projects` ichiga funksiya ichida ham qo'yma.
+- **Bir necha domen ustidan o'qiydigan ko'rinish — panelga.** Masalan
+  `/api/users/<id>/work/` (`apps/panel/people.py`): ilgari
+  `accounts.UserViewSet` da edi va `accounts` ni to'rt domenga bog'lardi.
 
 - **`apps/core` da domen importi BO'LMASIN.** U eng pastki qatlam: Db2
   adapteri, `JSONTextField`, yumshoq o'chirish, `related_count`, fayl
@@ -251,6 +281,23 @@ bajariladi. Agar lug'at o'sha paytda bo'sh bo'lsa, o'sha yozuvlar butun seans
 davomida kalit ko'rinishida qolib ketadi. Shuning uchun `main.tsx` ilova
 modullarini statik import QILMAYDI — avval lug'at keladi, keyin `bootstrap.tsx`.
 
+## Buyurtmalar (`apps/orders`)
+
+Buyurtma holatini **faqat** `apps/orders/workflow.py` orqali o'zgartir:
+`check_transition(joriy, yangi, manual=...)`. Jadvalda yo'q o'tish 400.
+
+- `COMPLETED` dan chiqish yo'q; unga faqat `client-approve` olib boradi.
+- `READY_FOR_REVIEW` ga faqat `submit-completion`, u ham faqat ish
+  holatidan (`ACCEPTED`, `ASSIGNED_TO_DEV`, `IN_PROGRESS`, `TESTING`).
+- `manual=True` (PM ro'yxatdan tanlaydi: `set-pm-decision`,
+  `approve-version`, PATCH) — `DRAFT`, `READY_FOR_REVIEW`, `COMPLETED`
+  ga olib bormaydi va boshqarma ko'rib turgan buyurtmaga tegmaydi.
+- «PM kim» — `is_order_pm(user)`, biriktirish nishoni — `can_be_order_pm`.
+  Yangi action'da rolni qo'lda yozma.
+- Kim qaysi buyurtmani ko'radi — `apps/orders/visibility.py`
+  (`visible_orders`). Buyurtma chiqadigan HAR QANDAY yangi endpoint shundan
+  o'tsin (profil sahifasi ilgari cheklovsiz edi).
+
 ## Takliflar (`apps/suggestions`)
 
 Jamoa taklif beradi, **boshliq** (`GlobalRole.BOSS`) qaror qiladi. Uchta
@@ -294,8 +341,8 @@ o'nlab marta chalardi. Sahifa WebSocket orqali o'zi yangilanadi
 1. O'zgartirishdan oldin tegishli fayllarni o'qi — taxmin qilma.
 2. Backend o'zgarsa: `makemigrations` → `migrate` → `manage.py test`.
 3. Frontend o'zgarsa: `npm run typecheck`, `npm run lint` va `npm test` toza
-   bo'lishi shart. Lint da OGOHLANTIRISH bor (bugun 43 ta — eski `any` lar),
-   lekin CI `--max-warnings 43` bilan yuguradi: YANGISI qo'shilsa qizaradi.
+   bo'lishi shart. Lint da OGOHLANTIRISH bor (bugun 30 ta — eski `any` lar),
+   lekin CI `--max-warnings 30` bilan yuguradi: YANGISI qo'shilsa qizaradi.
    Sonni oshirma — qarzni kamaytir va chegarani tushir.
 4. UI o'zgarsa: Playwright MCP bilan `http://localhost:5183` ni ochib **ko'z bilan tekshir** — skrinshotni foydalanuvchidan so'rama.
 5. Bo'sh holat (empty state) matnlarini unutma — ular o'zbekcha va foydalanuvchiga tushunarli bo'lsin.
@@ -324,7 +371,19 @@ o'nlab marta chalardi. Sahifa WebSocket orqali o'zi yangilanadi
 - **Tashqi tarmoqni so'rov ichida kutma.** Telegram va shunga o'xshash
   chaqiruvlar `apps/core/background.py` dagi `run_later` orqali ketadi.
   Testlarda u joyida bajariladi (`settings.BACKGROUND_TASKS`).
-- `django-admin/` marshrutini o'zgartirma — foydalanuvchi undan foydalanadi.
+- Admin marshrutini o'zgartirma — foydalanuvchi undan foydalanadi. Asosiy
+  manzil `/admin/`; eski `/django-admin/` unga yo'naltiradi (`config/urls.py`).
+- **Demo ma'lumot faqat so'ralganda.** `seed_demo` entrypoint'da faqat
+  `SEED_DEMO=1` VA `DEBUG=1` bo'lganda yuguradi; buyruqning o'zi ham
+  `DEBUG=0` da rad etadi. Demo hisoblar ma'lum parolga ega
+  (`boshliq@teamflow.uz` — BOSS) — produksiya bazasiga tushmasin.
+- **Mijoz IP si — `apps/core/middleware.get_client_ip`.** `X-Forwarded-For`
+  O'NGDAN, `TRUSTED_PROXIES` qadam o'qiladi (DRF `NUM_PROXIES` ham shu).
+  Birinchi elementni olma — uni mijoz yozadi va IP-ban/brute-force
+  qulfi chetlab o'tiladi.
+- **O'qish shlyuzi (`POST /api/read/`) va ID'siz marshrutlar — talab, xavfsizlik
+  emas.** Narxi: HTTP kesh ishlamaydi, havolani ulashib bo'lmaydi. Ruxsat
+  baribir view ichida tekshiriladi — shlyuzga tayanib chegara qo'yma.
 - N+1 so'rov yaratma; `select_related` / `prefetch_related` ishlat.
 - Migratsiya fayllarini qo'lda tahrirlama, `makemigrations` orqali yarat.
 - Ruxsatlarni frontendda emas, serverda tekshir; frontend faqat ko'rinishni yashirsin.

@@ -38,7 +38,7 @@ Faqat `frontend/` ichida ishla. Backend fayllariga tegma. Agar kerakli API endpo
 ## Tekshirish
 
 ```bash
-cd /d/hjasdhkjahskdha
+cd /d/Task
 docker compose exec -T frontend npx tsc --noEmit     # toza bo'lishi SHART
 docker compose exec -T frontend npm run build
 ```

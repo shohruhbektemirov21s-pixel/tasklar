@@ -10,7 +10,7 @@ Foydalanuvchi ilgari har safar o'zi skrinshot olib, fayl yo'lini qo'yib berardi.
 ## 1. Ilova ishlayotganini tasdiqla
 
 ```bash
-cd /d/hjasdhkjahskdha
+cd /d/Task
 docker compose ps --format "{{.Name}}\t{{.State}}\t{{.Ports}}"
 ```
 

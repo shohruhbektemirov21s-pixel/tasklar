@@ -19,7 +19,7 @@ print(Task.objects.count())
 Ko'p qatorli skript kerak bo'lsa, faylni uzatib yubor:
 
 ```bash
-cd /d/hjasdhkjahskdha
+cd /d/Task
 docker compose exec -T backend python manage.py shell < skript.py
 ```
 

@@ -12,8 +12,6 @@ import {
   IconLayers,
   IconSearch,
   IconTasks,
-  IconProject,
-  IconUsers,
 } from "@/components/icons";
 import { useNavParams } from "@/nav";
 import { tx } from "@/i18n";

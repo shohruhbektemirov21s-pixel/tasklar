@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, Suspense } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, listOf } from "@/api/client";
@@ -6,8 +6,8 @@ import type { SidebarCounts, UserBrief } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { useRealtime } from "@/realtime/RealtimeContext";
 import ErrorBoundary from "./ErrorBoundary";
-import { Logo, LogoWord } from "./Logo";
-import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconCheck, IconChevron, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconLayers, IconLogout, IconMenu, IconOrder, IconPlus, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
+import { LogoWord } from "./Logo";
+import { IconArrowUp, IconBack, IconBell, IconBoard, IconCalendar, IconChat, IconCheck, IconClose, IconDashboard, IconHistory, IconIdea, IconInbox, IconLayers, IconLogout, IconMenu, IconOrder, IconReview, IconSearch, IconSettings, IconTasks, IconUsers } from "./icons";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar, Loading, SpecialtyTag } from "./ui";
 import { toFeed, toMessages, toSelfProfile, toUser, type NavTarget, useGo, useHistoryTracker, useNavHistory, getFallbackParentRoute } from "@/nav";

@@ -7,7 +7,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { api, listOf, scheduleRefreshAfterChange } from "@/api/client";
+import { api, listOf } from "@/api/client";
 import type { AppNotification } from "@/api/types";
 import { useAuth } from "@/auth/AuthContext";
 import { openSocket } from "./socket";

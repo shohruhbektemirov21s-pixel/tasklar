@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { IconSearch } from "./icons";
 import ThemeToggle from "./ThemeToggle";
-import { Logo, LogoWord } from "./Logo";
+import { LogoWord } from "./Logo";
 import { toSearch, useGo } from "@/nav";
 import { tx } from "@/i18n";
 
