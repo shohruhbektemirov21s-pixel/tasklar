@@ -24,13 +24,17 @@ class Command(BaseCommand):
         from django.core.exceptions import ImproperlyConfigured
 
         email = os.getenv("BOSS_EMAIL", "boshliq@teamflow.uz").strip().lower()
-        if email == "boss@teamflow.uz":
-            email = "boshliq@teamflow.uz"
-        password = os.getenv("BOSS_PASSWORD", "") or "password123"
+        # Standart parol bu yerda BERILMAYDI - pastdagi `if not password`
+        # uni faqat DEBUG da qo'yadi. Ilgari `or "password123"` turardi va
+        # u tekshiruvni o'lik kodga aylantirgandi: produksiyada ham boshliq
+        # hisobi hammaga ma'lum parol bilan yaratilardi.
+        #
+        # Har ishga tushishda `boss@teamflow.uz` ni O'CHIRISH ham olib
+        # tashlandi: bu bir martalik tozalash edi, startupda esa u shu
+        # manzilni ishlatgan har qanday hisobni (va CASCADE bilan uning
+        # takliflarini) jimgina yo'q qilardi.
+        password = os.getenv("BOSS_PASSWORD", "")
         name = os.getenv("BOSS_NAME", "Akmal Boshliqov")
-
-        # Eski dublikat 'boss@teamflow.uz' akkaunti bo'lsa uni tozalash
-        User.objects.filter(email__iexact="boss@teamflow.uz").delete()
 
         existing = User.objects.filter(email__iexact=email).first()
         if existing:

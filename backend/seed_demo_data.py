@@ -10,6 +10,11 @@ from apps.projects.models import Project, ProjectMember, ProjectRole, ProjectSta
 from apps.tasks.models import Task, TaskStatus, TaskPriority, TaskType, TaskAssignment, Comment, WorkLog
 from apps.suggestions.models import Suggestion, SuggestionScope, SuggestionStatus, VoteChoice, SuggestionVote
 
+# Faqat ishlab chiqish uchun. Entrypoint bu skriptni `SEED_DEMO=1` va
+# `DEBUG=1` bo'lgandagina chaqiradi - `backend/docker/entrypoint.sh`.
+DEMO_PASSWORD = os.getenv("DEMO_PASSWORD", "password123")
+
+
 def run_seed():
     print("Seed skripti boshlandi...")
 
@@ -65,12 +70,16 @@ def run_seed():
     for udata in users_data:
         email = udata["email"]
         user, created = User.objects.get_or_create(email=email, defaults=udata)
-        user.set_password("password123")
-        for k, v in udata.items():
-            setattr(user, k, v)
-        user.save()
+        # Parol va profil FAQAT yangi hisobga yoziladi. Ilgari har
+        # ishga tushishda ikkovi ham qayta yozilardi: kimdir demo
+        # boshliqning parolini almashtirsa, keyingi restartda u yana
+        # `password123` bo'lib qolardi, admin tahrirlagan maydonlar esa
+        # jimgina orqaga qaytardi.
+        if created:
+            user.set_password(DEMO_PASSWORD)
+            user.save(update_fields=["password"])
         created_users[email] = user
-        status_str = "Yaratildi" if created else "Yangilandi"
+        status_str = "Yaratildi" if created else "Mavjud (tegilmadi)"
         print(f"User {email} ({user.full_name}) -> {status_str}")
 
     boss = created_users["boshliq@teamflow.uz"]

@@ -132,6 +132,38 @@ services:
     logging: *logging
     networks: [teamflow]
 
+  # ---------------------------------------------------------- Rejalashtiruvchi
+  # Vaqtga bog'liq ishlar so'rovga ILASHTIRILMAYDI. Ilgari:
+  #   * muddat eslatmasi `DeadlineReminderMiddleware` da edi - kun bo'yi
+  #     backendga so'rov kelmasa o'sha kuni eslatma ketmasdi;
+  #   * «3 soat ichida ochilmagan vazifa» ogohlantirishi
+  #     (`check_unopened_tasks`) umuman hech qachon o'zi ishlamasdi - uni
+  #     hech narsa chaqirmasdi.
+  # Ikkala buyruq ham takrorga chidamli (`ProjectDeadlineNotice`,
+  # `meta.unopened_warned`), ya'ni har 15 daqiqada chaqirish xavfsiz.
+  # Middleware joyida qoldi - zaxira sifatida, u kunda bir marta Redis qulfi
+  # bilan ishlaydi va shu servis bilan to'qnashmaydi.
+  scheduler:
+    build: ./backend
+    container_name: teamflow_scheduler
+    command: >
+      sh -c 'while true;
+      do python manage.py send_deadline_reminders;
+      python manage.py check_unopened_tasks;
+      sleep $${SCHEDULER_INTERVAL:-900};
+      done'
+    env_file:
+      - ./backend/.env
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    mem_limit: 384m
+    restart: unless-stopped
+    logging: *logging
+    networks: [teamflow]
+
   # ---------------------------------------------------------- Frontend: React + TypeScript
   # Ishlab chiqish rejimi: Vite serveri, kod o'zgarishi darrov ko'rinadi.
   # Serverga chiqarish uchun boshqa bosqich bor - `frontend/Dockerfile`

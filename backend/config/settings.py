@@ -60,14 +60,25 @@ if not DEBUG and (SECRET_KEY in INSECURE_KEYS
         "python -c \"from django.core.management.utils import get_random_secret_key as k; print(k())\""
     )
 
-# Shu bilan birga, DEBUG o'chirilganda brauzer himoyalarini ham yoqamiz -
-# ular faqat HTTPS ortida ma'noga ega, shuning uchun dev da tegilmaydi.
+# `manage.py test` - BITTA ta'rif. Ilgari ikkita edi va har xil yozilgan:
+# tezlik cheklovi biriga, kesh almashtirish ikkinchisiga qarardi.
+TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+
+# Brauzer himoyalari. HTTPS ortida ma'noga ega, shuning uchun standarti
+# `not DEBUG`: dev da (http://localhost) o'chiq, produksiyada yoqiq.
+# Har biri env bilan alohida o'zgartiriladi. Ilgari bu blok ikki marta
+# yozilgan edi va pastdagisi yuqoridagini jimgina bekor qilardi.
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", not DEBUG)
+SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
+SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", not DEBUG)
+SECURE_HSTS_PRELOAD = env_bool("SECURE_HSTS_PRELOAD", not DEBUG)
 if not DEBUG:
-    SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # TLS teskari proksida tugaydi - Django sxemani sarlavhadan biladi.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
@@ -261,14 +272,27 @@ REST_FRAMEWORK = {
 # DEBUG rejimida esa Vite proksi orqali barcha so'rovlar bitta ichki konteyner IP si
 # orqali keladi va bir necha sahifa ochilishi bilan limit oshib qolmasligi uchun
 # produksiyadan tashqarida (DEBUG=True) o'chiriladi yoki kengaytiriladi.
-TESTING = "test" in sys.argv or any(arg.endswith("test") for arg in sys.argv)
 RATE_LIMIT_ENABLED = env_bool("RATE_LIMIT_ENABLED", not TESTING and not DEBUG)
 RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "1200" if DEBUG else "120"))
 RATE_LIMIT_BAN_THRESHOLD = int(os.getenv("RATE_LIMIT_BAN_THRESHOLD", "3000" if DEBUG else "300"))
 RATE_LIMIT_BAN_SECONDS = int(os.getenv("RATE_LIMIT_BAN_SECONDS", "600"))
+# Backend oldida nechta ISHONCHLI teskari proksi turibdi (odatda bitta -
+# nginx). Mijoz IP si `X-Forwarded-For` ning o'ngidan shuncha qadam
+# ichkarida olinadi - `apps/core/middleware.get_client_ip`. DRF throttle
+# ham xuddi shu songa qaraydi (`NUM_PROXIES`), aks holda u butun
+# sarlavhani kalit qilib olardi va uni ham soxtalashtirish mumkin bo'lardi.
+# Backend proksisiz, to'g'ridan-to'g'ri ochilgan bo'lsa - 0.
+TRUSTED_PROXIES = int(os.getenv("TRUSTED_PROXIES", "1"))
+REST_FRAMEWORK["NUM_PROXIES"] = TRUSTED_PROXIES
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=12),
+    # Access token localStorage da turadi, WebSocket da esa so'rov satrida
+    # ketadi (proksi jurnallariga tushadi). Shuning uchun u QISQA yashaydi:
+    # oqib ketsa zarar oynasi shu daqiqalar bilan cheklanadi. Uzun seansni
+    # refresh token (14 kun, aylanuvchi) ta'minlaydi - HTTP mijoz 401 da,
+    # soket esa ulanishdan oldin (`freshAccess`) uni o'zi yangilaydi.
+    # Ilgari 12 soat edi.
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", "30"))),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
     "ROTATE_REFRESH_TOKENS": True,
     # Yangilangandan keyin eskisi ishlamaydi: bir refresh token faqat bir
@@ -297,20 +321,6 @@ CSRF_TRUSTED_ORIGINS = env_list(
 
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
-
-# ---------------------------------------------------------------- Security Headers & Hardening
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = "DENY"
-
-# Ishlab chiqarish (HTTPS) rejimida qo'llanadigan xavfsizlik cheklovlari.
-# DEBUG=1 bo'lganda lokal HTTP (http://localhost:8010) ishlashi uchun o'chiq turadi.
-SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", not DEBUG)
-SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
-CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
-SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000" if not DEBUG else "0"))
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", not DEBUG)
-SECURE_HSTS_PRELOAD = env_bool("SECURE_HSTS_PRELOAD", not DEBUG)
 
 # ---------------------------------------------------------------- Real-time
 # Bildirishnoma va chat WebSocket orqali yetkaziladi. Kanal qatlami Redis da (DB 0):
@@ -346,7 +356,6 @@ CACHES = {
 # testlardagi so'rov sanog'i o'zgarib turardi (test_panel ba'zan yiqilardi),
 # dev server esa o'sha kungi eslatmalarini yubormay qolardi. Throttle
 # hisoblagichlari ham shu keshda - ular ham izolyatsiyada bo'lgani ma'qul.
-TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 if TESTING:
     CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
@@ -356,6 +365,9 @@ if TESTING:
 # `apps/core/background.py`. Testlarda o'chiriladi - u yerda chaqiruv
 # joyida bajarilishi va natijasi darrov ko'rinishi kerak.
 BACKGROUND_TASKS = env_bool("BACKGROUND_TASKS", True) and not TESTING
+# Har bir web jarayondagi fon oqimlari soni. Har oqim o'z Db2 ulanishini
+# ochishi mumkin - umumiy hisob `backend/docker/entrypoint.sh` da.
+BACKGROUND_WORKERS = int(os.getenv("BACKGROUND_WORKERS", "16"))
 
 # Har bir qator BIR MARTA yozilsin.
 #
@@ -394,7 +406,10 @@ JAZZMIN_SETTINGS = {
         {"name": "Boshqaruv", "url": "admin:index"},
         {"name": "⚙️ Brending & Logotip", "url": "admin:uitexts_systemsetting_changelist"},
         {"name": "➕ Yangi mutaxassislik", "url": "admin:accounts_specialtyitem_add"},
-        {"name": "Ilovaga qaytish", "url": "http://localhost:5183/panel", "new_window": False},
+        # Ilova manzili `SITE_URL` dan - ilgari `localhost:5183` qattiq
+        # yozilgan edi va serverda admin tugmasi bo'sh joyga olib borardi.
+        {"name": "Ilovaga qaytish", "url": (SITE_URL or "http://localhost:5183").rstrip("/") + "/panel",
+         "new_window": False},
     ],
     "show_sidebar": True,
     "navigation_expanded": True,

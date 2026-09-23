@@ -122,6 +122,32 @@ async function tryRefresh(): Promise<boolean> {
   return refreshing;
 }
 
+/** Access tokenning tugash vaqti (Unix soniya). O'qib bo'lmasa - 0. */
+export function accessExpiry(token: string | null): number {
+  if (!token) return 0;
+  try {
+    const part = token.split(".")[1] || "";
+    const json = atob(part.replace(/-/g, "+").replace(/_/g, "/"));
+    return Number(JSON.parse(json).exp) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Yaroqli access token - kerak bo'lsa avval yangilab.
+ *
+ * WebSocket uchun. HTTP so'rov 401 olsa o'zi yangilaydi, soket esa buni
+ * bilmaydi: token tugagach server uni yopadi (4401) va qayta ulanish
+ * O'SHA eski token bilan urinardi. Odam hech narsa bosmay turgan bo'lsa
+ * (HTTP so'rov yo'q) real-time shu holda butunlay to'xtab qolardi.
+ */
+export async function freshAccess(): Promise<string | null> {
+  const expMs = accessExpiry(tokens.access) * 1000;
+  if (tokens.refresh && expMs - Date.now() < 30_000) await tryRefresh();
+  return tokens.access;
+}
+
 interface RequestOptions {
   method?: string;
   body?: unknown;

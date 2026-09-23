@@ -29,17 +29,27 @@ DEFAULT_BAN_SECONDS = 10 * 60   # bloklash muddati: 10 daqiqa (600 soniya)
 
 
 def get_client_ip(request):
-    """Mijozning haqiqiy IP manzilini proksi va load balancer ortidan aniqlash."""
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded_for:
-        # Vergul bilan ajratilgan ro'yxatning birinchisi haqiqiy klient IP-si bo'ladi
-        ip = x_forwarded_for.split(",")[0].strip()
-        if ip:
-            return ip
-    x_real_ip = request.META.get("HTTP_X_REAL_IP")
-    if x_real_ip:
-        return x_real_ip.strip()
-    return request.META.get("REMOTE_ADDR", "127.0.0.1").strip()
+    """Mijozning haqiqiy IP manzili - faqat ISHONCHLI proksilar aytganiga ko'ra.
+
+    `X-Forwarded-For` ni mijozning o'zi ham yuboradi. Ilgari ro'yxatning
+    BIRINCHI elementi olinardi - aynan mijoz yozgan qismi. Har so'rovda
+    boshqa soxta IP yozib IP-ban, tezlik cheklovi va kirishdagi
+    brute-force qulfini (`auth_lock_ip:<ip>`) chetlab o'tish mumkin edi.
+
+    Endi ro'yxat O'NGDAN o'qiladi: har bir ishonchli proksi (nginx
+    `$proxy_add_x_forwarded_for`) o'zi ko'rgan manzilni oxiriga qo'shadi,
+    ya'ni o'ngdan `TRUSTED_PROXIES`-chi element - bizning proksimiz
+    yozgan, soxtalashtirib bo'lmaydigan manzil. `TRUSTED_PROXIES = 0`
+    bo'lsa sarlavha umuman o'qilmaydi.
+    """
+    remote = (request.META.get("REMOTE_ADDR") or "127.0.0.1").strip()
+    hops = getattr(settings, "TRUSTED_PROXIES", 1)
+    if hops <= 0:
+        return remote
+    forwarded = [p.strip() for p in (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",") if p.strip()]
+    if len(forwarded) >= hops:
+        return forwarded[-hops]
+    return remote
 
 
 class RateLimitBlockMiddleware:

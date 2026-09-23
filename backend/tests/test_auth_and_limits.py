@@ -6,11 +6,13 @@ tekshiradi.
 """
 
 from django.contrib.auth import get_user_model
+from django.test import RequestFactory, SimpleTestCase, override_settings
 from rest_framework_simplejwt.token_blacklist.models import (BlacklistedToken,
                                                              OutstandingToken)
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.models import GlobalRole
+from apps.core.middleware import get_client_ip
 from apps.projects.models import JoinRequest, ProjectMember, ProjectRole, RequestStatus
 from apps.tasks.models import Task, TaskStatus
 from apps.workspaces.models import WorkspaceMember, WorkspaceRole
@@ -230,3 +232,39 @@ class ChatParamTest(ApiTestCase):
         seen = {row["partner"]["id"] for row in r.data}
         for u in partners:
             self.assertIn(u.pk, seen)
+
+
+class ClientIpTest(SimpleTestCase):
+    """Mijoz IP si soxta `X-Forwarded-For` bilan almashtirilmasin.
+
+    IP-ban, tezlik cheklovi va kirishdagi brute-force qulfi shu IP ga
+    tayanadi. Ilgari sarlavhaning BIRINCHI elementi olinardi - ya'ni
+    mijozning o'zi yozgan qismi.
+    """
+
+    def ip(self, xff=None, remote="10.0.0.5"):
+        request = RequestFactory().get("/", REMOTE_ADDR=remote)
+        if xff is not None:
+            request.META["HTTP_X_FORWARDED_FOR"] = xff
+        return get_client_ip(request)
+
+    @override_settings(TRUSTED_PROXIES=1)
+    def test_mijoz_yozgan_ip_hisobga_olinmaydi(self):
+        # Mijoz "1.1.1.1" yozdi, nginx haqiqiy manzilni oxiriga qo'shdi.
+        self.assertEqual(self.ip("1.1.1.1, 203.0.113.7"), "203.0.113.7")
+
+    @override_settings(TRUSTED_PROXIES=1)
+    def test_sarlavha_yoq_bolsa_remote_addr(self):
+        self.assertEqual(self.ip(), "10.0.0.5")
+
+    @override_settings(TRUSTED_PROXIES=2)
+    def test_ikki_proksi_ortida(self):
+        self.assertEqual(self.ip("1.1.1.1, 203.0.113.7, 172.16.0.2"), "203.0.113.7")
+
+    @override_settings(TRUSTED_PROXIES=2)
+    def test_qisqa_sarlavha_remote_addr_ga_qaytadi(self):
+        self.assertEqual(self.ip("203.0.113.7"), "10.0.0.5")
+
+    @override_settings(TRUSTED_PROXIES=0)
+    def test_proksisiz_sarlavha_oqilmaydi(self):
+        self.assertEqual(self.ip("1.1.1.1"), "10.0.0.5")

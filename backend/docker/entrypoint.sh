@@ -32,12 +32,29 @@ if [ "$1" = "daphne" ] || [ "$1" = "uvicorn" ]; then
   # Interfeys so'zlari bazadan o'qiladi. Yangi kalitlar qo'shiladi, admin
   # tahrirlagan matnlarga tegilmaydi (`--force` berilmagan).
   python manage.py seed_ui_texts
-  python manage.py seed_demo
+  # Demo ma'lumot - faqat so'ralganda va faqat dev da. Ilgari shartsiz
+  # yugurardi: produksiyada ham `boshliq@teamflow.uz` (BOSS) ma'lum parol
+  # bilan paydo bo'lardi va har restartda parol qayta tiklanardi.
+  if [ "${SEED_DEMO}" = "1" ] && { [ "${DEBUG}" = "1" ] || [ "${DEBUG}" = "true" ]; }; then
+    python manage.py seed_demo
+  fi
 
   # DEBUG=1 bo'lsa runserver ishlatamiz - kod o'zgarishi darrov qo'llanadi.
   if [ "${DEBUG}" = "1" ] || [ "${DEBUG}" = "true" ]; then
     echo "==> Dev rejimi: avtomatik qayta yuklash yoqilgan"
     exec python manage.py runserver 0.0.0.0:8000
+  fi
+
+  # Produksiya: uvicorn ishchilari soni env dan.
+  #
+  # DB2 ULANISHLARI HISOBI (MAXAPPLS = 150, docker/db2/10-teamflow-tuning.sh):
+  # har ishchi jarayonda sinxron view'lar uchun ~1 ulanish va fon oqimlari
+  # (`BACKGROUND_WORKERS`, standart 16) uchun yana shunchagacha. Ya'ni eng
+  # yomon holatda WEB_WORKERS x (1 + BACKGROUND_WORKERS) = 4 x 17 = 68, ustiga
+  # Telegram boti va migratsiya/admin ulanishlari. Ishchi yoki oqim sonini
+  # oshirsangiz shu ko'paytma 150 dan ancha past qolsin.
+  if [ "$1" = "uvicorn" ]; then
+    exec "$@" --workers "${WEB_WORKERS:-4}"
   fi
 fi
 

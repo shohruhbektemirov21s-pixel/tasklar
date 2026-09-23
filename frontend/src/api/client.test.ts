@@ -9,7 +9,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ApiError, listOf, tokens } from "./client";
+import { ApiError, accessExpiry, freshAccess, listOf, tokens } from "./client";
 
 describe("ApiError — server javobini o'qiladigan matnga aylantiradi", () => {
   it("DRF ning `detail` maydonini oladi", () => {
@@ -144,5 +144,40 @@ describe("scheduleRefreshAfterChange — foydalanuvchi talabi bilan 5s avto-yang
 
     window.removeEventListener("teamflow:change-scheduled", scheduledSpy);
     window.removeEventListener("teamflow:refresh", refreshSpy);
+  });
+});
+
+/** Sinov uchun JWT: faqat `exp` o'qiladi, imzo tekshirilmaydi. */
+const jwt = (exp: number) => `h.${btoa(JSON.stringify({ exp })).replace(/=+$/, "")}.s`;
+
+describe("freshAccess — WebSocket ulanishidan oldin token yangilanadi", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it("tokendan `exp` ni o'qiydi, buzuq tokenda 0", () => {
+    expect(accessExpiry(jwt(1_700_000_000))).toBe(1_700_000_000);
+    expect(accessExpiry("buzuq")).toBe(0);
+    expect(accessExpiry(null)).toBe(0);
+  });
+
+  it("muddati o'tgan token yangilanadi", async () => {
+    // Access tugaganda server soketni 4401 bilan yopadi. Qayta ulanish
+    // eski token bilan bo'lsa real-time butunlay to'xtab qolardi.
+    tokens.set(jwt(Math.floor(Date.now() / 1000) - 60), "r");
+    const fresh = jwt(Math.floor(Date.now() / 1000) + 1800);
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      new Response(JSON.stringify({ access: fresh, refresh: "r2" }), { status: 200 })));
+    expect(await freshAccess()).toBe(fresh);
+  });
+
+  it("yaroqli token uchun server so'ralmaydi", async () => {
+    const live = jwt(Math.floor(Date.now() / 1000) + 1800);
+    tokens.set(live, "r");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await freshAccess()).toBe(live);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

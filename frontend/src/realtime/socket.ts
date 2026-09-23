@@ -4,9 +4,9 @@
  * Brauzer WebSocket ochayotganda header qo'sha olmaydi, shuning uchun JWT
  * so'rov satrida yuboriladi. Ulanish uzilsa (tarmoq, server qayta yuklandi)
  * kechikish bilan qayta uriniladi - har safar tokenning eng yangi nusxasi
- * olinadi, chunki HTTP mijoz uni fonda yangilab turadi.
+ * olinadi, muddati tugagan bo'lsa avval yangilanadi (`freshAccess`).
  */
-import { tokens } from "@/api/client";
+import { freshAccess } from "@/api/client";
 
 /**
  * Serverdan kelgan hodisa.
@@ -37,16 +37,20 @@ export function openSocket(path: string, { onMessage, onStatus }: SocketOptions)
   let retryTimer: number | undefined;
   let pingTimer: number | undefined;
 
-  function url() {
+  function url(access: string | null) {
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const token = encodeURIComponent(tokens.access || "");
+    const token = encodeURIComponent(access || "");
     return `${proto}//${window.location.host}${path}?token=${token}`;
   }
 
-  function connect() {
+  async function connect() {
+    if (stopped) return;
+    // Token tugagan bo'lsa avval yangilanadi - aks holda server soketni
+    // darrov yopadi va qayta ulanish shu eski token bilan aylanib qolardi.
+    const access = await freshAccess();
     if (stopped) return;
     try {
-      socket = new WebSocket(url());
+      socket = new WebSocket(url(access));
     } catch {
       scheduleRetry();
       return;
@@ -86,7 +90,7 @@ export function openSocket(path: string, { onMessage, onStatus }: SocketOptions)
     retryTimer = window.setTimeout(connect, delay);
   }
 
-  connect();
+  void connect();
 
   return () => {
     stopped = true;
