@@ -783,6 +783,10 @@
     "value": "tasi",
     "note": "umumiy"
   },
+  "common.tavsif": {
+    "value": "Tavsif",
+    "note": "umumiy"
+  },
   "common.tavsif_kiritilmagan": {
     "value": "Tavsif kiritilmagan.",
     "note": "umumiy"
@@ -907,6 +911,10 @@
     "value": "Barcha holatlar",
     "note": "pages/Dashboard.tsx"
   },
+  "dashboard.barcha_loyiha_menejerlari": {
+    "value": "Barcha loyiha menejerlari",
+    "note": "pages/Dashboard.tsx"
+  },
   "dashboard.batafsil": {
     "value": "Batafsil",
     "note": "pages/Dashboard.tsx"
@@ -1011,6 +1019,30 @@
     "value": "Hafta boshidan",
     "note": "pages/Dashboard.tsx"
   },
+  "dashboard.eksport": {
+    "value": "Eksport",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.eng_yangi": {
+    "value": "eng yangi",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.eng_eski": {
+    "value": "eng eski",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.yaratilgan": {
+    "value": "Yaratilgan",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.amallar": {
+    "value": "Amallar",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.word_blankini_yuklab_olish": {
+    "value": "Word blankini yuklab olish",
+    "note": "pages/Dashboard.tsx"
+  },
   "dashboard.hali_yopilmagan_va_muddati_otib": {
     "value": "Hali yopilmagan va muddati o'tib ketgan ishlaringiz",
     "note": "pages/Dashboard.tsx"
@@ -1055,6 +1087,18 @@
     "value": "Kecha",
     "note": "pages/Dashboard.tsx"
   },
+  "dashboard.kechikkan": {
+    "value": "Kechikkan",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.kechikkan_buyurtmalar": {
+    "value": "Kechikkan buyurtmalar",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.kechikkan_buyurtmalar_izoh": {
+    "value": "Muddati o'tgan, hali yopilmagan talabnomalar",
+    "note": "pages/Dashboard.tsx"
+  },
   "dashboard.kod_yoki_sarlavha": {
     "value": "Kod yoki sarlavha",
     "note": "pages/Dashboard.tsx"
@@ -1073,6 +1117,10 @@
   },
   "dashboard.kutilyapti": {
     "value": "Kutilyapti",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.loyiha_menejeri": {
+    "value": "Loyiha menejeri",
     "note": "pages/Dashboard.tsx"
   },
   "dashboard.loyiha_nomini_yozing": {
@@ -1132,7 +1180,19 @@
     "note": "pages/Dashboard.tsx"
   },
   "dashboard.sahifa_tavsifi": {
-    "value": "Davrlar va muddatlar kesimidagi umumiy ko'rsatkichlar sarhisobi",
+    "value": "Loyiha, buyurtma va barcha faoliyatlar haqida umumiy ma'lumot",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.muddat": {
+    "value": "Muddat",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.masul_shaxs_pm": {
+    "value": "Mas'ul shaxs (Loyiha menejeri)",
+    "note": "pages/Dashboard.tsx"
+  },
+  "dashboard.korilayapti": {
+    "value": "Ko'rilayapti",
     "note": "pages/Dashboard.tsx"
   },
   "dashboard.shu_davrda_bajarilgan_buyurtmalar": {
@@ -5047,6 +5107,18 @@
     "value": "yil tajriba",
     "note": "pages/Profile.tsx"
   },
+  "project_activity.hali_faoliyat_yoq": {
+    "value": "Bu loyihada hali faoliyat yo'q",
+    "note": "pages/project/Activity.tsx"
+  },
+  "project_activity.qayta_urinish": {
+    "value": "Qayta urinish",
+    "note": "pages/project/Activity.tsx"
+  },
+  "project_activity.xatolik": {
+    "value": "Ma'lumotlarni yuklashda xatolik yuz berdi",
+    "note": "pages/project/Activity.tsx"
+  },
   "project_board.bosh": {
     "value": "bo'sh",
     "note": "pages/project/Board.tsx"
@@ -5139,6 +5211,10 @@
     "value": "Arxitekturasi",
     "note": "pages/ProjectDetail.tsx"
   },
+  "project_detail.azolar": {
+    "value": "A'zolar",
+    "note": "pages/project/DetailBody.tsx"
+  },
   "project_detail.bajarildi": {
     "value": "% bajarildi ·",
     "note": "pages/ProjectDetail.tsx"
@@ -5151,8 +5227,16 @@
     "value": "Doska",
     "note": "pages/ProjectDetail.tsx"
   },
+  "project_detail.faoliyat": {
+    "value": "Faoliyat",
+    "note": "pages/project/DetailBody.tsx"
+  },
   "project_detail.koplab_vazifa": {
     "value": "Koplab vazifa",
+    "note": "pages/ProjectDetail.tsx"
+  },
+  "project_detail.korproq_amallar": {
+    "value": "Ko'proq amallar",
     "note": "pages/ProjectDetail.tsx"
   },
   "project_detail.loyiha_qayta_ochildi": {
@@ -5201,6 +5285,10 @@
   },
   "project_detail.qayta_ochish_tasdiq": {
     "value": "Ushbu loyihani qayta faollashtirmoqchimisiz?",
+    "note": "pages/ProjectDetail.tsx"
+  },
+  "project_detail.toliq_sahifada_ochish": {
+    "value": "To'liq sahifada ochish",
     "note": "pages/ProjectDetail.tsx"
   },
   "project_detail.sozlamalar": {
@@ -5919,6 +6007,10 @@
     "value": "Boshqarish",
     "note": "pages/project/Overview.tsx"
   },
+  "project_overview.jami_vazifalar": {
+    "value": "Jami vazifalar",
+    "note": "pages/project/Overview.tsx"
+  },
   "project_overview.jamoa_bosh": {
     "value": "Jamoa bosh",
     "note": "pages/project/Overview.tsx"
@@ -5929,6 +6021,22 @@
   },
   "project_overview.jarayondagi_vazifalarni_korish": {
     "value": "Jarayondagi vazifalarni korish",
+    "note": "pages/project/Overview.tsx"
+  },
+  "project_overview.kechikkan": {
+    "value": "Kechikkan",
+    "note": "pages/project/Overview.tsx"
+  },
+  "project_overview.loyiha_azolari": {
+    "value": "Loyiha a'zolari",
+    "note": "pages/project/Overview.tsx"
+  },
+  "project_overview.loyiha_malumotlari": {
+    "value": "Loyiha ma'lumotlari",
+    "note": "pages/project/Overview.tsx"
+  },
+  "project_overview.loyiha_rahbari": {
+    "value": "Loyiha rahbari",
     "note": "pages/project/Overview.tsx"
   },
   "project_overview.loyihaga_kirish_qollanmasi": {
@@ -6077,6 +6185,14 @@
   },
   "projects.menda": {
     "value": "Menda",
+    "note": "pages/Projects.tsx"
+  },
+  "projects.ustun_amallar": {
+    "value": "Amallar",
+    "note": "pages/Projects.tsx"
+  },
+  "projects.ochish": {
+    "value": "Ochish",
     "note": "pages/Projects.tsx"
   },
   "projects.menejer_tayinlanmagan": {

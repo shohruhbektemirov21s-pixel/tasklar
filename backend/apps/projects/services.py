@@ -22,6 +22,7 @@ bitta: panel loyihalarni biladi, loyihalar panelni bilmaydi.
 from django.db import transaction
 from django.db.models import DecimalField, Value
 from django.db.models.functions import Cast, Coalesce, NullIf
+from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.activity.services import log
@@ -54,6 +55,9 @@ def project_counters(user):
                                                  if s != TaskStatus.CANCELLED]),
         "my_tasks": related_count(Task, group_by="project",
                                   assignments__user=user, assignments__is_active=True),
+        # Ochiq va muddati o'tgan - "Kechikkan" tezkor statistikasi shu.
+        "overdue_tasks": related_count(Task, group_by="project", status__in=OPEN_STATUSES,
+                                       due_date__lt=timezone.now()),
     }
 
 

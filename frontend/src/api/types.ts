@@ -179,6 +179,7 @@ export interface Project {
   open_tasks: number;
   done_tasks: number;
   my_tasks: number;
+  overdue_tasks: number;
   progress: number;
   access: Access;
   needed_specialties: string[];
@@ -957,6 +958,7 @@ export interface OrderPeriodRow {
   submitted: number;
   in_progress?: number;
   approved: number;
+  overdue?: number;
   completed: number;
   rejected: number;
 }

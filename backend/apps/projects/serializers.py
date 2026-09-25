@@ -95,6 +95,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     open_tasks = serializers.IntegerField(read_only=True)
     done_tasks = serializers.IntegerField(read_only=True)
     my_tasks = serializers.IntegerField(read_only=True)
+    overdue_tasks = serializers.IntegerField(read_only=True)
     progress = serializers.SerializerMethodField()
     access = serializers.SerializerMethodField()
     needed_specialty_labels = serializers.SerializerMethodField()
@@ -118,7 +119,7 @@ class ProjectSerializer(serializers.ModelSerializer):
                   "created_by", "updated_by", "repo_url", "docs_url", "start_date", "due_date",
                   "is_public", "is_listed", "join_code", "auto_accept",
                   "created_at", "updated_at",
-                  "member_count", "open_tasks", "done_tasks", "my_tasks", "progress", "access",
+                  "member_count", "open_tasks", "done_tasks", "my_tasks", "overdue_tasks", "progress", "access",
                   "needed_specialties", "needed_specialty_labels", "team_composition",
                   "specialty_gaps", "matches_my_specialty", "order_id", "linked_order",
                   "deleted_at", "deleted_by", "is_deleted"]

@@ -14,7 +14,7 @@
  * Hamma raqam `/api/dashboard/` dan keladi va u Db2 ni ORM orqali o'qiydi:
  * bu yerda hech qanday hisob-kitob ham, namuna qiymat ham yo'q.
  */
-import { Suspense, lazy, useId, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, listOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
@@ -26,8 +26,10 @@ import type {
   OrderPeriodRow,
   OrderStats,
   Task,
+  UserBrief,
 } from "@/api/types";
 import type { PaginatedResponse } from "@/api/orders";
+import { downloadOrderDocx } from "@/api/orders";
 import { useAuth } from "@/auth/AuthContext";
 import { useDebouncedLive } from "@/realtime/RealtimeContext";
 import { PageHead } from "@/components/Layout";
@@ -36,7 +38,7 @@ import {
 } from "@/components/ui";
 import { IconPlus } from "@/components/icons";
 import TaskDrawer from "@/components/TaskDrawer";
-import { toTask } from "@/nav";
+import { toNewOrder, toTask, useGo } from "@/nav";
 import { tx } from "@/i18n";
 import { Button, LinkButton } from "@/components/Button";
 
@@ -507,26 +509,14 @@ function FilterIcon({ size = 15, color = "currentColor" }: { size?: number; colo
     </svg>
   );
 }
-function getStatusPill(status: string) {
-  switch (status) {
-    case "ACCEPTED":
-      return { label: tx("dashboard.tasdiqlangan"), bg: "var(--accent-soft)", color: "var(--accent)", border: "var(--accent-border)" };
-    case "IN_PROGRESS":
-    case "ASSIGNED_TO_DEV":
-    case "TESTING":
-      return { label: tx("dashboard.jarayonda"), bg: "var(--attention-soft)", color: "var(--attention)", border: "var(--attention-border)" };
-    case "COMPLETED":
-      return { label: tx("dashboard.bajarilgan"), bg: "var(--success-soft)", color: "var(--success)", border: "var(--success-border)" };
-    case "NEW":
-    case "DRAFT":
-      return { label: tx("dashboard.kutilyapti"), bg: "var(--accent-soft)", color: "var(--accent)", border: "var(--accent-border)", dashed: false };
-    case "REJECTED":
-      return { label: tx("dashboard.rad_etilgan"), bg: "var(--danger-soft)", color: "var(--danger)", border: "var(--danger-border)" };
-    case "READY_FOR_REVIEW":
-      return { label: tx("dashboard.boshqarma_tasdigida"), bg: "var(--attention-soft)", color: "var(--attention)", border: "var(--attention-border)" };
-    default:
-      return { label: status, bg: "var(--surface-2)", color: "var(--muted)", border: "var(--border)" };
-  }
+function MoreIcon({ size = 18, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="5" r="1.5" fill={color} stroke="none" />
+      <circle cx="12" cy="12" r="1.5" fill={color} stroke="none" />
+      <circle cx="12" cy="19" r="1.5" fill={color} stroke="none" />
+    </svg>
+  );
 }
 function getAvatarInitials(name: string) {
   if (!name) return "—";
@@ -536,41 +526,136 @@ function getAvatarInitials(name: string) {
   }
   return parts[0].slice(0, 2).toUpperCase();
 }
+/** Davr kartasining rangi — mavzu bo'yicha bitta manba (fon, chegara, ikonka). */
 const PERIOD_THEMES: Record<
   DashboardPeriod,
   {
-    iconBg: string;
     iconColor: string;
+    cardBg: string;
+    cardBorder: string;
     title: string;
-    activeBg: string;
   }
 > = {
   year: {
-    iconBg: "var(--attention-soft)",
-    iconColor: "var(--attention)",
+    iconColor: "var(--accent)",
+    cardBg: "var(--accent-soft)",
+    cardBorder: "var(--accent-border)",
     title: tx("dashboard.yil_boshidan"),
-    activeBg: "var(--attention-soft)",
   },
   month: {
-    iconBg: "var(--accent-soft)",
-    iconColor: "var(--accent)",
+    iconColor: "var(--done)",
+    cardBg: "var(--done-soft)",
+    cardBorder: "var(--done-border)",
     title: tx("dashboard.oy_boshidan"),
-    activeBg: "var(--accent-soft)",
   },
   week: {
-    iconBg: "var(--success-soft)",
     iconColor: "var(--success)",
+    cardBg: "var(--success-soft)",
+    cardBorder: "var(--success-border)",
     title: tx("dashboard.hafta_boshidan"),
-    activeBg: "var(--success-soft)",
   },
 };
+/** Davr kartasidagi to'rtta ko'rsatkich — kaliti, rangi va server metrikasi. */
+type OrderMetric = "submitted" | "in_progress" | "completed" | "overdue";
+const METRIC_TILES: { metric: OrderMetric; color: string }[] = [
+  { metric: "submitted", color: "var(--text)" },
+  { metric: "in_progress", color: "var(--attention)" },
+  { metric: "completed", color: "var(--success)" },
+  { metric: "overdue", color: "var(--danger)" },
+];
+const METRIC_LABELS: Record<OrderMetric, string> = {
+  submitted: tx("dashboard.jami"),
+  in_progress: tx("dashboard.jarayonda"),
+  completed: tx("dashboard.bajarilgan"),
+  overdue: tx("dashboard.kechikkan"),
+};
+const METRIC_TITLES: Record<OrderMetric, string> = {
+  submitted: tx("dashboard.jami_buyurtmalar"),
+  in_progress: tx("dashboard.jarayonda_buyurtmalar"),
+  completed: tx("dashboard.bajarilgan_buyurtmalar"),
+  overdue: tx("dashboard.kechikkan_buyurtmalar"),
+};
+function metricValue(p: OrderPeriodRow, metric: OrderMetric): number {
+  if (metric === "submitted") return p.submitted ?? 0;
+  if (metric === "in_progress") return p.in_progress ?? p.approved ?? 0;
+  if (metric === "completed") return p.completed ?? 0;
+  return p.overdue ?? 0;
+}
+const UNFINISHED_ORDER_STATUSES = new Set([
+  "NEW", "ACCEPTED", "ASSIGNED_TO_DEV", "IN_PROGRESS", "TESTING", "READY_FOR_REVIEW",
+]);
+/**
+ * Buyurtma qatoridagi "Holati" nishoni — to'rtta soddalashtirilgan holat.
+ *
+ * Backendda 9 ta status bor (`ChangeRequestStatus`), lekin jadvalda ularning
+ * hammasini ko'rsatish ko'zni charchatadi. Shu yerda to'rttaga yig'iladi:
+ * muddati o'tgan HAR QANDAY ochiq buyurtma — holatidan qat'iy nazar —
+ * «Kechikkan» bo'lib chiqadi (backenddagi `overdue_orders_q` bilan bir xil
+ * shart). Rad etilgan / bekor qilingan buyurtmani esa «Kechikkan» deb
+ * atash noto'g'ri bo'lardi — ular o'z nomi bilan qoladi.
+ */
+function dashboardStatusPill(order: ChangeRequestItem): { label: string; bg: string; color: string } {
+  const deadline = order.pm_deadline || order.due_date;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const overdue = Boolean(deadline) && (deadline as string) < todayIso
+    && UNFINISHED_ORDER_STATUSES.has(order.status);
+  if (overdue) {
+    return { label: tx("dashboard.kechikkan"), bg: "var(--danger-soft)", color: "var(--danger)" };
+  }
+  if (order.status === "NEW" || order.status === "READY_FOR_REVIEW") {
+    return { label: tx("dashboard.korilayapti"), bg: "var(--accent-soft)", color: "var(--accent)" };
+  }
+  if (order.status === "ACCEPTED" || order.status === "ASSIGNED_TO_DEV"
+    || order.status === "IN_PROGRESS" || order.status === "TESTING") {
+    return { label: tx("dashboard.jarayonda"), bg: "var(--attention-soft)", color: "var(--attention)" };
+  }
+  if (order.status === "COMPLETED") {
+    return { label: tx("dashboard.tasdiqlangan"), bg: "var(--success-soft)", color: "var(--success)" };
+  }
+  return { label: order.status_display || order.status, bg: "var(--danger-soft)", color: "var(--danger)" };
+}
+/** Buyurtmalar ro'yxatini CSV (Excel bilan ochiladigan) faylga eksport qiladi. */
+function exportOrdersCsv(orders: ChangeRequestItem[]) {
+  const header = [
+    tx("dashboard.axborot_tizimi"), tx("dashboard.talab_mazmuni"), tx("dashboard.muddat"),
+    tx("dashboard.holati"), tx("dashboard.masul_shaxs_pm"), tx("dashboard.yaratilgan"),
+  ];
+  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const rows = orders.map((o) => [
+    o.project_detail?.name || o.system_name || "",
+    o.requested_change || o.current_state || "",
+    o.pm_deadline || o.due_date ? fmtDate(o.pm_deadline || o.due_date) : "",
+    o.status_display || o.status,
+    o.assigned_pm_name || "",
+    fmtDate(o.created_at || o.request_date),
+  ]);
+  const csv = [header, ...rows].map((row) => row.map(escape).join(",")).join("\r\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `buyurtmalar_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 /** Boshqarma foydalanuvchisi uchun to'liq bosh panel ko'rinishi (yangi UX dizayn) */
 function DepartmentDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod | null>(null);
-  const [selectedMetric, setSelectedMetric] = useState<"submitted" | "approved" | "in_progress" | "completed" | null>(null);
+  const [selectedMetric, setSelectedMetric] = useState<OrderMetric | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [pmFilter, setPmFilter] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"-request_date" | "request_date">("-request_date");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [openOrderId, setOpenOrderId] = useState<number | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  useEffect(() => {
+    if (openMenuId === null) return;
+    const close = () => setOpenMenuId(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [openMenuId]);
   const scrollToOrders = () => {
     const el = document.getElementById("department-orders-section");
     if (el) {
@@ -578,14 +663,28 @@ function DepartmentDashboard() {
     }
   };
   const { data: stats, reload: reloadStats } = useFetch<OrderStats>("/orders/stats/", { mine: 1 });
+  const { data: usersData } = useFetch<{ count: number; results: UserBrief[] } | UserBrief[]>(
+    "/users/", { is_active: true, page_size: 200 }
+  );
+  /** «Barcha loyiha menejerlari» tanlagichi — sohaviy vakil emas, PM yoki boshqaruvchi rol. */
+  const pmList = useMemo(() => {
+    const list = usersData ? listOf<UserBrief>(usersData) : [];
+    return list.filter((u) => {
+      if (u.is_sohaviy_boshqarma || u.specialty === "SOHAVIY" || u.global_role === "SOHAVIY") return false;
+      if (u.global_role === "MANAGER" || u.is_manager || u.specialty === "PM") return true;
+      if (u.global_role === "BOSS" || u.is_boss || u.global_role === "ADMIN" || u.is_platform_admin) return true;
+      return false;
+    });
+  }, [usersData]);
   const queryParams = useMemo(() => {
-    const p: Record<string, string | number> = { mine: 1, page_size: 20, ordering: "-request_date,-id" };
+    const p: Record<string, string | number> = { mine: 1, page_size: 20, ordering: `${sortOrder},-id` };
     if (selectedPeriod) p.period = selectedPeriod;
     if (selectedMetric) p.metric = selectedMetric;
     if (statusFilter) p.status = statusFilter;
+    if (pmFilter) p.assigned_pm = pmFilter;
     if (searchQuery.trim()) p.search = searchQuery.trim();
     return p;
-  }, [selectedPeriod, selectedMetric, statusFilter, searchQuery]);
+  }, [selectedPeriod, selectedMetric, statusFilter, pmFilter, sortOrder, searchQuery]);
   const { data: ordersData, loading: ordersLoading, reload: reloadOrders } = useFetch<
     PaginatedResponse<ChangeRequestItem> | ChangeRequestItem[]
   >("/orders/", queryParams);
@@ -627,6 +726,29 @@ function DepartmentDashboard() {
         scrollToOrders();
       }
     } catch {
+      scrollToOrders();
+    }
+  };
+  /** Davr kartasi ustiga bosilganda — shu davrning HAMMASI (metrikasiz). */
+  const pickPeriod = (period: DashboardPeriod) => {
+    if (selectedPeriod === period && !selectedMetric) {
+      setSelectedPeriod(null);
+    } else {
+      setSelectedPeriod(period);
+      setSelectedMetric(null);
+      setStatusFilter("");
+      scrollToOrders();
+    }
+  };
+  /** Katakdagi to'rtta ko'rsatkichdan biri bosilganda. */
+  const pickMetric = (period: DashboardPeriod, metric: OrderMetric) => {
+    if (selectedPeriod === period && selectedMetric === metric) {
+      setSelectedPeriod(null);
+      setSelectedMetric(null);
+    } else {
+      setSelectedPeriod(period);
+      setSelectedMetric(metric);
+      setStatusFilter("");
       scrollToOrders();
     }
   };
@@ -686,32 +808,21 @@ function DepartmentDashboard() {
       >
         {periods.map((p) => {
           const theme = PERIOD_THEMES[p.key] || PERIOD_THEMES.year;
-          const isSelected = selectedPeriod === p.key;
+          const isPeriodSelected = selectedPeriod === p.key;
           return (
             <div
               key={p.key}
               style={{
-                background: isSelected ? theme.activeBg : "var(--surface)",
+                background: theme.cardBg,
                 borderRadius: 16,
-                border: isSelected ? `2px solid ${theme.iconColor}` : "1px solid var(--border)",
-                boxShadow: isSelected
-                  ? "var(--shadow-md)"
-                  : "var(--shadow-sm)",
+                border: `1px solid ${isPeriodSelected ? theme.iconColor : theme.cardBorder}`,
+                boxShadow: isPeriodSelected ? "var(--shadow-md)" : "var(--shadow-sm)",
                 padding: "20px 22px",
-                transition: "all 0.15s ease",
+                transition: "box-shadow 0.15s ease, border-color 0.15s ease",
               }}
             >
               <div
-                onClick={() => {
-                  if (selectedPeriod === p.key && !selectedMetric) {
-                    setSelectedPeriod(null);
-                  } else {
-                    setSelectedPeriod(p.key);
-                    setSelectedMetric(null);
-                    setStatusFilter("");
-                    scrollToOrders();
-                  }
-                }}
+                onClick={() => pickPeriod(p.key)}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -726,12 +837,13 @@ function DepartmentDashboard() {
                       width: 44,
                       height: 44,
                       borderRadius: 12,
-                      background: theme.iconBg,
+                      background: "var(--surface)",
                       color: theme.iconColor,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
+                      boxShadow: "var(--shadow-xs)",
                     }}
                   >
                     <CalendarIcon size={22} color={theme.iconColor} />
@@ -745,241 +857,50 @@ function DepartmentDashboard() {
                     </p>
                   </div>
                 </div>
-                <div style={{ color: isSelected ? theme.iconColor : "var(--border-strong)", display: "flex", alignItems: "center" }}>
+                <div style={{ color: isPeriodSelected ? theme.iconColor : "var(--border-strong)", display: "flex", alignItems: "center" }}>
                   <ChevronRightIcon size={18} />
                 </div>
               </div>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gridTemplateColumns: "repeat(4, 1fr)",
                   marginTop: 18,
                   paddingTop: 16,
-                  borderTop: "1px solid var(--border)",
-                  gap: 10,
+                  borderTop: `1px solid ${theme.cardBorder}`,
+                  gap: 6,
                 }}
               >
-                {/* 1. Jami */}
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (selectedPeriod === p.key && selectedMetric === "submitted") {
-                      setSelectedPeriod(null);
-                      setSelectedMetric(null);
-                    } else {
-                      setSelectedPeriod(p.key);
-                      setSelectedMetric("submitted");
-                      setStatusFilter("");
-                      scrollToOrders();
-                    }
-                  }}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    background:
-                      selectedPeriod === p.key && selectedMetric === "submitted"
-                        ? theme.iconColor
-                        : "var(--surface-2)",
-                    border:
-                      selectedPeriod === p.key && selectedMetric === "submitted"
-                        ? `1px solid ${theme.iconColor}`
-                        : "1px solid var(--border)",
-                    boxShadow:
-                      selectedPeriod === p.key && selectedMetric === "submitted"
-                        ? "var(--sh-raised)"
-                        : "none",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!(selectedPeriod === p.key && selectedMetric === "submitted")) {
-                      e.currentTarget.style.background = "var(--surface-2)";
-                      e.currentTarget.style.borderColor = "var(--border-strong)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!(selectedPeriod === p.key && selectedMetric === "submitted")) {
-                      e.currentTarget.style.background = "var(--surface-2)";
-                      e.currentTarget.style.borderColor = "var(--border)";
-                    }
-                  }}
-                  title={`${theme.title} — ${tx("dashboard.jami")} (${p.submitted ?? 0})`}
-                >
-                  <div
-                    style={{
-                      fontSize: 11.5,
-                      color:
-                        selectedPeriod === p.key && selectedMetric === "submitted"
-                          ? "#fff"
-                          : "var(--muted)",
-                      fontWeight: 600,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {tx("dashboard.jami")}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 22,
-                      fontWeight: 750,
-                      color:
-                        selectedPeriod === p.key && selectedMetric === "submitted"
-                          ? "#fff"
-                          : "var(--text)",
-                      lineHeight: 1.15,
-                    }}
-                  >
-                    {p.submitted ?? 0}
-                  </div>
-                </div>
-
-                {/* 2. Jarayonda */}
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")) {
-                      setSelectedPeriod(null);
-                      setSelectedMetric(null);
-                    } else {
-                      setSelectedPeriod(p.key);
-                      setSelectedMetric("in_progress");
-                      setStatusFilter("");
-                      scrollToOrders();
-                    }
-                  }}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    background:
-                      selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
-                        ? theme.iconColor
-                        : "var(--surface-2)",
-                    border:
-                      selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
-                        ? `1px solid ${theme.iconColor}`
-                        : "1px solid var(--border)",
-                    boxShadow:
-                      selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
-                        ? "var(--sh-raised)"
-                        : "none",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!(selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved"))) {
-                      e.currentTarget.style.background = "var(--surface-2)";
-                      e.currentTarget.style.borderColor = "var(--border-strong)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!(selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved"))) {
-                      e.currentTarget.style.background = "var(--surface-2)";
-                      e.currentTarget.style.borderColor = "var(--border)";
-                    }
-                  }}
-                  title={`${theme.title} — ${tx("dashboard.jarayonda")} (${p.in_progress ?? p.approved ?? 0})`}
-                >
-                  <div
-                    style={{
-                      fontSize: 11.5,
-                      color:
-                        selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
-                          ? "#fff"
-                          : "var(--muted)",
-                      fontWeight: 600,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {tx("dashboard.jarayonda")}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 22,
-                      fontWeight: 750,
-                      color:
-                        selectedPeriod === p.key && (selectedMetric === "in_progress" || selectedMetric === "approved")
-                          ? "#fff"
-                          : "var(--text)",
-                      lineHeight: 1.15,
-                    }}
-                  >
-                    {p.in_progress ?? p.approved ?? 0}
-                  </div>
-                </div>
-
-                {/* 3. Bajarilgan */}
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (selectedPeriod === p.key && selectedMetric === "completed") {
-                      setSelectedPeriod(null);
-                      setSelectedMetric(null);
-                    } else {
-                      setSelectedPeriod(p.key);
-                      setSelectedMetric("completed");
-                      setStatusFilter("");
-                      scrollToOrders();
-                    }
-                  }}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    background:
-                      selectedPeriod === p.key && selectedMetric === "completed"
-                        ? theme.iconColor
-                        : "var(--surface-2)",
-                    border:
-                      selectedPeriod === p.key && selectedMetric === "completed"
-                        ? `1px solid ${theme.iconColor}`
-                        : "1px solid var(--border)",
-                    boxShadow:
-                      selectedPeriod === p.key && selectedMetric === "completed"
-                        ? "var(--sh-raised)"
-                        : "none",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!(selectedPeriod === p.key && selectedMetric === "completed")) {
-                      e.currentTarget.style.background = "var(--surface-2)";
-                      e.currentTarget.style.borderColor = "var(--border-strong)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!(selectedPeriod === p.key && selectedMetric === "completed")) {
-                      e.currentTarget.style.background = "var(--surface-2)";
-                      e.currentTarget.style.borderColor = "var(--border)";
-                    }
-                  }}
-                  title={`${theme.title} — ${tx("dashboard.bajarilgan")} (${p.completed ?? 0})`}
-                >
-                  <div
-                    style={{
-                      fontSize: 11.5,
-                      color:
-                        selectedPeriod === p.key && selectedMetric === "completed"
-                          ? "#fff"
-                          : "var(--muted)",
-                      fontWeight: 600,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {tx("dashboard.bajarilgan")}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 22,
-                      fontWeight: 750,
-                      color:
-                        selectedPeriod === p.key && selectedMetric === "completed"
-                          ? "#fff"
-                          : "var(--text)",
-                      lineHeight: 1.15,
-                    }}
-                  >
-                    {p.completed ?? 0}
-                  </div>
-                </div>
+                {METRIC_TILES.map((tile) => {
+                  const value = metricValue(p, tile.metric);
+                  const active = selectedPeriod === p.key && selectedMetric === tile.metric;
+                  return (
+                    <button
+                      type="button"
+                      key={tile.metric}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        pickMetric(p.key, tile.metric);
+                      }}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        borderBottom: `2px solid ${active ? tile.color : "transparent"}`,
+                        padding: "2px 4px 8px",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                      title={`${theme.title} — ${METRIC_LABELS[tile.metric]} (${value})`}
+                    >
+                      <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600, marginBottom: 4 }}>
+                        {METRIC_LABELS[tile.metric]}
+                      </div>
+                      <div style={{ fontSize: 21, fontWeight: 750, color: value ? tile.color : "var(--subtle)", lineHeight: 1.1 }}>
+                        {value}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           );
@@ -989,13 +910,7 @@ function DepartmentDashboard() {
         <div className="row between middle" style={{ flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: "var(--text)" }}>
-              {selectedMetric === "approved"
-                ? tx("dashboard.tasdiqlangan_buyurtmalar")
-                : selectedMetric === "completed"
-                ? tx("dashboard.bajarilgan_buyurtmalar")
-                : selectedMetric === "submitted"
-                ? tx("dashboard.jami_buyurtmalar")
-                : tx("dashboard.buyurtmalar")}
+              {selectedMetric ? METRIC_TITLES[selectedMetric] : tx("dashboard.buyurtmalar")}
             </h2>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>
               ({orders.length} {tx("common.ta")})
@@ -1018,14 +933,7 @@ function DepartmentDashboard() {
                 <span>{PERIOD_THEMES[selectedPeriod]?.title}</span>
                 {selectedMetric && (
                   <span style={{ opacity: 0.85 }}>
-                    /{" "}
-                    <strong>
-                      {selectedMetric === "approved"
-                        ? tx("dashboard.tasdiqlangan")
-                        : selectedMetric === "completed"
-                        ? tx("dashboard.bajarilgan")
-                        : tx("dashboard.jami")}
-                    </strong>
+                    / <strong>{METRIC_LABELS[selectedMetric]}</strong>
                   </span>
                 )}
                 <button
@@ -1046,7 +954,7 @@ function DepartmentDashboard() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-          <div style={{ position: "relative", width: 340, maxWidth: "100%" }}>
+          <div style={{ position: "relative", flex: "1 1 260px", minWidth: 220, maxWidth: 340 }}>
             <span
               style={{
                 position: "absolute",
@@ -1080,7 +988,7 @@ function DepartmentDashboard() {
               }}
             />
           </div>
-          <div style={{ position: "relative", minWidth: 180 }}>
+          <div style={{ position: "relative", minWidth: 170 }}>
             <div
               style={{
                 position: "absolute",
@@ -1118,6 +1026,62 @@ function DepartmentDashboard() {
               <option value="REJECTED">{tx("orders.status_rad_etildi", undefined, "Rad etildi")}</option>
             </select>
           </div>
+          {pmList.length > 0 && (
+            <div style={{ position: "relative", minWidth: 210 }}>
+              <select
+                value={pmFilter}
+                onChange={(e) => setPmFilter(e.target.value)}
+                style={{
+                  height: 42,
+                  width: "100%",
+                  borderRadius: 10,
+                  border: "1px solid var(--border)",
+                  padding: "0 14px",
+                  fontSize: 13,
+                  background: "var(--surface)",
+                  color: "var(--text)",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  outline: "none",
+                }}
+              >
+                <option value="">{tx("dashboard.barcha_loyiha_menejerlari")}</option>
+                {pmList.map((u) => (
+                  <option key={u.id} value={String(u.id)}>{u.full_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div style={{ position: "relative", minWidth: 150 }}>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as "-request_date" | "request_date")}
+              style={{
+                height: 42,
+                width: "100%",
+                borderRadius: 10,
+                border: "1px solid var(--border)",
+                padding: "0 14px",
+                fontSize: 13,
+                background: "var(--surface)",
+                color: "var(--text)",
+                fontWeight: 500,
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <option value="-request_date">{tx("common.sana", undefined, "Sana")}: {tx("dashboard.eng_yangi", undefined, "eng yangi")}</option>
+              <option value="request_date">{tx("common.sana", undefined, "Sana")}: {tx("dashboard.eng_eski", undefined, "eng eski")}</option>
+            </select>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={() => exportOrdersCsv(orders)}
+            disabled={!orders.length}
+            title={tx("dashboard.eksport")}
+          >
+            {tx("dashboard.eksport")}
+          </Button>
         </div>
         <div
           style={{
@@ -1164,15 +1128,15 @@ function DepartmentDashboard() {
                     <th style={{ width: 44, textAlign: "center", padding: "12px 14px" }}>№</th>
                     <th style={{ padding: "12px 14px" }}>{tx("dashboard.axborot_tizimi")}</th>
                     <th style={{ padding: "12px 14px" }}>{tx("dashboard.talab_mazmuni")}</th>
-                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.muddati")}</th>
+                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.muddat")}</th>
                     <th style={{ padding: "12px 14px" }}>{tx("dashboard.holati")}</th>
-                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.masul_pm")}</th>
-                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.sanasi")}</th>
+                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.masul_shaxs_pm")}</th>
+                    <th style={{ padding: "12px 14px" }}>{tx("dashboard.yaratilgan")}</th>
+                    <th style={{ width: 56, padding: "12px 14px" }}>{tx("dashboard.amallar")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {orders.map((o, idx) => {
-                    const pill = getStatusPill(o.status);
                     const pmInitials = getAvatarInitials(o.assigned_pm_name || "");
                     return (
                       <tr
@@ -1203,7 +1167,7 @@ function DepartmentDashboard() {
                         </td>
                         <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
                           <div style={{ fontWeight: 600, fontSize: 13.5, color: "var(--text)" }}>
-                            {o.system_name}
+                            {o.project_detail?.name || o.system_name}
                           </div>
                           {o.module && (
                             <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2 }}>
@@ -1236,21 +1200,25 @@ function DepartmentDashboard() {
                           )}
                         </td>
                         <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              padding: "3px 10px",
-                              borderRadius: 9999,
-                              fontSize: 11.5,
-                              fontWeight: 600,
-                              background: pill.bg,
-                              color: pill.color,
-                              border: `1px ${pill.dashed ? "dashed" : "solid"} ${pill.border}`,
-                            }}
-                          >
-                            {pill.label}
-                          </span>
+                          {(() => {
+                            const pill = dashboardStatusPill(o);
+                            return (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  padding: "3px 10px",
+                                  borderRadius: 9999,
+                                  fontSize: 11.5,
+                                  fontWeight: 600,
+                                  background: pill.bg,
+                                  color: pill.color,
+                                }}
+                              >
+                                {pill.label}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
                           {o.assigned_pm_name ? (
@@ -1267,23 +1235,80 @@ function DepartmentDashboard() {
                                   display: "flex",
                                   alignItems: "center",
                                   justifyContent: "center",
+                                  flexShrink: 0,
                                 }}
                               >
                                 {pmInitials}
                               </div>
-                              <span style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text)" }}>
-                                {o.assigned_pm_name}
-                              </span>
+                              <div>
+                                <div style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text)" }}>
+                                  {o.assigned_pm_name}
+                                </div>
+                                <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                                  {tx("dashboard.loyiha_menejeri")}
+                                </div>
+                              </div>
                             </div>
                           ) : (
                             <span style={{ color: "var(--subtle)", fontSize: 13 }}>—</span>
                           )}
                         </td>
                         <td style={{ padding: "14px", whiteSpace: "nowrap", fontSize: 12.5, color: "var(--text-secondary)" }}>
-                          {o.request_date ? (
-                            fmtDate(o.request_date)
-                          ) : (
-                            <span style={{ color: "var(--subtle)" }}>—</span>
+                          {fmtDate(o.created_at || o.request_date)}
+                        </td>
+                        <td style={{ padding: "14px", textAlign: "center", position: "relative" }} onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost" size="sm" iconOnly
+                            title={tx("dashboard.amallar")}
+                            aria-label={tx("dashboard.amallar")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(openMenuId === o.id ? null : o.id);
+                            }}
+                          >
+                            <MoreIcon size={18} color="var(--muted)" />
+                          </Button>
+                          {openMenuId === o.id && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                right: 14,
+                                top: "100%",
+                                marginTop: 4,
+                                background: "var(--surface)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 10,
+                                boxShadow: "var(--shadow-lg)",
+                                zIndex: 20,
+                                minWidth: 220,
+                                overflow: "hidden",
+                                textAlign: "left",
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                className="combo-item"
+                                style={{ width: "100%", textAlign: "left", padding: "10px 14px" }}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  setOpenOrderId(o.id);
+                                }}
+                              >
+                                {tx("common.korish")}
+                              </button>
+                              <button
+                                type="button"
+                                className="combo-item"
+                                style={{ width: "100%", textAlign: "left", padding: "10px 14px" }}
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  void downloadOrderDocx(o.id, String(o.id));
+                                }}
+                              >
+                                {tx("dashboard.word_blankini_yuklab_olish")}
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -1312,6 +1337,7 @@ function DepartmentDashboard() {
 }
 export default function Dashboard() {
   const { user } = useAuth();
+  const go = useGo();
   const [picked, setPicked] = useState<Picked | null>(null);
   const isDepartmentUser = Boolean(
     user?.is_sohaviy_boshqarma ||
@@ -1326,7 +1352,15 @@ export default function Dashboard() {
   if (isDepartmentUser) {
     return (
       <>
-        <PageHead title={name} />
+        <PageHead
+          title={name}
+          subtitle={tx("dashboard.sahifa_tavsifi")}
+          actions={
+            <Button variant="primary" onClick={() => go(toNewOrder())}>
+              <IconPlus size={16} /> {tx("orders.yangi_buyurtma")}
+            </Button>
+          }
+        />
         <div className="content">
           <DepartmentDashboard />
         </div>

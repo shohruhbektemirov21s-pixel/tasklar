@@ -39,6 +39,20 @@ from .visibility import can_access_orders, involved_q, is_sohaviy, visible_order
 logger = logging.getLogger(__name__)
 
 
+def overdue_orders_q(today):
+    """Muddati o'tgan, hali yopilmagan buyurtma sharti — BITTA MANBA.
+
+    Muddat PM belgilagani bo'lsa o'shandan, bo'lmasa buyurtmachi so'ragan
+    muddatdan (`due_date`) hisoblanadi. `?deadline=OVERDUE` filtri, davr
+    kartasidagi «Kechikkan» soni va uni bosganda ochiladigan ro'yxat shu
+    bitta shartdan o'qiydi — ajralib qolsa kartadagi son va ro'yxatdagi
+    qator soni bir-biriga mos kelmay qolardi.
+    """
+    return (
+        Q(pm_deadline__lt=today) | Q(pm_deadline__isnull=True, due_date__lt=today)
+    ) & ~Q(status__in=[ChangeRequestStatus.COMPLETED, ChangeRequestStatus.REJECTED])
+
+
 class CanAccessOrders(permissions.BasePermission):
     """Buyurtmalar bo'limini Sohaviy boshqarmalar, PM (loyiha menejerlari), Boshliq va adminlar ko'ra oladi.
 
@@ -184,9 +198,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             import datetime
             today = timezone.localdate()
             if deadline_param.upper() == "OVERDUE":
-                qs = qs.filter(
-                    Q(pm_deadline__lt=today) | Q(pm_deadline__isnull=True, due_date__lt=today)
-                ).exclude(status__in=[ChangeRequestStatus.COMPLETED, ChangeRequestStatus.REJECTED])
+                qs = qs.filter(overdue_orders_q(today))
             elif deadline_param.upper() == "TODAY":
                 qs = qs.filter(
                     Q(pm_deadline=today) | Q(pm_deadline__isnull=True, due_date=today)
@@ -221,9 +233,17 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             elif period_param in ("6_months", "6months", "half_year"):
                 start_date = today - datetime.timedelta(days=180)
                 start = timezone.make_aware(datetime.datetime.combine(start_date, datetime.time.min))
-            elif period_param in ("year", "1_year", "1year"):
+            elif period_param in ("1_year", "1year"):
                 start_date = today - datetime.timedelta(days=365)
                 start = timezone.make_aware(datetime.datetime.combine(start_date, datetime.time.min))
+            elif period_param == "year":
+                # Kalendar yil boshidan (1-yanvar) - bosh paneldagi «Yil
+                # boshidan» kartasi bilan BIR XIL boshlanish nuqtasi
+                # (`apps.core.periods._period_start`). Aks holda karta bitta
+                # son ko'rsatar, uni bosganda ochilgan ro'yxat boshqa
+                # oraliqni (oxirgi 365 kun) ko'rsatardi.
+                from apps.core.periods import _period_start
+                start = _period_start("year")
             elif period_param == "week":
                 from apps.core.periods import _period_start
                 start = _period_start("week")
@@ -254,9 +274,13 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 )
             elif metric_param == "rejected":
                 qs = qs.filter(status=ChangeRequestStatus.REJECTED)
+            elif metric_param == "overdue":
+                qs = qs.filter(overdue_orders_q(today))
         elif metric_param:
             if metric_param == "rejected":
                 qs = qs.filter(status=ChangeRequestStatus.REJECTED)
+            elif metric_param == "overdue":
+                qs = qs.filter(overdue_orders_q(timezone.localdate()))
             elif metric_param in ("pending", "waiting", "new"):
                 qs = qs.filter(status=ChangeRequestStatus.NEW)
             elif metric_param in ("in_progress", "progress"):
@@ -1419,6 +1443,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
         from apps.core.periods import PERIODS, _period_start
         period_starts = {key: _period_start(key) for key in PERIODS}
+        today = timezone.localdate()
         in_progress_statuses = [
             ChangeRequestStatus.ACCEPTED,
             ChangeRequestStatus.ASSIGNED_TO_DEV,
@@ -1438,6 +1463,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 | Q(created_at__gte=start, status=ChangeRequestStatus.COMPLETED)
             ).count()
             p_rejected = qs.filter(created_at__gte=start, status=ChangeRequestStatus.REJECTED).count()
+            p_overdue = qs.filter(created_at__gte=start).filter(overdue_orders_q(today)).count()
 
             periods.append({
                 "key": key,
@@ -1445,6 +1471,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 "submitted": p_submitted,
                 "in_progress": p_in_progress,
                 "approved": p_in_progress,
+                "overdue": p_overdue,
                 "completed": p_completed,
                 "rejected": p_rejected,
             })

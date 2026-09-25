@@ -367,4 +367,13 @@ export const IconZoomOut = ({ size = 16 }: P) => (
   </svg>
 );
 
+/** Ko'proq amallar (uch nuqta, tik) */
+export const IconMore = ({ size = 16 }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <circle cx="12" cy="5" r="1.6" />
+    <circle cx="12" cy="12" r="1.6" />
+    <circle cx="12" cy="19" r="1.6" />
+  </svg>
+);
+
 

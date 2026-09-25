@@ -1,5 +1,4 @@
-import { useId, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Suspense, lazy, useEffect, useId, useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthContext";
 import { listOf, pagesOf } from "@/api/client";
 import { useFetch } from "@/api/useFetch";
@@ -17,15 +16,26 @@ import {
   TableSkeleton,
   fmtDate,
 } from "@/components/ui";
-import { toNewProject, toProject, useGo } from "@/nav";
+import { toNewProject, toNewTask, toProject, toProjectEdit } from "@/nav";
 import { tx } from "@/i18n";
 import { Button, LinkButton } from "@/components/Button";
+
+const ProjectDetailModal = lazy(() => import("./ProjectDetail"));
+
+function MoreIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="5" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="12" cy="19" r="1.6" />
+    </svg>
+  );
+}
 
 const PER_PAGE = 20;
 
 export default function Projects() {
   const fid = useId();
-  const go = useGo();
   const { user } = useAuth();
 
   const [search, setSearch] = useState("");
@@ -33,6 +43,15 @@ export default function Projects() {
   const [period, setPeriod] = useState("");
   const [sortBy, setSortBy] = useState("updated_at");
   const [page, setPage] = useState(1);
+  const [openProjectId, setOpenProjectId] = useState<number | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (menuOpenId === null) return;
+    const close = () => setMenuOpenId(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [menuOpenId]);
 
   const { data, error, loading } = useFetch<{ count: number; results: Project[] } | Project[]>(
     "/projects/",
@@ -224,6 +243,7 @@ export default function Projects() {
                   <th style={{ width: 180 }}>{tx("projects.ustun_jarayon", undefined, "Jarayon")}</th>
                   <th>{tx("projects.ustun_muddat", undefined, "Muddati")}</th>
                   <th>{tx("projects.ustun_tahrirlangan", undefined, "So'nggi yangilanish")}</th>
+                  <th style={{ width: 48 }}>{tx("projects.ustun_amallar", undefined, "Amallar")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -231,7 +251,7 @@ export default function Projects() {
                   <tr
                     key={p.id}
                     className="clickable"
-                    onClick={() => go(toProject(p.id))}
+                    onClick={() => setOpenProjectId(p.id)}
                   >
                     <td style={{ textAlign: "center", color: "var(--muted)", fontWeight: 600 }}>
                       {(page - 1) * PER_PAGE + idx + 1}
@@ -248,19 +268,17 @@ export default function Projects() {
                           }}
                         />
                         <div style={{ minWidth: 0 }}>
-                          <Link
+                          <span
                             className="nowrap"
-                            {...toProject(p.id)}
                             style={{
                               fontWeight: 650,
                               fontSize: 14,
-                              color: "var(--text)",
+                              color: "var(--accent)",
                               display: "inline-block",
                             }}
-                            onClick={(e) => e.stopPropagation()}
                           >
                             {p.name}
-                          </Link>
+                          </span>
                           {p.description && (
                             <div
                               style={{
@@ -314,6 +332,78 @@ export default function Projects() {
                     <td className="nowrap" style={{ fontSize: 12.5, color: "var(--muted)" }}>
                       {p.updated_at ? fmtDate(p.updated_at) : "—"}
                     </td>
+                    <td style={{ textAlign: "center", position: "relative" }} onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost" size="sm" iconOnly
+                        title={tx("projects.ustun_amallar", undefined, "Amallar")}
+                        aria-label={tx("projects.ustun_amallar", undefined, "Amallar")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpenId(menuOpenId === p.id ? null : p.id);
+                        }}
+                      >
+                        <MoreIcon size={18} />
+                      </Button>
+                      {menuOpenId === p.id && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            right: 8,
+                            top: "100%",
+                            marginTop: 4,
+                            background: "var(--surface)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 10,
+                            boxShadow: "var(--shadow-lg)",
+                            zIndex: 20,
+                            minWidth: 210,
+                            overflow: "hidden",
+                            textAlign: "left",
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            className="combo-item"
+                            style={{ width: "100%", textAlign: "left", padding: "10px 14px" }}
+                            onClick={() => {
+                              setMenuOpenId(null);
+                              setOpenProjectId(p.id);
+                            }}
+                          >
+                            {tx("projects.ochish", undefined, "Ochish")}
+                          </button>
+                          {p.access?.can_create_task && (
+                            <LinkButton
+                              variant="ghost"
+                              {...toNewTask(p.id)}
+                              onClick={() => setMenuOpenId(null)}
+                              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 14px", borderRadius: 0 }}
+                            >
+                              {tx("common.yangi_vazifa")}
+                            </LinkButton>
+                          )}
+                          {p.access?.can_manage && (
+                            <LinkButton
+                              variant="ghost"
+                              {...toProjectEdit(p.id)}
+                              onClick={() => setMenuOpenId(null)}
+                              style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 14px", borderRadius: 0 }}
+                            >
+                              {tx("project_detail.sozlamalar")}
+                            </LinkButton>
+                          )}
+                          <LinkButton
+                            variant="ghost"
+                            {...toProject(p.id)}
+                            onClick={() => setMenuOpenId(null)}
+                            style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 14px", borderRadius: 0 }}
+                          >
+                            {tx("project_detail.toliq_sahifada_ochish", undefined, "To'liq sahifada ochish")}
+                          </LinkButton>
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -323,6 +413,12 @@ export default function Projects() {
       </div>
 
       {pages > 1 && <Pager page={page} pages={pages} onPick={setPage} />}
+
+      {openProjectId && (
+        <Suspense fallback={null}>
+          <ProjectDetailModal projectId={openProjectId} onClose={() => setOpenProjectId(null)} />
+        </Suspense>
+      )}
     </div>
   );
 }
